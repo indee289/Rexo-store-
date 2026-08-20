@@ -106,6 +106,9 @@ jobs:
           echo "Verified Gradle Wrapper JAR:"
           java -jar android/gradle/wrapper/gradle-wrapper.jar --version
 
+      - name: Generate Android App Launcher Icons
+        run: node scripts/generate-android-icons.js
+
       - name: Decode Android Keystore from GitHub Secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

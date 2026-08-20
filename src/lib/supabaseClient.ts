@@ -14,4 +14,11 @@ export const SUPABASE_ANON_KEY = (rawKey && rawKey !== 'your_supabase_anon_publi
   ? rawKey
   : DEFAULT_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storageKey: 'rexoglobal-auth-token',
+  },
+});

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, User, LogIn, UserPlus, Shield } from 'lucide-react';
 import { supabaseAuthService } from '../../services/supabaseAuthService';
 import { useStore } from '../../context/StoreContext';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../lib/supabaseClient';
 
 interface AuthViewProps {
   onSuccess: () => void;
@@ -21,6 +21,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [debugError, setDebugError] = useState('');
 
   const loadProfileAndFinish = async (userId: string) => {
     const profile = await supabaseAuthService.getUserProfile(userId);
@@ -104,7 +105,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         }
       }
     } catch (err: any) {
-      const msg = err.message || '';
+      const msg = err.message || String(err);
+      setDebugError(msg);
       if (msg.includes('Failed to fetch') || msg.includes('fetch')) {
         setError('Unable to connect. Please try again.');
       } else {
@@ -136,6 +138,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
             {error}
           </div>
         )}
+
+        {/* TEMPORARY DEBUG LINE FOR DIAGNOSIS */}
+        <div className="mb-4 p-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] text-slate-500 font-mono text-center break-all">
+          Debug: URL={SUPABASE_URL || 'empty'} KeyLen={SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0} {debugError ? `| Err: ${debugError}` : ''}
+        </div>
 
         {mode === 'mfa' ? (
           <form onSubmit={handleMfaSubmit} className="space-y-4">
