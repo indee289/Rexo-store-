@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, User, LogIn, UserPlus, Shield } from 'lucide-react';
 import { supabaseAuthService } from '../../services/supabaseAuthService';
 import { useStore } from '../../context/StoreContext';
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 interface AuthViewProps {
   onSuccess: () => void;
@@ -122,9 +122,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
       <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-900/20 mb-4 overflow-hidden border border-slate-800 p-1">
-            {mode === 'mfa' ? <Shield className="text-emerald-400" size={28} /> : <img src="/logo.png" alt="Rexo Logo" className="w-full h-full object-contain" />}
-          </div>
+          {mode === 'mfa' ? (
+            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-900/20 mb-4 border border-slate-800 p-1">
+              <Shield className="text-emerald-400" size={28} />
+            </div>
+          ) : (
+            <div className="mb-3 flex justify-center items-center">
+              <img src="/logo.png" alt="Rexo Global" className="h-14 w-auto object-contain max-w-[180px]" />
+            </div>
+          )}
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             {mode === 'mfa' ? 'Two-Factor Auth' : 'Rexo Global'}
           </h1>
@@ -138,11 +144,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
             {error}
           </div>
         )}
-
-        {/* TEMPORARY DEBUG LINE FOR DIAGNOSIS */}
-        <div className="mb-4 p-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] text-slate-500 font-mono text-center break-all">
-          Debug: URL={SUPABASE_URL || 'empty'} KeyLen={SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0} {debugError ? `| Err: ${debugError}` : ''}
-        </div>
 
         {mode === 'mfa' ? (
           <form onSubmit={handleMfaSubmit} className="space-y-4">

@@ -2,8 +2,9 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 
-const SRC_LOGO = path.resolve('android/assets/logo.png');
+const SRC_LOGO = path.resolve('assets/logo.png');
 const RES_DIR = path.resolve('android/app/src/main/res');
+const PUBLIC_DIR = path.resolve('public');
 
 if (!fs.existsSync(SRC_LOGO)) {
   console.error(`Source logo not found at: ${SRC_LOGO}`);
@@ -75,7 +76,13 @@ async function generateIcons() {
 </resources>`;
   fs.writeFileSync(path.join(valuesDir, 'ic_launcher_background.xml'), bgXmlContent);
 
-  console.log('Android icon generation complete!');
+  // Generate web favicon and public logo
+  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+  await sharp(SRC_LOGO).resize(512, 512).toFile(path.join(PUBLIC_DIR, 'logo.png'));
+  await sharp(SRC_LOGO).resize(64, 64).toFile(path.join(PUBLIC_DIR, 'favicon.png'));
+  await sharp(SRC_LOGO).resize(32, 32).toFile(path.join(PUBLIC_DIR, 'favicon.ico'));
+
+  console.log('Android icon & web favicon generation complete!');
 }
 
 generateIcons().catch((err) => {

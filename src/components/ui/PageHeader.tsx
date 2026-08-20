@@ -18,7 +18,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <div className="flex items-center justify-between pt-1">
       <div className="flex items-center gap-2.5">
-        <img src="/logo.png" alt="Rexo Logo" className="w-8 h-8 rounded-lg object-contain bg-slate-900 shadow-xs border border-slate-800 p-0.5 shrink-0" />
         <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           {title}
         </h1>
