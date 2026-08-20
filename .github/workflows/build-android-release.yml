@@ -76,6 +76,26 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Validate & Regenerate Gradle Wrapper JAR
+        run: |
+          echo "Checking gradle-wrapper.jar validity..."
+          if ! java -jar android/gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
+            echo "WARNING: android/gradle/wrapper/gradle-wrapper.jar is corrupt or invalid!"
+            echo "Re-generating fresh Capacitor Android native project..."
+            mkdir -p /tmp/android_backup
+            if [ -f "android/app/google-services.json" ]; then
+              cp android/app/google-services.json /tmp/android_backup/
+            fi
+            rm -rf android
+            npx cap add android
+            if [ -f "/tmp/android_backup/google-services.json" ]; then
+              cp /tmp/android_backup/google-services.json android/app/google-services.json
+            fi
+            npx cap sync android
+          fi
+          echo "Verified Gradle Wrapper JAR:"
+          java -jar android/gradle/wrapper/gradle-wrapper.jar --version
+
       - name: Decode Android Keystore from GitHub Secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

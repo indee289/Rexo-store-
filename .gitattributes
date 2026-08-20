@@ -1,0 +1,16 @@
+# Auto-detect text files and perform LF normalization
+* text=auto eol=lf
+
+# Explicitly declare binary files to prevent Git line-ending corruption
+*.jar binary
+*.keystore binary
+*.jks binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
