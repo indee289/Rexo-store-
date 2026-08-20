@@ -168,3 +168,5 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
     </div>
   );
 };
+
+export default SlideToConfirm;

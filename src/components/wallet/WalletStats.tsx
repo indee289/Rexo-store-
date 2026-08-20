@@ -52,3 +52,5 @@ export const WalletStats: React.FC = () => {
     </div>
   );
 };
+
+export default WalletStats;

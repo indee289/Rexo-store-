@@ -309,3 +309,5 @@ export const WalletView: React.FC<{
     </div>
   );
 };
+
+export default WalletView;

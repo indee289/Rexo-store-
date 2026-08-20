@@ -286,3 +286,5 @@ export const WithdrawalView: React.FC<WithdrawalViewProps> = ({ onBack, onSucces
     </div>
   );
 };
+
+export default WithdrawalView;

@@ -198,3 +198,5 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
     </div>
   );
 };
+
+export default TransactionDetailsModal;

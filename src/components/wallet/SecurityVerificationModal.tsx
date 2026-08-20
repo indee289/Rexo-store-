@@ -172,3 +172,5 @@ export const SecurityVerificationModal: React.FC<SecurityVerificationModalProps>
     </div>
   );
 };
+
+export default SecurityVerificationModal;

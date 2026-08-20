@@ -306,3 +306,5 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({ isOpen, onClos
     </>
   );
 };
+
+export default WithdrawalModal;

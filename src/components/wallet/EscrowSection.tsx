@@ -102,3 +102,5 @@ export const EscrowSection: React.FC = () => {
     </div>
   );
 };
+
+export default EscrowSection;

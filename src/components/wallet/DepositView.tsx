@@ -243,3 +243,5 @@ export const DepositView: React.FC<DepositViewProps> = ({ onBack, onSuccess }) =
     </div>
   );
 };
+
+export default DepositView;

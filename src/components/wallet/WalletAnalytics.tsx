@@ -87,3 +87,5 @@ export const WalletAnalytics: React.FC = () => {
     </div>
   );
 };
+
+export default WalletAnalytics;

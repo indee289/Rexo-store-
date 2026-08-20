@@ -357,3 +357,5 @@ export const Wallet3DPocket: React.FC<Wallet3DPocketProps> = ({
     </div>
   );
 };
+
+export default Wallet3DPocket;

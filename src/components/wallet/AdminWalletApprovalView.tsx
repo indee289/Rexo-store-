@@ -334,3 +334,5 @@ export const AdminWalletApprovalView: React.FC = () => {
     </div>
   );
 };
+
+export default AdminWalletApprovalView;
