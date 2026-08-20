@@ -122,7 +122,16 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version_name || '1.0.0' }}"
           mkdir -p release-output
-          cp android/app/build/outputs/apk/release/app-release.apk release-output/Rexo-Influencer-Marketplace-v${VERSION}-release.apk
+          echo "Locating built APK files in android/app/build/outputs/apk/..."
+          APK_FILE=$(find android/app/build/outputs/apk/ -type f -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "ERROR: No .apk file found under android/app/build/outputs/apk/!"
+            exit 1
+          fi
+          echo "Found APK file at: $APK_FILE"
+          DEST_NAME="Rexo-Influencer-Marketplace-v${VERSION}-release.apk"
+          cp "$APK_FILE" "release-output/$DEST_NAME"
+          echo "Successfully prepared asset: release-output/$DEST_NAME"
 
       - name: Create GitHub Release & Upload APK
         uses: softprops/action-gh-release@v2
