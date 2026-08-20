@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, User, LogIn, UserPlus, Shield } from 'lucide-react';
 import { supabaseAuthService } from '../../services/supabaseAuthService';
 import { useStore } from '../../context/StoreContext';
-import { supabase, SUPABASE_URL } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 interface AuthViewProps {
   onSuccess: () => void;
@@ -104,7 +104,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication.');
+      const msg = err.message || '';
+      if (msg.includes('Failed to fetch') || msg.includes('fetch')) {
+        setError('Unable to connect. Please try again.');
+      } else {
+        setError(msg || 'An error occurred during authentication.');
+      }
     } finally {
       setLoading(false);
     }
@@ -124,11 +129,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
           <p className="text-slate-500 text-sm font-medium mt-1">
             {mode === 'mfa' ? 'Enter code from your authenticator app.' : mode === 'login' ? 'Welcome back.' : 'Create your account.'}
           </p>
-        </div>
-
-        {/* Temporary Debug Indicator */}
-        <div className="mb-4 p-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] text-slate-500 font-mono text-center break-all">
-          Supabase Target: <span className="font-bold text-slate-800">{SUPABASE_URL || 'NONE'}</span>
         </div>
 
         {error && (

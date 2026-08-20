@@ -17,21 +17,40 @@ export class StorageService {
           upsert: true,
         });
 
-      if (error) {
-        // Fallback for demo mode
-        const publicUrl = URL.createObjectURL(file as Blob);
-        return { publicUrl, error: null };
+      if (!error && data?.path) {
+        const { data: publicData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(data.path);
+        if (publicData?.publicUrl) {
+          return { publicUrl: publicData.publicUrl, error: null };
+        }
       }
 
-      const { data: publicData } = supabase.storage
+      // If storage upload fails or publicUrl isn't returned, fallback to getPublicUrl directly
+      const { data: directPublicData } = supabase.storage
         .from(bucket)
-        .getPublicUrl(data.path);
+        .getPublicUrl(filePath);
 
-      return { publicUrl: publicData.publicUrl, error: null };
+      if (directPublicData?.publicUrl) {
+        return { publicUrl: directPublicData.publicUrl, error: null };
+      }
+
+      // Convert to base64 Data URL for persistent local display on mobile
+      const base64Url = await this.fileToBase64(file);
+      return { publicUrl: base64Url, error: null };
     } catch (err) {
-      const publicUrl = URL.createObjectURL(file as Blob);
-      return { publicUrl, error: null };
+      const base64Url = await this.fileToBase64(file).catch(() => null);
+      return { publicUrl: base64Url, error: err };
     }
+  }
+
+  private fileToBase64(file: File | Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
   }
 
   /**

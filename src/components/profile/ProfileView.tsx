@@ -260,8 +260,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {/* Overlapping Top Avatar */}
           <div className="relative inline-block -mt-16 mb-2">
             <img
-              src={currentUser.avatar}
+              src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
               alt={currentUser.name}
+              referrerPolicy="no-referrer"
               className="w-20 h-20 rounded-full object-cover border-4 border-[#F4F6F8] dark:border-slate-950 shadow-md bg-slate-900"
             />
             {currentUser.isVerified && (
