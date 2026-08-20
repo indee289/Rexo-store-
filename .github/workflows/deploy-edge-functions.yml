@@ -1,0 +1,88 @@
+name: Deploy Supabase Edge Functions & Sync Secrets
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+  workflow_dispatch:
+
+jobs:
+  secret-scan:
+    name: Repository Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Scan for Hardcoded Secrets
+        run: |
+          echo "Scanning codebase for hardcoded secret patterns..."
+          if grep -rnE "VITE_R2_SECRET_ACCESS_KEY|SUPABASE_SERVICE_ROLE_KEY\s*=\s*['\"].*['\"]|AIzaSy[A-Za-z0-9_-]{33}" src/; then
+            echo "ERROR: Hardcoded secrets detected in client source code!"
+            exit 1
+          fi
+          echo "Security scan passed. No secrets found in frontend code."
+
+  deploy-functions:
+    name: Deploy Edge Functions
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions to Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_ID" ]; then
+            echo "Error: SUPABASE_ACCESS_TOKEN or SUPABASE_PROJECT_ID GitHub Secret is missing!"
+            exit 1
+          fi
+
+          echo "Deploying Edge Functions..."
+          supabase link --project-ref "$SUPABASE_PROJECT_ID"
+          
+          supabase functions deploy r2-upload --no-verify-jwt
+          supabase functions deploy r2-download --no-verify-jwt
+          supabase functions deploy ai-moderation --no-verify-jwt
+          supabase functions deploy push-notification --no-verify-jwt
+          supabase functions deploy payment --no-verify-jwt
+          supabase functions deploy admin --no-verify-jwt
+
+      - name: Sync Runtime Secrets to Supabase Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
+          FCM_PRIVATE_KEY: ${{ secrets.FCM_PRIVATE_KEY }}
+          PAYMENT_SECRET_KEY: ${{ secrets.PAYMENT_SECRET_KEY }}
+        run: |
+          echo "Synchronizing Edge Function secrets..."
+          supabase secrets set \
+            R2_ACCOUNT_ID="$R2_ACCOUNT_ID" \
+            R2_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+            R2_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+            R2_BUCKET_NAME="$R2_BUCKET_NAME" \
+            GEMINI_API_KEY="$GEMINI_API_KEY" \
+            FCM_PROJECT_ID="$FCM_PROJECT_ID" \
+            FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL" \
+            FCM_PRIVATE_KEY="$FCM_PRIVATE_KEY" \
+            PAYMENT_SECRET_KEY="$PAYMENT_SECRET_KEY" \
+            --project-ref "$SUPABASE_PROJECT_ID"
+          echo "Edge function secrets synchronized successfully."
