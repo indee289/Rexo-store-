@@ -19,7 +19,14 @@ android {
     signingConfigs {
         release {
             def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH") ?: "release.keystore"
-            storeFile file(keystorePath)
+            def keystoreFile = file(keystorePath)
+
+            logger.lifecycle("Gradle Signing Config: storeFile=${keystoreFile.absolutePath} (exists=${keystoreFile.exists()})")
+            logger.lifecycle("Gradle Signing Config: storePassword set=${System.getenv("ANDROID_KEYSTORE_PASSWORD") ? 'YES' : 'NO'}")
+            logger.lifecycle("Gradle Signing Config: keyAlias set=${System.getenv("ANDROID_KEY_ALIAS") ? 'YES' : 'NO'}")
+            logger.lifecycle("Gradle Signing Config: keyPassword set=${System.getenv("ANDROID_KEY_PASSWORD") ? 'YES' : 'NO'}")
+
+            storeFile keystoreFile
             storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
             keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""
             keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""
