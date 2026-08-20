@@ -18,15 +18,26 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: Install Frontend Dependencies
         run: npm ci
+
+      - name: Verify Workspace Diagnostics & Wallet Files
+        run: |
+          pwd
+          git rev-parse HEAD
+          git status
+          ls -la src/components/wallet/
+          test -f src/components/wallet/WalletCard.tsx || (echo "ERROR: WalletCard.tsx does not exist!" && exit 1)
+          sed -n '1,80p' src/components/wallet/WalletView.tsx
 
       - name: Build Web Frontend Assets
         env:
