@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { SubscriptionModal } from './SubscriptionModal';
 import { PrivacyPolicyModal } from '../common/PrivacyPolicyModal';
-import { PageHeader } from '../ui';
+import { PageHeader } from '../ui/PageHeader';
 
 interface ProfileViewProps {
   onNavigateTab: (tab: string) => void;

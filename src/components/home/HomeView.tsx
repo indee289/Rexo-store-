@@ -19,7 +19,9 @@ interface HomeViewProps {
   onNavigateNotifications?: () => void;
 }
 
-import { PageHeader, EmptyState, FilterPill } from '../ui';
+import { PageHeader } from '../ui/PageHeader';
+import { EmptyState } from '../ui/EmptyState';
+import { FilterPill } from '../ui/FilterPill';
 
 // Custom Social Icons to match the screenshot
 const TikTokIcon = () => (

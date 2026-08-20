@@ -23,7 +23,9 @@ import {
   Filter,
 } from 'lucide-react';
 
-import { PageHeader, EmptyState, FilterPill } from '../ui';
+import { PageHeader } from '../ui/PageHeader';
+import { EmptyState } from '../ui/EmptyState';
+import { FilterPill } from '../ui/FilterPill';
 
 export const CampaignsView: React.FC<{
   onNavigateNotifications?: () => void;
