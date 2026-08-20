@@ -23,7 +23,10 @@ import {
   Check,
   Crown,
 } from 'lucide-react';
-import { ProductDetailsModal, CartDrawer, MyPurchasesView, AdminShopCenter } from './index';
+import { ProductDetailsModal } from './ProductDetailsModal';
+import { CartDrawer } from './CartDrawer';
+import { MyPurchasesView } from './MyPurchasesView';
+import { AdminShopCenter } from './AdminShopCenter';
 import { PageHeader, EmptyState, FilterPill } from '../ui';
 
 interface ShopHomeViewProps {

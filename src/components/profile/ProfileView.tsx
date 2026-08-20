@@ -34,7 +34,7 @@ import {
   UserCheck,
   FileText,
 } from 'lucide-react';
-import { SubscriptionModal } from './index';
+import { SubscriptionModal } from './SubscriptionModal';
 import { PrivacyPolicyModal } from '../common/PrivacyPolicyModal';
 import { PageHeader } from '../ui';
 
