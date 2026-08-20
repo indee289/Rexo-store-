@@ -34,6 +34,16 @@ jobs:
         with:
           node-version: 22
 
+      - name: Verify Package Lockfile Synchronization
+        run: |
+          echo "Checking package-lock.json synchronization with package.json..."
+          if ! npm ci --dry-run >/dev/null 2>&1; then
+            echo "::error::CRITICAL ERROR: package-lock.json is OUT OF SYNC with package.json!"
+            echo "::error::Please run 'npm install' locally, commit BOTH package.json and package-lock.json, and push again."
+            exit 1
+          fi
+          echo "LOCKFILE VERIFIED: package-lock.json is fully in sync with package.json."
+
       - name: Install Frontend Dependencies
         run: npm ci
 
