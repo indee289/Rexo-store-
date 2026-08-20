@@ -15,7 +15,9 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  FileText,
 } from 'lucide-react';
+import { PrivacyPolicyModal } from '../common/PrivacyPolicyModal';
 
 interface SettingsViewProps {
   onBack: () => void;
@@ -27,6 +29,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
   const [activeSection, setActiveSection] = useState<
     'overview' | 'change_password' | '2fa' | 'active_sessions' | 'login_history' | 'security_logs'
   >('overview');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   // Form states for password change
   const [oldPassword, setOldPassword] = useState('');
@@ -201,6 +204,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
                 </div>
                 <span className="text-slate-400">›</span>
               </button>
+
+              {/* PRIVACY POLICY */}
+              <button
+                onClick={() => setShowPrivacyModal(true)}
+                className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200 flex items-center justify-between transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText size={18} className="text-emerald-600" />
+                  <div>
+                    <span className="block text-slate-900 dark:text-white font-extrabold">Privacy Policy</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Read data protection & usage policies</span>
+                  </div>
+                </div>
+                <span className="text-slate-400">›</span>
+              </button>
             </div>
           </div>
         )}
@@ -344,6 +362,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
           </div>
         )}
       </div>
+
+      <PrivacyPolicyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </div>
   );
 };

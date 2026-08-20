@@ -16,6 +16,7 @@ export interface Translations {
   faq: string;
   resources: string;
   support: string;
+  privacyPolicy: string;
   switchWorkspace: string;
   security: string;
   logout: string;
@@ -42,6 +43,7 @@ const translations: Record<string, Translations> = {
     faq: 'FAQ',
     resources: 'Resources',
     support: 'Support',
+    privacyPolicy: 'Privacy Policy',
     switchWorkspace: 'Switch Workspace / Role',
     security: 'Security',
     logout: 'Logout',
@@ -66,6 +68,7 @@ const translations: Record<string, Translations> = {
     faq: 'अक्सर पूछे जाने वाले प्रश्न',
     resources: 'संसाधन व गाइड',
     support: 'सहायता केंद्र',
+    privacyPolicy: 'गोपनीयता नीति (Privacy Policy)',
     switchWorkspace: 'रोल / वर्कस्पेस बदलें',
     security: 'सुरक्षा सेटिंग्स',
     logout: 'लॉग आउट',
@@ -90,6 +93,7 @@ const translations: Record<string, Translations> = {
     faq: 'FAQ aur Madad',
     resources: 'Guides aur Resources',
     support: 'Customer Support',
+    privacyPolicy: 'Privacy Policy',
     switchWorkspace: 'Role Switch Karo',
     security: 'Security',
     logout: 'Logout Karo',
@@ -114,6 +118,7 @@ const translations: Record<string, Translations> = {
     faq: 'Preguntas frecuentes',
     resources: 'Recursos',
     support: 'Soporte',
+    privacyPolicy: 'Política de Privacidad',
     switchWorkspace: 'Cambiar rol',
     security: 'Seguridad',
     logout: 'Cerrar sesión',

@@ -12,11 +12,13 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { WalletTransaction } from '../../types';
-import { WalletCard } from './WalletCard';
-import { WalletStats } from './WalletStats';
-import { DepositView } from './DepositView';
-import { WithdrawalView } from './WithdrawalView';
-import { TransactionDetailsModal } from './TransactionDetailsModal';
+import {
+  WalletCard,
+  WalletStats,
+  DepositView,
+  WithdrawalView,
+  TransactionDetailsModal,
+} from './index';
 import { PageHeader } from '../ui';
 
 export const WalletView: React.FC<{

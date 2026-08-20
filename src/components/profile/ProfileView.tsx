@@ -32,8 +32,10 @@ import {
   PackageCheck,
   Crown,
   UserCheck,
+  FileText,
 } from 'lucide-react';
-import { SubscriptionModal } from './SubscriptionModal';
+import { SubscriptionModal } from './index';
+import { PrivacyPolicyModal } from '../common/PrivacyPolicyModal';
 import { PageHeader } from '../ui';
 
 interface ProfileViewProps {
@@ -489,6 +491,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <span>{t.support}</span>
             </div>
             <ArrowUpRight size={18} className="text-slate-400" />
+          </button>
+
+          <button
+            onClick={() => setActiveModal('privacy_policy')}
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-left"
+          >
+            <div className="flex items-center gap-3">
+              <FileText size={18} className="text-indigo-600 dark:text-indigo-400" />
+              <span>{t.privacyPolicy}</span>
+            </div>
+            <ChevronRight size={16} className="text-slate-400" />
           </button>
         </div>
 
@@ -1003,6 +1016,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           onShowToast={showToast}
         />
       )}
+
+      {/* PRIVACY POLICY MODAL */}
+      <PrivacyPolicyModal
+        isOpen={activeModal === 'privacy_policy'}
+        onClose={() => setActiveModal(null)}
+      />
     </div>
   );
 };
