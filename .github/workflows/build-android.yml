@@ -119,6 +119,52 @@ jobs:
             echo "NO_KEYSTORE" > android/app/release.keystore
           fi
 
+      - name: Ensure Release Signing Config Is Present in build.gradle
+        run: |
+          python3 << 'EOF'
+          import re
+
+          path = "android/app/build.gradle"
+          with open(path) as f:
+              content = f.read()
+
+          if "signingConfigs" not in content:
+              signing_block = '''
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "release.keystore")
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+          '''
+              content = content.replace("android {", "android {" + signing_block, 1)
+              print("Inserted new signingConfigs block.")
+          else:
+              print("signingConfigs block already present, leaving as is.")
+
+          if "signingConfig signingConfigs.release" not in content:
+              new_content = re.sub(
+                  r'(buildTypes\s*\{\s*release\s*\{)',
+                  r'\1\n            signingConfig signingConfigs.release',
+                  content,
+                  count=1
+              )
+              if new_content == content:
+                  print("WARNING: could not find 'buildTypes { release {' pattern to inject signingConfig line!")
+              content = new_content
+          else:
+              print("release buildType already references signingConfigs.release.")
+
+          with open(path, "w") as f:
+              f.write(content)
+          EOF
+          echo "----- Resulting signingConfigs block -----"
+          grep -A 8 "signingConfigs" android/app/build.gradle || echo "ERROR: no signingConfigs block found!"
+          echo "----- Resulting release buildType block -----"
+          grep -A 6 "release {" android/app/build.gradle
+
       - name: Build Android Release APK
         working-directory: android
         env:
