@@ -34,7 +34,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { SubscriptionModal } from './SubscriptionModal';
-import { PageHeader } from '../ui/PageHeader';
+import { PageHeader } from '../ui';
 
 interface ProfileViewProps {
   onNavigateTab: (tab: string) => void;

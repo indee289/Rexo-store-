@@ -17,7 +17,7 @@ import { WalletStats } from './WalletStats';
 import { DepositView } from './DepositView';
 import { WithdrawalView } from './WithdrawalView';
 import { TransactionDetailsModal } from './TransactionDetailsModal';
-import { PageHeader } from '../ui/PageHeader';
+import { PageHeader } from '../ui';
 
 export const WalletView: React.FC<{
   onNavigateNotifications?: () => void;

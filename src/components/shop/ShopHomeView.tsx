@@ -27,9 +27,7 @@ import { ProductDetailsModal } from './ProductDetailsModal';
 import { CartDrawer } from './CartDrawer';
 import { MyPurchasesView } from './MyPurchasesView';
 import { AdminShopCenter } from './AdminShopCenter';
-import { PageHeader } from '../ui/PageHeader';
-import { EmptyState } from '../ui/EmptyState';
-import { FilterPill } from '../ui/FilterPill';
+import { PageHeader, EmptyState, FilterPill } from '../ui';
 
 interface ShopHomeViewProps {
   onNavigateNotifications?: () => void;
