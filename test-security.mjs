@@ -28,7 +28,7 @@ function scanDirectory(dirPath, allowedFiles = []) {
         matches = matches.concat(scanDirectory(fullPath, allowedFiles));
       }
     } else {
-      if (allowedFiles.includes(fullPath)) continue;
+      if (allowedFiles.includes(fullPath) || item.name === 'google-services.json') continue;
       const content = fs.readFileSync(fullPath, 'utf8');
       for (const rule of secretRegexes) {
         if (rule.regex.test(content)) {

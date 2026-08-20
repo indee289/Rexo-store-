@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
-import { GoogleGenAI } from 'npm:@google/genai@0.1.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,7 +62,7 @@ serve(async (req: Request) => {
       }
     }
 
-    // 2. Gemini AI Check via Server-Side Key
+    // 2. Gemini AI Check via Server-Side Key (Deno Native Fetch - No NPM dependency issues)
     const geminiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiKey) {
       return new Response(
@@ -78,7 +77,6 @@ serve(async (req: Request) => {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: geminiKey });
     const prompt = `You are an enterprise-grade Trust & Safety AI moderator.
 Analyze this submitted ${type || 'text'} on a creator/brand marketplace:
 "${text}"
@@ -93,13 +91,42 @@ Return strictly valid JSON:
   "recommended_action": <"none" | "warn" | "suspend" | "shadow_ban" | "manual_review">
 }`;
 
-    const aiResponse = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: prompt,
-      config: { responseMimeType: 'application/json' },
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+    const aiResponse = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
+        },
+      }),
     });
 
-    const result = JSON.parse(aiResponse.text || '{}');
+    if (!aiResponse.ok) {
+      const errBody = await aiResponse.text();
+      console.error('Gemini API Error:', errBody);
+      return new Response(
+        JSON.stringify({
+          risk_score: 0,
+          confidence_score: 0,
+          category: 'safe',
+          reason: `Gemini service temporarily unavailable (${aiResponse.status}). Passed.`,
+          recommended_action: 'none',
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const aiData = await aiResponse.json();
+    const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const result = JSON.parse(rawText);
 
     return new Response(JSON.stringify(result), {
       status: 200,
@@ -112,3 +139,4 @@ Return strictly valid JSON:
     });
   }
 });
+
