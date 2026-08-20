@@ -58,6 +58,7 @@ jobs:
           supabase functions deploy push-notification --no-verify-jwt
           supabase functions deploy payment --no-verify-jwt
           supabase functions deploy admin --no-verify-jwt
+          supabase functions deploy process-webhook --no-verify-jwt
 
       - name: Sync Runtime Secrets to Supabase Edge Functions
         env:
