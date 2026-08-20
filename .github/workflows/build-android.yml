@@ -133,6 +133,26 @@ jobs:
           cp "$APK_FILE" "release-output/$DEST_NAME"
           echo "Successfully prepared asset: release-output/$DEST_NAME"
 
+      - name: Verify APK Signature with apksigner
+        run: |
+          echo "Finding apksigner tool in Android SDK..."
+          APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools/ -name "apksigner" 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            APKSIGNER=$(find $ANDROID_HOME/build-tools/ -name "apksigner" 2>/dev/null | sort -V | tail -n 1)
+          fi
+          if [ -z "$APKSIGNER" ]; then
+            echo "ERROR: apksigner tool not found in Android SDK!"
+            exit 1
+          fi
+          echo "Using apksigner at: $APKSIGNER"
+          APK_FILE=$(find release-output/ -type f -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "ERROR: No .apk file found in release-output/!"
+            exit 1
+          fi
+          echo "Verifying signature for $APK_FILE..."
+          $APKSIGNER verify --verbose "$APK_FILE"
+
       - name: Create GitHub Release & Upload APK
         uses: softprops/action-gh-release@v2
         with:

@@ -115,8 +115,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
       <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-900/20 mb-4">
-            {mode === 'mfa' ? <Shield className="text-emerald-400" size={28} /> : <Sparkles className="text-white" size={28} />}
+          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-900/20 mb-4 overflow-hidden border border-slate-800 p-1">
+            {mode === 'mfa' ? <Shield className="text-emerald-400" size={28} /> : <img src="/logo.png" alt="Rexo Logo" className="w-full h-full object-contain" />}
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             {mode === 'mfa' ? 'Two-Factor Auth' : 'Rexo Global'}

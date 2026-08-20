@@ -1,5 +1,15 @@
 {
 	"appId": "com.rexo.influencer.marketplace",
 	"appName": "Rexo Influencer Marketplace",
-	"webDir": "dist"
+	"webDir": "dist",
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"launchAutoHide": true,
+			"backgroundColor": "#0F172A",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false
+		}
+	}
 }
