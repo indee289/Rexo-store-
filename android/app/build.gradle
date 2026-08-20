@@ -18,22 +18,19 @@ android {
     }
     signingConfigs {
         release {
-            if (System.getenv("ANDROID_KEYSTORE_PASSWORD") != null && System.getenv("ANDROID_KEYSTORE_PASSWORD") != "") {
-                storeFile file('release.keystore')
-                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                keyAlias System.getenv("ANDROID_KEY_ALIAS")
-                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
-                v1SigningEnabled true
-                v2SigningEnabled true
-            }
+            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH") ?: "release.keystore"
+            storeFile file(keystorePath)
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
 
     buildTypes {
         release {
-            if (System.getenv("ANDROID_KEYSTORE_PASSWORD") != null && System.getenv("ANDROID_KEYSTORE_PASSWORD") != "") {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
