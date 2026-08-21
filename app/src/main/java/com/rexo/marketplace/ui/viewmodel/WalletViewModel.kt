@@ -46,7 +46,7 @@ class WalletViewModel(
             try {
                 // Load balance
                 val wallet = repository.getWallet()
-                _balance.value = wallet?.balance ?: 0.0
+                _balance.value = wallet?.availableBalance ?: 0.0
 
                 // Load transactions
                 _transactions.value = repository.getTransactions()

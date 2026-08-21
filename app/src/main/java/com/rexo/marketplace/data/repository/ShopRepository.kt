@@ -115,8 +115,9 @@ class ShopRepository(
             // Fetch order items and add them back to cart
             val order = supabaseClient.client
                 .from("store_orders")
-                .select()
-                .eq("id", orderId)
+                .select() {
+                    filter { eq("id", orderId) }
+                }
                 .decodeSingle<OrderDto>()
             
             // Add items to cart (simplified)

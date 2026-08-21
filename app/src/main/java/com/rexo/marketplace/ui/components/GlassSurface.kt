@@ -69,12 +69,13 @@ fun GlassSurface(
 fun FloatingGlassCard(
     modifier: Modifier = Modifier,
     shape: Shape = RexoCustomShapes.CardShape,
+    backgroundColor: Color = RexoColors.GlassLight.copy(alpha = 0.8f),
     content: @Composable () -> Unit
 ) {
     Surface(
         modifier = modifier,
         shape = shape,
-        color = RexoColors.GlassLight.copy(alpha = 0.8f),
+        color = backgroundColor,
         shadowElevation = 8.dp,
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
@@ -82,5 +83,31 @@ fun FloatingGlassCard(
         )
     ) {
         content()
+    }
+}
+
+/**
+ * Floating Card with Glass Effect using a Brush background
+ */
+@Composable
+fun FloatingGlassCard(
+    modifier: Modifier = Modifier,
+    shape: Shape = RexoCustomShapes.CardShape,
+    backgroundColor: Brush,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier,
+        shape = shape,
+        color = Color.Transparent,
+        shadowElevation = 8.dp,
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = Color.White.copy(alpha = 0.4f)
+        )
+    ) {
+        Box(modifier = Modifier.background(backgroundColor)) {
+            content()
+        }
     }
 }

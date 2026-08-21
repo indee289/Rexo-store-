@@ -7,6 +7,8 @@ import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Authentication Repository
@@ -26,19 +28,22 @@ class AuthRepository {
         phone: String? = null
     ): Result<UserInfo> {
         return try {
-            val result = auth.signUpWith(Email) {
+            auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
                 
                 // Add user metadata
-                data = buildMap {
+                data = buildJsonObject {
                     fullName?.let { put("full_name", it) }
                     phone?.let { put("phone", it) }
                     put("created_at", System.currentTimeMillis())
                 }
             }
             
-            Result.success(result)
+            // After sign up, get the current user
+            val user = auth.currentUserOrNull()
+                ?: return Result.failure(Exception("Sign up succeeded but user is null"))
+            Result.success(user)
         } catch (e: RestException) {
             Result.failure(e)
         } catch (e: Exception) {
@@ -54,12 +59,15 @@ class AuthRepository {
         password: String
     ): Result<UserInfo> {
         return try {
-            val result = auth.signInWith(Email) {
+            auth.signInWith(Email) {
                 this.email = email
                 this.password = password
             }
             
-            Result.success(result)
+            // After sign in, get the current user
+            val user = auth.currentUserOrNull()
+                ?: return Result.failure(Exception("Sign in succeeded but user is null"))
+            Result.success(user)
         } catch (e: RestException) {
             Result.failure(e)
         } catch (e: Exception) {
@@ -137,7 +145,9 @@ class AuthRepository {
     suspend fun refreshSession(): Result<UserInfo> {
         return try {
             val session = auth.refreshCurrentSession()
-            Result.success(session.user!!)
+            val user = session.user
+                ?: return Result.failure(Exception("Session refreshed but user is null"))
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }

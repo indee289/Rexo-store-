@@ -3,19 +3,35 @@ package com.rexo.marketplace.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+
+/**
+ * RexoTheme accessor object
+ * Provides convenient access to MaterialTheme properties via RexoTheme.colorScheme, RexoTheme.typography
+ */
+object RexoTheme {
+    val colorScheme: ColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme
+
+    val typography: Typography
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.typography
+}
 
 /**
  * Rexo Marketplace Material 3 Theme
@@ -44,8 +60,6 @@ fun RexoMarketplaceTheme(
         else -> LightColorScheme
     }
     
-    // System UI Controller for status bar and navigation bar
-    val systemUiController = rememberSystemUiController()
     val view = LocalView.current
     
     if (!view.isInEditMode) {
@@ -59,11 +73,9 @@ fun RexoMarketplaceTheme(
             window.statusBarColor = Color.Transparent.toArgb()
             window.navigationBarColor = Color.Transparent.toArgb()
             
-            // Set status bar icons color (dark icons on light theme, light on dark)
-            systemUiController.setSystemBarsColor(
-                color = Color.Transparent,
-                darkIcons = !darkTheme
-            )
+            // Set status bar icons (dark icons on light theme, light on dark)
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }
     }
     

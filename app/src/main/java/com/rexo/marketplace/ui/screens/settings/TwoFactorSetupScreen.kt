@@ -1,5 +1,6 @@
 package com.rexo.marketplace.ui.screens.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -376,9 +377,10 @@ fun AuthMethodCard(
     onClick: () -> Unit
 ) {
     GlassSurface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        onClick = onClick
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier

@@ -1,5 +1,6 @@
 package com.rexo.marketplace.ui.screens.wallet
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -330,10 +331,10 @@ fun PaymentMethodCard(
     onClick: () -> Unit
 ) {
     GlassSurface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        onClick = onClick,
-        border = if (selected) 2.dp else 0.dp,
         borderColor = if (selected) RexoTheme.colorScheme.primary else Color.Transparent
     ) {
         Row(

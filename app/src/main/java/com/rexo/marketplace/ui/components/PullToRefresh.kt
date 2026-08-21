@@ -3,13 +3,12 @@ package com.rexo.marketplace.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -24,42 +23,34 @@ fun PullToRefreshBox(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val pullToRefreshState = rememberPullToRefreshState()
+    val state = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     val haptic = rememberHapticFeedback()
-    
-    // Handle refresh trigger
-    LaunchedEffect(pullToRefreshState.isRefreshing) {
-        if (pullToRefreshState.isRefreshing) {
-            haptic.perform(HapticFeedbackType.SUCCESS)
-            onRefresh()
-        }
-    }
-    
-    // Reset state when refresh is done
-    LaunchedEffect(isRefreshing) {
-        if (!isRefreshing) {
-            pullToRefreshState.endRefresh()
-        } else {
-            pullToRefreshState.startRefresh()
-        }
-    }
-    
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .nestedScroll(pullToRefreshState.nestedScrollConnection)
+            .pullToRefresh(
+                isRefreshing = isRefreshing,
+                state = state,
+                onRefresh = {
+                    haptic.perform(HapticFeedbackType.SUCCESS)
+                    scope.launch { onRefresh() }
+                }
+            )
     ) {
         content()
-        
-        PullToRefreshContainer(
-            state = pullToRefreshState,
+
+        PullToRefreshDefaults.Indicator(
+            state = state,
+            isRefreshing = isRefreshing,
             modifier = Modifier.align(Alignment.TopCenter)
         )
     }
 }
 
 // Simpler version with manual state management
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimplePullToRefresh(
     isRefreshing: Boolean,

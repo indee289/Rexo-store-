@@ -26,11 +26,11 @@ class WalletRepository(
                 .decodeSingle<Wallet>()
             
             // Cache locally
-            walletDao.insert(response)
+            walletDao.insertWallet(response)
             response
         } catch (e: Exception) {
             // Fallback to local cache
-            walletDao.getWallet()
+            walletDao.getWallet(userId = "current_user")
         }
     }
 

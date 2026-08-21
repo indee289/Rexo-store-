@@ -431,8 +431,9 @@ fun ModernTextField(
         keyboardActions = keyboardActions,
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
-        colors = TextFieldDefaults.outlinedTextFieldColors(
-            containerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
+            unfocusedContainerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
             focusedBorderColor = RexoTheme.colorScheme.primary,
             unfocusedBorderColor = RexoTheme.colorScheme.outline.copy(alpha = 0.3f)
         ),
