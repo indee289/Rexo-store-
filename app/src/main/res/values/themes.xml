@@ -4,13 +4,13 @@
     <style name="Theme.RexoMarketplace" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color -->
         <item name="colorPrimary">@color/indigo_600</item>
-        <item name="colorPrimaryVariant">@color/indigo_700</item>
         <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/indigo_700</item>
         
         <!-- Secondary brand color -->
         <item name="colorSecondary">@color/rose_500</item>
-        <item name="colorSecondaryVariant">@color/rose_600</item>
         <item name="colorOnSecondary">@android:color/white</item>
+        <item name="colorSecondaryContainer">@color/rose_600</item>
         
         <!-- Status bar & navigation bar -->
         <item name="android:statusBarColor">@android:color/transparent</item>

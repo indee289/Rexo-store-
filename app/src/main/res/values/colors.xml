@@ -12,6 +12,9 @@
     <!-- Splash Screen Background -->
     <color name="splash_background">#0F172A</color>
     
+    <!-- Launcher Icon Background -->
+    <color name="ic_launcher_background">#0F172A</color>
+    
     <!-- System UI Colors -->
     <color name="status_bar_light">#F8FAFC</color>
     <color name="status_bar_dark">#020617</color>
