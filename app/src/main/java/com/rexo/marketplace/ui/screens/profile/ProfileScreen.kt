@@ -23,11 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rexo.marketplace.data.repository.CreatorProfileDto
 import com.rexo.marketplace.data.repository.UserDto
+import com.rexo.marketplace.data.repository.UserRepository
 import com.rexo.marketplace.data.repository.WalletDto
 import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
 import com.rexo.marketplace.ui.viewmodel.ProfileState
 import com.rexo.marketplace.ui.viewmodel.ProfileViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Profile Screen - Full-featured profile page
@@ -178,8 +180,10 @@ fun ProfileScreen(
                     wallet = state.wallet,
                     isAdmin = isAdmin,
                     onNavigateToAdmin = onNavigateToAdmin,
+                    onNavigateToSettings = onNavigateToSettings,
                     onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                     onSignOut = { viewModel.signOut() },
+                    onProfileUpdated = { viewModel.loadProfile() },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -194,17 +198,24 @@ private fun ProfileContent(
     wallet: WalletDto?,
     isAdmin: Boolean,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onSignOut: () -> Unit,
+    onProfileUpdated: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showEditDialog by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         // Profile Avatar Section with role badge and edit button
         item {
-            ProfileAvatarSection(user = user)
+            ProfileAvatarSection(
+                user = user,
+                onEditClick = { showEditDialog = true }
+            )
         }
 
         // Stats Row: Earnings, Campaigns, Rating
@@ -251,15 +262,160 @@ private fun ProfileContent(
             SettingsList(
                 isAdmin = isAdmin,
                 onNavigateToAdmin = onNavigateToAdmin,
+                onNavigateToSettings = onNavigateToSettings,
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onSignOut = onSignOut
             )
         }
     }
+
+    // Edit Profile Dialog
+    if (showEditDialog) {
+        EditProfileDialog(
+            user = user,
+            onDismiss = { showEditDialog = false },
+            onSaved = {
+                showEditDialog = false
+                onProfileUpdated()
+            }
+        )
+    }
 }
 
 @Composable
-private fun ProfileAvatarSection(user: UserDto) {
+private fun EditProfileDialog(
+    user: UserDto,
+    onDismiss: () -> Unit,
+    onSaved: () -> Unit
+) {
+    var name by remember { mutableStateOf(user.name ?: "") }
+    var handle by remember { mutableStateOf(user.handle ?: "") }
+    var bio by remember { mutableStateOf(user.bio ?: "") }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val userRepository = remember { UserRepository() }
+
+    AlertDialog(
+        onDismissRequest = { if (!isSaving) onDismiss() },
+        title = {
+            Text(
+                text = "Edit Profile",
+                style = RexoTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = RexoColors.TextPrimary
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Display Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RexoColors.AccentOrange,
+                        focusedLabelColor = RexoColors.AccentOrange,
+                        cursorColor = RexoColors.AccentOrange
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = handle,
+                    onValueChange = { handle = it },
+                    label = { Text("Handle") },
+                    singleLine = true,
+                    prefix = { Text("@") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RexoColors.AccentOrange,
+                        focusedLabelColor = RexoColors.AccentOrange,
+                        cursorColor = RexoColors.AccentOrange
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = bio,
+                    onValueChange = { bio = it },
+                    label = { Text("Bio") },
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RexoColors.AccentOrange,
+                        focusedLabelColor = RexoColors.AccentOrange,
+                        cursorColor = RexoColors.AccentOrange
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage!!,
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.Error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    isSaving = true
+                    errorMessage = null
+                    scope.launch {
+                        val success = userRepository.updateProfile(
+                            userId = user.id,
+                            name = name.ifBlank { null },
+                            handle = handle.ifBlank { null },
+                            bio = bio.ifBlank { null }
+                        )
+                        isSaving = false
+                        if (success) {
+                            onSaved()
+                        } else {
+                            errorMessage = "Failed to update profile. Please try again."
+                        }
+                    }
+                },
+                enabled = !isSaving,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = RexoColors.AccentOrange
+                )
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                enabled = !isSaving,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ProfileAvatarSection(
+    user: UserDto,
+    onEditClick: () -> Unit
+) {
     val displayName = user.name ?: user.email.substringBefore("@")
 
     Column(
@@ -288,7 +444,9 @@ private fun ProfileAvatarSection(user: UserDto) {
 
             // Edit pencil icon overlay
             Surface(
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable(onClick = onEditClick),
                 shape = CircleShape,
                 color = RexoColors.TextPrimary
             ) {
@@ -686,6 +844,7 @@ private fun MediaKitSection(
 private fun SettingsList(
     isAdmin: Boolean,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -706,7 +865,7 @@ private fun SettingsList(
             icon = Icons.Outlined.Language,
             label = "Language",
             trailingText = "English",
-            onClick = { }
+            onClick = onNavigateToSettings
         )
 
         // Theme
@@ -714,14 +873,14 @@ private fun SettingsList(
             icon = Icons.Outlined.Palette,
             label = "Theme",
             trailingText = "System",
-            onClick = { }
+            onClick = onNavigateToSettings
         )
 
         // Notifications
         SettingsItem(
             icon = Icons.Outlined.Notifications,
             label = "Notifications",
-            onClick = { }
+            onClick = onNavigateToSettings
         )
 
         // Privacy Policy
@@ -735,7 +894,7 @@ private fun SettingsList(
         SettingsItem(
             icon = Icons.Outlined.HelpOutline,
             label = "Help & Support",
-            onClick = { }
+            onClick = onNavigateToSettings
         )
 
         Spacer(modifier = Modifier.height(16.dp))

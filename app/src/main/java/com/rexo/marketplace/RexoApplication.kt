@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import com.rexo.marketplace.data.local.PreferencesManager
 import com.rexo.marketplace.data.local.RexoDatabase
 import com.rexo.marketplace.data.remote.SupabaseClient
 
@@ -14,6 +15,7 @@ import com.rexo.marketplace.data.remote.SupabaseClient
  * - Room Database
  * - Supabase Client
  * - Notification Channels
+ * - PreferencesManager (DataStore)
  * - Firebase
  */
 class RexoApplication : Application() {
@@ -22,12 +24,20 @@ class RexoApplication : Application() {
     val database: RexoDatabase by lazy { 
         RexoDatabase.getDatabase(this) 
     }
+
+    companion object {
+        lateinit var preferencesManager: PreferencesManager
+            private set
+    }
     
     override fun onCreate() {
         super.onCreate()
         
         // Initialize Supabase Client
         SupabaseClient.initialize(applicationContext)
+
+        // Initialize PreferencesManager for theme/language persistence
+        preferencesManager = PreferencesManager(applicationContext)
         
         // Create notification channels for Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

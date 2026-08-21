@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Remove Services tab from bottom nav, remove hero welcome card and stats from HomeScreen, make all buttons functional (theme/language persistence, edit profile, settings navigation), and UI/UX improvements",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "In NavGraph.kt: Remove BottomNavItem.Services object completely. Update the 'items' list in FloatingPillBottomNavigation to only have: Home, Campaigns, Shop, Profile (4 tabs). Remove Screen.Services.route from the showBottomBar list in MainScaffold",
     "In NavGraph.kt: Remove the import for ServicesScreen. Keep the composable(Screen.Services.route) route definition so deep links still work but it is no longer in bottom nav",

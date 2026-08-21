@@ -91,6 +91,28 @@ class UserRepository {
     }
 
     /**
+     * Update user profile fields (name, handle, bio) in the 'users' table.
+     * Returns true on success, false on failure.
+     */
+    suspend fun updateProfile(userId: String, name: String?, handle: String?, bio: String?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val updates = mutableMapOf<String, String>()
+            name?.let { updates["name"] = it }
+            handle?.let { updates["handle"] = it }
+            bio?.let { updates["bio"] = it }
+
+            if (updates.isNotEmpty()) {
+                SupabaseClient.client.from("users").update(updates) {
+                    filter { eq("id", userId) }
+                }
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
      * Fetch creator profile from Supabase 'creator_profiles' table by user_id.
      * Returns null if not found (user may not be a creator).
      */

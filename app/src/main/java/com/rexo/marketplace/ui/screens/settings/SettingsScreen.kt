@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rexo.marketplace.RexoApplication
 import com.rexo.marketplace.data.remote.SupabaseClient
 import com.rexo.marketplace.data.repository.AuthRepository
 import com.rexo.marketplace.ui.theme.RexoColors
@@ -43,9 +44,18 @@ fun SettingsScreen(
     onNavigateToHelpSupport: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
-    // Preferences state
-    var selectedLanguage by remember { mutableStateOf("English") }
-    var selectedTheme by remember { mutableStateOf("System") }
+    // Preferences state - load from DataStore
+    val preferencesManager = remember { RexoApplication.preferencesManager }
+    val savedLanguage by preferencesManager.language.collectAsState(initial = "English")
+    val savedTheme by preferencesManager.themeMode.collectAsState(initial = "System")
+
+    var selectedLanguage by remember { mutableStateOf(savedLanguage) }
+    var selectedTheme by remember { mutableStateOf(savedTheme) }
+
+    // Sync with DataStore values when they load
+    LaunchedEffect(savedLanguage) { selectedLanguage = savedLanguage }
+    LaunchedEffect(savedTheme) { selectedTheme = savedTheme }
+
     var pushNotifications by remember { mutableStateOf(true) }
     var emailNotifications by remember { mutableStateOf(true) }
     var campaignAlerts by remember { mutableStateOf(true) }
@@ -316,6 +326,7 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     selectedLanguage = language
+                                    scope.launch { preferencesManager.setLanguage(language) }
                                     showLanguageDialog = false
                                 }
                                 .padding(vertical = 12.dp),
@@ -326,6 +337,7 @@ fun SettingsScreen(
                                 selected = selectedLanguage == language,
                                 onClick = {
                                     selectedLanguage = language
+                                    scope.launch { preferencesManager.setLanguage(language) }
                                     showLanguageDialog = false
                                 },
                                 colors = RadioButtonDefaults.colors(
@@ -369,6 +381,7 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     selectedTheme = theme
+                                    scope.launch { preferencesManager.setThemeMode(theme) }
                                     showThemeDialog = false
                                 }
                                 .padding(vertical = 12.dp),
@@ -379,6 +392,7 @@ fun SettingsScreen(
                                 selected = selectedTheme == theme,
                                 onClick = {
                                     selectedTheme = theme
+                                    scope.launch { preferencesManager.setThemeMode(theme) }
                                     showThemeDialog = false
                                 },
                                 colors = RadioButtonDefaults.colors(

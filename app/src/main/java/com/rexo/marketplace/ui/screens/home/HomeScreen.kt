@@ -210,26 +210,6 @@ fun HomeScreen(
                 )
             }
 
-            // Hero welcome card
-            item {
-                WelcomeCard(
-                    userName = userName,
-                    onWalletClick = onNavigateToWallet,
-                    onCampaignsClick = onNavigateToCampaigns,
-                    onProfileClick = onNavigateToProfile
-                )
-            }
-
-            // Quick stats row
-            item {
-                QuickStatsRow(
-                    activeApplications = activeApplications,
-                    totalEarnings = wallet?.total_earnings ?: 0.0,
-                    completedCampaigns = completedCampaigns,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
-            }
-
             // Featured campaigns section
             if (campaigns.isNotEmpty()) {
                 item {

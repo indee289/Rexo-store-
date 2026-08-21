@@ -91,7 +91,7 @@ sealed class Screen(val route: String) {
     object HelpSupport : Screen("help_support")
 }
 
-// Bottom navigation items - 5 tabs matching app blueprint
+// Bottom navigation items - 4 tabs
 sealed class BottomNavItem(
     val route: String,
     val title: String,
@@ -117,13 +117,6 @@ sealed class BottomNavItem(
         title = "Shop",
         selectedIcon = Icons.Filled.ShoppingCart,
         unselectedIcon = Icons.Outlined.ShoppingCart
-    )
-
-    object Services : BottomNavItem(
-        route = Screen.Services.route,
-        title = "Services",
-        selectedIcon = Icons.Filled.Handyman,
-        unselectedIcon = Icons.Outlined.Handyman
     )
 
     object Profile : BottomNavItem(
@@ -529,7 +522,6 @@ fun MainScaffold() {
         Screen.Home.route,
         Screen.Campaigns.route,
         Screen.Shop.route,
-        Screen.Services.route,
         Screen.Profile.route
     )
 
@@ -580,7 +572,6 @@ fun FloatingPillBottomNavigation(
         BottomNavItem.Home,
         BottomNavItem.Campaigns,
         BottomNavItem.Shop,
-        BottomNavItem.Services,
         BottomNavItem.Profile
     )
 
