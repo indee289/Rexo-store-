@@ -2,8 +2,18 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
+}
+
+// Apply google-services plugin only if google-services.json exists
+apply {
+    if (file("google-services.json").exists()) {
+        plugin("com.google.gms.google-services")
+        println("✅ google-services plugin applied (google-services.json found)")
+    } else {
+        println("⚠️  google-services.json not found, skipping google-services plugin")
+        println("⚠️  Firebase features will not be available")
+    }
 }
 
 android {
@@ -143,10 +153,16 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     
-    // Firebase Cloud Messaging
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-messaging-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
+    // Firebase Cloud Messaging (optional - only if google-services.json exists)
+    if (file("google-services.json").exists()) {
+        implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+        implementation("com.google.firebase:firebase-messaging-ktx")
+        implementation("com.google.firebase:firebase-analytics-ktx")
+    } else {
+        // Stub dependencies to prevent compilation errors
+        compileOnly("com.google.firebase:firebase-messaging-ktx:24.1.0")
+        compileOnly("com.google.firebase:firebase-analytics-ktx:22.1.2")
+    }
     
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
