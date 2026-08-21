@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { CapacitorHTTPClient } from '@supabase/supabase-js/dist/module/lib/fetch';
 import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp } from '@capacitor/core';
 
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -18,16 +18,48 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-// For native Capacitor app: use native HTTP client instead of browser fetch
-// This bypasses CORS and WebView restrictions
-let fetchImpl: any = fetch;
-if (Capacitor.isNativePlatform()) {
-  try {
-    fetchImpl = CapacitorHTTPClient;
-  } catch (e) {
-    console.warn('CapacitorHTTPClient not available, falling back to fetch');
-  }
-}
+// Create custom fetch for Capacitor native platform to bypass CORS/WebView restrictions
+const createCapacitorFetch = () => {
+  return async (url: string, options?: RequestInit) => {
+    if (!Capacitor.isNativePlatform()) {
+      // Fall back to regular fetch on web
+      return fetch(url, options);
+    }
+
+    try {
+      const method = options?.method || 'GET';
+      const headers: Record<string, string> = {};
+      
+      if (options?.headers) {
+        const headerObj = options.headers as Record<string, string> | Headers;
+        if (headerObj instanceof Headers) {
+          headerObj.forEach((value, key) => {
+            headers[key] = value;
+          });
+        } else {
+          Object.assign(headers, headerObj);
+        }
+      }
+
+      const response = await CapacitorHttp.request({
+        url: url as string,
+        method: method as any,
+        headers,
+        data: options?.body ? JSON.parse(options.body as string) : undefined,
+      });
+
+      return new Response(JSON.stringify(response.data), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: new Headers(response.headers),
+      });
+    } catch (error) {
+      console.error('Capacitor HTTP request failed:', error);
+      // Fall back to regular fetch on error
+      return fetch(url, options);
+    }
+  };
+};
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -37,10 +69,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storageKey: 'rexoglobal-auth-token',
   },
   global: {
-    fetch: fetchImpl,
-    headers: {
-      // Explicit headers to help debugging
-      'X-Client-Info': `supabase-js/${typeof globalThis !== 'undefined' ? 'mobile' : 'web'}`,
-    },
+    fetch: Capacitor.isNativePlatform() ? createCapacitorFetch() : undefined,
   },
 });
