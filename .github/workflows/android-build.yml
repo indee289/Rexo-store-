@@ -24,34 +24,12 @@ jobs:
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-
-    - name: Install Gradle manually
+      
+    - name: Install Gradle via APT
       run: |
-        cd /tmp
-        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-        unzip -q gradle-8.7-bin.zip
-        echo "/tmp/gradle-8.7/bin" >> $GITHUB_PATH
-        
-    - name: Verify Gradle installation
-      run: |
+        sudo apt-get update
+        sudo apt-get install -y gradle
         gradle --version
-        
-    - name: Generate Gradle Wrapper
-      run: |
-        cd $GITHUB_WORKSPACE
-        gradle wrapper --gradle-version=8.7 --distribution-type=bin
-        ls -lh gradle/wrapper/
-        ls -lh gradlew
-
-    - name: Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
 
     - name: Create google-services.json
       run: |
@@ -90,17 +68,9 @@ jobs:
     - name: Create local.properties
       run: |
         echo "sdk.dir=$ANDROID_HOME" > local.properties
-        echo "SUPABASE_URL=https://placeholder.supabase.co" >> local.properties
-        echo "SUPABASE_ANON_KEY=placeholder-key" >> local.properties
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
 
     - name: Build with Gradle
-      run: |
-        ./gradlew clean assembleDebug --stacktrace --no-daemon --warning-mode all
-      env:
-        JAVA_HOME: ${{ env.JAVA_HOME }}
+      run: gradle assembleDebug --stacktrace --no-daemon
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
