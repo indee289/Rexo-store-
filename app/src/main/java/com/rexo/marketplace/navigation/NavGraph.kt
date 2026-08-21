@@ -16,8 +16,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.rexo.marketplace.ui.screens.admin.AdminScreen
 import com.rexo.marketplace.ui.screens.auth.AuthScreen
+import com.rexo.marketplace.ui.screens.campaigns.CampaignsScreen
 import com.rexo.marketplace.ui.screens.home.HomeScreen
+import com.rexo.marketplace.ui.screens.notifications.NotificationsScreen
+import com.rexo.marketplace.ui.screens.profile.ProfileScreen
+import com.rexo.marketplace.ui.screens.settings.SettingsScreen
+import com.rexo.marketplace.ui.screens.shop.ShopScreen
 import com.rexo.marketplace.ui.screens.wallet.WalletScreen
 
 /**
@@ -133,12 +139,9 @@ fun RexoNavGraph(
             )
         }
         
-        // Campaigns Screen (Placeholder)
+        // Campaigns Screen
         composable(Screen.Campaigns.route) {
-            PlaceholderScreen(
-                title = "Campaigns",
-                subtitle = "Browse and apply to campaigns",
-                icon = Icons.Outlined.Campaign,
+            CampaignsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -150,52 +153,40 @@ fun RexoNavGraph(
             )
         }
         
-        // Notifications Screen (Placeholder)
+        // Notifications Screen
         composable(Screen.Notifications.route) {
-            PlaceholderScreen(
-                title = "Notifications",
-                subtitle = "Stay updated with latest activities",
-                icon = Icons.Outlined.Notifications,
+            NotificationsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
         
-        // Profile Screen (Placeholder)
+        // Profile Screen
         composable(Screen.Profile.route) {
-            PlaceholderScreen(
-                title = "Profile",
-                subtitle = "Manage your account and settings",
-                icon = Icons.Outlined.Person,
-                onNavigateBack = { navController.popBackStack() }
+            ProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                }
             )
         }
         
-        // Settings Screen (Placeholder)
+        // Settings Screen
         composable(Screen.Settings.route) {
-            PlaceholderScreen(
-                title = "Settings",
-                subtitle = "Configure your preferences",
-                icon = Icons.Outlined.Settings,
+            SettingsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
         
-        // Admin Screen (Placeholder)
+        // Admin Screen
         composable(Screen.Admin.route) {
-            PlaceholderScreen(
-                title = "Admin Center",
-                subtitle = "Manage users and campaigns",
-                icon = Icons.Outlined.AdminPanelSettings,
+            AdminScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
         
-        // Shop Screen (Placeholder)
+        // Shop Screen
         composable(Screen.Shop.route) {
-            PlaceholderScreen(
-                title = "Shop",
-                subtitle = "Browse products and orders",
-                icon = Icons.Outlined.ShoppingCart,
+            ShopScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
