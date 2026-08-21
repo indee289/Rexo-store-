@@ -25,11 +25,23 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-
+    - name: Install Gradle manually
+      run: |
+        cd /tmp
+        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+        unzip -q gradle-8.7-bin.zip
+        echo "/tmp/gradle-8.7/bin" >> $GITHUB_PATH
+        
+    - name: Verify Gradle installation
+      run: |
+        gradle --version
+        
     - name: Generate Gradle Wrapper
-      run: gradle wrapper --gradle-version=8.7 --distribution-type=bin
+      run: |
+        cd $GITHUB_WORKSPACE
+        gradle wrapper --gradle-version=8.7 --distribution-type=bin
+        ls -lh gradle/wrapper/
+        ls -lh gradlew
 
     - name: Cache Gradle packages
       uses: actions/cache@v4
