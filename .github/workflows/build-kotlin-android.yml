@@ -1,0 +1,307 @@
+name: Build Kotlin Android APK
+
+on:
+  push:
+    branches:
+      - Rexo-Kotlin
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - Rexo-Kotlin
+      - main
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Release Version (e.g. 1.0.0)'
+        required: false
+        default: '1.0.0'
+      build_type:
+        description: 'Build Type'
+        required: false
+        default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ============================================
+      # STEP 1: Checkout Code
+      # ============================================
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: true
+
+      # ============================================
+      # STEP 2: Setup Java JDK
+      # ============================================
+      - name: ☕ Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      # ============================================
+      # STEP 3: Setup Android SDK
+      # ============================================
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk-version: 26.1.10909125
+
+      # ============================================
+      # STEP 4: Cache Gradle Dependencies
+      # ============================================
+      - name: 📦 Cache Gradle Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/build-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # ============================================
+      # STEP 5: Create local.properties
+      # ============================================
+      - name: 🔧 Create local.properties
+        run: |
+          cat > local.properties << EOF
+          sdk.dir=$ANDROID_HOME
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
+          echo "✅ local.properties created"
+
+      # ============================================
+      # STEP 6: Create google-services.json
+      # ============================================
+      - name: 🔥 Create google-services.json
+        run: |
+          mkdir -p app
+          cat > app/google-services.json << 'EOF'
+          ${{ secrets.GOOGLE_SERVICES_JSON }}
+          EOF
+          echo "✅ google-services.json created"
+
+      # ============================================
+      # STEP 7: Decode and Setup Keystore (Release Only)
+      # ============================================
+      - name: 🔐 Setup Release Keystore
+        if: github.event.inputs.build_type == 'release' || contains(github.ref, 'tags/v')
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+          echo "storeFile=release.keystore" >> keystore.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+          echo "✅ Keystore configured"
+
+      # ============================================
+      # STEP 8: Grant Execute Permission to Gradlew
+      # ============================================
+      - name: 🔨 Grant Execute Permission
+        run: chmod +x gradlew
+
+      # ============================================
+      # STEP 9: Build Debug APK
+      # ============================================
+      - name: 🏗️ Build Debug APK
+        if: github.event.inputs.build_type == 'debug' || (github.event.inputs.build_type == '' && !contains(github.ref, 'tags/v'))
+        run: |
+          echo "Building Debug APK..."
+          ./gradlew assembleDebug --stacktrace --info
+          echo "✅ Debug APK built successfully"
+
+      # ============================================
+      # STEP 10: Build Release APK
+      # ============================================
+      - name: 🏗️ Build Release APK
+        if: github.event.inputs.build_type == 'release' || contains(github.ref, 'tags/v')
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "Building Release APK..."
+          ./gradlew assembleRelease --stacktrace --info
+          echo "✅ Release APK built successfully"
+
+      # ============================================
+      # STEP 11: Run Tests
+      # ============================================
+      - name: 🧪 Run Unit Tests
+        run: |
+          ./gradlew test --stacktrace
+          echo "✅ Tests completed"
+        continue-on-error: true
+
+      # ============================================
+      # STEP 12: Verify APK Signature (Release Only)
+      # ============================================
+      - name: ✔️ Verify APK Signature
+        if: github.event.inputs.build_type == 'release' || contains(github.ref, 'tags/v')
+        run: |
+          APKSIGNER=$(find $ANDROID_HOME/build-tools/ -name "apksigner" | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "❌ apksigner not found!"
+            exit 1
+          fi
+          
+          APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "❌ Release APK not found!"
+            exit 1
+          fi
+          
+          echo "Verifying APK: $APK_FILE"
+          $APKSIGNER verify --verbose "$APK_FILE"
+          echo "✅ APK signature verified"
+
+      # ============================================
+      # STEP 13: Rename APK Files
+      # ============================================
+      - name: 📝 Rename APK Files
+        run: |
+          VERSION="${{ github.event.inputs.version_name || '1.0.0' }}"
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          mkdir -p release-output
+          
+          # Find and rename Debug APK
+          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk \
+               "release-output/Rexo-Marketplace-v${VERSION}-debug-${COMMIT_SHA}.apk"
+            echo "✅ Debug APK renamed"
+          fi
+          
+          # Find and rename Release APK
+          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp app/build/outputs/apk/release/app-release.apk \
+               "release-output/Rexo-Marketplace-v${VERSION}-release-${COMMIT_SHA}.apk"
+            echo "✅ Release APK renamed"
+          fi
+          
+          ls -lh release-output/
+
+      # ============================================
+      # STEP 14: Upload Debug APK Artifact
+      # ============================================
+      - name: 📤 Upload Debug APK
+        if: github.event.inputs.build_type == 'debug' || (github.event.inputs.build_type == '' && !contains(github.ref, 'tags/v'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rexo-Marketplace-Debug-APK
+          path: release-output/*-debug-*.apk
+          retention-days: 30
+
+      # ============================================
+      # STEP 15: Upload Release APK Artifact
+      # ============================================
+      - name: 📤 Upload Release APK
+        if: github.event.inputs.build_type == 'release' || contains(github.ref, 'tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rexo-Marketplace-Release-APK
+          path: release-output/*-release-*.apk
+          retention-days: 90
+
+      # ============================================
+      # STEP 16: Create GitHub Release (Tags Only)
+      # ============================================
+      - name: 🚀 Create GitHub Release
+        if: contains(github.ref, 'tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Rexo Marketplace ${{ github.ref_name }}
+          body: |
+            ## 🎉 Rexo Marketplace - Native Kotlin Android
+            
+            ### 📱 Release Information
+            - **Version**: ${{ github.ref_name }}
+            - **Commit**: `${{ github.sha }}`
+            - **Build Date**: ${{ github.event.head_commit.timestamp }}
+            - **Branch**: Rexo-Kotlin
+            
+            ### ✨ Features
+            - ✅ Native Kotlin with Jetpack Compose
+            - ✅ Material 3 Design System
+            - ✅ MVVM Architecture with StateFlow
+            - ✅ Supabase Backend Integration
+            - ✅ Real-time Messaging
+            - ✅ Wallet & Escrow System
+            - ✅ Campaign Management
+            - ✅ E-commerce Shop
+            - ✅ Two-Factor Authentication
+            - ✅ Haptic Feedback & Animations
+            
+            ### 📦 Download
+            Download the APK below and install on your Android device.
+            
+            **Minimum Android Version**: Android 10 (API 29)  
+            **Target Android Version**: Android 14 (API 34)
+            
+            ### 🔐 Security
+            - APK is signed with release keystore
+            - All secrets managed via GitHub Secrets
+            - Supabase Row Level Security enabled
+            
+            ---
+            
+            **Built with ❤️ using Kotlin, Jetpack Compose & Material 3**
+          files: release-output/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================
+      # STEP 17: Cleanup
+      # ============================================
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          rm -f app/release.keystore
+          rm -f keystore.properties
+          rm -f local.properties
+          rm -f app/google-services.json
+          echo "✅ Cleanup completed"
+
+      # ============================================
+      # STEP 18: Build Summary
+      # ============================================
+      - name: 📊 Build Summary
+        if: always()
+        run: |
+          echo "## 📱 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Type | ${{ github.event.inputs.build_type || 'debug' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ github.event.inputs.version_name || '1.0.0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "release-output" ]; then
+            echo "### 📦 Generated APKs" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            ls -lh release-output/ >> $GITHUB_STEP_SUMMARY
+          fi
