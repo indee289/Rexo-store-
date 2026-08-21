@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Rebuild Wallet screen with real Supabase data and clean UI. Remove all fake balances, fake transactions. Connect to real wallets and transactions tables. Implement clean minimal design matching reference style.",
+  "status": "completed",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/wallet/WalletScreen.kt: Remove all hardcoded balances (15234.50), fake transaction lists, and fake statistics. Implement clean white UI with: balance card showing real available_balance from Supabase 'wallets' table, pending balance (escrow_balance), total earnings. Transaction list from 'transactions' table. Loading/empty/error states. Filter tabs (All, Income, Expense, Pending). Each transaction shows: icon, title, date, amount, status badge. Clean card style (no gradient/glass).",
+    "Update app/src/main/java/com/rexo/marketplace/ui/viewmodel/WalletViewModel.kt: Remove mock data from all fallback paths. Load wallet from Supabase 'wallets' table where user_id = current auth user. Load transactions from 'transactions' table where user_id = current auth user, ordered by created_at DESC. Expose proper loading/error/empty states. The deposit and withdraw actions should perform real Supabase operations.",
+    "Update app/src/main/java/com/rexo/marketplace/data/repository/WalletRepository.kt: Remove all mock data in catch blocks. Fetch wallet from 'wallets' where user_id matches. Fetch transactions from 'transactions' where user_id matches. Return proper errors instead of fake data. Use the authenticated user's ID from the current session.",
+    "Ensure Add Money and Withdraw dialogs perform real operations via Supabase (inserting into deposits/withdrawals tables with proper fields matching schema.sql)."
+  ],
+  "acceptance_criteria": [
+    "WalletScreen shows real balance from Supabase wallets table - no hardcoded values",
+    "Transactions list comes from Supabase transactions table - no fake entries",
+    "Proper loading state shown while fetching",
+    "Proper empty state when no wallet/transactions exist",
+    "Proper error state on network failure (user-friendly message, no Supabase URLs)",
+    "Add Money creates a real deposit request in Supabase",
+    "Withdraw creates a real withdrawal request in Supabase",
+    "Clean white UI with minimal cards, no glass/gradient effects",
+    "Code compiles correctly"
+  ],
+  "verification": [
+    "Run ./gradlew assembleDebug and confirm build passes"
+  ],
+  "blocked_reason": null,
+  "findings": "Wallet screen fully rewritten with real Supabase data. WalletRepository: fetches from 'wallets' and 'transactions' tables using auth user ID, deposits to 'deposits' table, withdrawals to 'withdrawals' table, no mock data fallbacks. Defined WalletFullDto (with escrow_balance, currency fields beyond the WalletDto in UserRepository). WalletViewModel: no-arg constructor, uses viewModel() pattern, exposes single WalletUiState with loading/error/success states. WalletScreen: clean white card design, balance card (available/pending/total earnings), filter tabs (All/Income/Expense/Pending), real transaction list with type-based icons and status badges, Add Money and Withdraw dialogs with real Supabase operations. All hardcoded values removed (15234.50, #RX12345, Premium account type, fake transactions). Build cannot be verified in sandbox (INTEGRATIONS_ONLY) but code follows existing patterns exactly."
+}

@@ -1,159 +1,102 @@
 package com.rexo.marketplace.ui.screens.campaigns
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.rexo.marketplace.ui.components.FloatingGlassCard
 import com.rexo.marketplace.ui.components.GlassSurface
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
-import java.text.SimpleDateFormat
-import java.util.*
+import com.rexo.marketplace.ui.viewmodel.CampaignItem
+import com.rexo.marketplace.ui.viewmodel.CampaignUiState
+import com.rexo.marketplace.ui.viewmodel.CampaignViewModel
 
 /**
- * Campaigns Screen - Browse and apply to campaigns
+ * Campaigns Screen (Tasks tab)
+ *
+ * Clean white design showing real campaigns from Supabase via CampaignViewModel.
  * Features:
- * - Search bar with filters
- * - Platform chips (Instagram, YouTube, TikTok, etc.)
- * - Campaign cards with details
- * - Apply modal/dialog
- * - Status badges
- * - Budget display
+ * - Search bar with category filter chips
+ * - Campaign cards showing brand, title, description, budget, deadline, slots
+ * - Campaign detail dialog when tapped
+ * - Apply button that submits real applications to Supabase
+ * - Proper loading/empty/error states
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CampaignsScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    campaignViewModel: CampaignViewModel? = null
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedPlatform by remember { mutableStateOf("All") }
-    var selectedCampaign by remember { mutableStateOf<Campaign?>(null) }
+    val viewModel = campaignViewModel
+
+    val uiState by viewModel?.uiState?.collectAsState()
+        ?: remember { mutableStateOf(CampaignUiState(isLoading = true)) }
+    val campaigns by viewModel?.campaigns?.collectAsState()
+        ?: remember { mutableStateOf(emptyList<CampaignItem>()) }
+    val totalCount by viewModel?.totalCount?.collectAsState()
+        ?: remember { mutableStateOf(0) }
+    val filteredCount by viewModel?.filteredCount?.collectAsState()
+        ?: remember { mutableStateOf(0) }
+    val searchQuery by viewModel?.searchQuery?.collectAsState()
+        ?: remember { mutableStateOf("") }
+    val selectedCategory by viewModel?.selectedCategory?.collectAsState()
+        ?: remember { mutableStateOf("All") }
+    val categories by viewModel?.categories?.collectAsState()
+        ?: remember { mutableStateOf(listOf("All")) }
+
+    var selectedCampaign by remember { mutableStateOf<CampaignItem?>(null) }
     var showApplyDialog by remember { mutableStateOf(false) }
-    
-    val platforms = listOf("All", "Instagram", "YouTube", "TikTok", "Twitter", "Facebook")
-    
-    val campaigns = remember {
-        listOf(
-            Campaign(
-                id = "1",
-                title = "Tech Product Launch Campaign",
-                brand = "TechBrand Inc.",
-                description = "Looking for tech influencers to promote our latest smartphone. Must have 10K+ followers and engagement rate above 3%.",
-                platform = "Instagram",
-                budget = 5000.0,
-                deadline = Date(System.currentTimeMillis() + 7 * 86400000),
-                applicants = 15,
-                status = CampaignStatus.OPEN,
-                requirements = listOf("10K+ followers", "3%+ engagement", "Tech niche"),
-                deliverables = listOf("3 Instagram posts", "5 stories", "1 reel")
-            ),
-            Campaign(
-                id = "2",
-                title = "Fashion Brand Collaboration",
-                brand = "StyleHub",
-                description = "Partner with us for our summer collection launch. Looking for fashion content creators.",
-                platform = "YouTube",
-                budget = 3500.0,
-                deadline = Date(System.currentTimeMillis() + 14 * 86400000),
-                applicants = 8,
-                status = CampaignStatus.OPEN,
-                requirements = listOf("5K+ subscribers", "Fashion content", "Video quality"),
-                deliverables = listOf("1 YouTube video", "3 shorts")
-            ),
-            Campaign(
-                id = "3",
-                title = "Food Review Series",
-                brand = "Foodie Network",
-                description = "Join our food review campaign and showcase local restaurants.",
-                platform = "TikTok",
-                budget = 2000.0,
-                deadline = Date(System.currentTimeMillis() + 10 * 86400000),
-                applicants = 20,
-                status = CampaignStatus.OPEN,
-                requirements = listOf("3K+ followers", "Food niche"),
-                deliverables = listOf("5 TikTok videos")
-            ),
-            Campaign(
-                id = "4",
-                title = "Gaming Tournament Sponsorship",
-                brand = "GameZone",
-                description = "Promote our gaming tournament to your audience.",
-                platform = "YouTube",
-                budget = 4500.0,
-                deadline = Date(System.currentTimeMillis() + 5 * 86400000),
-                applicants = 12,
-                status = CampaignStatus.URGENT,
-                requirements = listOf("Gaming content", "10K+ subs"),
-                deliverables = listOf("1 tournament stream", "3 promotional videos")
-            ),
-            Campaign(
-                id = "5",
-                title = "Fitness App Promotion",
-                brand = "FitLife",
-                description = "Help us promote our new fitness tracking app.",
-                platform = "Instagram",
-                budget = 3000.0,
-                deadline = Date(System.currentTimeMillis() + 20 * 86400000),
-                applicants = 18,
-                status = CampaignStatus.OPEN,
-                requirements = listOf("Fitness niche", "5K+ followers"),
-                deliverables = listOf("2 posts", "4 stories", "App review")
-            )
-        )
-    }
-    
-    val filteredCampaigns = remember(searchQuery, selectedPlatform) {
-        campaigns.filter { campaign ->
-            val matchesSearch = campaign.title.contains(searchQuery, ignoreCase = true) ||
-                                campaign.brand.contains(searchQuery, ignoreCase = true) ||
-                                campaign.description.contains(searchQuery, ignoreCase = true)
-            val matchesPlatform = selectedPlatform == "All" || campaign.platform == selectedPlatform
-            matchesSearch && matchesPlatform
+    var applyingCampaign by remember { mutableStateOf<CampaignItem?>(null) }
+    var proposalText by remember { mutableStateOf("") }
+
+    // Handle success state
+    LaunchedEffect(uiState.showSuccess) {
+        if (uiState.showSuccess) {
+            showApplyDialog = false
+            applyingCampaign = null
+            proposalText = ""
         }
     }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Campaigns",
+                        text = "Tasks",
                         style = RexoTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = RexoColors.TextPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO: Filter */ }) {
-                        Icon(Icons.Outlined.FilterList, contentDescription = "Filter")
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = RexoColors.TextPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = Color.White
                 )
             )
         }
@@ -166,288 +109,323 @@ fun CampaignsScreen(
         ) {
             // Search Bar
             item {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel?.updateSearchQuery(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    placeholder = {
+                        Text(
+                            "Search campaigns...",
+                            color = RexoColors.TextSecondary
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = "Search",
+                            tint = RexoColors.TextSecondary
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel?.updateSearchQuery("") }) {
+                                Icon(
+                                    Icons.Outlined.Clear,
+                                    contentDescription = "Clear",
+                                    tint = RexoColors.TextSecondary
+                                )
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = RexoColors.Gray50,
+                        unfocusedContainerColor = RexoColors.Gray50,
+                        focusedBorderColor = RexoColors.AccentOrange,
+                        unfocusedBorderColor = RexoColors.CardBorder
+                    ),
+                    singleLine = true
                 )
             }
-            
-            // Platform Filters
+
+            // Category Filter Chips
             item {
-                PlatformFilters(
-                    platforms = platforms,
-                    selectedPlatform = selectedPlatform,
-                    onPlatformSelected = { selectedPlatform = it },
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
+                LazyRow(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories) { category ->
+                        val isSelected = category == selectedCategory
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { viewModel?.selectCategory(category) },
+                            label = {
+                                Text(
+                                    text = category,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = RexoColors.AccentOrange,
+                                selectedLabelColor = Color.White,
+                                containerColor = RexoColors.Gray100,
+                                labelColor = RexoColors.TextSecondary
+                            )
+                        )
+                    }
+                }
             }
-            
-            // Results Count
+
+            // Campaign Count
             item {
                 Text(
-                    text = "${filteredCampaigns.size} Campaigns Available",
+                    text = "$filteredCount of $totalCount campaigns",
                     style = RexoTheme.typography.bodyMedium,
-                    color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    color = RexoColors.TextSecondary,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
-            
-            // Campaign Cards
-            items(filteredCampaigns) { campaign ->
-                CampaignCard(
-                    campaign = campaign,
-                    onClick = { selectedCampaign = campaign },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
-            }
-            
-            // Empty State
-            if (filteredCampaigns.isEmpty()) {
+
+            // Loading State
+            if (uiState.isLoading) {
                 item {
-                    EmptyState(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 60.dp)
-                    )
+                            .padding(vertical = 60.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = RexoColors.AccentOrange
+                        )
+                    }
+                }
+            }
+
+            // Error State
+            if (uiState.error != null && !uiState.isLoading) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 60.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ErrorOutline,
+                            contentDescription = "Error",
+                            modifier = Modifier.size(64.dp),
+                            tint = RexoColors.Error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Something went wrong",
+                            style = RexoTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = RexoColors.TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.error ?: "",
+                            style = RexoTheme.typography.bodySmall,
+                            color = RexoColors.TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            onClick = { viewModel?.loadCampaigns() },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Retry")
+                        }
+                    }
+                }
+            }
+
+            // Campaign Cards
+            if (!uiState.isLoading && uiState.error == null) {
+                if (campaigns.isEmpty()) {
+                    item {
+                        CampaignsEmptyState(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 60.dp)
+                        )
+                    }
+                } else {
+                    items(campaigns) { campaign ->
+                        CampaignCardItem(
+                            campaign = campaign,
+                            onClick = { selectedCampaign = campaign },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+                        )
+                    }
                 }
             }
         }
     }
-    
+
     // Campaign Details Dialog
     selectedCampaign?.let { campaign ->
-        CampaignDetailsDialog(
+        CampaignDetailDialog(
             campaign = campaign,
             onDismiss = { selectedCampaign = null },
             onApply = {
-                showApplyDialog = true
+                applyingCampaign = campaign
                 selectedCampaign = null
+                showApplyDialog = true
             }
         )
     }
-    
-    // Apply Confirmation Dialog
-    if (showApplyDialog) {
-        ApplyConfirmationDialog(
-            onDismiss = { showApplyDialog = false },
-            onConfirm = {
-                // TODO: Submit application
+
+    // Apply Dialog
+    if (showApplyDialog && applyingCampaign != null) {
+        ApplyDialog(
+            campaign = applyingCampaign!!,
+            proposal = proposalText,
+            onProposalChange = { proposalText = it },
+            isProcessing = uiState.isProcessing,
+            onDismiss = {
                 showApplyDialog = false
+                applyingCampaign = null
+                proposalText = ""
+            },
+            onSubmit = {
+                viewModel?.applyToCampaign(applyingCampaign!!.id, proposalText)
             }
         )
     }
-}
 
-data class Campaign(
-    val id: String,
-    val title: String,
-    val brand: String,
-    val description: String,
-    val platform: String,
-    val budget: Double,
-    val deadline: Date,
-    val applicants: Int,
-    val status: CampaignStatus,
-    val requirements: List<String>,
-    val deliverables: List<String>
-)
-
-enum class CampaignStatus {
-    OPEN, URGENT, CLOSED
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Search campaigns...") },
-        leadingIcon = {
-            Icon(Icons.Outlined.Search, contentDescription = "Search")
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Outlined.Clear, contentDescription = "Clear")
+    // Success Snackbar
+    if (uiState.showSuccess) {
+        AlertDialog(
+            onDismissRequest = { viewModel?.clearSuccess() },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = "Success",
+                    tint = RexoColors.Success,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Application Submitted!",
+                    style = RexoTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = uiState.successMessage ?: "Your application has been submitted successfully.",
+                    style = RexoTheme.typography.bodyMedium,
+                    color = RexoColors.TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel?.clearSuccess() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RexoColors.AccentOrange
+                    )
+                ) {
+                    Text("Got it")
                 }
             }
-        },
-        shape = RoundedCornerShape(16.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
-            unfocusedContainerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
-            focusedBorderColor = RexoTheme.colorScheme.primary,
-            unfocusedBorderColor = RexoTheme.colorScheme.outline.copy(alpha = 0.3f)
-        ),
-        singleLine = true
-    )
-}
-
-@Composable
-fun PlatformFilters(
-    platforms: List<String>,
-    selectedPlatform: String,
-    onPlatformSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(platforms) { platform ->
-            val isSelected = platform == selectedPlatform
-            
-            val backgroundColor by animateColorAsState(
-                targetValue = if (isSelected) RexoTheme.colorScheme.primary else RexoTheme.colorScheme.surfaceVariant,
-                animationSpec = tween(300),
-                label = "platform_bg"
-            )
-            
-            FilterChip(
-                selected = isSelected,
-                onClick = { onPlatformSelected(platform) },
-                label = {
-                    Text(
-                        text = platform,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                leadingIcon = if (platform != "All") {
-                    {
-                        Icon(
-                            imageVector = getPlatformIcon(platform),
-                            contentDescription = platform,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else null,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = backgroundColor,
-                    containerColor = backgroundColor
-                )
-            )
-        }
-    }
-}
-
-fun getPlatformIcon(platform: String): ImageVector {
-    return when (platform) {
-        "Instagram" -> Icons.Outlined.Camera
-        "YouTube" -> Icons.Outlined.PlayCircle
-        "TikTok" -> Icons.Outlined.MusicNote
-        "Twitter" -> Icons.Outlined.TagFaces
-        "Facebook" -> Icons.Outlined.Group
-        else -> Icons.Outlined.Public
+        )
     }
 }
 
 @Composable
-fun CampaignCard(
-    campaign: Campaign,
+private fun CampaignCardItem(
+    campaign: CampaignItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    
-    FloatingGlassCard(
+    GlassSurface(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
-            // Header
+            // Header: Category badge + Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Platform Badge
+                // Category badge
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = getPlatformColor(campaign.platform).copy(alpha = 0.15f)
+                    color = RexoColors.AccentOrange.copy(alpha = 0.1f)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = getPlatformIcon(campaign.platform),
-                            contentDescription = campaign.platform,
-                            modifier = Modifier.size(16.dp),
-                            tint = getPlatformColor(campaign.platform)
-                        )
-                        Text(
-                            text = campaign.platform,
-                            style = RexoTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = getPlatformColor(campaign.platform)
-                        )
-                    }
+                    Text(
+                        text = campaign.category,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = RexoTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RexoColors.AccentOrange
+                    )
                 }
-                
-                // Status Badge
-                if (campaign.status == CampaignStatus.URGENT) {
+
+                // Deliverable type
+                if (campaign.deliverableType.isNotBlank()) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFEF4444).copy(alpha = 0.15f)
+                        color = RexoColors.Gray100
                     ) {
                         Text(
-                            text = "🔥 URGENT",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            text = campaign.deliverableType,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = RexoTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFEF4444)
+                            color = RexoColors.TextSecondary
                         )
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Title
             Text(
                 text = campaign.title,
                 style = RexoTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = RexoColors.TextPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            
+
             Spacer(modifier = Modifier.height(4.dp))
-            
-            // Brand
+
+            // Brand name
             Text(
-                text = campaign.brand,
+                text = campaign.brandName,
                 style = RexoTheme.typography.bodyMedium,
-                color = RexoTheme.colorScheme.primary
+                color = RexoColors.AccentOrange,
+                fontWeight = FontWeight.Medium
             )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Description
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Description snippet
             Text(
                 text = campaign.description,
                 style = RexoTheme.typography.bodySmall,
-                color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                color = RexoColors.TextSecondary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Footer
+
+            // Footer: Budget + Deadline
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -458,76 +436,77 @@ fun CampaignCard(
                     Text(
                         text = "Budget",
                         style = RexoTheme.typography.labelSmall,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = RexoColors.TextSecondary
                     )
                     Text(
-                        text = "₹${String.format("%,.0f", campaign.budget)}",
+                        text = "\u20B9${String.format("%,.0f", campaign.budget)}",
                         style = RexoTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF10B981)
+                        color = RexoColors.Success
                     )
                 }
-                
+
                 // Deadline
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = "Deadline",
                         style = RexoTheme.typography.labelSmall,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = RexoColors.TextSecondary
                     )
                     Text(
-                        text = dateFormat.format(campaign.deadline),
+                        text = campaign.deadline.take(10).ifBlank { "No deadline" },
                         style = RexoTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = RexoColors.TextPrimary
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Applicants
+
+            // Slots progress
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Outlined.People,
-                    contentDescription = "Applicants",
+                    contentDescription = "Slots",
                     modifier = Modifier.size(16.dp),
-                    tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    tint = RexoColors.TextSecondary
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${campaign.applicants} applicants",
+                    text = "${campaign.filledSlots}/${campaign.slots} slots filled",
                     style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = RexoColors.TextSecondary
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                // Progress bar
+                LinearProgressIndicator(
+                    progress = {
+                        if (campaign.slots > 0) campaign.filledSlots.toFloat() / campaign.slots.toFloat() else 0f
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp),
+                    color = RexoColors.AccentOrange,
+                    trackColor = RexoColors.Gray200
                 )
             }
         }
     }
 }
 
-fun getPlatformColor(platform: String): Color {
-    return when (platform) {
-        "Instagram" -> Color(0xFFE4405F)
-        "YouTube" -> Color(0xFFFF0000)
-        "TikTok" -> Color(0xFF000000)
-        "Twitter" -> Color(0xFF1DA1F2)
-        "Facebook" -> Color(0xFF1877F2)
-        else -> Color(0xFF6366F1)
-    }
-}
-
 @Composable
-fun CampaignDetailsDialog(
-    campaign: Campaign,
+private fun CampaignDetailDialog(
+    campaign: CampaignItem,
     onDismiss: () -> Unit,
     onApply: () -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    
     Dialog(onDismissRequest = onDismiss) {
-        GlassSurface(
-            shape = RoundedCornerShape(28.dp),
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -544,122 +523,77 @@ fun CampaignDetailsDialog(
                     Text(
                         text = "Campaign Details",
                         style = RexoTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = RexoColors.TextPrimary
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Outlined.Close, contentDescription = "Close")
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Platform
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = getPlatformColor(campaign.platform).copy(alpha = 0.15f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
                         Icon(
-                            imageVector = getPlatformIcon(campaign.platform),
-                            contentDescription = campaign.platform,
-                            modifier = Modifier.size(20.dp),
-                            tint = getPlatformColor(campaign.platform)
-                        )
-                        Text(
-                            text = campaign.platform,
-                            style = RexoTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = getPlatformColor(campaign.platform)
+                            Icons.Outlined.Close,
+                            contentDescription = "Close",
+                            tint = RexoColors.TextSecondary
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
+                // Category + Deliverable type
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = RexoColors.AccentOrange.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = campaign.category,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = RexoTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = RexoColors.AccentOrange
+                        )
+                    }
+                    if (campaign.deliverableType.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = RexoColors.Gray100
+                        ) {
+                            Text(
+                                text = campaign.deliverableType,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                style = RexoTheme.typography.labelSmall,
+                                color = RexoColors.TextSecondary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // Title & Brand
                 Text(
                     text = campaign.title,
                     style = RexoTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = RexoColors.TextPrimary
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "by ${campaign.brand}",
+                    text = "by ${campaign.brandName}",
                     style = RexoTheme.typography.bodyMedium,
-                    color = RexoTheme.colorScheme.primary
+                    color = RexoColors.AccentOrange
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Description
                 Text(
                     text = campaign.description,
                     style = RexoTheme.typography.bodyMedium,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    color = RexoColors.TextSecondary
                 )
-                
+
                 Spacer(modifier = Modifier.height(20.dp))
-                
-                // Requirements
-                Text(
-                    text = "Requirements",
-                    style = RexoTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                campaign.requirements.forEach { req ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = RexoTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = req,
-                            style = RexoTheme.typography.bodySmall
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Deliverables
-                Text(
-                    text = "Deliverables",
-                    style = RexoTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                campaign.deliverables.forEach { deliverable ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Assignment,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = RexoTheme.colorScheme.secondary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = deliverable,
-                            style = RexoTheme.typography.bodySmall
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(20.dp))
-                
-                // Stats
+
+                // Stats row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -668,39 +602,70 @@ fun CampaignDetailsDialog(
                         Text(
                             text = "Budget",
                             style = RexoTheme.typography.labelSmall,
-                            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = RexoColors.TextSecondary
                         )
                         Text(
-                            text = "₹${String.format("%,.0f", campaign.budget)}",
+                            text = "\u20B9${String.format("%,.0f", campaign.budget)}",
                             style = RexoTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF10B981)
+                            color = RexoColors.Success
                         )
                     }
-                    
-                    Column(horizontalAlignment = Alignment.End) {
+                    Column {
                         Text(
-                            text = "Deadline",
+                            text = "Per Creator",
                             style = RexoTheme.typography.labelSmall,
-                            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = RexoColors.TextSecondary
                         )
                         Text(
-                            text = dateFormat.format(campaign.deadline),
-                            style = RexoTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
+                            text = "\u20B9${String.format("%,.0f", campaign.payoutPerCreator)}",
+                            style = RexoTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = RexoColors.TextPrimary
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Slots",
+                            style = RexoTheme.typography.labelSmall,
+                            color = RexoColors.TextSecondary
+                        )
+                        Text(
+                            text = "${campaign.filledSlots}/${campaign.slots}",
+                            style = RexoTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = RexoColors.TextPrimary
                         )
                     }
                 }
-                
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Deadline
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Schedule,
+                        contentDescription = "Deadline",
+                        modifier = Modifier.size(16.dp),
+                        tint = RexoColors.TextSecondary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Deadline: ${campaign.deadline.take(10).ifBlank { "Not set" }}",
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.TextSecondary
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Apply Button
                 Button(
                     onClick = onApply,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = RexoTheme.colorScheme.primary
+                        containerColor = RexoColors.AccentOrange
                     )
                 ) {
                     Icon(
@@ -709,7 +674,11 @@ fun CampaignDetailsDialog(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Apply Now", style = RexoTheme.typography.titleMedium)
+                    Text(
+                        "Apply Now",
+                        style = RexoTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -717,47 +686,102 @@ fun CampaignDetailsDialog(
 }
 
 @Composable
-fun ApplyConfirmationDialog(
+private fun ApplyDialog(
+    campaign: CampaignItem,
+    proposal: String,
+    onProposalChange: (String) -> Unit,
+    isProcessing: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onSubmit: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Outlined.CheckCircle,
-                contentDescription = "Success",
-                tint = Color(0xFF10B981),
-                modifier = Modifier.size(48.dp)
-            )
-        },
-        title = {
-            Text(
-                text = "Application Submitted!",
-                style = RexoTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Text(
-                text = "Your application has been submitted successfully. The brand will review it and get back to you soon.",
-                style = RexoTheme.typography.bodyMedium,
-                color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                shape = RoundedCornerShape(12.dp)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth()
             ) {
-                Text("Got it")
+                Text(
+                    text = "Apply to Campaign",
+                    style = RexoTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = RexoColors.TextPrimary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = campaign.title,
+                    style = RexoTheme.typography.bodyMedium,
+                    color = RexoColors.TextSecondary
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                OutlinedTextField(
+                    value = proposal,
+                    onValueChange = onProposalChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    placeholder = {
+                        Text(
+                            "Write your pitch or proposal...",
+                            color = RexoColors.TextSecondary
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RexoColors.AccentOrange,
+                        unfocusedBorderColor = RexoColors.CardBorder
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = onSubmit,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = proposal.isNotBlank() && !isProcessing,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RexoColors.AccentOrange
+                        )
+                    ) {
+                        if (isProcessing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Submit")
+                        }
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 @Composable
-fun EmptyState(modifier: Modifier = Modifier) {
+private fun CampaignsEmptyState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -766,21 +790,24 @@ fun EmptyState(modifier: Modifier = Modifier) {
             imageVector = Icons.Outlined.SearchOff,
             contentDescription = "No campaigns",
             modifier = Modifier.size(80.dp),
-            tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+            tint = RexoColors.Gray300
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = "No campaigns found",
             style = RexoTheme.typography.titleMedium,
-            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            fontWeight = FontWeight.SemiBold,
+            color = RexoColors.TextPrimary
         )
-        
+
+        Spacer(modifier = Modifier.height(4.dp))
+
         Text(
-            text = "Try adjusting your filters",
+            text = "Try adjusting your search or filters",
             style = RexoTheme.typography.bodySmall,
-            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            color = RexoColors.TextSecondary
         )
     }
 }

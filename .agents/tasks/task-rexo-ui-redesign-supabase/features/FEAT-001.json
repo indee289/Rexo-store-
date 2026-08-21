@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Complete UI theme overhaul from purple/glassmorphism to clean white/minimal design matching the reference screenshots. Update the color scheme, remove glass effects, implement clean card borders, and establish the new design system foundation that all screens will use.",
+  "status": "completed",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/theme/Color.kt: Replace the Indigo/Rose/Slate color scheme with the reference design colors. Primary: Black (#1A1A1A) for headings. Accent: Orange-Red (#FF4500) for CTAs. Success: Green (#22C55E). Background: White (#FFFFFF). Surface: White (#FFFFFF). Card borders: Light gray (#F0F0F0). Text Primary: Black (#1A1A1A). Text Secondary: Gray (#6B7280). Keep both light and dark color schemes but make light the visual default. Bottom nav active: Orange-Red.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/theme/Theme.kt: Disable dynamic color by default (set dynamicColor = false in RexoMarketplaceTheme). The app should always use the custom clean white theme, not Material You dynamic colors.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/theme/Shape.kt: Reduce corner radii to match reference. Cards: 12-16dp. Buttons: 8-12dp. Inputs: 8-12dp. Chips: fully rounded. Keep it subtle and clean.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/components/GlassSurface.kt: Replace GlassSurface with a clean card component (RexoCard). No blur, no glass effect, no gradient overlays. Use white background with subtle light gray border (1dp, #F0F0F0), minimal elevation (0-2dp). FloatingGlassCard should become a simple elevated card. Keep the same function signatures/names to avoid breaking other files that import them, but change the visual appearance.",
+    "Update app/src/main/res/values/colors.xml: Update brand colors to match new scheme. Primary: #1A1A1A (black), Accent: #FF4500 (orange-red), ic_launcher_background: #FFFFFF (white), splash_background: #FFFFFF.",
+    "Update app/src/main/java/com/rexo/marketplace/ui/theme/Type.kt if needed to ensure typography uses standard system font with proper weight hierarchy."
+  ],
+  "acceptance_criteria": [
+    "Color.kt defines LightColorScheme with white background, black text, orange-red primary accent",
+    "Theme.kt has dynamicColor defaulting to false",
+    "GlassSurface.kt components render as clean white cards with light gray borders, no blur/glass effects",
+    "All files compile correctly with no unresolved references",
+    "The theme changes produce a clean, white, minimal appearance"
+  ],
+  "verification": [
+    "Run ./gradlew assembleDebug and confirm build passes"
+  ],
+  "blocked_reason": null,
+  "findings": "Build verification cannot be performed in this sandbox due to a pre-existing environment issue: Java 25.0.2 is installed but the Kotlin compiler (used by AGP) cannot parse that version (IllegalArgumentException: 25.0.2). This failure occurs identically on the base branch without any of our changes. The context.json confirms this is expected: 'Cannot run Gradle builds (no internet to resolve dependencies). Use AST-level validation.' All modified files were validated for correct imports, references, and syntax consistency. themes.xml was also updated to reference new color resource names since the old indigo/rose names were removed from colors.xml. Type.kt was reviewed and already has proper weight hierarchy (ExtraBold > Bold > SemiBold > Normal) so no changes were needed."
+}

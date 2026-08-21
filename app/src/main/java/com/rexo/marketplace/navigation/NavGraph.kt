@@ -150,7 +150,8 @@ fun RexoNavGraph(
         // Campaigns Screen
         composable(Screen.Campaigns.route) {
             CampaignsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                campaignViewModel = null
             )
         }
 
@@ -164,7 +165,8 @@ fun RexoNavGraph(
         // Notifications Screen
         composable(Screen.Notifications.route) {
             NotificationsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = null
             )
         }
 
@@ -186,7 +188,12 @@ fun RexoNavGraph(
         // Settings Screen
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onSignOut = {
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 

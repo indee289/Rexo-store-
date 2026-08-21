@@ -1,18 +1,13 @@
 package com.rexo.marketplace.ui.screens.notifications
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,93 +18,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.rexo.marketplace.ui.components.GlassSurface
+import com.rexo.marketplace.data.repository.NotificationDto
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
-import java.text.SimpleDateFormat
-import java.util.*
+import com.rexo.marketplace.ui.viewmodel.NotificationViewModel
 
 /**
- * Notifications Screen - View all notifications
+ * Notifications Screen
+ *
+ * Clean white design showing real notifications from Supabase.
  * Features:
- * - Filter tabs (All, Campaigns, Payments, Updates)
- * - Notification cards with icons
- * - Mark as read functionality
- * - Time formatting
- * - Empty state
+ * - Fetches from 'notifications' table where user_id = current user
+ * - Notifications ordered by created_at DESC
+ * - Mark as read on tap
+ * - Mark all as read button
+ * - Icon based on notification type
+ * - Time ago format
+ * - Proper loading/empty/error states
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    viewModel: NotificationViewModel? = null
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("All", "Campaigns", "Payments", "Updates")
-    
-    val notifications = remember {
-        listOf(
-            NotificationItem(
-                id = "1",
-                title = "Campaign Payment Received",
-                message = "You received ₹5,000 for Tech Product Launch campaign",
-                type = NotificationType.PAYMENT,
-                timestamp = Date(System.currentTimeMillis() - 3600000),
-                isRead = false
-            ),
-            NotificationItem(
-                id = "2",
-                title = "New Campaign Available",
-                message = "Fashion Brand Collaboration campaign matches your profile",
-                type = NotificationType.CAMPAIGN,
-                timestamp = Date(System.currentTimeMillis() - 7200000),
-                isRead = false
-            ),
-            NotificationItem(
-                id = "3",
-                title = "Application Approved",
-                message = "Your application for Gaming Tournament campaign was approved!",
-                type = NotificationType.CAMPAIGN,
-                timestamp = Date(System.currentTimeMillis() - 86400000),
-                isRead = true
-            ),
-            NotificationItem(
-                id = "4",
-                title = "Withdrawal Processed",
-                message = "Your withdrawal of ₹10,000 has been processed successfully",
-                type = NotificationType.PAYMENT,
-                timestamp = Date(System.currentTimeMillis() - 172800000),
-                isRead = true
-            ),
-            NotificationItem(
-                id = "5",
-                title = "Profile Update",
-                message = "Your KYC verification has been approved",
-                type = NotificationType.UPDATE,
-                timestamp = Date(System.currentTimeMillis() - 259200000),
-                isRead = true
-            ),
-            NotificationItem(
-                id = "6",
-                title = "Campaign Deadline Reminder",
-                message = "Food Review Series campaign deadline is in 2 days",
-                type = NotificationType.CAMPAIGN,
-                timestamp = Date(System.currentTimeMillis() - 345600000),
-                isRead = true
-            )
-        )
-    }
-    
-    val filteredNotifications = remember(selectedTab) {
-        when (tabs[selectedTab]) {
-            "Campaigns" -> notifications.filter { it.type == NotificationType.CAMPAIGN }
-            "Payments" -> notifications.filter { it.type == NotificationType.PAYMENT }
-            "Updates" -> notifications.filter { it.type == NotificationType.UPDATE }
-            else -> notifications
-        }
-    }
-    
-    val unreadCount = notifications.count { !it.isRead }
+    val vm = viewModel
+
+    val uiState by vm?.uiState?.collectAsState()
+        ?: remember { mutableStateOf(com.rexo.marketplace.ui.viewmodel.NotificationUiState(isLoading = true)) }
+    val notifications by vm?.notifications?.collectAsState()
+        ?: remember { mutableStateOf(emptyList<NotificationDto>()) }
+
+    val unreadCount = notifications.count { !it.is_read }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = {
@@ -117,241 +60,261 @@ fun NotificationsScreen(
                         Text(
                             text = "Notifications",
                             style = RexoTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = RexoColors.TextPrimary
                         )
                         if (unreadCount > 0) {
                             Text(
                                 text = "$unreadCount unread",
                                 style = RexoTheme.typography.bodySmall,
-                                color = RexoTheme.colorScheme.primary
+                                color = RexoColors.AccentOrange
                             )
                         }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = RexoColors.TextPrimary
+                        )
                     }
                 },
                 actions = {
                     if (unreadCount > 0) {
-                        TextButton(onClick = { /* TODO: Mark all as read */ }) {
-                            Text("Mark all read", style = RexoTheme.typography.bodySmall)
+                        TextButton(onClick = { vm?.markAllAsRead() }) {
+                            Text(
+                                "Mark all read",
+                                style = RexoTheme.typography.bodySmall,
+                                color = RexoColors.AccentOrange
+                            )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = Color.White
                 )
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = 80.dp)
-        ) {
-            // Filter Tabs
-            item {
-                NotificationTabs(
-                    tabs = tabs,
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = RexoColors.AccentOrange)
+                }
             }
-            
-            // Notifications List
-            items(filteredNotifications) { notification ->
-                NotificationCard(
-                    notification = notification,
-                    onClick = { /* TODO: Handle click */ },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                )
+
+            uiState.error != null -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.ErrorOutline,
+                        contentDescription = "Error",
+                        modifier = Modifier.size(64.dp),
+                        tint = RexoColors.Error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Failed to load notifications",
+                        style = RexoTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RexoColors.TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = uiState.error ?: "",
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = { vm?.loadNotifications() },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Retry")
+                    }
+                }
             }
-            
-            // Empty State
-            if (filteredNotifications.isEmpty()) {
-                item {
-                    EmptyNotifications(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 60.dp)
+
+            notifications.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.NotificationsNone,
+                        contentDescription = "No notifications",
+                        modifier = Modifier.size(80.dp),
+                        tint = RexoColors.Gray300
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No notifications yet",
+                        style = RexoTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RexoColors.TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "You're all caught up!",
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.TextSecondary
                     )
                 }
             }
-        }
-    }
-}
 
-data class NotificationItem(
-    val id: String,
-    val title: String,
-    val message: String,
-    val type: NotificationType,
-    val timestamp: Date,
-    val isRead: Boolean
-)
-
-enum class NotificationType {
-    CAMPAIGN, PAYMENT, UPDATE
-}
-
-@Composable
-fun NotificationTabs(
-    tabs: List<String>,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        itemsIndexed(tabs) { index, tab ->
-            val isSelected = index == selectedTab
-            
-            val backgroundColor by animateColorAsState(
-                targetValue = if (isSelected) RexoTheme.colorScheme.primary else RexoTheme.colorScheme.surfaceVariant,
-                animationSpec = tween(300),
-                label = "tab_bg"
-            )
-            
-            FilterChip(
-                selected = isSelected,
-                onClick = { onTabSelected(index) },
-                label = {
-                    Text(
-                        text = tab,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = backgroundColor,
-                    containerColor = backgroundColor
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun NotificationCard(
-    notification: NotificationItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()) }
-    val (icon, iconColor) = getNotificationIconAndColor(notification.type)
-    
-    GlassSurface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        backgroundColor = if (!notification.isRead) {
-            RexoTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        } else {
-            RexoTheme.colorScheme.surface.copy(alpha = 0.5f)
-        }
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Icon
-            Surface(
-                shape = CircleShape,
-                color = iconColor.copy(alpha = 0.15f),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = notification.type.name,
-                    modifier = Modifier.padding(12.dp),
-                    tint = iconColor
-                )
-            }
-            
-            // Content
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    Text(
-                        text = notification.title,
-                        style = RexoTheme.typography.bodyMedium,
-                        fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    if (!notification.isRead) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(RexoTheme.colorScheme.primary)
+                    items(notifications) { notification ->
+                        NotificationListItem(
+                            notification = notification,
+                            onClick = {
+                                if (!notification.is_read) {
+                                    vm?.markAsRead(notification.id)
+                                }
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 20.dp),
+                            color = RexoColors.CardBorder
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = notification.message,
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = dateFormat.format(notification.timestamp),
-                    style = RexoTheme.typography.labelSmall,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
             }
         }
     }
 }
 
-fun getNotificationIconAndColor(type: NotificationType): Pair<ImageVector, Color> {
-    return when (type) {
-        NotificationType.CAMPAIGN -> Icons.Outlined.Campaign to Color(0xFF6366F1)
-        NotificationType.PAYMENT -> Icons.Outlined.Payments to Color(0xFF10B981)
-        NotificationType.UPDATE -> Icons.Outlined.Info to Color(0xFFF59E0B)
+@Composable
+private fun NotificationListItem(
+    notification: NotificationDto,
+    onClick: () -> Unit
+) {
+    val (icon, iconColor) = getTypeIconAndColor(notification.type)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Icon
+        Surface(
+            shape = CircleShape,
+            color = iconColor.copy(alpha = 0.1f),
+            modifier = Modifier.size(44.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = notification.type,
+                modifier = Modifier.padding(10.dp),
+                tint = iconColor
+            )
+        }
+
+        // Content
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = notification.title,
+                    style = RexoTheme.typography.bodyMedium,
+                    fontWeight = if (!notification.is_read) FontWeight.Bold else FontWeight.SemiBold,
+                    color = RexoColors.TextPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (!notification.is_read) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(RexoColors.AccentOrange)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = notification.body,
+                style = RexoTheme.typography.bodySmall,
+                color = RexoColors.TextSecondary,
+                maxLines = 2
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = formatTimeAgo(notification.created_at),
+                style = RexoTheme.typography.labelSmall,
+                color = RexoColors.Gray400
+            )
+        }
     }
 }
 
-@Composable
-fun EmptyNotifications(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.NotificationsNone,
-            contentDescription = "No notifications",
-            modifier = Modifier.size(80.dp),
-            tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "No notifications",
-            style = RexoTheme.typography.titleMedium,
-            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        
-        Text(
-            text = "You're all caught up!",
-            style = RexoTheme.typography.bodySmall,
-            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-        )
+private fun getTypeIconAndColor(type: String): Pair<ImageVector, Color> {
+    return when (type.lowercase()) {
+        "campaign", "campaign_update" -> Icons.Outlined.Campaign to Color(0xFF6366F1)
+        "payment", "payout" -> Icons.Outlined.Payments to RexoColors.Success
+        "application", "approval" -> Icons.Outlined.CheckCircle to RexoColors.Success
+        "warning", "alert" -> Icons.Outlined.Warning to RexoColors.Warning
+        "system" -> Icons.Outlined.Settings to RexoColors.Gray500
+        else -> Icons.Outlined.Notifications to RexoColors.AccentOrange
+    }
+}
+
+/**
+ * Format a timestamp string (ISO 8601) into a relative "time ago" format.
+ */
+private fun formatTimeAgo(timestamp: String?): String {
+    if (timestamp.isNullOrBlank()) return ""
+    return try {
+        // Parse ISO timestamp (e.g., "2024-01-15T10:30:00+00:00")
+        val dateStr = timestamp.replace("T", " ").take(19)
+        val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        val date = format.parse(dateStr) ?: return timestamp.take(10)
+        val now = System.currentTimeMillis()
+        val diff = now - date.time
+
+        val minutes = diff / (1000 * 60)
+        val hours = minutes / 60
+        val days = hours / 24
+
+        when {
+            minutes < 1 -> "Just now"
+            minutes < 60 -> "${minutes}m ago"
+            hours < 24 -> "${hours}h ago"
+            days < 7 -> "${days}d ago"
+            days < 30 -> "${days / 7}w ago"
+            else -> timestamp.take(10)
+        }
+    } catch (_: Exception) {
+        timestamp.take(10)
     }
 }

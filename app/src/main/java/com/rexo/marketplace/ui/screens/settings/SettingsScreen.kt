@@ -14,45 +14,60 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.rexo.marketplace.ui.components.GlassSurface
+import com.rexo.marketplace.data.repository.AuthRepository
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
+import kotlinx.coroutines.launch
 
 /**
- * Settings Screen - App preferences and configuration
- * Features:
- * - Theme toggle (Light/Dark)
- * - Notification preferences
- * - Account settings
- * - About/Help
- * - Version info
+ * Settings Screen
+ *
+ * Clean white UI with:
+ * - Theme toggle (UI only for now)
+ * - Notification preferences (UI only for now)
+ * - About section with app version 1.0.0
+ * - Sign Out option that calls AuthRepository.signOut()
+ * - Settings items styled like ProfileScreen (icon + label + arrow)
+ * - No debug/development panels
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onSignOut: () -> Unit = {}
 ) {
     var darkMode by remember { mutableStateOf(false) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
-    var emailNotifications by remember { mutableStateOf(true) }
     var pushNotifications by remember { mutableStateOf(true) }
+    var emailNotifications by remember { mutableStateOf(true) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
+    var isSigningOut by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+    val authRepository = remember { AuthRepository() }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Settings",
                         style = RexoTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = RexoColors.TextPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = RexoColors.TextPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = Color.White
                 )
             )
         }
@@ -61,41 +76,41 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // Appearance Section
             item {
-                SectionHeader("Appearance")
+                SettingsSectionHeader("Appearance")
             }
-            
+
             item {
-                SettingsSwitchItem(
+                SettingsToggleItem(
                     icon = Icons.Outlined.DarkMode,
                     title = "Dark Mode",
-                    subtitle = "Enable dark theme",
+                    subtitle = "Switch to dark theme",
                     checked = darkMode,
                     onCheckedChange = { darkMode = it }
                 )
             }
-            
+
             // Notifications Section
             item {
-                SectionHeader("Notifications")
+                SettingsSectionHeader("Notifications")
             }
-            
+
             item {
-                SettingsSwitchItem(
+                SettingsToggleItem(
                     icon = Icons.Outlined.Notifications,
                     title = "Push Notifications",
-                    subtitle = "Receive notifications on your device",
+                    subtitle = "Receive push notifications",
                     checked = pushNotifications,
                     onCheckedChange = { pushNotifications = it }
                 )
             }
-            
+
             item {
-                SettingsSwitchItem(
+                SettingsToggleItem(
                     icon = Icons.Outlined.Email,
                     title = "Email Notifications",
                     subtitle = "Receive updates via email",
@@ -103,132 +118,145 @@ fun SettingsScreen(
                     onCheckedChange = { emailNotifications = it }
                 )
             }
-            
-            // Account Section
+
+            // About Section
             item {
-                SectionHeader("Account")
+                SettingsSectionHeader("About")
             }
-            
+
             item {
-                SettingsItem(
-                    icon = Icons.Outlined.Security,
-                    title = "Privacy & Security",
-                    subtitle = "Manage your privacy settings",
-                    onClick = { /* TODO */ }
+                SettingsNavItem(
+                    icon = Icons.Outlined.Info,
+                    title = "App Version",
+                    subtitle = "1.0.0",
+                    onClick = { }
                 )
             }
-            
+
             item {
-                SettingsItem(
-                    icon = Icons.Outlined.Language,
-                    title = "Language",
-                    subtitle = "English (US)",
-                    onClick = { /* TODO */ }
-                )
-            }
-            
-            item {
-                SettingsItem(
-                    icon = Icons.Outlined.Storage,
-                    title = "Storage & Cache",
-                    subtitle = "Manage app data",
-                    onClick = { /* TODO */ }
-                )
-            }
-            
-            // Support Section
-            item {
-                SectionHeader("Support")
-            }
-            
-            item {
-                SettingsItem(
-                    icon = Icons.Outlined.Help,
-                    title = "Help Center",
-                    subtitle = "Get help and support",
-                    onClick = { /* TODO */ }
-                )
-            }
-            
-            item {
-                SettingsItem(
-                    icon = Icons.Outlined.Feedback,
-                    title = "Send Feedback",
-                    subtitle = "Share your thoughts",
-                    onClick = { /* TODO */ }
-                )
-            }
-            
-            item {
-                SettingsItem(
+                SettingsNavItem(
                     icon = Icons.Outlined.Policy,
                     title = "Terms & Privacy",
                     subtitle = "Read our policies",
-                    onClick = { /* TODO */ }
+                    onClick = { }
                 )
             }
-            
-            // About Section
+
             item {
-                SectionHeader("About")
-            }
-            
-            item {
-                SettingsItem(
-                    icon = Icons.Outlined.Info,
-                    title = "App Version",
-                    subtitle = "1.0.0 (Build 1)",
-                    onClick = { /* TODO */ }
+                SettingsNavItem(
+                    icon = Icons.Outlined.Help,
+                    title = "Help Center",
+                    subtitle = "Get help and support",
+                    onClick = { }
                 )
             }
-            
-            // Danger Zone
+
+            // Account Section
             item {
-                Spacer(modifier = Modifier.height(12.dp))
+                SettingsSectionHeader("Account")
             }
-            
+
             item {
-                SettingsItem(
-                    icon = Icons.Outlined.Delete,
-                    title = "Delete Account",
-                    subtitle = "Permanently delete your account",
-                    onClick = { /* TODO */ },
-                    textColor = Color(0xFFEF4444)
+                SettingsNavItem(
+                    icon = Icons.Outlined.Logout,
+                    title = "Sign Out",
+                    subtitle = "Sign out of your account",
+                    onClick = { showSignOutDialog = true },
+                    textColor = RexoColors.Error
                 )
             }
         }
     }
+
+    // Sign Out Confirmation Dialog
+    if (showSignOutDialog) {
+        AlertDialog(
+            onDismissRequest = { showSignOutDialog = false },
+            title = {
+                Text(
+                    text = "Sign Out",
+                    style = RexoTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = RexoColors.TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to sign out?",
+                    style = RexoTheme.typography.bodyMedium,
+                    color = RexoColors.TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isSigningOut = true
+                        scope.launch {
+                            authRepository.signOut()
+                            isSigningOut = false
+                            showSignOutDialog = false
+                            onSignOut()
+                        }
+                    },
+                    enabled = !isSigningOut,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RexoColors.Error
+                    )
+                ) {
+                    if (isSigningOut) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Sign Out")
+                    }
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showSignOutDialog = false },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-fun SectionHeader(text: String) {
+private fun SettingsSectionHeader(text: String) {
     Text(
         text = text,
         style = RexoTheme.typography.titleSmall,
         fontWeight = FontWeight.Bold,
-        color = RexoTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+        color = RexoColors.AccentOrange,
+        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
     )
 }
 
 @Composable
-fun SettingsItem(
+private fun SettingsNavItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit,
-    textColor: Color = RexoTheme.colorScheme.onSurface
+    textColor: Color = RexoColors.TextPrimary
 ) {
-    GlassSurface(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -240,9 +268,10 @@ fun SettingsItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = textColor
+                    tint = textColor,
+                    modifier = Modifier.size(24.dp)
                 )
-                
+
                 Column {
                     Text(
                         text = title,
@@ -257,32 +286,34 @@ fun SettingsItem(
                     )
                 }
             }
-            
+
             Icon(
                 imageVector = Icons.Outlined.ChevronRight,
                 contentDescription = "Go",
-                tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                tint = RexoColors.Gray400,
+                modifier = Modifier.size(20.dp)
             )
         }
     }
 }
 
 @Composable
-fun SettingsSwitchItem(
+private fun SettingsToggleItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    GlassSurface(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -294,26 +325,34 @@ fun SettingsSwitchItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = RexoTheme.colorScheme.primary
+                    tint = RexoColors.AccentOrange,
+                    modifier = Modifier.size(24.dp)
                 )
-                
+
                 Column {
                     Text(
                         text = title,
                         style = RexoTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = RexoColors.TextPrimary
                     )
                     Text(
                         text = subtitle,
                         style = RexoTheme.typography.bodySmall,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = RexoColors.TextSecondary
                     )
                 }
             }
-            
+
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = RexoColors.AccentOrange,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = RexoColors.Gray300
+                )
             )
         }
     }

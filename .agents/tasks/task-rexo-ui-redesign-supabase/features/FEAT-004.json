@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Rebuild Profile screen to match reference design with real Supabase data. Remove all fake profile data (John Doe, @johndoe, hardcoded stats). Load real user profile from Supabase 'users' and 'creator_profiles' tables. Implement clean reference UI with settings list items.",
+  "status": "completed",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/profile/ProfileScreen.kt to match the reference: Title 'Profile' at top left. Large circular profile avatar (centered). Edit pencil icon on the card. Username @username from Supabase. 'Member since' date. Stats row: Money earned | Total videos | Total views (use data from wallets.total_earnings and creator_profiles.completed_campaigns). 'Connected accounts' button (dark/black full-width rounded). Settings list items with icon + label + right arrow: Referrals (with 'Earn 10%' badge), Language (showing 'English'), Theme (showing 'System'), Notifications, FAQ, Resources, General Campaign Rules (with external link icon). Logout button at bottom.",
+    "Create a ProfileViewModel at app/src/main/java/com/rexo/marketplace/ui/viewmodel/ProfileViewModel.kt: Load user profile from Supabase 'users' table filtered by current auth user ID. Load creator_profiles for creator-specific stats. Load wallet balance from 'wallets' table. Expose loading/loaded/error/empty states. Implement signOut functionality that calls AuthRepository.signOut() and navigates to Auth screen.",
+    "Create or update a UserRepository at app/src/main/java/com/rexo/marketplace/data/repository/UserRepository.kt: Fetch user profile from Supabase postgrest (select from 'users' where id = auth user id). Fetch creator profile from 'creator_profiles'. No mock/fake data fallbacks - return null or error on failure.",
+    "Update navigation so that Logout from Profile navigates back to Auth screen and clears the back stack.",
+    "Remove all hardcoded 'John Doe', '@johndoe', fake follower counts (45600), fake engagement (4.2%), fake earnings (125000), fake social links from the ProfileScreen."
+  ],
+  "acceptance_criteria": [
+    "ProfileScreen loads real user data from Supabase - no hardcoded names or stats",
+    "Profile shows proper loading state while fetching",
+    "Profile shows proper empty/error state if data unavailable",
+    "Settings list items match reference (Referrals, Language, Theme, Notifications, FAQ, Resources, General Campaign Rules)",
+    "Logout actually signs out via Supabase and redirects to Auth screen",
+    "Clean white UI matching reference design",
+    "Code compiles correctly"
+  ],
+  "verification": [
+    "Run ./gradlew assembleDebug and confirm build passes"
+  ],
+  "blocked_reason": null,
+  "findings": "ProfileScreen fully rewritten with real Supabase data. Created UserRepository (fetches from users, creator_profiles, wallets tables with DTOs). Created ProfileViewModel (sealed ProfileState: Loading/Loaded/Error/Empty, signOut via AuthRepository). NavGraph updated with onSignOut callback that navigates to Auth and clears back stack. All fake data removed (John Doe, @johndoe, hardcoded stats). ProfileViewModel uses no-arg constructor so viewModel() works without factory. Build cannot be verified in sandbox (INTEGRATIONS_ONLY) but code follows existing patterns exactly."
+}

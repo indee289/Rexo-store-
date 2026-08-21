@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Rebuild the authentication flow to use real Supabase auth. Connect AuthScreen to AuthViewModel properly, remove fake delay-based login, add proper error/loading states, session restoration, and implement clean white UI matching the reference design. Remove all debug info (Supabase URLs) from user-visible UI.",
+  "status": "completed",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/auth/AuthScreen.kt: Remove the animated gradient background, glassmorphism effects, and blurred circles. Implement a clean white screen with: Rexo logo at top (use painterResource for the drawable ic_launcher_foreground or a text-based 'R' logo), email and password fields with clean outlined style, Login/Sign Up toggle tabs with underline style, orange-red primary button, proper error message display (no Supabase URLs shown to user), loading state with CircularProgressIndicator. Wire up to AuthViewModel properly: call viewModel.signIn() and viewModel.signUp() with actual credentials. Remove the fake 'delay(2000); onNavigateToHome()' logic.",
+    "Update app/src/main/java/com/rexo/marketplace/ui/viewmodel/AuthViewModel.kt: Add a method to observe auth state changes. Ensure session restoration works - on app start, check if user has an active session and emit Authenticated state. Add proper user-friendly error messages (map Supabase exceptions to readable text without exposing URLs or technical details).",
+    "Update app/src/main/java/com/rexo/marketplace/data/repository/AuthRepository.kt: Ensure session persistence works correctly with autoLoadFromStorage/autoSaveToStorage already configured in SupabaseClient. Add a suspend function to load session on app start.",
+    "Update app/src/main/java/com/rexo/marketplace/navigation/NavGraph.kt: Make the start destination conditional on auth state. If user has a valid session, start at Home. If not, start at Auth. Wire AuthViewModel into the navigation decision. Keep using MainScaffold pattern but pass auth state. Rename bottom nav items to match reference: 'Discover' (instead of Home), 'Tasks' (instead of Campaigns), 'Wallet', 'Profile'.",
+    "Update app/src/main/java/com/rexo/marketplace/MainActivity.kt: Provide AuthViewModel at the top level so navigation can check auth state on startup."
+  ],
+  "acceptance_criteria": [
+    "AuthScreen uses real Supabase signIn/signUp via AuthViewModel - no fake delays",
+    "Auth errors display user-friendly messages without exposing Supabase URLs or technical details",
+    "Session restoration works - if user was logged in, they bypass login screen on app restart",
+    "Navigation start destination is conditional on auth state",
+    "AuthScreen has clean white UI with no glassmorphism/gradients",
+    "Bottom nav items are labeled: Discover, Tasks, Wallet, Profile",
+    "Code compiles correctly"
+  ],
+  "verification": [
+    "Run ./gradlew assembleDebug and confirm build passes"
+  ],
+  "blocked_reason": null,
+  "findings": "Build verification cannot run in this sandbox (gradle-wrapper.jar is missing from the repo, and Java 25 is incompatible with the Kotlin compiler as documented in FEAT-001 findings). AST-level validation performed: all imports resolve correctly (lifecycle-viewmodel-compose dependency exists in build.gradle.kts, compose.runtime.* covers collectAsState/LaunchedEffect/remember, compose.animation.* covers AnimatedContent). The AuthViewModel shares a single instance between MainScaffold and AuthScreen via the viewModel() compose function at the NavGraph level. Bottom nav items renamed: Home->Discover, Campaigns->Tasks. Start destination is conditional on auth state with a loading spinner shown during session check."
+}
