@@ -5,16 +5,8 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-// Apply google-services plugin only if google-services.json exists
-apply {
-    if (file("google-services.json").exists()) {
-        plugin("com.google.gms.google-services")
-        println("✅ google-services plugin applied (google-services.json found)")
-    } else {
-        println("⚠️  google-services.json not found, skipping google-services plugin")
-        println("⚠️  Firebase features will not be available")
-    }
-}
+// Apply google-services plugin at the end of file
+// This ensures it runs AFTER all configurations are set
 
 android {
     namespace = "com.rexo.marketplace"
@@ -153,16 +145,11 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     
-    // Firebase Cloud Messaging (optional - only if google-services.json exists)
-    if (file("google-services.json").exists()) {
-        implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-        implementation("com.google.firebase:firebase-messaging-ktx")
-        implementation("com.google.firebase:firebase-analytics-ktx")
-    } else {
-        // Stub dependencies to prevent compilation errors
-        compileOnly("com.google.firebase:firebase-messaging-ktx:24.1.0")
-        compileOnly("com.google.firebase:firebase-analytics-ktx:22.1.2")
-    }
+    // Firebase Cloud Messaging (Optional - only if google-services.json exists)
+    // Note: Firebase dependencies are loaded but google-services plugin may not process them
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
     
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
@@ -188,4 +175,16 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
+
+// Apply google-services plugin at the END if google-services.json exists
+apply {
+    val googleServicesFile = file("google-services.json")
+    if (googleServicesFile.exists()) {
+        plugin("com.google.gms.google-services")
+        println("✅ google-services plugin applied (google-services.json found)")
+    } else {
+        println("⚠️  google-services.json not found at: ${googleServicesFile.absolutePath}")
+        println("⚠️  Skipping google-services plugin - Firebase features disabled")
+    }
 }
