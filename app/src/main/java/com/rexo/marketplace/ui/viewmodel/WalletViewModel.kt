@@ -2,156 +2,114 @@ package com.rexo.marketplace.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rexo.marketplace.data.model.Wallet
+import com.rexo.marketplace.data.repository.TransactionDto
+import com.rexo.marketplace.data.repository.WalletFullDto
 import com.rexo.marketplace.data.repository.WalletRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * Wallet ViewModel
- * Manages wallet state, transactions, analytics, escrow
+ * Loads wallet balance, transactions from Supabase.
+ * Handles deposit and withdrawal operations.
  */
-class WalletViewModel(
-    private val repository: WalletRepository
-) : ViewModel() {
+class WalletViewModel : ViewModel() {
 
-    // UI State
+    private val repository = WalletRepository()
+
     private val _uiState = MutableStateFlow(WalletUiState())
     val uiState: StateFlow<WalletUiState> = _uiState.asStateFlow()
-
-    // Balance
-    private val _balance = MutableStateFlow(0.0)
-    val balance: StateFlow<Double> = _balance.asStateFlow()
-
-    // Transactions
-    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
-    val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
-
-    // Analytics
-    private val _analytics = MutableStateFlow<WalletAnalytics?>(null)
-    val analytics: StateFlow<WalletAnalytics?> = _analytics.asStateFlow()
-
-    // Escrow
-    private val _escrowItems = MutableStateFlow<List<EscrowItem>>(emptyList())
-    val escrowItems: StateFlow<List<EscrowItem>> = _escrowItems.asStateFlow()
 
     init {
         loadWalletData()
     }
 
+    /**
+     * Load wallet and transactions from Supabase.
+     */
     fun loadWalletData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // Load balance
                 val wallet = repository.getWallet()
-                _balance.value = wallet?.availableBalance ?: 0.0
+                val transactions = repository.getTransactions()
 
-                // Load transactions
-                _transactions.value = repository.getTransactions()
-
-                // Load analytics
-                _analytics.value = repository.getAnalytics()
-
-                // Load escrow items
-                _escrowItems.value = repository.getEscrowItems()
-
-                _uiState.update { it.copy(isLoading = false, error = null) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        wallet = wallet,
+                        transactions = transactions,
+                        error = null
+                    )
+                }
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isLoading = false, error = e.message ?: "Unknown error") 
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load wallet data"
+                    )
                 }
             }
         }
     }
 
-    fun depositMoney(amount: Double, method: String) {
+    /**
+     * Deposit money - creates a real entry in Supabase 'deposits' table.
+     */
+    fun depositMoney(amount: Double, paymentMethod: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isProcessing = true) }
+            _uiState.update { it.copy(isProcessing = true, error = null) }
             try {
-                repository.deposit(amount, method)
-                loadWalletData()
-                _uiState.update { 
+                repository.deposit(amount, paymentMethod)
+                _uiState.update {
                     it.copy(
-                        isProcessing = false, 
-                        showSuccess = true,
-                        successMessage = "₹${String.format("%,.2f", amount)} deposited successfully!"
-                    ) 
+                        isProcessing = false,
+                        successMessage = "Deposit request of ₹${String.format("%,.2f", amount)} submitted!"
+                    )
                 }
+                loadWalletData()
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isProcessing = false, error = e.message ?: "Deposit failed") 
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        error = e.message ?: "Deposit failed"
+                    )
                 }
             }
         }
     }
 
-    fun withdrawMoney(amount: Double, method: String, accountDetails: Map<String, String>) {
+    /**
+     * Withdraw money - creates a real entry in Supabase 'withdrawals' table.
+     */
+    fun withdrawMoney(amount: Double, payoutMethod: String, payoutDetails: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isProcessing = true) }
+            _uiState.update { it.copy(isProcessing = true, error = null) }
             try {
-                repository.withdraw(amount, method, accountDetails)
-                loadWalletData()
-                _uiState.update { 
+                repository.withdraw(amount, payoutMethod, payoutDetails)
+                _uiState.update {
                     it.copy(
-                        isProcessing = false, 
-                        showSuccess = true,
+                        isProcessing = false,
                         successMessage = "Withdrawal request submitted!"
-                    ) 
+                    )
                 }
-            } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isProcessing = false, error = e.message ?: "Withdrawal failed") 
-                }
-            }
-        }
-    }
-
-    fun releaseEscrow(escrowId: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isProcessing = true) }
-            try {
-                repository.releaseEscrow(escrowId)
                 loadWalletData()
-                _uiState.update { 
-                    it.copy(
-                        isProcessing = false, 
-                        showSuccess = true,
-                        successMessage = "Escrow released successfully!"
-                    ) 
-                }
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isProcessing = false, error = e.message ?: "Release failed") 
-                }
-            }
-        }
-    }
-
-    fun raiseDispute(escrowId: String, reason: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isProcessing = true) }
-            try {
-                repository.raiseDispute(escrowId, reason)
-                loadWalletData()
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
-                        isProcessing = false, 
-                        showSuccess = true,
-                        successMessage = "Dispute raised. Admin will review."
-                    ) 
-                }
-            } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isProcessing = false, error = e.message ?: "Failed to raise dispute") 
+                        isProcessing = false,
+                        error = e.message ?: "Withdrawal failed"
+                    )
                 }
             }
         }
     }
 
     fun clearSuccess() {
-        _uiState.update { it.copy(showSuccess = false, successMessage = null) }
+        _uiState.update { it.copy(successMessage = null) }
     }
 
     fun clearError() {
@@ -159,41 +117,14 @@ class WalletViewModel(
     }
 }
 
+/**
+ * Wallet UI State
+ */
 data class WalletUiState(
     val isLoading: Boolean = false,
     val isProcessing: Boolean = false,
+    val wallet: WalletFullDto? = null,
+    val transactions: List<TransactionDto> = emptyList(),
     val error: String? = null,
-    val showSuccess: Boolean = false,
     val successMessage: String? = null
-)
-
-data class Transaction(
-    val id: String,
-    val type: String,
-    val amount: Double,
-    val status: String,
-    val date: Date,
-    val description: String
-)
-
-data class WalletAnalytics(
-    val totalIncome: Double,
-    val totalExpense: Double,
-    val categoryBreakdown: Map<String, Double>,
-    val monthlyTrends: List<MonthlyData>
-)
-
-data class MonthlyData(
-    val month: String,
-    val income: Double,
-    val expense: Double
-)
-
-data class EscrowItem(
-    val id: String,
-    val campaignName: String,
-    val amount: Double,
-    val status: String,
-    val dueDate: Date,
-    val canRelease: Boolean
 )

@@ -1,209 +1,133 @@
 package com.rexo.marketplace.data.repository
 
-import com.rexo.marketplace.data.local.WalletDao
-import com.rexo.marketplace.data.model.Wallet
 import com.rexo.marketplace.data.remote.SupabaseClient
-import com.rexo.marketplace.ui.viewmodel.*
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Date
+import kotlinx.serialization.Serializable
 
 /**
  * Wallet Repository
- * Handles wallet operations with Supabase and local Room
+ * Fetches wallet and transaction data from Supabase.
+ * No mock data fallbacks - returns proper errors on failure.
  */
-class WalletRepository(
-    private val walletDao: WalletDao,
-    private val supabaseClient: SupabaseClient
-) {
-    suspend fun getWallet(): Wallet? = withContext(Dispatchers.IO) {
+class WalletRepository {
+
+    private fun getCurrentUserId(): String {
+        return SupabaseClient.auth.currentUserOrNull()?.id
+            ?: throw Exception("Not authenticated")
+    }
+
+    /**
+     * Fetch wallet from Supabase 'wallets' table for the current user.
+     */
+    suspend fun getWallet(): WalletFullDto? = withContext(Dispatchers.IO) {
+        val userId = getCurrentUserId()
         try {
-            // Try Supabase first
-            val response = supabaseClient.client
-                .from("wallets")
-                .select()
-                .decodeSingle<Wallet>()
-            
-            // Cache locally
-            walletDao.insertWallet(response)
-            response
+            SupabaseClient.client.from("wallets").select {
+                filter { eq("user_id", userId) }
+            }.decodeSingle<WalletFullDto>()
         } catch (e: Exception) {
-            // Fallback to local cache
-            walletDao.getWallet(userId = "current_user")
+            if (e.message?.contains("Not authenticated") == true) throw e
+            null
         }
     }
 
-    suspend fun getTransactions(): List<Transaction> = withContext(Dispatchers.IO) {
-        try {
-            // Fetch from Supabase
-            val response = supabaseClient.client
-                .from("wallet_transactions")
-                .select()
-                .decodeList<TransactionDto>()
-            
-            response.map { it.toTransaction() }
-        } catch (e: Exception) {
-            // Mock data for now
-            listOf(
-                Transaction(
-                    "1",
-                    "Campaign Payment",
-                    5000.0,
-                    "completed",
-                    Date(),
-                    "Payment from Brand XYZ"
-                ),
-                Transaction(
-                    "2",
-                    "Withdrawal",
-                    2000.0,
-                    "pending",
-                    Date(),
-                    "Bank Transfer"
-                )
+    /**
+     * Fetch transactions from Supabase 'transactions' table for the current user.
+     * Ordered by created_at DESC.
+     */
+    suspend fun getTransactions(): List<TransactionDto> = withContext(Dispatchers.IO) {
+        val userId = getCurrentUserId()
+        val results = SupabaseClient.client.from("transactions").select {
+            filter { eq("user_id", userId) }
+        }.decodeList<TransactionDto>()
+        results.sortedByDescending { it.created_at }
+    }
+
+    /**
+     * Create a deposit request in the 'deposits' table.
+     */
+    suspend fun deposit(amount: Double, paymentMethod: String) = withContext(Dispatchers.IO) {
+        val userId = getCurrentUserId()
+        SupabaseClient.client.from("deposits").insert(
+            DepositInsertDto(
+                brand_id = userId,
+                amount = amount,
+                payment_method = paymentMethod,
+                transaction_ref = "DEP-${System.currentTimeMillis()}",
+                status = "pending"
             )
-        }
+        )
     }
 
-    suspend fun getAnalytics(): WalletAnalytics = withContext(Dispatchers.IO) {
-        try {
-            // Calculate from transactions
-            val transactions = getTransactions()
-            val income = transactions.filter { it.type.contains("Payment", ignoreCase = true) }
-                .sumOf { it.amount }
-            val expense = transactions.filter { it.type.contains("Withdrawal", ignoreCase = true) }
-                .sumOf { it.amount }
-            
-            WalletAnalytics(
-                totalIncome = income,
-                totalExpense = expense,
-                categoryBreakdown = mapOf(
-                    "Campaign Earnings" to income * 0.8,
-                    "Referral Bonus" to income * 0.15,
-                    "Other" to income * 0.05
-                ),
-                monthlyTrends = listOf(
-                    MonthlyData("Jan", 15000.0, 5000.0),
-                    MonthlyData("Feb", 18000.0, 7000.0),
-                    MonthlyData("Mar", 22000.0, 8000.0)
-                )
+    /**
+     * Create a withdrawal request in the 'withdrawals' table.
+     */
+    suspend fun withdraw(amount: Double, payoutMethod: String, payoutDetails: String) = withContext(Dispatchers.IO) {
+        val userId = getCurrentUserId()
+        SupabaseClient.client.from("withdrawals").insert(
+            WithdrawalInsertDto(
+                user_id = userId,
+                amount = amount,
+                payout_method = payoutMethod,
+                payout_details = payoutDetails,
+                status = "pending"
             )
-        } catch (e: Exception) {
-            WalletAnalytics(0.0, 0.0, emptyMap(), emptyList())
-        }
-    }
-
-    suspend fun getEscrowItems(): List<EscrowItem> = withContext(Dispatchers.IO) {
-        try {
-            val response = supabaseClient.client
-                .from("escrow")
-                .select()
-                .decodeList<EscrowDto>()
-            
-            response.map { it.toEscrowItem() }
-        } catch (e: Exception) {
-            // Mock data
-            listOf(
-                EscrowItem(
-                    "1",
-                    "Summer Campaign 2024",
-                    5000.0,
-                    "pending",
-                    Date(),
-                    true
-                )
-            )
-        }
-    }
-
-    suspend fun deposit(amount: Double, method: String) = withContext(Dispatchers.IO) {
-        try {
-            supabaseClient.client.from("deposit_requests").insert(
-                mapOf(
-                    "amount" to amount,
-                    "payment_method" to method,
-                    "status" to "pending"
-                )
-            )
-        } catch (e: Exception) {
-            throw Exception("Deposit failed: ${e.message}")
-        }
-    }
-
-    suspend fun withdraw(
-        amount: Double, 
-        method: String, 
-        accountDetails: Map<String, String>
-    ) = withContext(Dispatchers.IO) {
-        try {
-            supabaseClient.client.from("withdrawal_requests").insert(
-                mapOf(
-                    "amount" to amount,
-                    "payment_method" to method,
-                    "account_details" to accountDetails,
-                    "status" to "pending"
-                )
-            )
-        } catch (e: Exception) {
-            throw Exception("Withdrawal failed: ${e.message}")
-        }
-    }
-
-    suspend fun releaseEscrow(escrowId: String) = withContext(Dispatchers.IO) {
-        try {
-            supabaseClient.client.from("escrow").update(
-                mapOf("status" to "released")
-            ) {
-                filter {
-                    eq("id", escrowId)
-                }
-            }
-        } catch (e: Exception) {
-            throw Exception("Release failed: ${e.message}")
-        }
-    }
-
-    suspend fun raiseDispute(escrowId: String, reason: String) = withContext(Dispatchers.IO) {
-        try {
-            supabaseClient.client.from("disputes").insert(
-                mapOf(
-                    "escrow_id" to escrowId,
-                    "reason" to reason,
-                    "status" to "pending"
-                )
-            )
-        } catch (e: Exception) {
-            throw Exception("Failed to raise dispute: ${e.message}")
-        }
+        )
     }
 }
 
-// DTOs for Supabase
-@kotlinx.serialization.Serializable
+/**
+ * Full wallet DTO with all fields from Supabase 'wallets' table.
+ */
+@Serializable
+data class WalletFullDto(
+    val user_id: String,
+    val available_balance: Double = 0.0,
+    val escrow_balance: Double = 0.0,
+    val total_earnings: Double = 0.0,
+    val total_withdrawn: Double = 0.0,
+    val currency: String = "INR"
+)
+
+/**
+ * Transaction DTO matching Supabase 'transactions' table.
+ */
+@Serializable
 data class TransactionDto(
     val id: String,
-    val type: String,
-    val amount: Double,
-    val status: String,
-    val created_at: String,
-    val description: String
-) {
-    fun toTransaction() = Transaction(
-        id, type, amount, status, Date(), description
-    )
-}
+    val user_id: String,
+    val title: String = "",
+    val amount: Double = 0.0,
+    val type: String = "",
+    val status: String = "completed",
+    val reference_id: String? = null,
+    val notes: String? = null,
+    val created_at: String = ""
+)
 
-@kotlinx.serialization.Serializable
-data class EscrowDto(
-    val id: String,
-    val campaign_name: String,
+/**
+ * Insert DTO for deposits table.
+ */
+@Serializable
+data class DepositInsertDto(
+    val brand_id: String,
     val amount: Double,
-    val status: String,
-    val due_date: String,
-    val can_release: Boolean
-) {
-    fun toEscrowItem() = EscrowItem(
-        id, campaign_name, amount, status, Date(), can_release
-    )
-}
+    val payment_method: String,
+    val transaction_ref: String,
+    val status: String = "pending"
+)
+
+/**
+ * Insert DTO for withdrawals table.
+ */
+@Serializable
+data class WithdrawalInsertDto(
+    val user_id: String,
+    val amount: Double,
+    val payout_method: String,
+    val payout_details: String,
+    val status: String = "pending"
+)

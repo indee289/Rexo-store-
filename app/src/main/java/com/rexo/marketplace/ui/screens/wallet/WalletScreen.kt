@@ -1,8 +1,7 @@
 package com.rexo.marketplace.ui.screens.wallet
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,73 +15,63 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.rexo.marketplace.ui.components.FloatingGlassCard
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rexo.marketplace.data.repository.TransactionDto
 import com.rexo.marketplace.ui.components.GlassSurface
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.rexo.marketplace.ui.viewmodel.WalletViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Modern Wallet Screen with Fintech-style UI/UX
- * Features:
- * - 3D card design with gradient
- * - Balance reveal/hide animation
- * - Quick action buttons
- * - Transaction history with categories
- * - Pull-to-refresh
- * - Smooth animations
+ * Wallet Screen - Clean white minimal design
+ * Shows real balance from Supabase 'wallets' table
+ * Lists real transactions from Supabase 'transactions' table
+ * Supports deposit and withdrawal operations
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    walletViewModel: WalletViewModel = viewModel()
 ) {
-    var balance by remember { mutableStateOf(15234.50) }
-    var balanceVisible by remember { mutableStateOf(true) }
+    val uiState by walletViewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     var showAddMoneyDialog by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
-    
+
     val tabs = listOf("All", "Income", "Expense", "Pending")
-    
-    // Animated balance
-    val animatedBalance by animateFloatAsState(
-        targetValue = balance.toFloat(),
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "balance"
-    )
-    
-    // Sample transactions
-    val transactions = remember {
-        listOf(
-            Transaction("Campaign Payment", 5000.0, "Income", Date(), TransactionStatus.COMPLETED),
-            Transaction("Brand Collaboration", 3500.0, "Income", Date(System.currentTimeMillis() - 86400000), TransactionStatus.COMPLETED),
-            Transaction("Withdrawal to Bank", -2000.0, "Expense", Date(System.currentTimeMillis() - 172800000), TransactionStatus.COMPLETED),
-            Transaction("Shop Purchase", -450.0, "Expense", Date(System.currentTimeMillis() - 259200000), TransactionStatus.COMPLETED),
-            Transaction("Campaign Bonus", 1200.0, "Income", Date(System.currentTimeMillis() - 345600000), TransactionStatus.PENDING),
-            Transaction("Affiliate Earning", 850.0, "Income", Date(System.currentTimeMillis() - 432000000), TransactionStatus.COMPLETED)
-        )
-    }
-    
-    val filteredTransactions = remember(selectedTab) {
+
+    // Filter transactions based on selected tab
+    val filteredTransactions = remember(selectedTab, uiState.transactions) {
         when (tabs[selectedTab]) {
-            "Income" -> transactions.filter { it.amount > 0 }
-            "Expense" -> transactions.filter { it.amount < 0 }
-            "Pending" -> transactions.filter { it.status == TransactionStatus.PENDING }
-            else -> transactions
+            "Income" -> uiState.transactions.filter {
+                it.type.equals("credit", ignoreCase = true) ||
+                    it.type.equals("earning", ignoreCase = true) ||
+                    it.type.equals("payment", ignoreCase = true)
+            }
+            "Expense" -> uiState.transactions.filter {
+                it.type.equals("debit", ignoreCase = true) ||
+                    it.type.equals("withdrawal", ignoreCase = true)
+            }
+            "Pending" -> uiState.transactions.filter {
+                it.status.equals("pending", ignoreCase = true)
+            }
+            else -> uiState.transactions
+        }
+    }
+
+    // Show success snackbar
+    LaunchedEffect(uiState.successMessage) {
+        if (uiState.successMessage != null) {
+            kotlinx.coroutines.delay(3000)
+            walletViewModel.clearSuccess()
         }
     }
 
@@ -104,130 +93,202 @@ fun WalletScreen(
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO: Transaction history */ }) {
-                        Icon(
-                            imageVector = Icons.Outlined.History,
-                            contentDescription = "History"
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
                 )
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = 80.dp)
-        ) {
-            // Wallet Card
-            item {
-                WalletCard(
-                    balance = if (balanceVisible) animatedBalance.toDouble() else null,
-                    onVisibilityToggle = { balanceVisible = !balanceVisible },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                )
-            }
-            
-            // Quick Actions
-            item {
-                QuickActions(
-                    onAddMoney = { showAddMoneyDialog = true },
-                    onWithdraw = { showWithdrawDialog = true },
-                    onSend = { /* TODO */ },
-                    onRequest = { /* TODO */ },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-                )
-            }
-            
-            // Statistics Cards
-            item {
-                StatisticsRow(
-                    totalIncome = 12450.0,
-                    totalExpense = 2450.0,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-                )
-            }
-            
-            // Tab Selector
-            item {
-                FilterTabs(
-                    tabs = tabs,
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-                )
-            }
-            
-            // Transactions Header
-            item {
-                Row(
+        when {
+            uiState.isLoading -> {
+                // Loading state
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Transactions",
-                        style = RexoTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    TextButton(onClick = { /* TODO: View all */ }) {
-                        Text("View All")
-                        Icon(
-                            imageVector = Icons.Outlined.ChevronRight,
-                            contentDescription = "View All",
-                            modifier = Modifier.size(18.dp)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            color = RexoColors.AccentOrange
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Loading wallet...",
+                            style = RexoTheme.typography.bodyMedium,
+                            color = RexoColors.TextSecondary
                         )
                     }
                 }
             }
-            
-            // Transaction List
-            items(filteredTransactions) { transaction ->
-                TransactionItem(
-                    transaction = transaction,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                )
+
+            uiState.error != null && uiState.wallet == null -> {
+                // Error state
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ErrorOutline,
+                            contentDescription = "Error",
+                            modifier = Modifier.size(64.dp),
+                            tint = RexoColors.Error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Something went wrong",
+                            style = RexoTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = RexoColors.TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Could not load your wallet. Please try again.",
+                            style = RexoTheme.typography.bodyMedium,
+                            color = RexoColors.TextSecondary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { walletViewModel.loadWalletData() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RexoColors.AccentOrange
+                            )
+                        ) {
+                            Text("Retry")
+                        }
+                    }
+                }
             }
-            
-            // Empty State
-            if (filteredTransactions.isEmpty()) {
-                item {
-                    EmptyTransactions(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 40.dp)
-                    )
+
+            else -> {
+                // Content
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    // Balance Card
+                    item {
+                        BalanceCard(
+                            availableBalance = uiState.wallet?.available_balance ?: 0.0,
+                            escrowBalance = uiState.wallet?.escrow_balance ?: 0.0,
+                            totalEarnings = uiState.wallet?.total_earnings ?: 0.0,
+                            currency = uiState.wallet?.currency ?: "INR",
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                        )
+                    }
+
+                    // Quick Actions
+                    item {
+                        QuickActions(
+                            onAddMoney = { showAddMoneyDialog = true },
+                            onWithdraw = { showWithdrawDialog = true },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                        )
+                    }
+
+                    // Success message
+                    if (uiState.successMessage != null) {
+                        item {
+                            GlassSurface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                backgroundColor = RexoColors.SuccessLight,
+                                borderColor = RexoColors.Success
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CheckCircle,
+                                        contentDescription = "Success",
+                                        tint = RexoColors.Success,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = uiState.successMessage ?: "",
+                                        style = RexoTheme.typography.bodyMedium,
+                                        color = RexoColors.Success
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Filter Tabs
+                    item {
+                        FilterTabs(
+                            tabs = tabs,
+                            selectedTab = selectedTab,
+                            onTabSelected = { selectedTab = it },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                        )
+                    }
+
+                    // Transactions Header
+                    item {
+                        Text(
+                            text = "Transactions",
+                            style = RexoTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    // Transaction List
+                    if (filteredTransactions.isEmpty()) {
+                        item {
+                            EmptyTransactions(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 40.dp)
+                            )
+                        }
+                    } else {
+                        items(filteredTransactions) { transaction ->
+                            TransactionItem(
+                                transaction = transaction,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
-    
+
     // Add Money Dialog
     if (showAddMoneyDialog) {
         AddMoneyDialog(
+            isProcessing = uiState.isProcessing,
             onDismiss = { showAddMoneyDialog = false },
-            onConfirm = { amount ->
-                balance += amount
+            onConfirm = { amount, method ->
+                walletViewModel.depositMoney(amount, method)
                 showAddMoneyDialog = false
             }
         )
     }
-    
+
     // Withdraw Dialog
     if (showWithdrawDialog) {
         WithdrawDialog(
-            currentBalance = balance,
+            currentBalance = uiState.wallet?.available_balance ?: 0.0,
+            isProcessing = uiState.isProcessing,
             onDismiss = { showWithdrawDialog = false },
-            onConfirm = { amount ->
-                balance -= amount
+            onConfirm = { amount, method, details ->
+                walletViewModel.withdrawMoney(amount, method, details)
                 showWithdrawDialog = false
             }
         )
@@ -235,115 +296,72 @@ fun WalletScreen(
 }
 
 @Composable
-fun WalletCard(
-    balance: Double?,
-    onVisibilityToggle: () -> Unit,
+private fun BalanceCard(
+    availableBalance: Double,
+    escrowBalance: Double,
+    totalEarnings: Double,
+    currency: String,
     modifier: Modifier = Modifier
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (balance != null) 1f else 0.98f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "card_scale"
-    )
-    
-    FloatingGlassCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .scale(scale),
-        shape = RoundedCornerShape(28.dp),
-        backgroundColor = Brush.linearGradient(
-            colors = listOf(
-                RexoTheme.colorScheme.primary.copy(alpha = 0.9f),
-                RexoTheme.colorScheme.secondary.copy(alpha = 0.9f),
-                RexoTheme.colorScheme.tertiary.copy(alpha = 0.9f)
-            )
-        )
+    val currencySymbol = if (currency == "INR") "₹" else "$"
+
+    GlassSurface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Column(
-            modifier = Modifier.padding(28.dp)
+            modifier = Modifier.padding(24.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Available Balance",
-                        style = RexoTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    AnimatedContent(
-                        targetState = balance,
-                        transitionSpec = {
-                            fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
-                        },
-                        label = "balance"
-                    ) { targetBalance ->
-                        Text(
-                            text = if (targetBalance != null) {
-                                "₹${String.format("%,.2f", targetBalance)}"
-                            } else {
-                                "₹•••••••"
-                            },
-                            style = RexoTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
-                
-                IconButton(
-                    onClick = onVisibilityToggle,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f))
-                ) {
-                    Icon(
-                        imageVector = if (balance != null) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                        contentDescription = "Toggle visibility",
-                        tint = Color.White
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
+            Text(
+                text = "Available Balance",
+                style = RexoTheme.typography.bodyMedium,
+                color = RexoColors.TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "$currencySymbol${String.format("%,.2f", availableBalance)}",
+                style = RexoTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = RexoColors.TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Divider(color = RexoColors.CardBorder)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
                     Text(
-                        text = "Account Type",
+                        text = "Pending",
                         style = RexoTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = RexoColors.TextSecondary
                     )
                     Text(
-                        text = "Premium",
-                        style = RexoTheme.typography.titleSmall,
+                        text = "$currencySymbol${String.format("%,.2f", escrowBalance)}",
+                        style = RexoTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = RexoColors.Warning
                     )
                 }
-                
+
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "User ID",
+                        text = "Total Earnings",
                         style = RexoTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = RexoColors.TextSecondary
                     )
                     Text(
-                        text = "#RX12345",
-                        style = RexoTheme.typography.titleSmall,
+                        text = "$currencySymbol${String.format("%,.2f", totalEarnings)}",
+                        style = RexoTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = RexoColors.Success
                     )
                 }
             }
@@ -352,11 +370,9 @@ fun WalletCard(
 }
 
 @Composable
-fun QuickActions(
+private fun QuickActions(
     onAddMoney: () -> Unit,
     onWithdraw: () -> Unit,
-    onSend: () -> Unit,
-    onRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -366,39 +382,23 @@ fun QuickActions(
         QuickActionButton(
             icon = Icons.Outlined.Add,
             label = "Add Money",
-            color = Color(0xFF10B981),
+            color = RexoColors.Success,
             onClick = onAddMoney,
             modifier = Modifier.weight(1f)
         )
-        
+
         QuickActionButton(
             icon = Icons.Outlined.ArrowUpward,
             label = "Withdraw",
-            color = RexoTheme.colorScheme.primary,
+            color = RexoColors.AccentOrange,
             onClick = onWithdraw,
-            modifier = Modifier.weight(1f)
-        )
-        
-        QuickActionButton(
-            icon = Icons.Outlined.Send,
-            label = "Send",
-            color = RexoTheme.colorScheme.secondary,
-            onClick = onSend,
-            modifier = Modifier.weight(1f)
-        )
-        
-        QuickActionButton(
-            icon = Icons.Outlined.CallReceived,
-            label = "Request",
-            color = Color(0xFFF59E0B),
-            onClick = onRequest,
             modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
-fun QuickActionButton(
+private fun QuickActionButton(
     icon: ImageVector,
     label: String,
     color: Color,
@@ -407,8 +407,7 @@ fun QuickActionButton(
 ) {
     GlassSurface(
         modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        backgroundColor = color.copy(alpha = 0.1f)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 16.dp),
@@ -416,7 +415,7 @@ fun QuickActionButton(
         ) {
             Surface(
                 shape = CircleShape,
-                color = color.copy(alpha = 0.15f),
+                color = color.copy(alpha = 0.1f),
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
@@ -426,14 +425,14 @@ fun QuickActionButton(
                     tint = color
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = label,
                 style = RexoTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
-                color = RexoTheme.colorScheme.onSurface,
+                color = RexoColors.TextPrimary,
                 textAlign = TextAlign.Center
             )
         }
@@ -441,85 +440,7 @@ fun QuickActionButton(
 }
 
 @Composable
-fun StatisticsRow(
-    totalIncome: Double,
-    totalExpense: Double,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        StatCard(
-            title = "Total Income",
-            amount = totalIncome,
-            icon = Icons.Outlined.TrendingUp,
-            color = Color(0xFF10B981),
-            isPositive = true,
-            modifier = Modifier.weight(1f)
-        )
-        
-        StatCard(
-            title = "Total Expense",
-            amount = totalExpense,
-            icon = Icons.Outlined.TrendingDown,
-            color = Color(0xFFEF4444),
-            isPositive = false,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun StatCard(
-    title: String,
-    amount: Double,
-    icon: ImageVector,
-    color: Color,
-    isPositive: Boolean,
-    modifier: Modifier = Modifier
-) {
-    GlassSurface(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        backgroundColor = color.copy(alpha = 0.1f)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = color,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = title,
-                style = RexoTheme.typography.bodySmall,
-                color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            
-            Text(
-                text = "${if (isPositive) "+" else ""}₹${String.format("%,.0f", amount)}",
-                style = RexoTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-        }
-    }
-}
-
-@Composable
-fun FilterTabs(
+private fun FilterTabs(
     tabs: List<String>,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
@@ -531,19 +452,19 @@ fun FilterTabs(
     ) {
         tabs.forEachIndexed { index, tab ->
             val isSelected = index == selectedTab
-            
+
             val backgroundColor by animateColorAsState(
-                targetValue = if (isSelected) RexoTheme.colorScheme.primary else RexoTheme.colorScheme.surfaceVariant,
+                targetValue = if (isSelected) RexoColors.AccentOrange else RexoColors.Gray100,
                 animationSpec = tween(300),
                 label = "tab_bg"
             )
-            
+
             val contentColor by animateColorAsState(
-                targetValue = if (isSelected) RexoTheme.colorScheme.onPrimary else RexoTheme.colorScheme.onSurfaceVariant,
+                targetValue = if (isSelected) Color.White else RexoColors.TextSecondary,
                 animationSpec = tween(300),
                 label = "tab_content"
             )
-            
+
             Surface(
                 modifier = Modifier.clickable { onTabSelected(index) },
                 color = backgroundColor,
@@ -561,26 +482,31 @@ fun FilterTabs(
     }
 }
 
-enum class TransactionStatus {
-    COMPLETED, PENDING, FAILED
-}
-
-data class Transaction(
-    val title: String,
-    val amount: Double,
-    val category: String,
-    val date: Date,
-    val status: TransactionStatus
-)
-
 @Composable
-fun TransactionItem(
-    transaction: Transaction,
+private fun TransactionItem(
+    transaction: TransactionDto,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()) }
-    val isPositive = transaction.amount > 0
-    
+    val isCredit = transaction.type.equals("credit", ignoreCase = true) ||
+        transaction.type.equals("earning", ignoreCase = true) ||
+        transaction.type.equals("payment", ignoreCase = true)
+
+    val amountColor = if (isCredit) RexoColors.Success else RexoColors.Error
+    val iconTint = if (isCredit) RexoColors.Success else RexoColors.Error
+    val iconBg = if (isCredit) RexoColors.SuccessLight else RexoColors.ErrorLight
+    val icon = if (isCredit) Icons.Outlined.TrendingUp else Icons.Outlined.TrendingDown
+
+    val formattedDate = remember(transaction.created_at) {
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault())
+            val date = inputFormat.parse(transaction.created_at)
+            if (date != null) outputFormat.format(date) else transaction.created_at
+        } catch (e: Exception) {
+            transaction.created_at.take(10)
+        }
+    }
+
     GlassSurface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
@@ -591,63 +517,75 @@ fun TransactionItem(
         ) {
             Surface(
                 shape = CircleShape,
-                color = if (isPositive) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFFEF4444).copy(alpha = 0.15f),
-                modifier = Modifier.size(48.dp)
+                color = iconBg,
+                modifier = Modifier.size(44.dp)
             ) {
                 Icon(
-                    imageVector = if (isPositive) Icons.Outlined.TrendingUp else Icons.Outlined.TrendingDown,
+                    imageVector = icon,
                     contentDescription = transaction.title,
-                    modifier = Modifier.padding(12.dp),
-                    tint = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+                    modifier = Modifier.padding(10.dp),
+                    tint = iconTint
                 )
             }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
+
+            Spacer(modifier = Modifier.width(14.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = transaction.title,
+                    text = transaction.title.ifEmpty { transaction.type },
                     style = RexoTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = RexoTheme.colorScheme.onSurface
+                    color = RexoColors.TextPrimary
                 )
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = dateFormat.format(transaction.date),
+                        text = formattedDate,
                         style = RexoTheme.typography.bodySmall,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = RexoColors.TextSecondary
                     )
-                    
-                    if (transaction.status == TransactionStatus.PENDING) {
+
+                    // Status badge
+                    if (!transaction.status.equals("completed", ignoreCase = true)) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = Color(0xFFF59E0B).copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                text = "Pending",
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = RexoTheme.typography.labelSmall,
-                                color = Color(0xFFF59E0B)
-                            )
-                        }
+                        StatusBadge(status = transaction.status)
                     }
                 }
             }
-            
+
             Text(
-                text = "${if (isPositive) "+" else ""}₹${String.format("%,.2f", Math.abs(transaction.amount))}",
+                text = "${if (isCredit) "+" else "-"}₹${String.format("%,.2f", kotlin.math.abs(transaction.amount))}",
                 style = RexoTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+                color = amountColor
             )
         }
     }
 }
 
 @Composable
-fun EmptyTransactions(
+private fun StatusBadge(status: String) {
+    val (bgColor, textColor) = when (status.lowercase()) {
+        "pending" -> Pair(RexoColors.WarningLight, RexoColors.Warning)
+        "failed" -> Pair(RexoColors.ErrorLight, RexoColors.Error)
+        else -> Pair(RexoColors.Gray100, RexoColors.TextSecondary)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = bgColor
+    ) {
+        Text(
+            text = status.replaceFirstChar { it.uppercase() },
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = RexoTheme.typography.labelSmall,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+private fun EmptyTransactions(
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -657,28 +595,37 @@ fun EmptyTransactions(
         Icon(
             imageVector = Icons.Outlined.Receipt,
             contentDescription = "No transactions",
-            modifier = Modifier.size(64.dp),
-            tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+            modifier = Modifier.size(56.dp),
+            tint = RexoColors.Gray300
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = "No transactions yet",
             style = RexoTheme.typography.titleMedium,
-            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = RexoColors.TextSecondary
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Your transactions will appear here",
+            style = RexoTheme.typography.bodySmall,
+            color = RexoColors.Gray400
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddMoneyDialog(
+private fun AddMoneyDialog(
+    isProcessing: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit
+    onConfirm: (Double, String) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
-    
+    var selectedMethod by remember { mutableStateOf("UPI") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -695,40 +642,79 @@ fun AddMoneyDialog(
                     onValueChange = { amount = it.filter { char -> char.isDigit() || char == '.' } },
                     label = { Text("Amount") },
                     leadingIcon = {
-                        Text("₹", style = RexoTheme.typography.titleMedium)
+                        Text(
+                            "₹",
+                            style = RexoTheme.typography.titleMedium,
+                            color = RexoColors.TextSecondary
+                        )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isProcessing
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Payment Method",
+                    style = RexoTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("UPI", "Bank", "Card").forEach { method ->
+                        FilterChip(
+                            selected = selectedMethod == method,
+                            onClick = { selectedMethod = method },
+                            label = { Text(method) },
+                            enabled = !isProcessing
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    amount.toDoubleOrNull()?.let { onConfirm(it) }
+                    amount.toDoubleOrNull()?.let { onConfirm(it, selectedMethod) }
                 },
-                enabled = amount.toDoubleOrNull() != null && amount.toDouble() > 0
+                enabled = !isProcessing && amount.toDoubleOrNull() != null && (amount.toDoubleOrNull() ?: 0.0) > 0,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = RexoColors.AccentOrange
+                )
             ) {
-                Text("Add Money")
+                if (isProcessing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Add Money")
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isProcessing) {
                 Text("Cancel")
             }
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WithdrawDialog(
+private fun WithdrawDialog(
     currentBalance: Double,
+    isProcessing: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit
+    onConfirm: (Double, String, String) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
-    
+    var selectedMethod by remember { mutableStateOf("UPI") }
+    var payoutDetails by remember { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -743,45 +729,103 @@ fun WithdrawDialog(
                 Text(
                     text = "Available: ₹${String.format("%,.2f", currentBalance)}",
                     style = RexoTheme.typography.bodyMedium,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = RexoColors.TextSecondary
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { char -> char.isDigit() || char == '.' } },
                     label = { Text("Amount") },
                     leadingIcon = {
-                        Text("₹", style = RexoTheme.typography.titleMedium)
+                        Text(
+                            "₹",
+                            style = RexoTheme.typography.titleMedium,
+                            color = RexoColors.TextSecondary
+                        )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    isError = amount.toDoubleOrNull()?.let { it > currentBalance } == true
+                    isError = amount.toDoubleOrNull()?.let { it > currentBalance } == true,
+                    enabled = !isProcessing
                 )
-                
+
                 if (amount.toDoubleOrNull()?.let { it > currentBalance } == true) {
                     Text(
                         text = "Insufficient balance",
                         style = RexoTheme.typography.bodySmall,
-                        color = RexoTheme.colorScheme.error,
+                        color = RexoColors.Error,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Payout Method",
+                    style = RexoTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("UPI", "Bank", "PayPal").forEach { method ->
+                        FilterChip(
+                            selected = selectedMethod == method,
+                            onClick = { selectedMethod = method },
+                            label = { Text(method) },
+                            enabled = !isProcessing
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = payoutDetails,
+                    onValueChange = { payoutDetails = it },
+                    label = {
+                        Text(
+                            when (selectedMethod) {
+                                "UPI" -> "UPI ID"
+                                "Bank" -> "Account Number"
+                                else -> "PayPal Email"
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isProcessing
+                )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    amount.toDoubleOrNull()?.let { onConfirm(it) }
+                    amount.toDoubleOrNull()?.let { onConfirm(it, selectedMethod, payoutDetails) }
                 },
-                enabled = amount.toDoubleOrNull()?.let { it > 0 && it <= currentBalance } == true
+                enabled = !isProcessing &&
+                    amount.toDoubleOrNull()?.let { it > 0 && it <= currentBalance } == true &&
+                    payoutDetails.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = RexoColors.AccentOrange
+                )
             ) {
-                Text("Withdraw")
+                if (isProcessing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Withdraw")
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isProcessing) {
                 Text("Cancel")
             }
         }
