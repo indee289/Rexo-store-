@@ -96,10 +96,15 @@ jobs:
       - name: 🔥 Create google-services.json
         run: |
           mkdir -p app
-          cat > app/google-services.json << 'EOF'
+          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            cat > app/google-services.json << 'EOF'
           ${{ secrets.GOOGLE_SERVICES_JSON }}
           EOF
-          echo "✅ google-services.json created"
+            echo "✅ google-services.json created from secret"
+          else
+            echo "⚠️  GOOGLE_SERVICES_JSON secret not set, using template"
+            cp app/google-services.json.template app/google-services.json
+          fi
 
       # ============================================
       # STEP 7: Decode and Setup Keystore (Release Only)
