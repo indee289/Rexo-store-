@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Rebuild Home screen as 'Discover' screen matching reference. Remove all fake data (John Doe, hardcoded balance, fake campaigns). Connect to real Supabase data for campaigns listing. Implement search bar, category filter chips, campaign cards with progress bars, and clean bottom navigation.",
+  "status": "in_progress",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/home/HomeScreen.kt completely to match the reference 'Discover' design: Title 'Discover' at top left, notification bell icon at top right. Search bar with placeholder 'Search for a campaign...'. Filter icon + horizontal category chips (All, Music, Logo, Clipping, UGC - or use categories from the campaigns table 'category' field). Campaign count text: 'X of Y campaigns'. Campaign list cards with: rounded square icon area with badge label (category), campaign name (bold), platform icons row (small icons for Instagram/TikTok/YouTube/X), bookmark icon (top right), progress bar (green/orange/red based on filled_slots/slots percentage), budget info '$X,XXX' display. Clean white background throughout.",
+    "Update app/src/main/java/com/rexo/marketplace/ui/viewmodel/CampaignViewModel.kt: Remove mock/fallback data from the catch blocks. When Supabase fails, show proper empty state or error state - never fake data. Load campaigns from Supabase 'campaigns' table. Support search query filtering and category filtering. Expose loading/error/empty states.",
+    "Update app/src/main/java/com/rexo/marketplace/data/repository/CampaignRepository.kt: Remove all mock data in catch blocks. On error, throw or return Result.failure so the ViewModel can show proper error state. Map Supabase campaign fields (from schema.sql: id, title, category, budget, payout_per_creator, deadline, slots, filled_slots, status, brand_name, brand_avatar, image) to the CampaignItem model. Add search support.",
+    "Ensure the HomeScreen receives navigation callbacks for: notification bell click -> navigate to notifications, campaign card click -> navigate to campaign details, bottom nav items work correctly."
+  ],
+  "acceptance_criteria": [
+    "HomeScreen shows 'Discover' title, search bar, category chips, campaign cards - no fake data",
+    "Campaign cards show progress bar based on filled_slots/slots ratio",
+    "When Supabase has no campaigns or errors, proper empty/error states are shown (no fake campaigns)",
+    "All hardcoded values like 'John Doe', wallet balance 15234.50, etc. are removed from HomeScreen",
+    "Search and filter functionality is wired to ViewModel",
+    "Code compiles correctly"
+  ],
+  "verification": [
+    "Run ./gradlew assembleDebug and confirm build passes"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

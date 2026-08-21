@@ -1,91 +1,74 @@
 package com.rexo.marketplace.ui.screens.home
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.rexo.marketplace.ui.components.FloatingGlassCard
-import com.rexo.marketplace.ui.components.GlassSurface
+import androidx.compose.ui.unit.sp
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
-import kotlinx.coroutines.delay
+import com.rexo.marketplace.ui.viewmodel.CampaignItem
+import com.rexo.marketplace.ui.viewmodel.CampaignUiState
+import com.rexo.marketplace.ui.viewmodel.CampaignViewModel
 
 /**
- * Modern Home Dashboard Screen with completely new UI/UX
- * Features:
- * - Hero section with wallet balance
- * - Role switcher chip
- * - Stats cards with animated counters
- * - Featured campaigns carousel
- * - Quick actions grid
- * - Activity feed
- * - Floating action button
+ * Discover Screen (Home)
+ *
+ * Clean white design with:
+ * - "Discover" title at top left
+ * - Notification bell icon at top right
+ * - Search bar with placeholder
+ * - Category filter chips (horizontal scrolling)
+ * - Campaign count ("X of Y campaigns")
+ * - Campaign cards with progress bars
+ * - Proper loading/error/empty states
+ *
+ * No fake data - all content from Supabase via CampaignViewModel.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToWallet: () -> Unit = {},
     onNavigateToCampaigns: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    campaignViewModel: CampaignViewModel? = null
 ) {
-    var selectedRole by remember { mutableStateOf("Creator") }
-    var walletBalance by remember { mutableStateOf(15234.50) }
-    var pendingEarnings by remember { mutableStateOf(2450.00) }
-    var activeCampaigns by remember { mutableStateOf(12) }
-    var completedTasks by remember { mutableStateOf(45) }
-    
-    val roles = listOf("Creator", "Brand", "Admin")
-    
-    // Animated balance
-    val animatedBalance by animateFloatAsState(
-        targetValue = walletBalance.toFloat(),
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "balance"
-    )
-    
+    // If no ViewModel is provided, show a placeholder
+    // In production, the ViewModel will be injected via the NavGraph
+    val viewModel = campaignViewModel
+
+    val uiState by viewModel?.uiState?.collectAsState()
+        ?: remember { mutableStateOf(CampaignUiState(isLoading = true)) }
+    val campaigns by viewModel?.campaigns?.collectAsState()
+        ?: remember { mutableStateOf(emptyList<CampaignItem>()) }
+    val totalCount by viewModel?.totalCount?.collectAsState()
+        ?: remember { mutableStateOf(0) }
+    val filteredCount by viewModel?.filteredCount?.collectAsState()
+        ?: remember { mutableStateOf(0) }
+    val searchQuery by viewModel?.searchQuery?.collectAsState()
+        ?: remember { mutableStateOf("") }
+    val selectedCategory by viewModel?.selectedCategory?.collectAsState()
+        ?: remember { mutableStateOf("All") }
+    val categories by viewModel?.categories?.collectAsState()
+        ?: remember { mutableStateOf(listOf("All", "Music", "Logo", "Clipping", "UGC")) }
+
     Scaffold(
-        topBar = {
-            HomeTopBar(
-                onProfileClick = onNavigateToProfile,
-                onNotificationClick = { /* TODO */ }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* TODO: Create campaign */ },
-                containerColor = RexoTheme.colorScheme.primary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(64.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Create Campaign",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
+        containerColor = Color.White
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -93,632 +76,487 @@ fun HomeScreen(
                 .padding(paddingValues),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            // Hero Section - Wallet Balance
+            // Header: "Discover" title + notification bell
             item {
-                WalletBalanceHero(
-                    balance = animatedBalance.toDouble(),
-                    pendingEarnings = pendingEarnings,
-                    onWalletClick = onNavigateToWallet,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                DiscoverHeader(
+                    onNotificationClick = onNavigateToNotifications
                 )
             }
-            
-            // Role Switcher
+
+            // Search bar
             item {
-                RoleSwitcher(
-                    roles = roles,
-                    selectedRole = selectedRole,
-                    onRoleSelected = { selectedRole = it },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = { viewModel?.updateSearchQuery(it) },
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
-            
-            // Stats Cards
+
+            // Filter chips row
             item {
-                StatsSection(
-                    activeCampaigns = activeCampaigns,
-                    completedTasks = completedTasks,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                FilterChipsRow(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { viewModel?.selectCategory(it) },
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            
-            // Section Title
+
+            // Campaign count
             item {
-                Text(
-                    text = "Featured Campaigns",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                CampaignCountText(
+                    filteredCount = filteredCount,
+                    totalCount = totalCount,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
-            
-            // Featured Campaigns Carousel
-            item {
-                FeaturedCampaignsCarousel(
-                    campaigns = listOf(
-                        CampaignPreview("Tech Product Launch", 5000.0, "Instagram", 15),
-                        CampaignPreview("Fashion Brand Collab", 3500.0, "YouTube", 8),
-                        CampaignPreview("Food Review Series", 2000.0, "TikTok", 20)
-                    ),
-                    onCampaignClick = { onNavigateToCampaigns() }
-                )
-            }
-            
-            // Quick Actions
-            item {
-                Text(
-                    text = "Quick Actions",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-                )
-            }
-            
-            item {
-                QuickActionsGrid(
-                    actions = listOf(
-                        QuickAction("Browse", Icons.Outlined.Search, RexoTheme.colorScheme.primary),
-                        QuickAction("Apply", Icons.Outlined.Send, RexoTheme.colorScheme.secondary),
-                        QuickAction("Wallet", Icons.Outlined.AccountBalanceWallet, RexoTheme.colorScheme.tertiary),
-                        QuickAction("Shop", Icons.Outlined.ShoppingCart, Color(0xFFF59E0B))
-                    ),
-                    onActionClick = { action ->
-                        when (action.title) {
-                            "Browse" -> onNavigateToCampaigns()
-                            "Wallet" -> onNavigateToWallet()
-                            else -> { /* TODO */ }
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-                )
-            }
-            
-            // Activity Feed
-            item {
-                Text(
-                    text = "Recent Activity",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-                )
-            }
-            
-            items(5) { index ->
-                ActivityItem(
-                    title = when (index) {
-                        0 -> "Campaign Payment Received"
-                        1 -> "New Campaign Available"
-                        2 -> "Application Approved"
-                        3 -> "Withdrawal Processed"
-                        else -> "KYC Verified"
-                    },
-                    subtitle = "${index + 1} hours ago",
-                    icon = when (index) {
-                        0 -> Icons.Outlined.Payments
-                        1 -> Icons.Outlined.Campaign
-                        2 -> Icons.Outlined.CheckCircle
-                        3 -> Icons.Outlined.CreditCard
-                        else -> Icons.Outlined.VerifiedUser
-                    },
-                    iconColor = when (index % 4) {
-                        0 -> RexoTheme.colorScheme.primary
-                        1 -> RexoTheme.colorScheme.secondary
-                        2 -> Color(0xFF10B981)
-                        else -> Color(0xFFF59E0B)
-                    },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                )
+
+            // Content based on state
+            when {
+                uiState.isLoading -> {
+                    item {
+                        LoadingState(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp)
+                        )
+                    }
+                }
+
+                uiState.error != null -> {
+                    item {
+                        ErrorState(
+                            message = uiState.error ?: "Something went wrong",
+                            onRetry = { viewModel?.loadCampaigns() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp)
+                        )
+                    }
+                }
+
+                campaigns.isEmpty() -> {
+                    item {
+                        EmptyState(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp)
+                        )
+                    }
+                }
+
+                else -> {
+                    items(campaigns, key = { it.id }) { campaign ->
+                        CampaignCard(
+                            campaign = campaign,
+                            onClick = { onNavigateToCampaigns() },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar(
-    onProfileClick: () -> Unit,
+private fun DiscoverHeader(
     onNotificationClick: () -> Unit
 ) {
-    TopAppBar(
-        title = {
-            Column {
-                Text(
-                    text = "Good Morning",
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = "John Doe",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        },
-        actions = {
-            // Notification Bell with Badge
-            Box {
-                IconButton(onClick = onNotificationClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.Notifications,
-                        contentDescription = "Notifications"
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-8).dp, y = 8.dp)
-                        .clip(CircleShape)
-                        .background(RexoTheme.colorScheme.error)
-                )
-            }
-            
-            // Profile Avatar
-            IconButton(onClick = onProfileClick) {
-                Surface(
-                    shape = CircleShape,
-                    color = RexoTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Profile",
-                        modifier = Modifier.padding(6.dp),
-                        tint = RexoTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Discover",
+            style = RexoTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = RexoColors.TextPrimary
         )
+
+        IconButton(onClick = onNotificationClick) {
+            Icon(
+                imageVector = Icons.Outlined.Notifications,
+                contentDescription = "Notifications",
+                tint = RexoColors.TextPrimary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = {
+            Text(
+                text = "Search for a campaign...",
+                color = RexoColors.TextSecondary
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = "Search",
+                tint = RexoColors.TextSecondary
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp)),
+        colors = TextFieldDefaults.colors(
+            unfocusedContainerColor = RexoColors.Gray100,
+            focusedContainerColor = RexoColors.Gray100,
+            unfocusedIndicatorColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            cursorColor = RexoColors.AccentOrange
+        ),
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true
     )
 }
 
 @Composable
-fun WalletBalanceHero(
-    balance: Double,
-    pendingEarnings: Double,
-    onWalletClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    FloatingGlassCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onWalletClick),
-        shape = RoundedCornerShape(24.dp),
-        backgroundColor = Brush.horizontalGradient(
-            colors = listOf(
-                RexoTheme.colorScheme.primary.copy(alpha = 0.15f),
-                RexoTheme.colorScheme.secondary.copy(alpha = 0.15f)
-            )
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Total Balance",
-                    style = RexoTheme.typography.bodyMedium,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                
-                Icon(
-                    imageVector = Icons.Outlined.AccountBalanceWallet,
-                    contentDescription = "Wallet",
-                    tint = RexoTheme.colorScheme.primary
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "₹${String.format("%,.2f", balance)}",
-                style = RexoTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = RexoTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "Pending",
-                        style = RexoTheme.typography.bodySmall,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        text = "₹${String.format("%,.2f", pendingEarnings)}",
-                        style = RexoTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFF59E0B)
-                    )
-                }
-                
-                Button(
-                    onClick = onWalletClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = RexoTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowForward,
-                        contentDescription = "View Wallet",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("View Wallet")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RoleSwitcher(
-    roles: List<String>,
-    selectedRole: String,
-    onRoleSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(roles) { role ->
-            val isSelected = role == selectedRole
-            
-            val backgroundColor by animateColorAsState(
-                targetValue = if (isSelected) RexoTheme.colorScheme.primary else RexoTheme.colorScheme.surfaceVariant,
-                animationSpec = tween(300),
-                label = "role_bg"
-            )
-            
-            val contentColor by animateColorAsState(
-                targetValue = if (isSelected) RexoTheme.colorScheme.onPrimary else RexoTheme.colorScheme.onSurfaceVariant,
-                animationSpec = tween(300),
-                label = "role_content"
-            )
-            
-            val scale by animateFloatAsState(
-                targetValue = if (isSelected) 1f else 0.95f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
-                label = "role_scale"
-            )
-            
-            Surface(
-                modifier = Modifier
-                    .scale(scale)
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { onRoleSelected(role) },
-                color = backgroundColor,
-                shape = RoundedCornerShape(16.dp),
-                tonalElevation = if (isSelected) 4.dp else 0.dp
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = when (role) {
-                            "Creator" -> Icons.Outlined.Person
-                            "Brand" -> Icons.Outlined.Store
-                            else -> Icons.Outlined.AdminPanelSettings
-                        },
-                        contentDescription = role,
-                        tint = contentColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = role,
-                        style = RexoTheme.typography.bodyMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = contentColor
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StatsSection(
-    activeCampaigns: Int,
-    completedTasks: Int,
+private fun FilterChipsRow(
+    categories: List<String>,
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        StatCard(
-            title = "Active",
-            value = activeCampaigns.toString(),
-            icon = Icons.Outlined.Campaign,
-            color = RexoTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f)
-        )
-        
-        StatCard(
-            title = "Completed",
-            value = completedTasks.toString(),
-            icon = Icons.Outlined.CheckCircle,
-            color = Color(0xFF10B981),
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun StatCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    GlassSurface(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        backgroundColor = color.copy(alpha = 0.1f)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
+        // Filter icon button
+        IconButton(
+            onClick = { /* Filter options */ },
+            modifier = Modifier.padding(start = 12.dp)
         ) {
             Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = color,
-                modifier = Modifier.size(28.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Text(
-                text = value,
-                style = RexoTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = RexoTheme.colorScheme.onSurface
-            )
-            
-            Text(
-                text = title,
-                style = RexoTheme.typography.bodySmall,
-                color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                imageVector = Icons.Outlined.FilterList,
+                contentDescription = "Filter",
+                tint = RexoColors.TextPrimary
             )
         }
-    }
-}
 
-data class CampaignPreview(
-    val title: String,
-    val budget: Double,
-    val platform: String,
-    val applicants: Int
-)
-
-@Composable
-fun FeaturedCampaignsCarousel(
-    campaigns: List<CampaignPreview>,
-    onCampaignClick: (CampaignPreview) -> Unit
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(campaigns) { campaign ->
-            CampaignCard(
-                campaign = campaign,
-                onClick = { onCampaignClick(campaign) }
-            )
-        }
-    }
-}
-
-@Composable
-fun CampaignCard(
-    campaign: CampaignPreview,
-    onClick: () -> Unit
-) {
-    FloatingGlassCard(
-        modifier = Modifier
-            .width(280.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
+        // Horizontal scrolling category chips
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(end = 20.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = RexoTheme.colorScheme.primaryContainer
-                ) {
-                    Text(
-                        text = campaign.platform,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = RexoTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = RexoTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                
-                Text(
-                    text = "₹${String.format("%,.0f", campaign.budget)}",
-                    style = RexoTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF10B981)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Text(
-                text = campaign.title,
-                style = RexoTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                color = RexoTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.People,
-                    contentDescription = "Applicants",
-                    modifier = Modifier.size(16.dp),
-                    tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${campaign.applicants} applicants",
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            items(categories) { category ->
+                val isSelected = category == selectedCategory
+
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onCategorySelected(category) },
+                    label = {
+                        Text(
+                            text = category,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = RexoColors.AccentOrange,
+                        selectedLabelColor = Color.White,
+                        containerColor = RexoColors.Gray100,
+                        labelColor = RexoColors.TextPrimary
+                    ),
+                    border = null
                 )
             }
         }
     }
 }
 
-data class QuickAction(
-    val title: String,
-    val icon: ImageVector,
-    val color: Color
-)
-
 @Composable
-fun QuickActionsGrid(
-    actions: List<QuickAction>,
-    onActionClick: (QuickAction) -> Unit,
+private fun CampaignCountText(
+    filteredCount: Int,
+    totalCount: Int,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        actions.forEach { action ->
-            QuickActionButton(
-                action = action,
-                onClick = { onActionClick(action) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
+    Text(
+        text = "$filteredCount of $totalCount campaigns",
+        style = RexoTheme.typography.bodyMedium,
+        color = RexoColors.TextSecondary,
+        modifier = modifier
+    )
 }
 
 @Composable
-fun QuickActionButton(
-    action: QuickAction,
+private fun CampaignCard(
+    campaign: CampaignItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scale by remember { mutableStateOf(Animatable(1f)) }
-    
-    GlassSurface(
+    val slotsRatio = if (campaign.slots > 0) {
+        campaign.filledSlots.toFloat() / campaign.slots.toFloat()
+    } else 0f
+
+    val progressColor = when {
+        slotsRatio < 0.5f -> RexoColors.Success
+        slotsRatio < 0.8f -> RexoColors.Warning
+        else -> RexoColors.Error
+    }
+
+    val progressPercentage = (slotsRatio * 100).toInt()
+
+    Surface(
         modifier = modifier
-            .aspectRatio(1f)
-            .scale(scale.value)
+            .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        backgroundColor = action.color.copy(alpha = 0.1f)
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        border = BorderStroke(1.dp, RexoColors.CardBorder)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                imageVector = action.icon,
-                contentDescription = action.title,
-                modifier = Modifier.size(32.dp),
-                tint = action.color
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Left: Brand icon area with category badge
+                Box(
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    // Rounded square with first letter of brand
+                    Surface(
+                        modifier = Modifier.size(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = RexoColors.Gray100
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = campaign.brandName.firstOrNull()?.uppercase() ?: "?",
+                                style = RexoTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = RexoColors.AccentOrange
+                            )
+                        }
+                    }
+
+                    // Category badge on the icon
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .offset(y = 6.dp),
+                        shape = RoundedCornerShape(4.dp),
+                        color = RexoColors.AccentOrange
+                    ) {
+                        Text(
+                            text = campaign.category,
+                            style = RexoTheme.typography.labelSmall,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                            fontSize = 9.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Middle: Campaign info
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Campaign title
+                    Text(
+                        text = campaign.title,
+                        style = RexoTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = RexoColors.TextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Platform icons row
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Instagram icon
+                        Icon(
+                            imageVector = Icons.Outlined.CameraAlt,
+                            contentDescription = "Instagram",
+                            modifier = Modifier.size(14.dp),
+                            tint = RexoColors.Gray400
+                        )
+                        // TikTok icon (using music note as substitute)
+                        Icon(
+                            imageVector = Icons.Outlined.MusicNote,
+                            contentDescription = "TikTok",
+                            modifier = Modifier.size(14.dp),
+                            tint = RexoColors.Gray400
+                        )
+                        // YouTube icon (using play as substitute)
+                        Icon(
+                            imageVector = Icons.Outlined.PlayCircle,
+                            contentDescription = "YouTube",
+                            modifier = Modifier.size(14.dp),
+                            tint = RexoColors.Gray400
+                        )
+                        // X icon (using tag as substitute)
+                        Icon(
+                            imageVector = Icons.Outlined.Tag,
+                            contentDescription = "X",
+                            modifier = Modifier.size(14.dp),
+                            tint = RexoColors.Gray400
+                        )
+                    }
+                }
+
+                // Bookmark icon at top-right
+                IconButton(
+                    onClick = { /* Bookmark */ },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Bookmark",
+                        tint = RexoColors.Gray400,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Progress bar
+            LinearProgressIndicator(
+                progress = { slotsRatio.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = progressColor,
+                trackColor = RexoColors.Gray200
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = action.title,
-                style = RexoTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = RexoTheme.colorScheme.onSurface
-            )
+
+            // Budget info row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$progressPercentage% / \$${formatBudget(campaign.payoutPerCreator)}",
+                    style = RexoTheme.typography.bodySmall,
+                    color = RexoColors.TextSecondary
+                )
+
+                Text(
+                    text = "\$${formatBudget(campaign.budget)} / target",
+                    style = RexoTheme.typography.bodySmall,
+                    color = RexoColors.TextSecondary
+                )
+            }
         }
     }
 }
 
 @Composable
-fun ActivityItem(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    iconColor: Color,
+private fun LoadingState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator(
+            color = RexoColors.AccentOrange,
+            modifier = Modifier.size(40.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Loading campaigns...",
+            style = RexoTheme.typography.bodyMedium,
+            color = RexoColors.TextSecondary
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(
+    message: String,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassSurface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Icon(
+            imageVector = Icons.Outlined.Error,
+            contentDescription = "Error",
+            modifier = Modifier.size(48.dp),
+            tint = RexoColors.Error
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = message,
+            style = RexoTheme.typography.bodyMedium,
+            color = RexoColors.TextSecondary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = RexoColors.AccentOrange
+            ),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = iconColor.copy(alpha = 0.15f),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    modifier = Modifier.padding(12.dp),
-                    tint = iconColor
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = RexoTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = RexoTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = subtitle,
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-            
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = "View",
-                tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
+            Text("Retry")
         }
     }
+}
+
+@Composable
+private fun EmptyState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Campaign,
+            contentDescription = "No campaigns",
+            modifier = Modifier.size(48.dp),
+            tint = RexoColors.Gray300
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "No campaigns found",
+            style = RexoTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = RexoColors.TextPrimary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Try adjusting your search or filters",
+            style = RexoTheme.typography.bodyMedium,
+            color = RexoColors.TextSecondary
+        )
+    }
+}
+
+/**
+ * Format a budget value with commas for display.
+ */
+private fun formatBudget(amount: Double): String {
+    return String.format("%,.0f", amount)
 }

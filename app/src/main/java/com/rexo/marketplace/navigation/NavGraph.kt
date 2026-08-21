@@ -129,7 +129,7 @@ fun RexoNavGraph(
             )
         }
 
-        // Home Screen
+        // Home Screen (Discover)
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToWallet = {
@@ -140,6 +140,9 @@ fun RexoNavGraph(
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.route)
+                },
+                onNavigateToNotifications = {
+                    navController.navigate(Screen.Notifications.route)
                 }
             )
         }
