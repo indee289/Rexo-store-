@@ -16,6 +16,21 @@
 - ✅ Better secret handling (works without secrets)
 - ✅ Fallback mechanisms
 
+### Commit 3: `26930a8` - Documentation
+**Added:**
+- ✅ BUILD_STATUS.md - This file
+
+### Commit 4: `6b45a04` - **CRITICAL FIX** ⚡
+**Fixed:**
+- ✅ Create google-services.json IMMEDIATELY after checkout
+- ✅ BEFORE Java/SDK setup
+- ✅ BEFORE Gradle wrapper runs
+- ✅ Inline JSON template (no file dependencies)
+- ✅ Remove duplicate creation steps
+
+**Why This Matters:**
+The `com.google.gms.google-services` plugin runs during Gradle's **configuration phase**, not build phase. It MUST find `app/google-services.json` before any Gradle tasks execute. Previous attempts failed because the file was created too late.
+
 ---
 
 ## 🔧 Current Configuration
