@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix critical bugs: wrong table names (store_products->products, store_orders->orders), nullable DTO fields causing JSON deserialization crashes, and raw error exposure to users",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In app/src/main/java/com/rexo/marketplace/data/repository/ShopRepository.kt: Replace ALL occurrences of 'store_products' with 'products' and ALL occurrences of 'store_orders' with 'orders'",
     "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Replace ALL occurrences of 'store_products' with 'products' and ALL occurrences of 'store_orders' with 'orders'",
@@ -38,5 +38,5 @@
     "Check ErrorUtils.kt exists and has sanitizeErrorMessage function"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All store_products and store_orders references replaced in from() calls. Only remaining references are in Room @Entity annotations and comments (local cache table names, intentionally kept). AdminViewModel also fixed for error sanitization beyond the feature scope. AdminScreen.kt also updated to handle nullable AdminUserDto fields."
 }
