@@ -133,8 +133,20 @@ jobs:
       - name: 🏗️ Build Debug APK
         run: |
           echo "🔨 Building Debug APK..."
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          # Retry logic for network issues
+          for i in 1 2 3; do
+            echo "Attempt $i of 3..."
+            ./gradlew assembleDebug --stacktrace --no-daemon --max-workers=2 && break || {
+              if [ $i -eq 3 ]; then
+                echo "❌ Build failed after 3 attempts"
+                exit 1
+              fi
+              echo "⚠️  Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Debug APK built successfully!"
+        timeout-minutes: 20
 
       # Step 10: Rename & Organize APK
       - name: 📦 Package APK
