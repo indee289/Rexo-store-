@@ -94,6 +94,7 @@ data class AdminCampaignCountDto(
 data class AdminUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
+    val actionError: String? = null,
     val totalUsers: Int = 0,
     val totalCampaigns: Int = 0,
     val pendingKyc: List<AdminKycDto> = emptyList(),
@@ -177,8 +178,13 @@ class AdminViewModel : ViewModel() {
                         filter { eq("id", kycId) }
                     }
                 }
+                _uiState.value = _uiState.value.copy(actionError = null)
                 loadAdminData()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    actionError = "Failed to approve KYC: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
     }
 
@@ -192,8 +198,13 @@ class AdminViewModel : ViewModel() {
                         filter { eq("id", kycId) }
                     }
                 }
+                _uiState.value = _uiState.value.copy(actionError = null)
                 loadAdminData()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    actionError = "Failed to reject KYC: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
     }
 
@@ -207,8 +218,13 @@ class AdminViewModel : ViewModel() {
                         filter { eq("id", withdrawalId) }
                     }
                 }
+                _uiState.value = _uiState.value.copy(actionError = null)
                 loadAdminData()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    actionError = "Failed to approve withdrawal: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
     }
 
@@ -222,8 +238,13 @@ class AdminViewModel : ViewModel() {
                         filter { eq("id", withdrawalId) }
                     }
                 }
+                _uiState.value = _uiState.value.copy(actionError = null)
                 loadAdminData()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    actionError = "Failed to reject withdrawal: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
     }
 
@@ -237,8 +258,13 @@ class AdminViewModel : ViewModel() {
                         filter { eq("id", depositId) }
                     }
                 }
+                _uiState.value = _uiState.value.copy(actionError = null)
                 loadAdminData()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    actionError = "Failed to approve deposit: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
     }
 
@@ -252,9 +278,18 @@ class AdminViewModel : ViewModel() {
                         filter { eq("id", depositId) }
                     }
                 }
+                _uiState.value = _uiState.value.copy(actionError = null)
                 loadAdminData()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    actionError = "Failed to reject deposit: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
+    }
+
+    fun clearActionError() {
+        _uiState.value = _uiState.value.copy(actionError = null)
     }
 }
 
@@ -383,6 +418,44 @@ fun AdminScreen(
                 }
 
                 else -> {
+                    // Action error banner
+                    if (uiState.actionError != null) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = RexoColors.Error.copy(alpha = 0.1f),
+                            border = BorderStroke(1.dp, RexoColors.Error.copy(alpha = 0.3f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = uiState.actionError ?: "",
+                                    style = RexoTheme.typography.bodySmall,
+                                    color = RexoColors.Error,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    onClick = { adminViewModel.clearActionError() },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Close,
+                                        contentDescription = "Dismiss",
+                                        tint = RexoColors.Error,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     when (selectedTab) {
                         0 -> OverviewTab(uiState)
                         1 -> KycTab(uiState, adminViewModel)

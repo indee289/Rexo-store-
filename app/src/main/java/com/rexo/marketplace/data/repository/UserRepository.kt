@@ -29,14 +29,14 @@ class UserRepository {
     /**
      * Ensure a user profile row exists in the 'users' table.
      * If no row exists for the given userId, create one using auth metadata.
-     * Uses upsert to avoid conflicts.
+     * Uses upsert with onConflict to avoid race conditions on concurrent access.
      */
     suspend fun ensureUserProfile(userId: String): UserDto? = withContext(Dispatchers.IO) {
-        // First try to fetch
+        // First try to fetch existing profile
         val existing = getUser(userId)
         if (existing != null) return@withContext existing
 
-        // No row exists - create one from auth session metadata
+        // No row exists - upsert one from auth session metadata
         try {
             val authUser = SupabaseClient.auth.currentUserOrNull()
             val email = authUser?.email ?: ""
@@ -51,9 +51,11 @@ class UserRepository {
                 role = if (isAdminEmail(email)) "admin" else "creator"
             )
 
-            SupabaseClient.client.from("users").insert(newUser)
+            SupabaseClient.client.from("users").upsert(newUser) {
+                onConflict = "id"
+            }
 
-            // Fetch and return the newly created row
+            // Fetch and return the newly created/existing row
             getUser(userId)
         } catch (e: Exception) {
             null

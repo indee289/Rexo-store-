@@ -6,6 +6,9 @@ import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Wallet Repository
@@ -46,7 +49,7 @@ class WalletRepository {
 
     /**
      * Ensure a wallet row exists for the given user.
-     * Creates one with zero balances if not found.
+     * Uses upsert with onConflict to avoid race conditions on concurrent access.
      */
     private suspend fun ensureWallet(userId: String): WalletFullDto? {
         return try {
@@ -58,9 +61,11 @@ class WalletRepository {
                 total_withdrawn = 0.0,
                 currency = "INR"
             )
-            SupabaseClient.client.from("wallets").insert(newWallet)
+            SupabaseClient.client.from("wallets").upsert(newWallet) {
+                onConflict = "user_id"
+            }
 
-            // Fetch and return the newly created wallet
+            // Fetch and return the wallet row
             SupabaseClient.client.from("wallets").select {
                 filter { eq("user_id", userId) }
             }.decodeSingle<WalletFullDto>()
@@ -86,9 +91,16 @@ class WalletRepository {
      */
     suspend fun deposit(amount: Double, paymentMethod: String) = withContext(Dispatchers.IO) {
         val userId = getCurrentUserId()
+        val authUser = SupabaseClient.auth.currentUserOrNull()
+        val userName = authUser?.userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
+            ?: authUser?.userMetadata?.get("name")?.toString()?.removeSurrounding("\"")
+            ?: authUser?.email?.substringBefore("@") ?: "Unknown"
+
         SupabaseClient.client.from("deposits").insert(
             DepositInsertDto(
+                id = "DEP-${System.currentTimeMillis()}-${userId.take(8)}",
                 brand_id = userId,
+                brand_name = userName,
                 amount = amount,
                 payment_method = paymentMethod,
                 transaction_ref = "DEP-${System.currentTimeMillis()}",
@@ -99,15 +111,29 @@ class WalletRepository {
 
     /**
      * Create a withdrawal request in the 'withdrawals' table.
+     * payout_details is serialized as a JSONB object matching the schema.
      */
     suspend fun withdraw(amount: Double, payoutMethod: String, payoutDetails: String) = withContext(Dispatchers.IO) {
         val userId = getCurrentUserId()
+        val authUser = SupabaseClient.auth.currentUserOrNull()
+        val userName = authUser?.userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
+            ?: authUser?.userMetadata?.get("name")?.toString()?.removeSurrounding("\"")
+            ?: authUser?.email?.substringBefore("@") ?: "Unknown"
+
+        val payoutDetailsJson = buildJsonObject {
+            put("method", payoutMethod)
+            put("detail", payoutDetails)
+        }
+
         SupabaseClient.client.from("withdrawals").insert(
             WithdrawalInsertDto(
+                id = "WDR-${System.currentTimeMillis()}-${userId.take(8)}",
                 user_id = userId,
+                user_name = userName,
+                user_role = "creator",
                 amount = amount,
                 payout_method = payoutMethod,
-                payout_details = payoutDetails,
+                payout_details = payoutDetailsJson,
                 status = "pending"
             )
         )
@@ -145,10 +171,13 @@ data class TransactionDto(
 
 /**
  * Insert DTO for deposits table.
+ * Includes all NOT NULL fields required by the schema.
  */
 @Serializable
 data class DepositInsertDto(
+    val id: String,
     val brand_id: String,
+    val brand_name: String,
     val amount: Double,
     val payment_method: String,
     val transaction_ref: String,
@@ -157,13 +186,18 @@ data class DepositInsertDto(
 
 /**
  * Insert DTO for withdrawals table.
+ * Includes all NOT NULL fields required by the schema.
+ * payout_details is JSONB, serialized as a JsonObject.
  */
 @Serializable
 data class WithdrawalInsertDto(
+    val id: String,
     val user_id: String,
+    val user_name: String,
+    val user_role: String = "creator",
     val amount: Double,
     val payout_method: String,
-    val payout_details: String,
+    val payout_details: JsonObject,
     val status: String = "pending"
 )
 

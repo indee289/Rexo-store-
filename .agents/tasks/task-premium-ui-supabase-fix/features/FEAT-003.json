@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Fix 5 issues found in semantic review: (1) campaign_applications INSERT missing required fields, (2) ensureUserProfile/ensureWallet race condition - use upsert, (3) admin actions silently swallow errors, (4) payout_details type mismatch - serialize as JSONB, (5) deposit/withdrawal DTOs missing required fields (id, brand_name, user_name, user_role).",
+  "status": "in_progress",
+  "steps": [
+    "STEP 1 - Fix CampaignRepository.applyToCampaign to pass all NOT NULL columns (id, campaign_title, brand_name, creator_id, creator_name, creator_handle, fee_requested) and use status 'submitted' instead of 'pending'. Update CampaignViewModel.applyToCampaign signature to pass campaign item data.",
+    "STEP 2 - Fix UserRepository.ensureUserProfile to use upsert with onConflict='id' instead of check-then-insert.",
+    "STEP 3 - Fix WalletRepository.ensureWallet to use upsert with onConflict='user_id' instead of plain insert.",
+    "STEP 4 - Fix AdminViewModel actions (approveKyc, rejectKyc, approveWithdrawal, rejectWithdrawal, approveDeposit, rejectDeposit) to surface errors in _uiState.",
+    "STEP 5 - Fix WithdrawalInsertDto.payout_details to use kotlinx.serialization.json.JsonObject for proper JSONB serialization. Add missing fields: id, user_name, user_role. Fix DepositInsertDto to add missing fields: id, brand_name."
+  ],
+  "acceptance_criteria": [
+    "campaign_applications INSERT includes id, campaign_id, campaign_title, brand_name, creator_id, creator_name, creator_handle, fee_requested, pitch, and status='submitted'",
+    "ensureUserProfile uses upsert with onConflict='id'",
+    "ensureWallet uses upsert with onConflict='user_id'",
+    "Admin action errors are surfaced in AdminUiState.error",
+    "WithdrawalInsertDto.payout_details is serialized as a JSON object",
+    "DepositInsertDto has id and brand_name fields",
+    "WithdrawalInsertDto has id, user_name, and user_role fields"
+  ],
+  "verification": ["Manual code review - cannot compile in sandbox (no Android SDK)"],
+  "blocked_reason": null,
+  "findings": null
+}

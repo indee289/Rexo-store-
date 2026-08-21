@@ -115,11 +115,11 @@ class CampaignViewModel(
         _selectedCampaign.value = campaign
     }
 
-    fun applyToCampaign(campaignId: String, proposal: String) {
+    fun applyToCampaign(campaignId: String, campaignTitle: String, brandName: String, feeRequested: Double, proposal: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isProcessing = true) }
             try {
-                repository.applyToCampaign(campaignId, proposal)
+                repository.applyToCampaign(campaignId, campaignTitle, brandName, feeRequested, proposal)
                 _uiState.update {
                     it.copy(
                         isProcessing = false,

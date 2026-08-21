@@ -3,9 +3,11 @@ package com.rexo.marketplace.data.repository
 import com.rexo.marketplace.data.local.CampaignDao
 import com.rexo.marketplace.data.remote.SupabaseClient
 import com.rexo.marketplace.ui.viewmodel.*
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 
 /**
  * Campaign Repository
@@ -51,14 +53,35 @@ class CampaignRepository(
         listOf("All") + categories
     }
 
-    suspend fun applyToCampaign(campaignId: String, proposal: String) = withContext(Dispatchers.IO) {
-        SupabaseClient.client.from("campaign_applications").insert(
-            mapOf(
-                "campaign_id" to campaignId,
-                "proposal" to proposal,
-                "status" to "pending"
-            )
+    suspend fun applyToCampaign(
+        campaignId: String,
+        campaignTitle: String,
+        brandName: String,
+        feeRequested: Double,
+        proposal: String
+    ) = withContext(Dispatchers.IO) {
+        val authUser = SupabaseClient.auth.currentUserOrNull()
+            ?: throw Exception("Not authenticated")
+        val userId = authUser.id
+        val userName = authUser.userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
+            ?: authUser.userMetadata?.get("name")?.toString()?.removeSurrounding("\"")
+            ?: authUser.email?.substringBefore("@") ?: "Unknown"
+        val userHandle = authUser.email?.substringBefore("@") ?: "user"
+
+        val applicationDto = CampaignApplicationInsertDto(
+            id = "APP-${System.currentTimeMillis()}-${userId.take(8)}",
+            campaign_id = campaignId,
+            campaign_title = campaignTitle,
+            brand_name = brandName,
+            creator_id = userId,
+            creator_name = userName,
+            creator_handle = userHandle,
+            fee_requested = feeRequested,
+            pitch = proposal,
+            status = "submitted"
         )
+
+        SupabaseClient.client.from("campaign_applications").insert(applicationDto)
     }
 
     suspend fun createCampaign(request: CreateCampaignRequest) = withContext(Dispatchers.IO) {
@@ -118,3 +141,21 @@ data class CampaignDto(
         image = image
     )
 }
+
+/**
+ * DTO for inserting a campaign application into 'campaign_applications' table.
+ * Includes all NOT NULL fields required by the schema.
+ */
+@Serializable
+data class CampaignApplicationInsertDto(
+    val id: String,
+    val campaign_id: String,
+    val campaign_title: String,
+    val brand_name: String,
+    val creator_id: String,
+    val creator_name: String,
+    val creator_handle: String,
+    val fee_requested: Double,
+    val pitch: String? = null,
+    val status: String = "submitted"
+)

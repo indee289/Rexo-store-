@@ -297,7 +297,13 @@ fun CampaignsScreen(
                 proposalText = ""
             },
             onSubmit = {
-                viewModel?.applyToCampaign(applyingCampaign!!.id, proposalText)
+                viewModel?.applyToCampaign(
+                    campaignId = applyingCampaign!!.id,
+                    campaignTitle = applyingCampaign!!.title,
+                    brandName = applyingCampaign!!.brandName,
+                    feeRequested = applyingCampaign!!.payoutPerCreator,
+                    proposal = proposalText
+                )
             }
         )
     }
