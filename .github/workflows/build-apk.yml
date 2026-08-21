@@ -33,14 +33,14 @@ jobs:
           mkdir -p app
           echo '{
             "project_info": {
-              "project_number": "123456789012",
-              "project_id": "rexo-marketplace",
-              "storage_bucket": "rexo-marketplace.appspot.com"
+              "project_number": "621816896534",
+              "project_id": "rexowallet2026",
+              "storage_bucket": "rexowallet2026.firebasestorage.app"
             },
             "client": [
               {
                 "client_info": {
-                  "mobilesdk_app_id": "1:123456789012:android:abcdef123456",
+                  "mobilesdk_app_id": "1:621816896534:android:6bfc099c9685f8f2d8e937",
                   "android_client_info": {
                     "package_name": "com.rexo.marketplace"
                   }
@@ -48,7 +48,7 @@ jobs:
                 "oauth_client": [],
                 "api_key": [
                   {
-                    "current_key": "AIzaSyDummy-Key-For-Build-Only"
+                    "current_key": "AIzaSyD_EXy40wTJQKRJX-HS1YzeH1pC6Oo1Pak"
                   }
                 ],
                 "services": {
@@ -60,7 +60,7 @@ jobs:
             ],
             "configuration_version": "1"
           }' > app/google-services.json
-          echo "✅ google-services.json created"
+          echo "✅ google-services.json created with REAL Firebase config"
           ls -la app/google-services.json
           cat app/google-services.json
 

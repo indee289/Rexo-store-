@@ -1,37 +1,26 @@
 {
   "project_info": {
-    "project_number": "123456789012",
-    "firebase_url": "https://rexo-marketplace.firebaseio.com",
-    "project_id": "rexo-marketplace",
-    "storage_bucket": "rexo-marketplace.appspot.com"
+    "project_number": "621816896534",
+    "project_id": "rexowallet2026",
+    "storage_bucket": "rexowallet2026.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:abcdef0123456789",
+        "mobilesdk_app_id": "1:621816896534:android:6bfc099c9685f8f2d8e937",
         "android_client_info": {
           "package_name": "com.rexo.marketplace"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAbCdEfGhIjKlMnOpQrStUvWxYz1234567"
+          "current_key": "AIzaSyD_EXy40wTJQKRJX-HS1YzeH1pC6Oo1Pak"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
