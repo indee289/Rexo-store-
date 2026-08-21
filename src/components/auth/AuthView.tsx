@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, Mail, Lock, User, LogIn, UserPlus, Shield } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, LogIn, UserPlus, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabaseAuthService } from '../../services/supabaseAuthService';
 import { useStore } from '../../context/StoreContext';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../lib/supabaseClient';
 
 interface AuthViewProps {
   onSuccess: () => void;
@@ -22,6 +22,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [debugError, setDebugError] = useState('');
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   const loadProfileAndFinish = async (userId: string) => {
     const profile = await supabaseAuthService.getUserProfile(userId);
@@ -107,8 +108,19 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
     } catch (err: any) {
       const msg = err.message || String(err);
       setDebugError(msg);
-      if (msg.includes('Failed to fetch') || msg.includes('fetch')) {
-        setError('Unable to connect. Please try again.');
+      console.error('Auth error:', { message: msg, error: err });
+      
+      // More detailed error detection for connection issues
+      if (
+        msg.includes('Failed to fetch') || 
+        msg.includes('fetch') ||
+        msg.includes('Network') ||
+        msg.includes('timeout') ||
+        msg.includes('CORS') ||
+        err?.status === 0 ||
+        err?.code === 'ERR_NETWORK'
+      ) {
+        setError(`Unable to connect. Please try again. [Debug: ${msg.substring(0, 50)}...]`);
       } else {
         setError(msg || 'An error occurred during authentication.');
       }
@@ -142,6 +154,68 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         {error && (
           <div className="mb-6 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl text-center">
             {error}
+            {debugError && process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 text-[10px] font-mono opacity-70 break-words">
+                Debug: {debugError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DIAGNOSTICS PANEL - Shows environment variables and config */}
+        {!mode.includes('mfa') && (
+          <div className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowDiagnostics(!showDiagnostics)}
+              className="w-full flex items-center justify-between bg-slate-50 hover:bg-slate-100 p-3 text-left transition-colors"
+            >
+              <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                🔧 Configuration
+              </span>
+              {showDiagnostics ? (
+                <ChevronUp size={16} className="text-slate-400" />
+              ) : (
+                <ChevronDown size={16} className="text-slate-400" />
+              )}
+            </button>
+            
+            {showDiagnostics && (
+              <div className="bg-white p-3 space-y-2 border-t border-slate-200 text-[10px] font-mono">
+                <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                  <div className="text-slate-500 font-bold">SUPABASE URL:</div>
+                  <div className={`break-all ${!SUPABASE_URL ? 'text-red-600 font-bold' : 'text-slate-900'}`}>
+                    {SUPABASE_URL || '❌ NOT SET (Build Error!)'}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-1">
+                    Length: {SUPABASE_URL.length} chars {SUPABASE_URL.length === 0 && '← EMPTY!'}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                  <div className="text-slate-500 font-bold">ANON KEY:</div>
+                  <div className={`break-all ${!SUPABASE_ANON_KEY ? 'text-red-600 font-bold' : 'text-slate-900'}`}>
+                    {SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 30) + '...' : '❌ NOT SET (Build Error!)'}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-1">
+                    Length: {SUPABASE_ANON_KEY.length} chars {SUPABASE_ANON_KEY.length === 0 && '← EMPTY!'}
+                  </div>
+                </div>
+
+                {(!SUPABASE_URL || !SUPABASE_ANON_KEY) && (
+                  <div className="bg-red-50 border border-red-300 p-2 rounded">
+                    <div className="text-red-700 font-bold text-[11px]">
+                      ⚠️ CRITICAL: Environment variables are EMPTY!
+                    </div>
+                    <div className="text-red-600 text-[9px] mt-1">
+                      Check: .github/workflows/build-android.yml
+                      <br />
+                      Lines 59-60: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets must be set
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -155,14 +229,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                 maxLength={6}
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-center text-xl tracking-[0.5em] font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-center text-xl tracking-[0.5em] font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 placeholder="000000"
               />
             </div>
             <button
               type="submit"
               disabled={loading || mfaCode.length !== 6}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-6 disabled:opacity-70 disabled:active:scale-100"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -191,7 +265,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                       placeholder="John Doe"
                     />
                   </div>
@@ -235,7 +309,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                   placeholder="hello@example.com"
                 />
               </div>
@@ -250,7 +324,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                   placeholder="••••••••"
                 />
               </div>
@@ -259,7 +333,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-6 disabled:opacity-70 disabled:active:scale-100"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
