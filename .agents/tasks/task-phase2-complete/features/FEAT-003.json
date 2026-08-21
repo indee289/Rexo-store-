@@ -1,0 +1,34 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Complete Services Screen with functional tools (Media Kit Generator, Rate Calculator, Analytics Dashboard, Invoice Generator, Portfolio), enriched Home Screen with welcome card/wallet badge/stats/featured campaigns/recent activity, and full Settings page with language/theme/security/notifications/privacy/terms/help/logout.",
+  "status": "pending",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/services/ServicesScreen.kt - Replace static card grid with functional tabbed or navigable service tools. Each tool as a separate composable within the file or as sub-screens: (1) MediaKitScreen - fetches creator profile stats from Supabase creator_profiles, displays followers/engagement/completed campaigns in styled cards, has a Share button. (2) RateCalculatorScreen - input fields for followers count, engagement rate, platform dropdown. Calculates suggested rate using formula (followers/1000 * engagement_rate * platform_multiplier). Shows result as formatted rate per post/reel/video. (3) AnalyticsDashboardScreen - shows creator earnings (from wallet), campaigns completed (from campaign_applications where status=paid), simple stat cards with totals. (4) InvoiceGeneratorScreen - form with brand name, campaign title, amount, date fields. Save button inserts into a Supabase 'invoices' table (or just shows the formatted invoice). (5) PortfolioScreen - lists completed campaigns from campaign_applications where status in (approved, paid), shows campaign title, brand name, deliverable URL link.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/home/HomeScreen.kt - Add above the existing search/campaigns content: (1) Hero welcome card with 'Good Morning/Afternoon/Evening, {userName}' based on time of day, with quick action icon buttons (Wallet, Campaigns, Chat). (2) Wallet balance badge in header area showing available_balance from wallet (fetched via WalletRepository). (3) Quick stats row with 3 cards: Active Applications count, Total Earnings, Completed Campaigns (fetched from Supabase). (4) Featured/Trending campaigns section (first 3 campaigns marked as featured or with most slots). (5) Recent activity section showing last 5 notifications. Keep existing campaign list below these new sections. Fetch user name from auth session metadata.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/settings/SettingsScreen.kt - Expand to include: (1) Language selector with English/Hindi options (stored in DataStore preference, UI only - no actual translation). (2) Theme selector: System/Light/Dark radio buttons (stored in preference). (3) Security section: Change password button (calls Supabase auth resetPasswordForEmail). (4) Notification preferences: push notifications toggle, email notifications toggle, campaign alerts toggle. (5) Privacy Policy navigation (already exists). (6) Terms of Service screen (inline text content about platform terms). (7) Help & Support section with support email display and copy button. (8) App version info showing 1.0.0. (9) Logout with existing confirmation dialog. All toggles should feel functional (store state in remember or DataStore).",
+    "Create app/src/main/java/com/rexo/marketplace/ui/screens/settings/TermsOfServiceScreen.kt - Full terms content screen with scrollable text covering: acceptance of terms, user accounts, campaign rules, payment terms, intellectual property, limitation of liability, termination, governing law.",
+    "Create app/src/main/java/com/rexo/marketplace/ui/screens/settings/HelpSupportScreen.kt - Support screen with FAQ items (expandable), support email (support@rexo.in with copy button), contact info.",
+    "Update NavGraph.kt to add routes for terms_of_service, help_support if they need separate navigation. Connect from SettingsScreen."
+  ],
+  "acceptance_criteria": [
+    "Services screen has 5 functional tools: Media Kit, Rate Calculator, Analytics, Invoice, Portfolio",
+    "Rate Calculator computes rates based on input values",
+    "Media Kit shows real creator profile data from Supabase",
+    "Home screen shows personalized welcome with user name and time-based greeting",
+    "Home screen shows wallet balance badge fetched from Supabase",
+    "Home screen shows quick stats (applications, earnings, completed campaigns)",
+    "Settings has language selector, theme selector, security, notifications, privacy, terms, help, logout",
+    "Terms of Service and Help screens have real content",
+    "All screens have loading/empty/error states where applicable"
+  ],
+  "verification": [
+    "Inspect ServicesScreen.kt for 5 functional tool implementations with Supabase data",
+    "Inspect HomeScreen.kt for welcome card, wallet badge, stats, and featured sections",
+    "Inspect SettingsScreen.kt for all required settings sections",
+    "Inspect new screen files for proper content and navigation",
+    "Verify NavGraph.kt has all needed routes"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

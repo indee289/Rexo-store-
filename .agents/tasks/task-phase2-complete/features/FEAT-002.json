@@ -1,0 +1,43 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Complete Shop & E-Commerce implementation with full product catalog from Supabase, product detail screen, functional cart, checkout with address and payment method, and order tracking with status timeline. Also implements Campaign Detail Screen with apply functionality and full Chat/Messages system with real Supabase integration.",
+  "status": "pending",
+  "steps": [
+    "Rewrite app/src/main/java/com/rexo/marketplace/data/repository/ShopRepository.kt - Remove mock data dependency. Fetch products from Supabase 'store_products' table (using StoreProduct DTO or simpler ProductDto), cart from local state + Supabase, orders from 'store_orders' table. Add methods: getProducts(category filter, search), getProductById(id), addToCart(productId, qty), updateCartQty, removeFromCart, getCart, placeOrder(address, paymentMethod, items, total) that inserts into store_orders, getOrders() for current user, getOrderById(id).",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/viewmodel/ShopViewModel.kt - Remove constructor dependency on ShopDao. Use default constructor like other ViewModels. Manage product list, cart items (local mutable state list), selected product, orders, search/filter state. Include methods for all shop operations.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/shop/ShopScreen.kt - Full product catalog: search bar, category filter chips, grid of product cards (image placeholder with icon, title, price with optional discount price, stock badge). Each card clickable to navigate to product detail. Cart icon with badge count in top bar.",
+    "Create app/src/main/java/com/rexo/marketplace/ui/screens/shop/ProductDetailScreen.kt - Full product view: large image area, title, description, price (with discounted price if applicable), stock status, Add to Cart button, Buy Now button. Include quantity selector.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/shop/CartScreen.kt - Cart items list with product name/price/image, quantity +/- buttons, remove button, subtotal per item. Total calculation at bottom. Checkout button. Empty cart state.",
+    "Create app/src/main/java/com/rexo/marketplace/ui/screens/shop/CheckoutScreen.kt - Delivery address form (Name, Phone, Address, City, State, Pincode), payment method selection (Wallet Balance, UPI, COD as radio buttons), order summary, Place Order button that creates order in Supabase and clears cart.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/shop/MyPurchasesScreen.kt - Orders list from Supabase. Order cards with: order ID, date, total, status badge. Tap to see order detail with timeline (Placed > Confirmed > Shipped > Delivered).",
+    "Create app/src/main/java/com/rexo/marketplace/ui/screens/campaigns/CampaignDetailScreen.kt - Full campaign detail: brand logo area with first letter, brand name, campaign title, description, budget/payout per creator, slots (X/Y filled progress bar), platform requirements, min followers, guidelines, deadline, Apply button (opens bottom sheet with pitch input and submit). Show application status if already applied. Fetch application status from campaign_applications table.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/screens/chat/ChatScreen.kt - Replace hardcoded messages with real Supabase integration. Create ChatListScreen showing conversations list (fetched from messages table grouped by sender/receiver). Each conversation shows other user name, last message preview, timestamp. ChatDetailScreen with message bubbles, input bar, send button. Messages fetched from Supabase 'messages' table filtered by sender_id/receiver_id pair. SendMessage inserts into messages table.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/data/repository/ChatRepository.kt - Remove dependency on SupabaseClient constructor parameter. Use SupabaseClient singleton directly (like WalletRepository pattern). Fetch conversations by querying messages table and grouping. Send message inserts into messages table with sender_id, receiver_id, content, created_at.",
+    "Rewrite app/src/main/java/com/rexo/marketplace/ui/viewmodel/ChatViewModel.kt - Remove constructor dependency. Use default constructor. Load conversations and messages from ChatRepository.",
+    "Update app/src/main/java/com/rexo/marketplace/navigation/NavGraph.kt - Add routes for: product_detail/{productId}, cart, checkout, my_orders, campaign_detail/{campaignId}, chat_list, chat_detail/{recipientId}. Wire up composables with proper navigation callbacks. Update Shop tab to navigate to product detail, cart, etc."
+  ],
+  "acceptance_criteria": [
+    "Shop shows real products from Supabase store_products table with search and category filters",
+    "Product detail screen shows full info with Add to Cart and Buy Now",
+    "Cart screen allows quantity modification and removal with total calculation",
+    "Checkout screen has address form, payment method selection, and places real order in Supabase",
+    "My Orders shows orders from Supabase with status timeline",
+    "Campaign detail screen shows full campaign info with working Apply button",
+    "Chat list shows conversations from Supabase messages table",
+    "Chat detail shows real messages and can send new messages to Supabase",
+    "All new routes properly added to NavGraph",
+    "No constructor dependencies that break default ViewModel instantiation",
+    "All screens have loading/empty/error states"
+  ],
+  "verification": [
+    "Inspect ShopScreen.kt for Supabase product fetching and proper grid display",
+    "Inspect ProductDetailScreen.kt, CartScreen.kt, CheckoutScreen.kt for complete flows",
+    "Inspect CampaignDetailScreen.kt for full detail with apply functionality",
+    "Inspect ChatScreen.kt for real Supabase message integration",
+    "Inspect NavGraph.kt for all new routes properly defined",
+    "Verify all ViewModels use default constructors matching existing pattern"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
