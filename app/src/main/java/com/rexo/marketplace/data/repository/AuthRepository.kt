@@ -5,8 +5,6 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.exceptions.RestException
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -15,9 +13,27 @@ import kotlinx.serialization.json.put
  * Handles all authentication operations using Supabase Auth
  */
 class AuthRepository {
-    
+
     private val auth = SupabaseClient.auth
-    
+
+    /**
+     * Load session on app start.
+     * Supabase client has autoLoadFromStorage = true, so the session
+     * is restored automatically. This method attempts to refresh it
+     * and returns the current user if a valid session exists.
+     */
+    suspend fun loadSession(): Result<UserInfo?> {
+        return try {
+            // Attempt to refresh the current session to verify it's still valid
+            auth.refreshCurrentSession()
+            val user = auth.currentUserOrNull()
+            Result.success(user)
+        } catch (e: Exception) {
+            // If refresh fails, session is invalid or expired
+            Result.success(null)
+        }
+    }
+
     /**
      * Sign up with email and password
      */
@@ -31,7 +47,7 @@ class AuthRepository {
             auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
-                
+
                 // Add user metadata
                 data = buildJsonObject {
                     fullName?.let { put("full_name", it) }
@@ -39,7 +55,7 @@ class AuthRepository {
                     put("created_at", System.currentTimeMillis())
                 }
             }
-            
+
             // After sign up, get the current user
             val user = auth.currentUserOrNull()
                 ?: return Result.failure(Exception("Sign up succeeded but user is null"))
@@ -50,7 +66,7 @@ class AuthRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Sign in with email and password
      */
@@ -63,7 +79,7 @@ class AuthRepository {
                 this.email = email
                 this.password = password
             }
-            
+
             // After sign in, get the current user
             val user = auth.currentUserOrNull()
                 ?: return Result.failure(Exception("Sign in succeeded but user is null"))
@@ -74,7 +90,7 @@ class AuthRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Sign out current user
      */
@@ -86,33 +102,21 @@ class AuthRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
-     * Get current session
-     */
-    fun getCurrentSession(): Flow<UserInfo?> = flow {
-        try {
-            val session = auth.currentSessionOrNull()
-            emit(session?.user)
-        } catch (e: Exception) {
-            emit(null)
-        }
-    }
-    
-    /**
-     * Check if user is logged in
+     * Check if user is logged in (synchronous check)
      */
     fun isLoggedIn(): Boolean {
         return auth.currentSessionOrNull() != null
     }
-    
+
     /**
-     * Get current user
+     * Get current user (synchronous)
      */
     fun getCurrentUser(): UserInfo? {
         return auth.currentUserOrNull()
     }
-    
+
     /**
      * Send password reset email
      */
@@ -124,7 +128,7 @@ class AuthRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Update password
      */
@@ -138,7 +142,7 @@ class AuthRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Refresh session
      */

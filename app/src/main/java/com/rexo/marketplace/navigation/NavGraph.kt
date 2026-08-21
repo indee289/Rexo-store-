@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,6 +26,8 @@ import com.rexo.marketplace.ui.screens.profile.ProfileScreen
 import com.rexo.marketplace.ui.screens.settings.SettingsScreen
 import com.rexo.marketplace.ui.screens.shop.ShopScreen
 import com.rexo.marketplace.ui.screens.wallet.WalletScreen
+import com.rexo.marketplace.ui.viewmodel.AuthUiState
+import com.rexo.marketplace.ui.viewmodel.AuthViewModel
 
 /**
  * Navigation Graph for Rexo App
@@ -44,7 +47,7 @@ sealed class Screen(val route: String) {
     object Shop : Screen("shop")
 }
 
-// Bottom navigation items
+// Bottom navigation items with updated labels
 sealed class BottomNavItem(
     val route: String,
     val title: String,
@@ -53,25 +56,25 @@ sealed class BottomNavItem(
 ) {
     object Home : BottomNavItem(
         route = Screen.Home.route,
-        title = "Home",
+        title = "Discover",
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home
     )
-    
+
     object Campaigns : BottomNavItem(
         route = Screen.Campaigns.route,
-        title = "Campaigns",
+        title = "Tasks",
         selectedIcon = Icons.Filled.Campaign,
         unselectedIcon = Icons.Outlined.Campaign
     )
-    
+
     object Wallet : BottomNavItem(
         route = Screen.Wallet.route,
         title = "Wallet",
         selectedIcon = Icons.Filled.AccountBalanceWallet,
         unselectedIcon = Icons.Outlined.AccountBalanceWallet
     )
-    
+
     object Profile : BottomNavItem(
         route = Screen.Profile.route,
         title = "Profile",
@@ -83,7 +86,8 @@ sealed class BottomNavItem(
 @Composable
 fun RexoNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Auth.route
+    startDestination: String = Screen.Auth.route,
+    authViewModel: AuthViewModel = viewModel()
 ) {
     NavHost(
         navController = navController,
@@ -120,10 +124,11 @@ fun RexoNavGraph(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
-        
+
         // Home Screen
         composable(Screen.Home.route) {
             HomeScreen(
@@ -138,28 +143,28 @@ fun RexoNavGraph(
                 }
             )
         }
-        
+
         // Campaigns Screen
         composable(Screen.Campaigns.route) {
             CampaignsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         // Wallet Screen
         composable(Screen.Wallet.route) {
             WalletScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         // Notifications Screen
         composable(Screen.Notifications.route) {
             NotificationsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         // Profile Screen
         composable(Screen.Profile.route) {
             ProfileScreen(
@@ -169,21 +174,21 @@ fun RexoNavGraph(
                 }
             )
         }
-        
+
         // Settings Screen
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         // Admin Screen
         composable(Screen.Admin.route) {
             AdminScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         // Shop Screen
         composable(Screen.Shop.route) {
             ShopScreen(
@@ -227,24 +232,24 @@ fun PlaceholderScreen(
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineMedium
             )
-            
+
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Text(
-                text = "🚧 Coming Soon",
+                text = "Coming Soon",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -253,14 +258,38 @@ fun PlaceholderScreen(
 }
 
 /**
- * Main App Scaffold with Bottom Navigation
+ * Main App Scaffold with Bottom Navigation.
+ * Determines start destination based on auth state.
  */
 @Composable
 fun MainScaffold() {
+    val authViewModel: AuthViewModel = viewModel()
+    val uiState by authViewModel.uiState.collectAsState()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    
+
+    // Determine start destination based on auth state
+    val startDestination = remember(uiState) {
+        when (uiState) {
+            is AuthUiState.Authenticated -> Screen.Home.route
+            else -> Screen.Auth.route
+        }
+    }
+
+    // Show loading while checking auth
+    if (uiState is AuthUiState.Loading && currentRoute == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        return
+    }
+
     // Determine if bottom bar should be visible
     val showBottomBar = currentRoute in listOf(
         Screen.Home.route,
@@ -268,7 +297,7 @@ fun MainScaffold() {
         Screen.Wallet.route,
         Screen.Profile.route
     )
-    
+
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -282,7 +311,8 @@ fun MainScaffold() {
         Box(modifier = Modifier.padding(paddingValues)) {
             RexoNavGraph(
                 navController = navController,
-                startDestination = Screen.Auth.route
+                startDestination = startDestination,
+                authViewModel = authViewModel
             )
         }
     }
@@ -299,14 +329,14 @@ fun ModernBottomNavigation(
         BottomNavItem.Wallet,
         BottomNavItem.Profile
     )
-    
+
     NavigationBar(
         tonalElevation = 0.dp,
         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
     ) {
         items.forEach { item ->
             val selected = currentRoute == item.route
-            
+
             NavigationBarItem(
                 icon = {
                     Icon(

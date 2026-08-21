@@ -1,13 +1,15 @@
 package com.rexo.marketplace.ui.screens.auth
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -15,12 +17,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -30,25 +28,20 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.rexo.marketplace.ui.components.GlassSurface
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rexo.marketplace.ui.theme.RexoTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.rexo.marketplace.ui.viewmodel.AuthUiState
+import com.rexo.marketplace.ui.viewmodel.AuthViewModel
 
 /**
- * Modern Auth Screen with completely new UI/UX
- * Features:
- * - Animated gradient background
- * - Glassmorphism effects
- * - Smooth transitions between login/signup
- * - Spring animations
- * - Clean minimalist design
+ * Clean Auth Screen with white minimal design.
+ * Supports Login and Sign Up tabs with real Supabase authentication.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
-    onNavigateToHome: () -> Unit = {}
+    onNavigateToHome: () -> Unit = {},
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var isLogin by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
@@ -56,344 +49,300 @@ fun AuthScreen(
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    
-    val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
 
-    // Animated background colors
-    val infiniteTransition = rememberInfiniteTransition(label = "background")
-    val animatedOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(6000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "gradient"
-    )
+    val focusManager = LocalFocusManager.current
+    val uiState by authViewModel.uiState.collectAsState()
+
+    // Navigate to home when authenticated
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Authenticated) {
+            onNavigateToHome()
+        }
+    }
+
+    val isLoading = uiState is AuthUiState.Loading
+    val errorMessage = (uiState as? AuthUiState.Error)?.message
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        RexoTheme.colorScheme.primary.copy(alpha = 0.3f + animatedOffset * 0.2f),
-                        RexoTheme.colorScheme.secondary.copy(alpha = 0.2f + animatedOffset * 0.3f),
-                        RexoTheme.colorScheme.tertiary.copy(alpha = 0.4f + animatedOffset * 0.2f)
-                    )
-                )
-            )
+            .background(RexoTheme.colorScheme.background)
     ) {
-        // Blurred background circles for depth
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = (-50).dp, y = 100.dp)
-                .scale(1f + animatedOffset * 0.2f)
-                .clip(RoundedCornerShape(50))
-                .background(RexoTheme.colorScheme.primary.copy(alpha = 0.3f))
-                .blur(80.dp)
-        )
-        
-        Box(
-            modifier = Modifier
-                .size(250.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 50.dp, y = (-50).dp)
-                .scale(1f + (1f - animatedOffset) * 0.2f)
-                .clip(RoundedCornerShape(50))
-                .background(RexoTheme.colorScheme.secondary.copy(alpha = 0.3f))
-                .blur(80.dp)
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(top = 64.dp, bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // App Logo/Title with animation
-            val logoScale by animateFloatAsState(
-                targetValue = if (isLogin) 1f else 0.9f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                ),
-                label = "logo"
-            )
-            
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.scale(logoScale)
+            // Logo
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(RexoTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Store,
-                    contentDescription = "Rexo Logo",
-                    modifier = Modifier.size(64.dp),
-                    tint = RexoTheme.colorScheme.onBackground
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
                 Text(
-                    text = "Rexo",
-                    style = RexoTheme.typography.displayLarge,
+                    text = "R",
+                    style = RexoTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
-                    color = RexoTheme.colorScheme.onBackground
-                )
-                
-                Text(
-                    text = "Marketplace",
-                    style = RexoTheme.typography.titleMedium,
-                    color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    color = RexoTheme.colorScheme.onPrimary
                 )
             }
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            // Glassmorphism Card
-            GlassSurface(
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Rexo",
+                style = RexoTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = RexoTheme.colorScheme.onBackground
+            )
+
+            Text(
+                text = "Marketplace",
+                style = RexoTheme.typography.titleMedium,
+                color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Login / Sign Up Tabs
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                backgroundColor = RexoTheme.colorScheme.surface.copy(alpha = 0.7f)
+                horizontalArrangement = Arrangement.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
+                AuthTabItem(
+                    text = "Login",
+                    isSelected = isLogin,
+                    onClick = {
+                        isLogin = true
+                        authViewModel.resetState()
+                    }
+                )
+
+                Spacer(modifier = Modifier.width(32.dp))
+
+                AuthTabItem(
+                    text = "Sign Up",
+                    isSelected = !isLogin,
+                    onClick = {
+                        isLogin = false
+                        authViewModel.resetState()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Error message
+            if (errorMessage != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = RexoTheme.colorScheme.errorContainer
                 ) {
-                    // Toggle Tabs
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AuthTab(
-                            text = "Login",
-                            isSelected = isLogin,
-                            onClick = { isLogin = true },
-                            modifier = Modifier.weight(1f)
+                    Text(
+                        text = errorMessage,
+                        modifier = Modifier.padding(12.dp),
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Form fields
+            AnimatedContent(
+                targetState = isLogin,
+                transitionSpec = {
+                    fadeIn() togetherWith fadeOut()
+                },
+                label = "auth_form"
+            ) { loginMode ->
+                Column {
+                    if (!loginMode) {
+                        // Full Name field (Sign Up only)
+                        CleanTextField(
+                            value = fullName,
+                            onValueChange = { fullName = it },
+                            label = "Full Name",
+                            icon = Icons.Outlined.Person,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            )
                         )
-                        
-                        AuthTab(
-                            text = "Sign Up",
-                            isSelected = !isLogin,
-                            onClick = { isLogin = false },
-                            modifier = Modifier.weight(1f)
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // Email field
+                    CleanTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = "Email",
+                        icon = Icons.Outlined.Email,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (!loginMode) {
+                        // Phone field (Sign Up only)
+                        CleanTextField(
+                            value = phone,
+                            onValueChange = { phone = it },
+                            label = "Phone Number",
+                            icon = Icons.Outlined.Phone,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Phone,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // Password field
+                    CleanTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Password",
+                        icon = Icons.Outlined.Lock,
+                        isPassword = true,
+                        passwordVisible = passwordVisible,
+                        onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        )
+                    )
+
+                    if (loginMode) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Forgot Password?",
+                            style = RexoTheme.typography.bodySmall,
+                            color = RexoTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                .clickable { /* TODO: Forgot password flow */ }
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Animated Form
-                    AnimatedContent(
-                        targetState = isLogin,
-                        transitionSpec = {
-                            slideInHorizontally { width -> if (targetState) -width else width } + fadeIn() togetherWith
-                            slideOutHorizontally { width -> if (targetState) width else -width } + fadeOut()
-                        },
-                        label = "form"
-                    ) { loginMode ->
-                        Column {
-                            if (!loginMode) {
-                                // Full Name (Signup only)
-                                ModernTextField(
-                                    value = fullName,
-                                    onValueChange = { fullName = it },
-                                    label = "Full Name",
-                                    icon = Icons.Outlined.Person,
-                                    keyboardOptions = KeyboardOptions(
-                                        keyboardType = KeyboardType.Text,
-                                        imeAction = ImeAction.Next
-                                    ),
-                                    keyboardActions = KeyboardActions(
-                                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                                    )
-                                )
-                                
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-                            
-                            // Email
-                            ModernTextField(
-                                value = email,
-                                onValueChange = { email = it },
-                                label = "Email",
-                                icon = Icons.Outlined.Email,
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Email,
-                                    imeAction = ImeAction.Next
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                                )
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            if (!loginMode) {
-                                // Phone (Signup only)
-                                ModernTextField(
-                                    value = phone,
-                                    onValueChange = { phone = it },
-                                    label = "Phone Number",
-                                    icon = Icons.Outlined.Phone,
-                                    keyboardOptions = KeyboardOptions(
-                                        keyboardType = KeyboardType.Phone,
-                                        imeAction = ImeAction.Next
-                                    ),
-                                    keyboardActions = KeyboardActions(
-                                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                                    )
-                                )
-                                
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-                            
-                            // Password
-                            ModernTextField(
-                                value = password,
-                                onValueChange = { password = it },
-                                label = "Password",
-                                icon = Icons.Outlined.Lock,
-                                isPassword = true,
-                                passwordVisible = passwordVisible,
-                                onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Password,
-                                    imeAction = ImeAction.Done
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onDone = { focusManager.clearFocus() }
-                                )
-                            )
-                            
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Primary action button
+                    Button(
+                        onClick = {
                             if (loginMode) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                Text(
-                                    text = "Forgot Password?",
-                                    style = RexoTheme.typography.bodySmall,
-                                    color = RexoTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .align(Alignment.End)
-                                        .clickable { /* TODO: Forgot password */ }
+                                authViewModel.signIn(email.trim(), password)
+                            } else {
+                                authViewModel.signUp(
+                                    email.trim(),
+                                    password,
+                                    fullName.trim(),
+                                    phone.trim()
                                 )
                             }
-                            
-                            Spacer(modifier = Modifier.height(24.dp))
-                            
-                            // Submit Button
-                            ModernButton(
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RexoTheme.colorScheme.primary,
+                            contentColor = RexoTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = RexoTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
                                 text = if (loginMode) "Login" else "Create Account",
-                                onClick = {
-                                    scope.launch {
-                                        isLoading = true
-                                        delay(2000) // Simulate API call
-                                        isLoading = false
-                                        onNavigateToHome()
-                                    }
-                                },
-                                isLoading = isLoading,
-                                modifier = Modifier.fillMaxWidth()
+                                style = RexoTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Social Login Divider
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Divider(modifier = Modifier.weight(1f), color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.3f))
-                Text(
-                    text = "OR",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                )
-                Divider(modifier = Modifier.weight(1f), color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.3f))
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Social Login Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SocialLoginButton(
-                    icon = Icons.Outlined.Email,
-                    text = "Google",
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.weight(1f)
-                )
-                
-                SocialLoginButton(
-                    icon = Icons.Outlined.Phone,
-                    text = "Phone",
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
     }
 }
 
+/**
+ * Tab item with underline indicator for Login/Sign Up toggle
+ */
 @Composable
-fun AuthTab(
+private fun AuthTabItem(
     text: String,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) RexoTheme.colorScheme.primary else Color.Transparent,
-        animationSpec = tween(300),
-        label = "tab_bg"
-    )
-    
-    val contentColor by animateColorAsState(
-        targetValue = if (isSelected) RexoTheme.colorScheme.onPrimary else RexoTheme.colorScheme.onSurface,
-        animationSpec = tween(300),
-        label = "tab_content"
-    )
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0.95f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "tab_scale"
-    )
-    
-    Surface(
-        modifier = modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        color = backgroundColor,
-        shape = RoundedCornerShape(16.dp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick)
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(vertical = 12.dp),
             style = RexoTheme.typography.titleMedium,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = contentColor,
-            textAlign = TextAlign.Center
+            color = if (isSelected) {
+                RexoTheme.colorScheme.onBackground
+            } else {
+                RexoTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+            }
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Underline indicator
+        Box(
+            modifier = Modifier
+                .width(32.dp)
+                .height(2.dp)
+                .clip(RoundedCornerShape(1.dp))
+                .background(
+                    if (isSelected) RexoTheme.colorScheme.primary
+                    else RexoTheme.colorScheme.outline
+                )
         )
     }
 }
 
+/**
+ * Clean outlined text field matching the minimal white theme
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModernTextField(
+private fun CleanTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -413,7 +362,7 @@ fun ModernTextField(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = RexoTheme.colorScheme.primary
+                tint = RexoTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingIcon = if (isPassword) {
@@ -421,7 +370,8 @@ fun ModernTextField(
                 IconButton(onClick = onPasswordVisibilityToggle) {
                     Icon(
                         imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                        contentDescription = "Toggle password visibility"
+                        contentDescription = "Toggle password visibility",
+                        tint = RexoTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -430,91 +380,15 @@ fun ModernTextField(
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = true,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
-            unfocusedContainerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f),
+            focusedContainerColor = RexoTheme.colorScheme.background,
+            unfocusedContainerColor = RexoTheme.colorScheme.background,
             focusedBorderColor = RexoTheme.colorScheme.primary,
-            unfocusedBorderColor = RexoTheme.colorScheme.outline.copy(alpha = 0.3f)
+            unfocusedBorderColor = RexoTheme.colorScheme.outline,
+            focusedLabelColor = RexoTheme.colorScheme.primary,
+            unfocusedLabelColor = RexoTheme.colorScheme.onSurfaceVariant
         ),
         modifier = modifier.fillMaxWidth()
     )
-}
-
-@Composable
-fun ModernButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isLoading: Boolean = false
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isLoading) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "button_scale"
-    )
-    
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .height(56.dp)
-            .scale(scale),
-        enabled = !isLoading,
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = RexoTheme.colorScheme.primary,
-            contentColor = RexoTheme.colorScheme.onPrimary
-        )
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = RexoTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
-        } else {
-            Text(
-                text = text,
-                style = RexoTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-fun SocialLoginButton(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(56.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = RexoTheme.colorScheme.surface.copy(alpha = 0.5f)
-        ),
-        border = ButtonDefaults.outlinedButtonBorder.copy(
-            width = 1.dp,
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    RexoTheme.colorScheme.primary.copy(alpha = 0.3f),
-                    RexoTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                )
-            )
-        )
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = text,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, style = RexoTheme.typography.bodyMedium)
-    }
 }
