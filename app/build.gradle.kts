@@ -39,11 +39,17 @@ android {
     
     signingConfigs {
         create("release") {
-            // For local builds
-            storeFile = file("../keystore.jks").takeIf { it.exists() }
-            storePassword = project.findProperty("KEYSTORE_PASSWORD") as String? ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            keyAlias = project.findProperty("KEY_ALIAS") as String? ?: System.getenv("ANDROID_KEY_ALIAS")
-            keyPassword = project.findProperty("KEY_PASSWORD") as String? ?: System.getenv("ANDROID_KEY_PASSWORD")
+            // Check if keystore exists (for CI/CD)
+            val keystoreFile = file("../keystore.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") 
+                    ?: project.findProperty("KEYSTORE_PASSWORD") as String?
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") 
+                    ?: project.findProperty("KEY_ALIAS") as String?
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") 
+                    ?: project.findProperty("KEY_PASSWORD") as String?
+            }
         }
     }
 
@@ -55,8 +61,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Use release signing if available, otherwise debug
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Use release signing if keystore exists, otherwise debug
+            val releaseConfig = signingConfigs.findByName("release")
+            signingConfig = if (releaseConfig?.storeFile?.exists() == true) {
+                releaseConfig
+            } else {
+                println("⚠️  Release keystore not found, using debug signing")
+                signingConfigs.getByName("debug")
+            }
         }
         debug {
             isDebuggable = true

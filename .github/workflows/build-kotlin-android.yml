@@ -107,12 +107,12 @@ jobs:
       - name: 🔐 Setup Release Keystore
         if: github.event.inputs.build_type == 'release' || contains(github.ref, 'tags/v')
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
-          echo "storeFile=release.keystore" >> keystore.properties
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
-          echo "✅ Keystore configured"
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+            echo "✅ Keystore decoded successfully"
+          else
+            echo "⚠️  KEYSTORE_BASE64 secret not found - using debug keystore"
+          fi
 
       # ============================================
       # STEP 8: Grant Execute Permission to Gradlew
@@ -136,9 +136,9 @@ jobs:
       - name: 🏗️ Build Release APK
         if: github.event.inputs.build_type == 'release' || contains(github.ref, 'tags/v')
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           echo "Building Release APK..."
           ./gradlew assembleRelease --stacktrace --info
@@ -278,8 +278,7 @@ jobs:
       - name: 🧹 Cleanup
         if: always()
         run: |
-          rm -f app/release.keystore
-          rm -f keystore.properties
+          rm -f keystore.jks
           rm -f local.properties
           rm -f app/google-services.json
           echo "✅ Cleanup completed"
