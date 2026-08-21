@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Premium UI/UX overhaul of all screens - rebuild every screen with modern premium design: clean white backgrounds, proper card styling with subtle borders, orange-red accent CTAs, campaign cards with progress bars and platform icons, Nuvio-style profile page, clean Admin panel without glassmorphism, and add a Privacy Policy screen with real content.",
+  "status": "pending",
+  "steps": [
+    "STEP 1 - Rebuild HomeScreen (Discover): Keep existing structure but ensure campaign cards have proper progress bars (colored green/amber/red based on fill %), platform icons row, bookmark icon, brand logo square, category badge. Remove any remnant glassmorphism. Ensure search bar and filter chips use clean white style with gray-100 backgrounds.",
+    "STEP 2 - Rebuild CampaignsScreen (Tasks): Clean white cards with subtle border for each campaign. Show brand name, title, payout, deadline, slots progress. Add Apply button per campaign with working CTA (orange-red). Campaign detail dialog with full info. Category filter chips at top.",
+    "STEP 3 - Rebuild WalletScreen: Replace all GlassSurface usages with clean Surface cards (white + subtle border). Balance card shows available, pending, total earned in clean white card. Transaction items use clean card style. Quick action buttons (Add Money, Withdraw) with clean rounded style.",
+    "STEP 4 - Rebuild ProfileScreen (Nuvio-style): Avatar section with edit icon overlay. Stats row (Money earned, Total campaigns, Engagement %). 'Connected accounts' dark button. Settings list items with icon + label + arrow/trailing text. Referrals badge. Logout at bottom in red.",
+    "STEP 5 - Rebuild AdminScreen with clean white UI (no glassmorphism): Remove FloatingGlassCard and GlassSurface from admin. Use clean white Surface cards with subtle gray border. Tabs for Overview/KYC/Transactions/Users. Stats cards with numbers. Real data from Supabase for pending KYC, deposits, withdrawals. Add methods to fetch admin data from Supabase.",
+    "STEP 6 - Rebuild NotificationsScreen: Clean white cards for each notification. Icon based on type (campaign, payment, system). Unread indicator (dot or bold text). Time ago format. Mark all as read button in top bar.",
+    "STEP 7 - Rebuild SettingsScreen: Clean white background. Settings items with icon + label + toggle/arrow. Theme toggle, notification toggles, app version. Sign out button.",
+    "STEP 8 - Rebuild AuthScreen (Login/Register): Clean modern design with white background. Logo/brand at top. Email/password fields with rounded borders. Orange-red 'Sign In'/'Sign Up' button. Tab toggle between Login and Register. Forgot password link.",
+    "STEP 9 - Add PrivacyPolicyScreen: Create new screen at ui/screens/settings/PrivacyPolicyScreen.kt with real privacy policy content for Rexo Marketplace (data collection, usage, sharing, user rights, contact info). Add navigation route in NavGraph.kt. Link from Settings and Profile.",
+    "STEP 10 - Admin auto-access for rexoagency.in@gmail.com: Ensure that in AuthViewModel.checkAdminRole() and UserRepository.isAdminEmail(), the email 'rexoagency.in@gmail.com' is recognized. Also ensure that when this email signs in, a users table row with role='admin' is created/updated if not exists."
+  ],
+  "acceptance_criteria": [
+    "All screens use clean white backgrounds with subtle gray borders on cards",
+    "No GlassSurface or FloatingGlassCard with blur/glass effects anywhere in the app",
+    "Campaign cards show progress bars, platform icons, bookmark icons",
+    "Profile page matches Nuvio reference style (avatar, stats row, connected accounts, settings list)",
+    "Admin panel uses clean white cards without glassmorphism",
+    "Privacy policy screen exists with real content",
+    "rexoagency.in@gmail.com gets admin access automatically",
+    "Auth screen has modern clean design",
+    "Build compiles successfully with ./gradlew assembleDebug"
+  ],
+  "verification": ["Run ./gradlew assembleDebug and confirm zero compilation errors"],
+  "blocked_reason": null,
+  "findings": ""
+}
