@@ -23,6 +23,35 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   const [error, setError] = useState('');
   const [debugError, setDebugError] = useState('');
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagResults, setDiagResults] = useState<{
+    supabaseRaw: string;
+    publicRaw: string;
+    online: boolean | null;
+  } | null>(null);
+
+  const runConnectivityTests = async () => {
+    const online = typeof navigator !== 'undefined' ? navigator.onLine : null;
+    const results = { supabaseRaw: '', publicRaw: '', online };
+
+    // 1. Raw fetch directly against the Supabase root/health endpoint (NOT through supabase-js)
+    try {
+      const res = await fetch(SUPABASE_URL, { method: 'GET', cache: 'no-store' });
+      results.supabaseRaw = `OK status=${res.status} ${res.ok ? '' : '(not ok)'}`;
+    } catch (e: any) {
+      results.supabaseRaw = `FAILED: ${e?.name || 'Error'}: ${e?.message || String(e)}`;
+    }
+
+    // 2. Raw fetch against a well-known always-up public endpoint to check outbound network at all
+    try {
+      const res = await fetch('https://www.google.com', { method: 'GET', cache: 'no-store', mode: 'no-cors' });
+      results.publicRaw = `OK status=${res.status ?? 'opaque'} type=${res.type}`;
+    } catch (e: any) {
+      results.publicRaw = `FAILED: ${e?.name || 'Error'}: ${e?.message || String(e)}`;
+    }
+
+    setDiagResults(results);
+    return results;
+  };
 
   const loadProfileAndFinish = async (userId: string) => {
     const profile = await supabaseAuthService.getUserProfile(userId);
@@ -68,6 +97,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
     setLoading(true);
     setError('');
 
+    // Run independent raw connectivity tests BEFORE the supabase-js call
+    // to isolate whether the failure is supabase-js-specific or a broader fetch problem.
+    const connectivity = await runConnectivityTests();
+
     try {
       if (mode === 'signup') {
         const { user, profile, error: signUpErr } = await supabaseAuthService.signUp(email, password, name, role);
@@ -107,8 +140,29 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
       }
     } catch (err: any) {
       const msg = err.message || String(err);
-      setDebugError(msg);
-      console.error('Auth error:', { message: msg, error: err });
+      const errName = err?.name || 'Unknown';
+      const errType = typeof err;
+      const online = typeof navigator !== 'undefined' ? navigator.onLine : null;
+      const stackLines = (err?.stack || '')
+        .split('\n')
+        .slice(0, 3)
+        .join('\n');
+
+      const detailed = [
+        `type: ${errType}`,
+        `name: ${errName}`,
+        `message: ${msg}`,
+        `navigator.onLine: ${online}`,
+        `stack:`,
+        stackLines,
+        ``,
+        `RAW SUPABASE FETCH: ${connectivity?.supabaseRaw ?? 'not run'}`,
+        `RAW PUBLIC FETCH: ${connectivity?.publicRaw ?? 'not run'}`,
+        `connectivity.onLine: ${connectivity?.online ?? 'n/a'}`,
+      ].join('\n');
+
+      setDebugError(detailed);
+      console.error('Auth error:', { message: msg, error: err, connectivity });
       
       // More detailed error detection for connection issues
       if (
@@ -213,6 +267,27 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                       Lines 59-60: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets must be set
                     </div>
                   </div>
+                )}
+
+                {diagResults && (
+                  <>
+                    <div className="bg-blue-50 border border-blue-200 p-2 rounded">
+                      <div className="text-blue-700 font-bold text-[11px] mb-1">RAW CONNECTIVITY TESTS</div>
+                      <div className="text-slate-900 break-all">navigator.onLine: {String(diagResults.online)}</div>
+                      <div className="text-slate-900 break-all mt-1">Raw Supabase fetch: {diagResults.supabaseRaw}</div>
+                      <div className="text-slate-900 break-all mt-1">Raw public fetch (google.com): {diagResults.publicRaw}</div>
+                      <div className="text-[9px] text-slate-400 mt-1">
+                        If public fetch fails then WebView/network blocks ALL fetch. If public works but Supabase fails then issue reaching Supabase domain / supabase-js usage.
+                      </div>
+                    </div>
+
+                    {debugError && (
+                      <div className="bg-amber-50 border border-amber-300 p-2 rounded">
+                        <div className="text-amber-800 font-bold text-[11px] mb-1">DETAILED ERROR</div>
+                        <div className="text-slate-900 whitespace-pre-wrap break-words">{debugError}</div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
