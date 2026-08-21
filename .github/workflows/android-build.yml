@@ -3,13 +3,11 @@ name: Android CI
 on:
   push:
     branches: [ Rexo-Kotlin, main ]
-  pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
     - name: Checkout
@@ -20,16 +18,9 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: gradle
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-      
-    - name: Install Gradle via APT
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gradle
-        gradle --version
 
     - name: Create google-services.json
       run: |
@@ -66,16 +57,28 @@ jobs:
         EOF
 
     - name: Create local.properties
-      run: |
-        echo "sdk.dir=$ANDROID_HOME" > local.properties
+      run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-    - name: Build with Gradle
-      run: gradle assembleDebug --stacktrace --no-daemon
+    - name: Cache Gradle
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        restore-keys: ${{ runner.os }}-gradle-
+
+    - name: Grant execute permission
+      run: chmod +x gradlew
+
+    - name: Build APK
+      run: |
+        # Use GitHub Actions pre-installed Gradle if gradlew fails
+        ./gradlew assembleDebug --stacktrace || gradle assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
-      if: success()
+      if: always()
       with:
-        name: app-debug-apk
+        name: app-apk
         path: app/build/outputs/apk/debug/*.apk
-        retention-days: 7
