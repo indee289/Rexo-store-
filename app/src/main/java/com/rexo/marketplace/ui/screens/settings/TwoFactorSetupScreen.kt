@@ -323,7 +323,7 @@ fun ActiveMethodsSection(
                     enabled = true
                 )
                 
-                Divider()
+                HorizontalDivider()
                 
                 Button(
                     onClick = onManageBackupCodes,

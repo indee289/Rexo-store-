@@ -212,7 +212,7 @@ fun IncomeExpenseCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Divider()
+            HorizontalDivider()
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -304,7 +304,7 @@ fun CategoryBreakdownCard(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     LinearProgressIndicator(
-                        progress = percentage / 100f,
+                        progress = { percentage / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp),

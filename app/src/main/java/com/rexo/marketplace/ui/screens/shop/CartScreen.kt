@@ -330,7 +330,7 @@ fun PriceBreakdownCard(
             }
             
             Spacer(modifier = Modifier.height(12.dp))
-            Divider()
+            HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
             
             Row(

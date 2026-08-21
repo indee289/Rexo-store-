@@ -3,7 +3,6 @@ package com.rexo.marketplace.data.repository
 import com.rexo.marketplace.data.remote.SupabaseClient
 import com.rexo.marketplace.ui.viewmodel.*
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.realtime
