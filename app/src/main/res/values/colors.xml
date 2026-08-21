@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Rexo Brand Colors -->
+    <color name="indigo_600">#4F46E5</color>
+    <color name="indigo_700">#4338CA</color>
+    <color name="rose_500">#F43F5E</color>
+    <color name="rose_600">#E11D48</color>
+    
+    <!-- Notification Color -->
+    <color name="notification_color">@color/indigo_600</color>
+    
+    <!-- Splash Screen Background -->
+    <color name="splash_background">#0F172A</color>
+    
+    <!-- System UI Colors -->
+    <color name="status_bar_light">#F8FAFC</color>
+    <color name="status_bar_dark">#020617</color>
+</resources>
