@@ -12,41 +12,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.rexo.marketplace.ui.components.FloatingGlassCard
 import com.rexo.marketplace.ui.components.GlassSurface
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
+import com.rexo.marketplace.ui.viewmodel.CartItemData
+import com.rexo.marketplace.ui.viewmodel.ShopViewModel
 
 /**
- * Shopping Cart Screen
- * Features:
- * - Cart item management
- * - Quantity adjustment
- * - Price calculation
- * - Checkout process
+ * Cart Screen
+ * Cart items list with quantity controls, total calculation, and checkout button.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     onNavigateBack: () -> Unit = {},
-    onCheckout: () -> Unit = {}
+    onCheckout: () -> Unit = {},
+    viewModel: ShopViewModel
 ) {
-    var cartItems by remember {
-        mutableStateOf(
-            listOf(
-                CartItem("1", "Premium Hoodie", 1299.0, 2, "https://example.com/hoodie.jpg"),
-                CartItem("2", "Phone Case", 499.0, 1, "https://example.com/case.jpg"),
-                CartItem("3", "Laptop Sticker Pack", 299.0, 3, "https://example.com/stickers.jpg")
-            )
-        )
-    }
-    
-    val subtotal = cartItems.sumOf { it.price * it.quantity }
-    val delivery = if (subtotal > 500) 0.0 else 40.0
-    val discount = if (subtotal > 1000) subtotal * 0.1 else 0.0
-    val total = subtotal + delivery - discount
-    
+    val cartItems by viewModel.cartItems.collectAsState()
+    val cartTotal by viewModel.cartTotal.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -64,8 +50,8 @@ fun CartScreen(
                 },
                 actions = {
                     if (cartItems.isNotEmpty()) {
-                        TextButton(onClick = { cartItems = emptyList() }) {
-                            Text("Clear All")
+                        TextButton(onClick = { viewModel.clearCart() }) {
+                            Text("Clear All", color = RexoColors.Error)
                         }
                     }
                 },
@@ -76,10 +62,49 @@ fun CartScreen(
         },
         bottomBar = {
             if (cartItems.isNotEmpty()) {
-                CheckoutBottomBar(
-                    total = total,
-                    onCheckout = onCheckout
-                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = RexoTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Total Amount",
+                                style = RexoTheme.typography.bodySmall,
+                                color = RexoColors.TextSecondary
+                            )
+                            Text(
+                                text = "\u20B9${String.format("%,.2f", cartTotal)}",
+                                style = RexoTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = RexoColors.AccentOrange
+                            )
+                        }
+
+                        Button(
+                            onClick = onCheckout,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RexoColors.AccentOrange
+                            )
+                        ) {
+                            Text(
+                                text = "Proceed to Checkout",
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                style = RexoTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
         }
     ) { paddingValues ->
@@ -98,8 +123,8 @@ fun CartScreen(
                     Icon(
                         imageVector = Icons.Outlined.ShoppingCart,
                         contentDescription = "Empty Cart",
-                        modifier = Modifier.size(120.dp),
-                        tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        modifier = Modifier.size(100.dp),
+                        tint = RexoColors.Gray300
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
@@ -107,15 +132,19 @@ fun CartScreen(
                         style = RexoTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Add items to get started",
                         style = RexoTheme.typography.bodyMedium,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = RexoColors.TextSecondary
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = onNavigateBack,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RexoColors.AccentOrange
+                        )
                     ) {
                         Text("Continue Shopping")
                     }
@@ -127,33 +156,85 @@ fun CartScreen(
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Cart Items
-                items(cartItems) { item ->
+                items(cartItems, key = { it.id }) { item ->
                     CartItemCard(
                         item = item,
-                        onQuantityChange = { newQuantity ->
-                            cartItems = cartItems.map {
-                                if (it.id == item.id) it.copy(quantity = newQuantity) else it
-                            }
+                        onQuantityChange = { newQty ->
+                            viewModel.updateCartItemQuantity(item.id, newQty)
                         },
                         onRemove = {
-                            cartItems = cartItems.filter { it.id != item.id }
+                            viewModel.removeFromCart(item.id)
                         }
                     )
                 }
-                
-                // Price Breakdown
+
+                // Price breakdown
                 item {
-                    PriceBreakdownCard(
-                        subtotal = subtotal,
-                        delivery = delivery,
-                        discount = discount,
-                        total = total
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    GlassSurface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Price Details",
+                                style = RexoTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Subtotal", color = RexoColors.TextSecondary)
+                                Text(
+                                    "\u20B9${String.format("%,.2f", cartTotal)}",
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Delivery", color = RexoColors.TextSecondary)
+                                Text(
+                                    if (cartTotal >= 500) "FREE" else "\u20B940.00",
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (cartTotal >= 500) RexoColors.Success else RexoColors.TextPrimary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            val totalWithDelivery = if (cartTotal >= 500) cartTotal else cartTotal + 40.0
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "Total",
+                                    style = RexoTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "\u20B9${String.format("%,.2f", totalWithDelivery)}",
+                                    style = RexoTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = RexoColors.AccentOrange
+                                )
+                            }
+                        }
+                    }
                 }
-                
+
                 // Spacer for bottom bar
                 item {
                     Spacer(modifier = Modifier.height(80.dp))
@@ -163,23 +244,15 @@ fun CartScreen(
     }
 }
 
-data class CartItem(
-    val id: String,
-    val name: String,
-    val price: Double,
-    val quantity: Int,
-    val imageUrl: String
-)
-
 @Composable
 fun CartItemCard(
-    item: CartItem,
+    item: CartItemData,
     onQuantityChange: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
-    FloatingGlassCard(
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
@@ -189,22 +262,22 @@ fun CartItemCard(
         ) {
             // Product Image Placeholder
             Surface(
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(72.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = RexoTheme.colorScheme.surfaceVariant
+                color = RexoColors.Gray100
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Image,
-                    contentDescription = item.name,
-                    modifier = Modifier.padding(20.dp),
-                    tint = RexoTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Image,
+                        contentDescription = item.name,
+                        modifier = Modifier.size(28.dp),
+                        tint = RexoColors.Gray400
+                    )
+                }
             }
-            
+
             // Product Details
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -215,7 +288,6 @@ fun CartItemCard(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
-                    
                     IconButton(
                         onClick = onRemove,
                         modifier = Modifier.size(24.dp)
@@ -223,22 +295,22 @@ fun CartItemCard(
                         Icon(
                             imageVector = Icons.Outlined.Close,
                             contentDescription = "Remove",
-                            tint = Color(0xFFEF4444)
+                            tint = RexoColors.Error
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
-                    text = "₹${String.format("%,.2f", item.price)}",
-                    style = RexoTheme.typography.titleMedium,
+                    text = "\u20B9${String.format("%,.2f", item.price)}",
+                    style = RexoTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = RexoTheme.colorScheme.primary
+                    color = RexoColors.AccentOrange
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Quantity Controls
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -250,7 +322,7 @@ fun CartItemCard(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = RexoTheme.colorScheme.surfaceVariant
+                            color = RexoColors.Gray100
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Remove,
@@ -259,26 +331,27 @@ fun CartItemCard(
                             )
                         }
                     }
-                    
+
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = RexoTheme.colorScheme.primaryContainer
+                        color = RexoColors.AccentOrange.copy(alpha = 0.1f)
                     ) {
                         Text(
                             text = item.quantity.toString(),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                             style = RexoTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = RexoColors.AccentOrange
                         )
                     }
-                    
+
                     IconButton(
                         onClick = { onQuantityChange(item.quantity + 1) },
                         modifier = Modifier.size(32.dp)
                     ) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = RexoTheme.colorScheme.primaryContainer
+                            color = RexoColors.Gray100
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Add,
@@ -287,166 +360,15 @@ fun CartItemCard(
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.weight(1f))
-                    
+
                     Text(
-                        text = "₹${String.format("%,.2f", item.price * item.quantity)}",
-                        style = RexoTheme.typography.titleMedium,
+                        text = "\u20B9${String.format("%,.2f", item.price * item.quantity)}",
+                        style = RexoTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun PriceBreakdownCard(
-    subtotal: Double,
-    delivery: Double,
-    discount: Double,
-    total: Double
-) {
-    GlassSurface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Text(
-                text = "Price Details",
-                style = RexoTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            PriceRow(label = "Subtotal", value = subtotal)
-            PriceRow(label = "Delivery", value = delivery, highlight = delivery == 0.0)
-            if (discount > 0) {
-                PriceRow(label = "Discount", value = -discount, isDiscount = true)
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Total",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "₹${String.format("%,.2f", total)}",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = RexoTheme.colorScheme.primary
-                )
-            }
-            
-            if (delivery > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF10B981).copy(alpha = 0.1f)
-                ) {
-                    Text(
-                        text = "Add ₹${String.format("%.0f", 500 - subtotal)} more for FREE delivery!",
-                        modifier = Modifier.padding(12.dp),
-                        style = RexoTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF10B981)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PriceRow(
-    label: String,
-    value: Double,
-    highlight: Boolean = false,
-    isDiscount: Boolean = false
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = RexoTheme.typography.bodyMedium,
-            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
-        Text(
-            text = if (value == 0.0 && highlight) 
-                "FREE" 
-            else 
-                "${if (isDiscount) "-" else ""}₹${String.format("%,.2f", kotlin.math.abs(value))}",
-            style = RexoTheme.typography.bodyMedium,
-            fontWeight = if (highlight || isDiscount) FontWeight.Bold else FontWeight.Normal,
-            color = when {
-                highlight -> Color(0xFF10B981)
-                isDiscount -> Color(0xFF10B981)
-                else -> RexoTheme.colorScheme.onSurface
-            },
-            textDecoration = if (isDiscount && value > 0) TextDecoration.LineThrough else null
-        )
-    }
-}
-
-@Composable
-fun CheckoutBottomBar(
-    total: Double,
-    onCheckout: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 8.dp,
-        color = RexoTheme.colorScheme.surface
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Total Amount",
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Text(
-                    text = "₹${String.format("%,.2f", total)}",
-                    style = RexoTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = RexoTheme.colorScheme.primary
-                )
-            }
-            
-            Button(
-                onClick = onCheckout,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.height(56.dp)
-            ) {
-                Text(
-                    text = "Proceed to Checkout",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = RexoTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
             }
         }
     }

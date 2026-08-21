@@ -1,25 +1,46 @@
 package com.rexo.marketplace.ui.viewmodel
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rexo.marketplace.data.repository.ShopRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * Shop ViewModel
- * Manages products, cart, orders
+ * Manages products, cart (local), and orders.
+ * Default constructor with repository defaulting to ShopRepository().
  */
 class ShopViewModel(
-    private val repository: ShopRepository
+    private val repository: ShopRepository = ShopRepository()
 ) : ViewModel() {
 
     // UI State
     private val _uiState = MutableStateFlow(ShopUiState())
     val uiState: StateFlow<ShopUiState> = _uiState.asStateFlow()
 
-    // Cart
+    // Products
+    private val _products = MutableStateFlow<List<ProductData>>(emptyList())
+    val products: StateFlow<List<ProductData>> = _products.asStateFlow()
+
+    // Selected product for detail screen
+    private val _selectedProduct = MutableStateFlow<ProductData?>(null)
+    val selectedProduct: StateFlow<ProductData?> = _selectedProduct.asStateFlow()
+
+    // Categories
+    private val _categories = MutableStateFlow<List<String>>(listOf("All"))
+    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+
+    // Search query
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // Selected category
+    private val _selectedCategory = MutableStateFlow("All")
+    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+
+    // Cart - managed locally
     private val _cartItems = MutableStateFlow<List<CartItemData>>(emptyList())
     val cartItems: StateFlow<List<CartItemData>> = _cartItems.asStateFlow()
 
@@ -27,125 +48,156 @@ class ShopViewModel(
     private val _orders = MutableStateFlow<List<OrderData>>(emptyList())
     val orders: StateFlow<List<OrderData>> = _orders.asStateFlow()
 
+    // Cart count for badge
+    val cartCount: StateFlow<Int> = _cartItems.map { items ->
+        items.sumOf { it.quantity }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     // Cart Total
     val cartTotal: StateFlow<Double> = _cartItems.map { items ->
         items.sumOf { it.price * it.quantity }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     init {
-        loadCart()
-        loadOrders()
+        loadProducts()
+        loadCategories()
     }
 
-    fun loadCart() {
+    fun loadProducts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val category = _selectedCategory.value
+                val search = _searchQuery.value
+                val result = repository.getProducts(category, search)
+                _products.value = result
+                _uiState.update { it.copy(isLoading = false) }
+            } catch (e: Exception) {
+                _products.value = emptyList()
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message ?: "Failed to load products")
+                }
+            }
+        }
+    }
+
+    private fun loadCategories() {
         viewModelScope.launch {
             try {
-                _cartItems.value = repository.getCartItems()
+                val cats = repository.getCategories()
+                _categories.value = cats
+            } catch (_: Exception) {
+                _categories.value = listOf("All")
+            }
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        loadProducts()
+    }
+
+    fun selectCategory(category: String) {
+        _selectedCategory.value = category
+        loadProducts()
+    }
+
+    fun loadProductById(productId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val product = repository.getProductById(productId)
+                _selectedProduct.value = product
+                _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message ?: "Failed to load product")
+                }
+            }
+        }
+    }
+
+    fun addToCart(product: ProductData, quantity: Int = 1) {
+        val currentCart = _cartItems.value.toMutableList()
+        val existingIndex = currentCart.indexOfFirst { it.productId == product.id }
+
+        if (existingIndex >= 0) {
+            val existing = currentCart[existingIndex]
+            currentCart[existingIndex] = existing.copy(quantity = existing.quantity + quantity)
+        } else {
+            currentCart.add(
+                CartItemData(
+                    id = "cart_${product.id}",
+                    productId = product.id,
+                    name = product.title,
+                    price = product.discountPrice ?: product.price,
+                    quantity = quantity,
+                    imageUrl = product.coverImage
+                )
+            )
+        }
+        _cartItems.value = currentCart
+        _uiState.update {
+            it.copy(showSuccess = true, successMessage = "Added to cart!")
+        }
+    }
+
+    fun updateCartItemQuantity(itemId: String, quantity: Int) {
+        if (quantity <= 0) {
+            removeFromCart(itemId)
+            return
+        }
+        val currentCart = _cartItems.value.toMutableList()
+        val index = currentCart.indexOfFirst { it.id == itemId }
+        if (index >= 0) {
+            currentCart[index] = currentCart[index].copy(quantity = quantity)
+            _cartItems.value = currentCart
+        }
+    }
+
+    fun removeFromCart(itemId: String) {
+        _cartItems.value = _cartItems.value.filter { it.id != itemId }
+    }
+
+    fun clearCart() {
+        _cartItems.value = emptyList()
+    }
+
+    fun placeOrder(shippingAddress: ShippingAddress, paymentMethod: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessing = true, error = null) }
+            try {
+                val items = _cartItems.value
+                val total = items.sumOf { it.price * it.quantity }
+                repository.placeOrder(items, total, shippingAddress, paymentMethod)
+                _cartItems.value = emptyList()
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        showSuccess = true,
+                        successMessage = "Order placed successfully!"
+                    )
+                }
+                loadOrders()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isProcessing = false, error = e.message ?: "Failed to place order")
+                }
             }
         }
     }
 
     fun loadOrders() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 _orders.value = repository.getOrders()
+                _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun addToCart(productId: String, quantity: Int = 1) {
-        viewModelScope.launch {
-            try {
-                repository.addToCart(productId, quantity)
-                loadCart()
-                _uiState.update { 
-                    it.copy(
-                        showSuccess = true,
-                        successMessage = "Added to cart!"
-                    ) 
+                _orders.value = emptyList()
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message ?: "Failed to load orders")
                 }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun updateCartItemQuantity(itemId: String, quantity: Int) {
-        viewModelScope.launch {
-            try {
-                if (quantity <= 0) {
-                    removeFromCart(itemId)
-                } else {
-                    repository.updateCartQuantity(itemId, quantity)
-                    loadCart()
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun removeFromCart(itemId: String) {
-        viewModelScope.launch {
-            try {
-                repository.removeFromCart(itemId)
-                loadCart()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun clearCart() {
-        viewModelScope.launch {
-            try {
-                repository.clearCart()
-                loadCart()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun checkout() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isProcessing = true) }
-            try {
-                repository.checkout()
-                loadCart()
-                loadOrders()
-                _uiState.update { 
-                    it.copy(
-                        isProcessing = false,
-                        showSuccess = true,
-                        successMessage = "Order placed successfully!"
-                    ) 
-                }
-            } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isProcessing = false, error = e.message) 
-                }
-            }
-        }
-    }
-
-    fun reorder(orderId: String) {
-        viewModelScope.launch {
-            try {
-                repository.reorder(orderId)
-                loadCart()
-                _uiState.update { 
-                    it.copy(
-                        showSuccess = true,
-                        successMessage = "Items added to cart!"
-                    ) 
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
             }
         }
     }
@@ -167,6 +219,18 @@ data class ShopUiState(
     val successMessage: String? = null
 )
 
+data class ProductData(
+    val id: String,
+    val title: String,
+    val price: Double,
+    val stock: Int,
+    val category: String,
+    val description: String,
+    val coverImage: String?,
+    val discountPrice: Double?,
+    val status: String
+)
+
 data class CartItemData(
     val id: String,
     val productId: String,
@@ -181,5 +245,16 @@ data class OrderData(
     val items: List<String>,
     val total: Double,
     val status: String,
-    val date: Date
+    val createdAt: String,
+    val shippingAddress: String = "",
+    val paymentMethod: String = ""
+)
+
+data class ShippingAddress(
+    val name: String,
+    val phone: String,
+    val address: String,
+    val city: String,
+    val state: String,
+    val pincode: String
 )

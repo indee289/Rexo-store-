@@ -22,18 +22,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.rexo.marketplace.ui.screens.admin.AdminScreen
 import com.rexo.marketplace.ui.screens.auth.AuthScreen
+import com.rexo.marketplace.ui.screens.campaigns.CampaignDetailScreen
 import com.rexo.marketplace.ui.screens.campaigns.CampaignsScreen
+import com.rexo.marketplace.ui.screens.chat.ChatDetailScreen
+import com.rexo.marketplace.ui.screens.chat.ChatListScreen
 import com.rexo.marketplace.ui.screens.home.HomeScreen
 import com.rexo.marketplace.ui.screens.notifications.NotificationsScreen
 import com.rexo.marketplace.ui.screens.profile.ProfileScreen
 import com.rexo.marketplace.ui.screens.settings.PrivacyPolicyScreen
 import com.rexo.marketplace.ui.screens.settings.SettingsScreen
+import com.rexo.marketplace.ui.screens.shop.CartScreen
+import com.rexo.marketplace.ui.screens.shop.CheckoutScreen
+import com.rexo.marketplace.ui.screens.shop.MyPurchasesScreen
+import com.rexo.marketplace.ui.screens.shop.ProductDetailScreen
 import com.rexo.marketplace.ui.screens.shop.ShopScreen
 import com.rexo.marketplace.ui.screens.services.ServicesScreen
 import com.rexo.marketplace.ui.screens.wallet.WalletScreen
@@ -41,7 +50,9 @@ import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.viewmodel.AuthUiState
 import com.rexo.marketplace.ui.viewmodel.AuthViewModel
 import com.rexo.marketplace.ui.viewmodel.CampaignViewModel
+import com.rexo.marketplace.ui.viewmodel.ChatViewModel
 import com.rexo.marketplace.ui.viewmodel.NotificationViewModel
+import com.rexo.marketplace.ui.viewmodel.ShopViewModel
 
 /**
  * Navigation Graph for Rexo App
@@ -53,14 +64,27 @@ sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object Home : Screen("home")
     object Campaigns : Screen("campaigns")
+    object CampaignDetail : Screen("campaign_detail/{campaignId}") {
+        fun createRoute(campaignId: String) = "campaign_detail/$campaignId"
+    }
     object Wallet : Screen("wallet")
     object Notifications : Screen("notifications")
     object Profile : Screen("profile")
     object Settings : Screen("settings")
     object Admin : Screen("admin")
     object Shop : Screen("shop")
+    object ProductDetail : Screen("product_detail/{productId}") {
+        fun createRoute(productId: String) = "product_detail/$productId"
+    }
+    object Cart : Screen("cart")
+    object Checkout : Screen("checkout")
+    object MyOrders : Screen("my_orders")
     object Services : Screen("services")
     object PrivacyPolicy : Screen("privacy_policy")
+    object ChatList : Screen("chat_list")
+    object ChatDetail : Screen("chat_detail/{recipientId}") {
+        fun createRoute(recipientId: String) = "chat_detail/$recipientId"
+    }
 }
 
 // Bottom navigation items - 5 tabs matching app blueprint
@@ -112,7 +136,9 @@ fun RexoNavGraph(
     startDestination: String = Screen.Auth.route,
     authViewModel: AuthViewModel = viewModel(),
     campaignViewModel: CampaignViewModel = viewModel(),
-    notificationViewModel: NotificationViewModel = viewModel()
+    notificationViewModel: NotificationViewModel = viewModel(),
+    shopViewModel: ShopViewModel = viewModel(),
+    chatViewModel: ChatViewModel = viewModel()
 ) {
     NavHost(
         navController = navController,
@@ -176,6 +202,22 @@ fun RexoNavGraph(
         // Campaigns Screen
         composable(Screen.Campaigns.route) {
             CampaignsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCampaignDetail = { campaignId ->
+                    navController.navigate(Screen.CampaignDetail.createRoute(campaignId))
+                },
+                campaignViewModel = campaignViewModel
+            )
+        }
+
+        // Campaign Detail Screen
+        composable(
+            route = Screen.CampaignDetail.route,
+            arguments = listOf(navArgument("campaignId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val campaignId = backStackEntry.arguments?.getString("campaignId") ?: ""
+            CampaignDetailScreen(
+                campaignId = campaignId,
                 onNavigateBack = { navController.popBackStack() },
                 campaignViewModel = campaignViewModel
             )
@@ -265,7 +307,65 @@ fun RexoNavGraph(
         // Shop Screen
         composable(Screen.Shop.route) {
             ShopScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProductDetail = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                },
+                onNavigateToCart = {
+                    navController.navigate(Screen.Cart.route)
+                },
+                onNavigateToOrders = {
+                    navController.navigate(Screen.MyOrders.route)
+                },
+                viewModel = shopViewModel
+            )
+        }
+
+        // Product Detail Screen
+        composable(
+            route = Screen.ProductDetail.route,
+            arguments = listOf(navArgument("productId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            ProductDetailScreen(
+                productId = productId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCart = {
+                    navController.navigate(Screen.Cart.route)
+                },
+                viewModel = shopViewModel
+            )
+        }
+
+        // Cart Screen
+        composable(Screen.Cart.route) {
+            CartScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onCheckout = {
+                    navController.navigate(Screen.Checkout.route)
+                },
+                viewModel = shopViewModel
+            )
+        }
+
+        // Checkout Screen
+        composable(Screen.Checkout.route) {
+            CheckoutScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOrderPlaced = {
+                    navController.navigate(Screen.MyOrders.route) {
+                        popUpTo(Screen.Shop.route) { inclusive = false }
+                    }
+                },
+                viewModel = shopViewModel
+            )
+        }
+
+        // My Orders Screen
+        composable(Screen.MyOrders.route) {
+            MyPurchasesScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = shopViewModel
             )
         }
 
@@ -273,6 +373,30 @@ fun RexoNavGraph(
         composable(Screen.Services.route) {
             ServicesScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Chat List Screen
+        composable(Screen.ChatList.route) {
+            ChatListScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToChat = { recipientId ->
+                    navController.navigate(Screen.ChatDetail.createRoute(recipientId))
+                },
+                viewModel = chatViewModel
+            )
+        }
+
+        // Chat Detail Screen
+        composable(
+            route = Screen.ChatDetail.route,
+            arguments = listOf(navArgument("recipientId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val recipientId = backStackEntry.arguments?.getString("recipientId") ?: ""
+            ChatDetailScreen(
+                recipientId = recipientId,
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = chatViewModel
             )
         }
     }
@@ -347,6 +471,8 @@ fun MainScaffold() {
     val authViewModel: AuthViewModel = viewModel()
     val campaignViewModel: CampaignViewModel = viewModel()
     val notificationViewModel: NotificationViewModel = viewModel()
+    val shopViewModel: ShopViewModel = viewModel()
+    val chatViewModel: ChatViewModel = viewModel()
     val uiState by authViewModel.uiState.collectAsState()
     val isAdmin by authViewModel.isAdmin.collectAsState()
     val navController = rememberNavController()
@@ -401,7 +527,9 @@ fun MainScaffold() {
                 startDestination = startDestination,
                 authViewModel = authViewModel,
                 campaignViewModel = campaignViewModel,
-                notificationViewModel = notificationViewModel
+                notificationViewModel = notificationViewModel,
+                shopViewModel = shopViewModel,
+                chatViewModel = chatViewModel
             )
         }
     }

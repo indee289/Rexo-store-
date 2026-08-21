@@ -42,6 +42,7 @@ import com.rexo.marketplace.ui.viewmodel.CampaignViewModel
 @Composable
 fun CampaignsScreen(
     onNavigateBack: () -> Unit = {},
+    onNavigateToCampaignDetail: (String) -> Unit = {},
     campaignViewModel: CampaignViewModel? = null
 ) {
     val viewModel = campaignViewModel
@@ -262,7 +263,7 @@ fun CampaignsScreen(
                     items(campaigns) { campaign ->
                         CampaignCardItem(
                             campaign = campaign,
-                            onClick = { selectedCampaign = campaign },
+                            onClick = { onNavigateToCampaignDetail(campaign.id) },
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
                         )
                     }

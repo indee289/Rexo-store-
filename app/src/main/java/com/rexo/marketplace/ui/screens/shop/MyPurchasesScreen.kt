@@ -13,69 +13,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.rexo.marketplace.ui.components.FloatingGlassCard
 import com.rexo.marketplace.ui.components.GlassSurface
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
-import java.text.SimpleDateFormat
-import java.util.*
+import com.rexo.marketplace.ui.viewmodel.OrderData
+import com.rexo.marketplace.ui.viewmodel.ShopViewModel
 
 /**
- * My Purchases Screen
- * Features:
- * - Order history
- * - Order tracking
- * - Reorder functionality
- * - Order details
+ * My Purchases / Orders Screen
+ * Shows orders from Supabase with status timeline.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyPurchasesScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    viewModel: ShopViewModel
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val orders by viewModel.orders.collectAsState()
     var selectedTab by remember { mutableStateOf("all") }
-    
-    val orders = remember {
-        listOf(
-            Order(
-                "ORD001",
-                listOf("Premium Hoodie", "Phone Case"),
-                1798.0,
-                OrderStatus.DELIVERED,
-                Date(System.currentTimeMillis() - 5 * 86400000)
-            ),
-            Order(
-                "ORD002",
-                listOf("Laptop Sticker Pack"),
-                299.0,
-                OrderStatus.IN_TRANSIT,
-                Date(System.currentTimeMillis() - 2 * 86400000)
-            ),
-            Order(
-                "ORD003",
-                listOf("T-Shirt", "Cap"),
-                1099.0,
-                OrderStatus.PROCESSING,
-                Date(System.currentTimeMillis() - 86400000)
-            ),
-            Order(
-                "ORD004",
-                listOf("Coffee Mug"),
-                399.0,
-                OrderStatus.CANCELLED,
-                Date(System.currentTimeMillis() - 10 * 86400000)
-            )
-        )
+    var expandedOrderId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadOrders()
     }
-    
+
     val filteredOrders = when (selectedTab) {
-        "active" -> orders.filter { 
-            it.status == OrderStatus.PROCESSING || it.status == OrderStatus.IN_TRANSIT 
-        }
-        "completed" -> orders.filter { it.status == OrderStatus.DELIVERED }
-        "cancelled" -> orders.filter { it.status == OrderStatus.CANCELLED }
+        "active" -> orders.filter { it.status in listOf("placed", "confirmed", "shipped") }
+        "delivered" -> orders.filter { it.status == "delivered" }
+        "cancelled" -> orders.filter { it.status == "cancelled" }
         else -> orders
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -104,12 +73,8 @@ fun MyPurchasesScreen(
         ) {
             // Filter Tabs
             ScrollableTabRow(
-                selectedTabIndex = when(selectedTab) {
-                    "all" -> 0
-                    "active" -> 1
-                    "completed" -> 2
-                    "cancelled" -> 3
-                    else -> 0
+                selectedTabIndex = when (selectedTab) {
+                    "all" -> 0; "active" -> 1; "delivered" -> 2; "cancelled" -> 3; else -> 0
                 },
                 containerColor = Color.Transparent,
                 edgePadding = 20.dp
@@ -117,64 +82,94 @@ fun MyPurchasesScreen(
                 Tab(
                     selected = selectedTab == "all",
                     onClick = { selectedTab = "all" },
-                    text = { Text("All (${orders.size})") }
+                    text = { Text("All") }
                 )
                 Tab(
                     selected = selectedTab == "active",
                     onClick = { selectedTab = "active" },
-                    text = { 
-                        Text("Active (${orders.count { 
-                            it.status == OrderStatus.PROCESSING || it.status == OrderStatus.IN_TRANSIT 
-                        }})")
-                    }
+                    text = { Text("Active") }
                 )
                 Tab(
-                    selected = selectedTab == "completed",
-                    onClick = { selectedTab = "completed" },
-                    text = { Text("Completed (${orders.count { it.status == OrderStatus.DELIVERED }})") }
+                    selected = selectedTab == "delivered",
+                    onClick = { selectedTab = "delivered" },
+                    text = { Text("Delivered") }
                 )
                 Tab(
                     selected = selectedTab == "cancelled",
                     onClick = { selectedTab = "cancelled" },
-                    text = { Text("Cancelled (${orders.count { it.status == OrderStatus.CANCELLED }})") }
+                    text = { Text("Cancelled") }
                 )
             }
-            
-            // Orders List
-            if (filteredOrders.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.ShoppingBag,
-                            contentDescription = "No orders",
-                            modifier = Modifier.size(80.dp),
-                            tint = RexoTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No orders found",
-                            style = RexoTheme.typography.titleMedium,
-                            color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
+                        CircularProgressIndicator(color = RexoColors.AccentOrange)
                     }
                 }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(filteredOrders) { order ->
-                        OrderCard(
-                            order = order,
-                            onTrackOrder = { /* TODO */ },
-                            onReorder = { /* TODO */ },
-                            onViewDetails = { /* TODO */ }
-                        )
+                uiState.error != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Outlined.ErrorOutline,
+                                contentDescription = "Error",
+                                modifier = Modifier.size(64.dp),
+                                tint = RexoColors.Error
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = uiState.error ?: "Something went wrong",
+                                style = RexoTheme.typography.bodyMedium,
+                                color = RexoColors.TextSecondary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { viewModel.loadOrders() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                filteredOrders.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Outlined.ShoppingBag,
+                                contentDescription = "No orders",
+                                modifier = Modifier.size(80.dp),
+                                tint = RexoColors.Gray300
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No orders found",
+                                style = RexoTheme.typography.titleMedium,
+                                color = RexoColors.TextSecondary
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(filteredOrders, key = { it.id }) { order ->
+                            OrderCard(
+                                order = order,
+                                isExpanded = expandedOrderId == order.id,
+                                onToggleExpand = {
+                                    expandedOrderId = if (expandedOrderId == order.id) null else order.id
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -182,41 +177,35 @@ fun MyPurchasesScreen(
     }
 }
 
-data class Order(
-    val id: String,
-    val items: List<String>,
-    val total: Double,
-    val status: OrderStatus,
-    val date: Date
-)
-
-enum class OrderStatus {
-    PROCESSING, IN_TRANSIT, DELIVERED, CANCELLED
-}
-
 @Composable
 fun OrderCard(
-    order: Order,
-    onTrackOrder: () -> Unit,
-    onReorder: () -> Unit,
-    onViewDetails: () -> Unit
+    order: OrderData,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    
-    val (statusColor, statusIcon) = when (order.status) {
-        OrderStatus.PROCESSING -> Pair(Color(0xFFF59E0B), Icons.Outlined.Schedule)
-        OrderStatus.IN_TRANSIT -> Pair(Color(0xFF6366F1), Icons.Outlined.LocalShipping)
-        OrderStatus.DELIVERED -> Pair(Color(0xFF10B981), Icons.Outlined.CheckCircle)
-        OrderStatus.CANCELLED -> Pair(Color(0xFFEF4444), Icons.Outlined.Cancel)
+    val statusColor = when (order.status) {
+        "placed" -> RexoColors.Warning
+        "confirmed" -> Color(0xFF6366F1)
+        "shipped" -> Color(0xFF3B82F6)
+        "delivered" -> RexoColors.Success
+        "cancelled" -> RexoColors.Error
+        else -> RexoColors.TextSecondary
     }
-    
-    FloatingGlassCard(
+
+    val statusIcon = when (order.status) {
+        "placed" -> Icons.Outlined.Schedule
+        "confirmed" -> Icons.Outlined.CheckCircle
+        "shipped" -> Icons.Outlined.LocalShipping
+        "delivered" -> Icons.Outlined.Done
+        "cancelled" -> Icons.Outlined.Cancel
+        else -> Icons.Outlined.Info
+    }
+
+    GlassSurface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -225,34 +214,36 @@ fun OrderCard(
             ) {
                 Column {
                     Text(
-                        text = "Order ${order.id}",
-                        style = RexoTheme.typography.titleMedium,
+                        text = "Order ${order.id.take(16)}",
+                        style = RexoTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = dateFormat.format(order.date),
-                        style = RexoTheme.typography.bodySmall,
-                        color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    if (order.createdAt.isNotEmpty()) {
+                        Text(
+                            text = order.createdAt.take(10),
+                            style = RexoTheme.typography.bodySmall,
+                            color = RexoColors.TextSecondary
+                        )
+                    }
                 }
-                
+
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = statusColor.copy(alpha = 0.15f)
+                    color = statusColor.copy(alpha = 0.1f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             imageVector = statusIcon,
-                            contentDescription = order.status.name,
-                            modifier = Modifier.size(16.dp),
+                            contentDescription = order.status,
+                            modifier = Modifier.size(14.dp),
                             tint = statusColor
                         )
                         Text(
-                            text = order.status.name.replace("_", " "),
+                            text = order.status.replaceFirstChar { it.uppercase() },
                             style = RexoTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = statusColor
@@ -260,49 +251,27 @@ fun OrderCard(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Items
-            GlassSurface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp)
-                ) {
-                    order.items.take(2).forEach { item ->
-                        Row(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = RexoTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = item,
-                                style = RexoTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                    
-                    if (order.items.size > 2) {
-                        Text(
-                            text = "+${order.items.size - 2} more items",
-                            style = RexoTheme.typography.bodySmall,
-                            color = RexoTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 24.dp, top = 4.dp)
-                        )
-                    }
-                }
+
+            // Items summary
+            order.items.take(2).forEach { item ->
+                Text(
+                    text = item,
+                    style = RexoTheme.typography.bodyMedium,
+                    color = RexoColors.TextSecondary
+                )
             }
-            
+            if (order.items.size > 2) {
+                Text(
+                    text = "+${order.items.size - 2} more items",
+                    style = RexoTheme.typography.bodySmall,
+                    color = RexoColors.AccentOrange
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Total
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -310,85 +279,109 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Total Amount",
+                    text = "Total",
                     style = RexoTheme.typography.bodyMedium,
-                    color = RexoTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = RexoColors.TextSecondary
                 )
                 Text(
-                    text = "₹${String.format("%,.2f", order.total)}",
-                    style = RexoTheme.typography.titleLarge,
+                    text = "\u20B9${String.format("%,.2f", order.total)}",
+                    style = RexoTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = RexoTheme.colorScheme.primary
+                    color = RexoColors.AccentOrange
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Actions
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+            // Expand/collapse for timeline
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = onToggleExpand,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                when (order.status) {
-                    OrderStatus.PROCESSING, OrderStatus.IN_TRANSIT -> {
-                        OutlinedButton(
-                            onClick = onViewDetails,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("View Details")
-                        }
-                        Button(
-                            onClick = onTrackOrder,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.LocationOn,
-                                contentDescription = "Track",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Track Order")
-                        }
-                    }
-                    OrderStatus.DELIVERED -> {
-                        OutlinedButton(
-                            onClick = onViewDetails,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("View Details")
-                        }
-                        Button(
-                            onClick = onReorder,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Refresh,
-                                contentDescription = "Reorder",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Reorder")
-                        }
-                    }
-                    OrderStatus.CANCELLED -> {
-                        OutlinedButton(
-                            onClick = onViewDetails,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("View Details")
-                        }
-                        Button(
-                            onClick = onReorder,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ShoppingCart,
-                                contentDescription = "Buy Again",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Buy Again")
-                        }
-                    }
+                Text(
+                    text = if (isExpanded) "Hide Details" else "View Details",
+                    color = RexoColors.AccentOrange
+                )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = "Toggle",
+                    tint = RexoColors.AccentOrange
+                )
+            }
+
+            // Order Timeline (expanded)
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OrderTimeline(currentStatus = order.status)
+
+                if (order.shippingAddress.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Shipping Address",
+                        style = RexoTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = order.shippingAddress,
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.TextSecondary
+                    )
+                }
+
+                if (order.paymentMethod.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Payment: ${order.paymentMethod.uppercase()}",
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.TextSecondary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderTimeline(currentStatus: String) {
+    val statuses = listOf("placed", "confirmed", "shipped", "delivered")
+    val currentIndex = statuses.indexOf(currentStatus)
+
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        statuses.forEachIndexed { index, status ->
+            val isCompleted = index <= currentIndex
+            val isCurrent = index == currentIndex
+            val color = when {
+                isCompleted -> RexoColors.Success
+                else -> RexoColors.Gray300
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 6.dp)
+            ) {
+                // Dot indicator
+                Surface(
+                    modifier = Modifier.size(if (isCurrent) 16.dp else 12.dp),
+                    shape = RoundedCornerShape(50),
+                    color = color
+                ) {}
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Text(
+                    text = status.replaceFirstChar { it.uppercase() },
+                    style = RexoTheme.typography.bodyMedium,
+                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isCompleted) RexoColors.TextPrimary else RexoColors.TextSecondary
+                )
+
+                if (isCompleted && !isCurrent) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Outlined.Check,
+                        contentDescription = "Done",
+                        modifier = Modifier.size(16.dp),
+                        tint = RexoColors.Success
+                    )
                 }
             }
         }

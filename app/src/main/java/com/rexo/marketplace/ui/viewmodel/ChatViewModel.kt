@@ -5,93 +5,91 @@ import androidx.lifecycle.viewModelScope
 import com.rexo.marketplace.data.repository.ChatRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * Chat ViewModel
- * Manages real-time messaging
+ * Manages conversations and messaging.
+ * Default constructor with repository defaulting to ChatRepository().
  */
 class ChatViewModel(
-    private val repository: ChatRepository
+    private val repository: ChatRepository = ChatRepository()
 ) : ViewModel() {
 
     // UI State
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    // Messages
-    private val _messages = MutableStateFlow<List<ChatMessageData>>(emptyList())
-    val messages: StateFlow<List<ChatMessageData>> = _messages.asStateFlow()
-
-    // Conversations
+    // Conversations list
     private val _conversations = MutableStateFlow<List<ConversationData>>(emptyList())
     val conversations: StateFlow<List<ConversationData>> = _conversations.asStateFlow()
 
-    // Current conversation
-    private val _currentConversationId = MutableStateFlow<String?>(null)
-    val currentConversationId: StateFlow<String?> = _currentConversationId.asStateFlow()
+    // Messages in current conversation
+    private val _messages = MutableStateFlow<List<ChatMessageData>>(emptyList())
+    val messages: StateFlow<List<ChatMessageData>> = _messages.asStateFlow()
 
-    // Typing indicator
-    private val _isOtherUserTyping = MutableStateFlow(false)
-    val isOtherUserTyping: StateFlow<Boolean> = _isOtherUserTyping.asStateFlow()
+    // Current recipient ID
+    private val _currentRecipientId = MutableStateFlow<String?>(null)
+    val currentRecipientId: StateFlow<String?> = _currentRecipientId.asStateFlow()
+
+    init {
+        loadConversations()
+    }
 
     fun loadConversations() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 _conversations.value = repository.getConversations()
                 _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isLoading = false, error = e.message) 
+                _conversations.value = emptyList()
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message ?: "Failed to load conversations")
                 }
             }
         }
     }
 
-    fun loadMessages(conversationId: String) {
+    fun loadMessages(recipientId: String) {
+        _currentRecipientId.value = recipientId
         viewModelScope.launch {
-            _currentConversationId.value = conversationId
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                _messages.value = repository.getMessages(conversationId)
-                
-                // Subscribe to real-time updates
-                repository.subscribeToMessages(conversationId) { newMessage ->
-                    _messages.update { it + newMessage }
-                }
-                
+                _messages.value = repository.getMessages(recipientId)
                 _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(isLoading = false, error = e.message) 
+                _messages.value = emptyList()
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message ?: "Failed to load messages")
                 }
             }
         }
     }
 
     fun sendMessage(text: String) {
-        val conversationId = _currentConversationId.value ?: return
-        
+        val recipientId = _currentRecipientId.value ?: return
+        if (text.isBlank()) return
+
         viewModelScope.launch {
             try {
-                val message = ChatMessageData(
-                    id = java.util.UUID.randomUUID().toString(),
-                    conversationId = conversationId,
+                // Optimistic update
+                val optimisticMessage = ChatMessageData(
+                    id = "temp_${System.currentTimeMillis()}",
+                    recipientId = recipientId,
                     text = text,
                     isCurrentUser = true,
-                    timestamp = Date(),
+                    timestamp = "",
                     isRead = false
                 )
-                
-                // Optimistic update
-                _messages.update { it + message }
-                
-                // Send to server
-                repository.sendMessage(conversationId, text)
-                
+                _messages.update { it + optimisticMessage }
+
+                // Send to Supabase
+                repository.sendMessage(recipientId, text)
+
+                // Reload messages to get server-assigned ID and timestamp
+                _messages.value = repository.getMessages(recipientId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.message ?: "Failed to send message") }
             }
         }
     }
@@ -105,18 +103,7 @@ class ChatViewModel(
                         if (it.id == messageId) it.copy(isRead = true) else it
                     }
                 }
-            } catch (e: Exception) {
-                // Silent fail
-            }
-        }
-    }
-
-    fun sendTypingIndicator(isTyping: Boolean) {
-        val conversationId = _currentConversationId.value ?: return
-        viewModelScope.launch {
-            try {
-                repository.sendTypingIndicator(conversationId, isTyping)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Silent fail
             }
         }
@@ -124,12 +111,6 @@ class ChatViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        // Unsubscribe from real-time
-        _currentConversationId.value?.let { repository.unsubscribe(it) }
     }
 }
 
@@ -140,12 +121,11 @@ data class ChatUiState(
 
 data class ChatMessageData(
     val id: String,
-    val conversationId: String,
+    val recipientId: String,
     val text: String,
     val isCurrentUser: Boolean,
-    val timestamp: Date,
-    val isRead: Boolean,
-    val attachmentUrl: String? = null
+    val timestamp: String,
+    val isRead: Boolean
 )
 
 data class ConversationData(
@@ -154,7 +134,7 @@ data class ConversationData(
     val otherUserName: String,
     val otherUserAvatar: String?,
     val lastMessage: String,
-    val lastMessageTime: Date,
+    val lastMessageTime: String,
     val unreadCount: Int,
     val isOnline: Boolean
 )
