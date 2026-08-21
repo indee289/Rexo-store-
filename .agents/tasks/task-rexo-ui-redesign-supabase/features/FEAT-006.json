@@ -26,5 +26,5 @@
     "Run ./gradlew assembleDebug and confirm build passes"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Admin role-based access implemented separately: AuthViewModel now checks user role from Supabase users table after login. Admin tab appears in bottom nav for admin users only. Admin Panel link in Profile settings. Admin route is protected. Admin email: rexoagency.in@gmail.com. Build cannot be verified locally due to missing gradle-wrapper.jar (INTEGRATIONS_ONLY network mode), but CI will handle this."
 }
