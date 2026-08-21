@@ -3,6 +3,7 @@ package com.rexo.marketplace.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rexo.marketplace.data.repository.AuthRepository
+import com.rexo.marketplace.data.repository.UserRepository
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,11 +13,13 @@ import kotlinx.coroutines.launch
 
 /**
  * Authentication ViewModel
- * Manages authentication state and operations
+ * Manages authentication state and operations.
+ * Also checks user role for admin access control.
  */
 class AuthViewModel : ViewModel() {
 
     private val repository = AuthRepository()
+    private val userRepository = UserRepository()
 
     // UI State
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Loading)
@@ -26,6 +29,10 @@ class AuthViewModel : ViewModel() {
     private val _currentUser = MutableStateFlow<UserInfo?>(null)
     val currentUser: StateFlow<UserInfo?> = _currentUser.asStateFlow()
 
+    // Admin role state - true if the authenticated user has role = "admin"
+    private val _isAdmin = MutableStateFlow(false)
+    val isAdmin: StateFlow<Boolean> = _isAdmin.asStateFlow()
+
     init {
         checkAuthStatus()
     }
@@ -33,6 +40,7 @@ class AuthViewModel : ViewModel() {
     /**
      * Check if user is already logged in via stored session.
      * On app start, attempt to restore the session from storage.
+     * Also checks if user has admin role.
      */
     private fun checkAuthStatus() {
         viewModelScope.launch {
@@ -42,12 +50,43 @@ class AuthViewModel : ViewModel() {
                 _currentUser.value = user
                 if (user != null) {
                     _uiState.value = AuthUiState.Authenticated(user)
+                    checkAdminRole(user)
                 } else {
+                    _isAdmin.value = false
                     _uiState.value = AuthUiState.Idle
                 }
             }.onFailure {
+                _isAdmin.value = false
                 _uiState.value = AuthUiState.Idle
             }
+        }
+    }
+
+    /**
+     * Check if the authenticated user has admin role.
+     * Checks both the Supabase users table role field and the email.
+     */
+    private suspend fun checkAdminRole(user: UserInfo) {
+        try {
+            // First check by role in users table
+            val role = userRepository.getUserRole(user.id)
+            if (role == "admin") {
+                _isAdmin.value = true
+                return
+            }
+
+            // Secondary check: verify by known admin email
+            val email = user.email
+            if (email != null && userRepository.isAdminEmail(email)) {
+                _isAdmin.value = true
+                return
+            }
+
+            _isAdmin.value = false
+        } catch (e: Exception) {
+            // On failure, check email as fallback
+            val email = user.email
+            _isAdmin.value = email != null && userRepository.isAdminEmail(email)
         }
     }
 
@@ -68,7 +107,9 @@ class AuthViewModel : ViewModel() {
             result.onSuccess { userInfo ->
                 _currentUser.value = userInfo
                 _uiState.value = AuthUiState.Authenticated(userInfo)
+                checkAdminRole(userInfo)
             }.onFailure { error ->
+                _isAdmin.value = false
                 _uiState.value = AuthUiState.Error(mapErrorMessage(error))
             }
         }
@@ -89,7 +130,9 @@ class AuthViewModel : ViewModel() {
             result.onSuccess { userInfo ->
                 _currentUser.value = userInfo
                 _uiState.value = AuthUiState.Authenticated(userInfo)
+                checkAdminRole(userInfo)
             }.onFailure { error ->
+                _isAdmin.value = false
                 _uiState.value = AuthUiState.Error(mapErrorMessage(error))
             }
         }
@@ -106,8 +149,10 @@ class AuthViewModel : ViewModel() {
 
             result.onSuccess {
                 _currentUser.value = null
+                _isAdmin.value = false
                 _uiState.value = AuthUiState.Idle
             }.onFailure { error ->
+                _isAdmin.value = false
                 _uiState.value = AuthUiState.Error(mapErrorMessage(error))
             }
         }

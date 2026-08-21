@@ -27,6 +27,34 @@ class UserRepository {
     }
 
     /**
+     * Fetch user role from Supabase 'users' table.
+     * Returns the role string ("creator", "brand", "admin") or null on failure.
+     * Also checks by email for admin identification.
+     */
+    suspend fun getUserRole(userId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val user = SupabaseClient.client.from("users").select {
+                filter { eq("id", userId) }
+            }.decodeSingle<UserDto>()
+            user.role
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Check if a user is an admin by their email address.
+     * This is a secondary check - the primary check is via the role field in the users table.
+     */
+    fun isAdminEmail(email: String): Boolean {
+        return email.lowercase() == ADMIN_EMAIL
+    }
+
+    companion object {
+        const val ADMIN_EMAIL = "rexoagency.in@gmail.com"
+    }
+
+    /**
      * Fetch creator profile from Supabase 'creator_profiles' table by user_id.
      * Returns null if not found (user may not be a creator).
      */

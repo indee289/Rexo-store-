@@ -37,7 +37,9 @@ import com.rexo.marketplace.ui.viewmodel.ProfileViewModel
 fun ProfileScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToAdmin: () -> Unit = {},
     onSignOut: () -> Unit = {},
+    isAdmin: Boolean = false,
     profileViewModel: ProfileViewModel? = null
 ) {
     val viewModel = profileViewModel ?: viewModel()
@@ -147,6 +149,8 @@ fun ProfileScreen(
                     user = state.user,
                     creatorProfile = state.creatorProfile,
                     wallet = state.wallet,
+                    isAdmin = isAdmin,
+                    onNavigateToAdmin = onNavigateToAdmin,
                     onSignOut = { viewModel.signOut() },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -160,6 +164,8 @@ private fun ProfileContent(
     user: UserDto,
     creatorProfile: CreatorProfileDto?,
     wallet: WalletDto?,
+    isAdmin: Boolean,
+    onNavigateToAdmin: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -189,7 +195,11 @@ private fun ProfileContent(
 
         // Settings List
         item {
-            SettingsList(onSignOut = onSignOut)
+            SettingsList(
+                isAdmin = isAdmin,
+                onNavigateToAdmin = onNavigateToAdmin,
+                onSignOut = onSignOut
+            )
         }
     }
 }
@@ -350,10 +360,23 @@ private fun ConnectedAccountsButton(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SettingsList(onSignOut: () -> Unit) {
+private fun SettingsList(
+    isAdmin: Boolean,
+    onNavigateToAdmin: () -> Unit,
+    onSignOut: () -> Unit
+) {
     Column(
         modifier = Modifier.padding(top = 8.dp)
     ) {
+        // Admin Panel - Only visible for admin role users
+        if (isAdmin) {
+            SettingsItem(
+                icon = Icons.Outlined.AdminPanelSettings,
+                label = "Admin Panel",
+                onClick = onNavigateToAdmin
+            )
+        }
+
         // Referrals
         SettingsItem(
             icon = Icons.Outlined.CardGiftcard,

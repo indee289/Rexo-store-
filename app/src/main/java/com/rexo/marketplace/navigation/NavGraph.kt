@@ -81,6 +81,13 @@ sealed class BottomNavItem(
         selectedIcon = Icons.Filled.Person,
         unselectedIcon = Icons.Outlined.Person
     )
+
+    object Admin : BottomNavItem(
+        route = Screen.Admin.route,
+        title = "Admin",
+        selectedIcon = Icons.Filled.AdminPanelSettings,
+        unselectedIcon = Icons.Outlined.AdminPanelSettings
+    )
 }
 
 @Composable
@@ -172,16 +179,21 @@ fun RexoNavGraph(
 
         // Profile Screen
         composable(Screen.Profile.route) {
+            val isAdmin by authViewModel.isAdmin.collectAsState()
             ProfileScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
+                onNavigateToAdmin = {
+                    navController.navigate(Screen.Admin.route)
+                },
                 onSignOut = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                isAdmin = isAdmin
             )
         }
 
@@ -197,11 +209,19 @@ fun RexoNavGraph(
             )
         }
 
-        // Admin Screen
+        // Admin Screen - Protected: only accessible to admin role users
         composable(Screen.Admin.route) {
-            AdminScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
+            val isAdmin by authViewModel.isAdmin.collectAsState()
+            if (isAdmin) {
+                AdminScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            } else {
+                // Non-admin users are redirected back
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
         }
 
         // Shop Screen
@@ -275,11 +295,13 @@ fun PlaceholderScreen(
 /**
  * Main App Scaffold with Bottom Navigation.
  * Determines start destination based on auth state.
+ * Controls admin access based on user role.
  */
 @Composable
 fun MainScaffold() {
     val authViewModel: AuthViewModel = viewModel()
     val uiState by authViewModel.uiState.collectAsState()
+    val isAdmin by authViewModel.isAdmin.collectAsState()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -310,7 +332,8 @@ fun MainScaffold() {
         Screen.Home.route,
         Screen.Campaigns.route,
         Screen.Wallet.route,
-        Screen.Profile.route
+        Screen.Profile.route,
+        Screen.Admin.route
     )
 
     Scaffold(
@@ -318,7 +341,8 @@ fun MainScaffold() {
             if (showBottomBar) {
                 ModernBottomNavigation(
                     navController = navController,
-                    currentRoute = currentRoute
+                    currentRoute = currentRoute,
+                    isAdmin = isAdmin
                 )
             }
         }
@@ -336,14 +360,18 @@ fun MainScaffold() {
 @Composable
 fun ModernBottomNavigation(
     navController: NavHostController,
-    currentRoute: String?
+    currentRoute: String?,
+    isAdmin: Boolean = false
 ) {
-    val items = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.Campaigns,
-        BottomNavItem.Wallet,
-        BottomNavItem.Profile
-    )
+    val items = buildList {
+        add(BottomNavItem.Home)
+        add(BottomNavItem.Campaigns)
+        add(BottomNavItem.Wallet)
+        if (isAdmin) {
+            add(BottomNavItem.Admin)
+        }
+        add(BottomNavItem.Profile)
+    }
 
     NavigationBar(
         tonalElevation = 0.dp,
