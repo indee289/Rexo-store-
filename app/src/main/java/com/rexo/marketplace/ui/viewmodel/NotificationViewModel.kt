@@ -43,11 +43,18 @@ class NotificationViewModel(
             try {
                 val result = repository.getNotifications()
                 _notifications.value = result
-                _uiState.update { it.copy(isLoading = false) }
+                _uiState.update { it.copy(isLoading = false, error = null) }
             } catch (e: Exception) {
                 _notifications.value = emptyList()
-                _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load notifications")
+                // Never show "User not authenticated" - just show empty state
+                val errorMsg = e.message ?: ""
+                if (errorMsg.contains("authenticated", ignoreCase = true) ||
+                    errorMsg.contains("auth", ignoreCase = true)) {
+                    _uiState.update { it.copy(isLoading = false, error = null) }
+                } else {
+                    _uiState.update {
+                        it.copy(isLoading = false, error = "Could not load notifications")
+                    }
                 }
             }
         }

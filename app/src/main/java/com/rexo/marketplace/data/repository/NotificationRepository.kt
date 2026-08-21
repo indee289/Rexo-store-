@@ -14,20 +14,25 @@ class NotificationRepository {
 
     /**
      * Fetch notifications for the current user, ordered by created_at DESC.
+     * Returns empty list if user is not authenticated or no notifications exist.
      */
     suspend fun getNotifications(): List<NotificationDto> = withContext(Dispatchers.IO) {
         val userId = SupabaseClient.auth.currentUserOrNull()?.id
-            ?: throw IllegalStateException("User not authenticated")
+            ?: return@withContext emptyList()
 
-        val results = SupabaseClient.client.from("notifications")
-            .select {
-                filter {
-                    eq("user_id", userId)
+        try {
+            val results = SupabaseClient.client.from("notifications")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                    }
                 }
-            }
-            .decodeList<NotificationDto>()
+                .decodeList<NotificationDto>()
 
-        results.sortedByDescending { it.created_at }
+            results.sortedByDescending { it.created_at }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     /**
@@ -47,7 +52,7 @@ class NotificationRepository {
      */
     suspend fun markAllAsRead() = withContext(Dispatchers.IO) {
         val userId = SupabaseClient.auth.currentUserOrNull()?.id
-            ?: throw IllegalStateException("User not authenticated")
+            ?: return@withContext
 
         SupabaseClient.client.from("notifications")
             .update(mapOf("is_read" to true)) {

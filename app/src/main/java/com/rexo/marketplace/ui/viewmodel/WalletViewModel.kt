@@ -29,27 +29,42 @@ class WalletViewModel : ViewModel() {
 
     /**
      * Load wallet and transactions from Supabase.
+     * Shows zero-balance wallet if none exists (never shows error for missing wallet).
      */
     fun loadWalletData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val wallet = repository.getWallet()
-                val transactions = repository.getTransactions()
+                val transactions = try {
+                    repository.getTransactions()
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        wallet = wallet,
-                        transactions = transactions,
-                        error = null
-                    )
+                if (wallet == null) {
+                    // User not authenticated - show friendly error
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Please sign in to view your wallet"
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            wallet = wallet,
+                            transactions = transactions,
+                            error = null
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to load wallet data"
+                        error = "Could not load wallet. Please try again."
                     )
                 }
             }

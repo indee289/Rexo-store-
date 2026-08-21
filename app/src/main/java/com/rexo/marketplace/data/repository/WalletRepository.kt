@@ -17,17 +17,18 @@ import kotlinx.serialization.json.put
  */
 class WalletRepository {
 
-    private fun getCurrentUserId(): String {
+    private fun getCurrentUserId(): String? {
         return SupabaseClient.auth.currentUserOrNull()?.id
-            ?: throw Exception("Not authenticated")
     }
 
     /**
      * Fetch wallet from Supabase 'wallets' table for the current user.
-     * If no wallet row exists, creates one with default zero balances.
+     * If no wallet row exists, returns a default zero-balance wallet object.
+     * Never throws - returns null only if truly unauthenticated.
      */
     suspend fun getWallet(): WalletFullDto? = withContext(Dispatchers.IO) {
-        val userId = getCurrentUserId()
+        val userId = getCurrentUserId() ?: return@withContext null
+
         try {
             val wallet = try {
                 SupabaseClient.client.from("wallets").select {
@@ -39,11 +40,26 @@ class WalletRepository {
 
             if (wallet != null) return@withContext wallet
 
-            // No wallet row - create one with zero balances
-            return@withContext ensureWallet(userId)
+            // No wallet row - try to create one, but if that fails too, return a default
+            val created = ensureWallet(userId)
+            return@withContext created ?: WalletFullDto(
+                user_id = userId,
+                available_balance = 0.0,
+                escrow_balance = 0.0,
+                total_earnings = 0.0,
+                total_withdrawn = 0.0,
+                currency = "INR"
+            )
         } catch (e: Exception) {
-            if (e.message?.contains("Not authenticated") == true) throw e
-            null
+            // Return a default zero-balance wallet so we never show an error for missing wallets
+            WalletFullDto(
+                user_id = userId,
+                available_balance = 0.0,
+                escrow_balance = 0.0,
+                total_earnings = 0.0,
+                total_withdrawn = 0.0,
+                currency = "INR"
+            )
         }
     }
 
@@ -77,13 +93,18 @@ class WalletRepository {
     /**
      * Fetch transactions from Supabase 'transactions' table for the current user.
      * Ordered by created_at DESC.
+     * Returns empty list if user is not authenticated or on any failure.
      */
     suspend fun getTransactions(): List<TransactionDto> = withContext(Dispatchers.IO) {
-        val userId = getCurrentUserId()
-        val results = SupabaseClient.client.from("transactions").select {
-            filter { eq("user_id", userId) }
-        }.decodeList<TransactionDto>()
-        results.sortedByDescending { it.created_at }
+        val userId = getCurrentUserId() ?: return@withContext emptyList()
+        try {
+            val results = SupabaseClient.client.from("transactions").select {
+                filter { eq("user_id", userId) }
+            }.decodeList<TransactionDto>()
+            results.sortedByDescending { it.created_at }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     /**
@@ -91,6 +112,7 @@ class WalletRepository {
      */
     suspend fun deposit(amount: Double, paymentMethod: String) = withContext(Dispatchers.IO) {
         val userId = getCurrentUserId()
+            ?: throw Exception("Please sign in to add money")
         val authUser = SupabaseClient.auth.currentUserOrNull()
         val userName = authUser?.userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
             ?: authUser?.userMetadata?.get("name")?.toString()?.removeSurrounding("\"")
@@ -115,6 +137,7 @@ class WalletRepository {
      */
     suspend fun withdraw(amount: Double, payoutMethod: String, payoutDetails: String) = withContext(Dispatchers.IO) {
         val userId = getCurrentUserId()
+            ?: throw Exception("Please sign in to withdraw")
         val authUser = SupabaseClient.auth.currentUserOrNull()
         val userName = authUser?.userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
             ?: authUser?.userMetadata?.get("name")?.toString()?.removeSurrounding("\"")

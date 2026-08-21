@@ -35,6 +35,7 @@ import com.rexo.marketplace.ui.screens.profile.ProfileScreen
 import com.rexo.marketplace.ui.screens.settings.PrivacyPolicyScreen
 import com.rexo.marketplace.ui.screens.settings.SettingsScreen
 import com.rexo.marketplace.ui.screens.shop.ShopScreen
+import com.rexo.marketplace.ui.screens.services.ServicesScreen
 import com.rexo.marketplace.ui.screens.wallet.WalletScreen
 import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.viewmodel.AuthUiState
@@ -58,10 +59,11 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object Admin : Screen("admin")
     object Shop : Screen("shop")
+    object Services : Screen("services")
     object PrivacyPolicy : Screen("privacy_policy")
 }
 
-// Bottom navigation items with updated labels
+// Bottom navigation items - 5 tabs matching app blueprint
 sealed class BottomNavItem(
     val route: String,
     val title: String,
@@ -70,23 +72,30 @@ sealed class BottomNavItem(
 ) {
     object Home : BottomNavItem(
         route = Screen.Home.route,
-        title = "Discover",
+        title = "Home",
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home
     )
 
     object Campaigns : BottomNavItem(
         route = Screen.Campaigns.route,
-        title = "Tasks",
+        title = "Campaigns",
         selectedIcon = Icons.Filled.Campaign,
         unselectedIcon = Icons.Outlined.Campaign
     )
 
-    object Wallet : BottomNavItem(
-        route = Screen.Wallet.route,
-        title = "Wallet",
-        selectedIcon = Icons.Filled.AccountBalanceWallet,
-        unselectedIcon = Icons.Outlined.AccountBalanceWallet
+    object Shop : BottomNavItem(
+        route = Screen.Shop.route,
+        title = "Shop",
+        selectedIcon = Icons.Filled.ShoppingCart,
+        unselectedIcon = Icons.Outlined.ShoppingCart
+    )
+
+    object Services : BottomNavItem(
+        route = Screen.Services.route,
+        title = "Services",
+        selectedIcon = Icons.Filled.Handyman,
+        unselectedIcon = Icons.Outlined.Handyman
     )
 
     object Profile : BottomNavItem(
@@ -94,13 +103,6 @@ sealed class BottomNavItem(
         title = "Profile",
         selectedIcon = Icons.Filled.Person,
         unselectedIcon = Icons.Outlined.Person
-    )
-
-    object Admin : BottomNavItem(
-        route = Screen.Admin.route,
-        title = "Admin",
-        selectedIcon = Icons.Filled.AdminPanelSettings,
-        unselectedIcon = Icons.Outlined.AdminPanelSettings
     )
 }
 
@@ -208,6 +210,12 @@ fun RexoNavGraph(
                 onNavigateToPrivacyPolicy = {
                     navController.navigate(Screen.PrivacyPolicy.route)
                 },
+                onNavigateToWallet = {
+                    navController.navigate(Screen.Wallet.route)
+                },
+                onNavigateToNotifications = {
+                    navController.navigate(Screen.Notifications.route)
+                },
                 onSignOut = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
@@ -257,6 +265,13 @@ fun RexoNavGraph(
         // Shop Screen
         composable(Screen.Shop.route) {
             ShopScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Services Screen - Tools and utilities
+        composable(Screen.Services.route) {
+            ServicesScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -363,9 +378,9 @@ fun MainScaffold() {
     val showBottomBar = currentRoute in listOf(
         Screen.Home.route,
         Screen.Campaigns.route,
-        Screen.Wallet.route,
-        Screen.Profile.route,
-        Screen.Admin.route
+        Screen.Shop.route,
+        Screen.Services.route,
+        Screen.Profile.route
     )
 
     Scaffold(
@@ -409,15 +424,13 @@ fun FloatingPillBottomNavigation(
     currentRoute: String?,
     isAdmin: Boolean = false
 ) {
-    val items = buildList {
-        add(BottomNavItem.Home)
-        add(BottomNavItem.Campaigns)
-        add(BottomNavItem.Wallet)
-        if (isAdmin) {
-            add(BottomNavItem.Admin)
-        }
-        add(BottomNavItem.Profile)
-    }
+    val items = listOf(
+        BottomNavItem.Home,
+        BottomNavItem.Campaigns,
+        BottomNavItem.Shop,
+        BottomNavItem.Services,
+        BottomNavItem.Profile
+    )
 
     Box(
         modifier = Modifier
