@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +30,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
 import com.rexo.marketplace.ui.viewmodel.AuthUiState
 import com.rexo.marketplace.ui.viewmodel.AuthViewModel
 
 /**
- * Clean Auth Screen with white minimal design.
+ * Premium Clean Auth Screen
+ * White background, orange-red accent CTA, modern form design.
  * Supports Login and Sign Up tabs with real Supabase authentication.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +69,7 @@ fun AuthScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(RexoTheme.colorScheme.background)
+            .background(Color.White)
     ) {
         Column(
             modifier = Modifier
@@ -81,14 +84,14 @@ fun AuthScreen(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(RexoTheme.colorScheme.primary),
+                    .background(RexoColors.AccentOrange),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "R",
                     style = RexoTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
-                    color = RexoTheme.colorScheme.onPrimary
+                    color = Color.White
                 )
             }
 
@@ -98,13 +101,13 @@ fun AuthScreen(
                 text = "Rexo",
                 style = RexoTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = RexoTheme.colorScheme.onBackground
+                color = RexoColors.TextPrimary
             )
 
             Text(
                 text = "Marketplace",
                 style = RexoTheme.typography.titleMedium,
-                color = RexoTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                color = RexoColors.TextSecondary
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -141,14 +144,15 @@ fun AuthScreen(
             if (errorMessage != null) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    color = RexoTheme.colorScheme.errorContainer
+                    shape = RoundedCornerShape(12.dp),
+                    color = RexoColors.ErrorLight,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RexoColors.Error.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = errorMessage,
                         modifier = Modifier.padding(12.dp),
                         style = RexoTheme.typography.bodySmall,
-                        color = RexoTheme.colorScheme.onErrorContainer,
+                        color = RexoColors.Error,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -244,10 +248,15 @@ fun AuthScreen(
                         Text(
                             text = "Forgot Password?",
                             style = RexoTheme.typography.bodySmall,
-                            color = RexoTheme.colorScheme.primary,
+                            color = RexoColors.AccentOrange,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .align(Alignment.End)
-                                .clickable { /* TODO: Forgot password flow */ }
+                                .clickable {
+                                    if (email.isNotBlank()) {
+                                        authViewModel.sendPasswordResetEmail(email.trim())
+                                    }
+                                }
                         )
                     }
 
@@ -271,23 +280,42 @@ fun AuthScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = RexoTheme.colorScheme.primary,
-                            contentColor = RexoTheme.colorScheme.onPrimary
+                            containerColor = RexoColors.AccentOrange,
+                            contentColor = Color.White
                         )
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(22.dp),
-                                color = RexoTheme.colorScheme.onPrimary,
+                                color = Color.White,
                                 strokeWidth = 2.dp
                             )
                         } else {
                             Text(
-                                text = if (loginMode) "Login" else "Create Account",
+                                text = if (loginMode) "Sign In" else "Create Account",
                                 style = RexoTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Password reset success
+                    if (uiState is AuthUiState.PasswordResetSent) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = RexoColors.SuccessLight,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, RexoColors.Success.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "Password reset link sent to your email.",
+                                modifier = Modifier.padding(12.dp),
+                                style = RexoTheme.typography.bodySmall,
+                                color = RexoColors.Success,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -314,11 +342,7 @@ private fun AuthTabItem(
             text = text,
             style = RexoTheme.typography.titleMedium,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) {
-                RexoTheme.colorScheme.onBackground
-            } else {
-                RexoTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            }
+            color = if (isSelected) RexoColors.TextPrimary else RexoColors.Gray400
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -327,18 +351,17 @@ private fun AuthTabItem(
         Box(
             modifier = Modifier
                 .width(32.dp)
-                .height(2.dp)
-                .clip(RoundedCornerShape(1.dp))
+                .height(3.dp)
+                .clip(RoundedCornerShape(2.dp))
                 .background(
-                    if (isSelected) RexoTheme.colorScheme.primary
-                    else RexoTheme.colorScheme.outline
+                    if (isSelected) RexoColors.AccentOrange else Color.Transparent
                 )
         )
     }
 }
 
 /**
- * Clean outlined text field matching the minimal white theme
+ * Clean outlined text field with premium styling
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -362,7 +385,7 @@ private fun CleanTextField(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = RexoTheme.colorScheme.onSurfaceVariant
+                tint = RexoColors.Gray400
             )
         },
         trailingIcon = if (isPassword) {
@@ -371,7 +394,7 @@ private fun CleanTextField(
                     Icon(
                         imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                         contentDescription = "Toggle password visibility",
-                        tint = RexoTheme.colorScheme.onSurfaceVariant
+                        tint = RexoColors.Gray400
                     )
                 }
             }
@@ -380,14 +403,15 @@ private fun CleanTextField(
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = true,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = RexoTheme.colorScheme.background,
-            unfocusedContainerColor = RexoTheme.colorScheme.background,
-            focusedBorderColor = RexoTheme.colorScheme.primary,
-            unfocusedBorderColor = RexoTheme.colorScheme.outline,
-            focusedLabelColor = RexoTheme.colorScheme.primary,
-            unfocusedLabelColor = RexoTheme.colorScheme.onSurfaceVariant
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = RexoColors.Gray50,
+            focusedBorderColor = RexoColors.AccentOrange,
+            unfocusedBorderColor = RexoColors.CardBorder,
+            focusedLabelColor = RexoColors.AccentOrange,
+            unfocusedLabelColor = RexoColors.TextSecondary,
+            cursorColor = RexoColors.AccentOrange
         ),
         modifier = modifier.fillMaxWidth()
     )

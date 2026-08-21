@@ -38,6 +38,7 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToAdmin: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
     onSignOut: () -> Unit = {},
     isAdmin: Boolean = false,
     profileViewModel: ProfileViewModel? = null
@@ -151,6 +152,7 @@ fun ProfileScreen(
                     wallet = state.wallet,
                     isAdmin = isAdmin,
                     onNavigateToAdmin = onNavigateToAdmin,
+                    onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                     onSignOut = { viewModel.signOut() },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -166,6 +168,7 @@ private fun ProfileContent(
     wallet: WalletDto?,
     isAdmin: Boolean,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -198,6 +201,7 @@ private fun ProfileContent(
             SettingsList(
                 isAdmin = isAdmin,
                 onNavigateToAdmin = onNavigateToAdmin,
+                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onSignOut = onSignOut
             )
         }
@@ -363,6 +367,7 @@ private fun ConnectedAccountsButton(modifier: Modifier = Modifier) {
 private fun SettingsList(
     isAdmin: Boolean,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Column(
@@ -413,6 +418,13 @@ private fun SettingsList(
             icon = Icons.Outlined.HelpOutline,
             label = "FAQ",
             onClick = { }
+        )
+
+        // Privacy Policy
+        SettingsItem(
+            icon = Icons.Outlined.Policy,
+            label = "Privacy Policy",
+            onClick = onNavigateToPrivacyPolicy
         )
 
         // Resources

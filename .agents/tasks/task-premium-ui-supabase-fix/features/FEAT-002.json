@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Premium UI/UX overhaul of all screens - rebuild every screen with modern premium design: clean white backgrounds, proper card styling with subtle borders, orange-red accent CTAs, campaign cards with progress bars and platform icons, Nuvio-style profile page, clean Admin panel without glassmorphism, and add a Privacy Policy screen with real content.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "STEP 1 - Rebuild HomeScreen (Discover): Keep existing structure but ensure campaign cards have proper progress bars (colored green/amber/red based on fill %), platform icons row, bookmark icon, brand logo square, category badge. Remove any remnant glassmorphism. Ensure search bar and filter chips use clean white style with gray-100 backgrounds.",
     "STEP 2 - Rebuild CampaignsScreen (Tasks): Clean white cards with subtle border for each campaign. Show brand name, title, payout, deadline, slots progress. Add Apply button per campaign with working CTA (orange-red). Campaign detail dialog with full info. Category filter chips at top.",

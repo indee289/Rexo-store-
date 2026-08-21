@@ -2,6 +2,7 @@ package com.rexo.marketplace.ui.screens.wallet
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,7 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rexo.marketplace.data.repository.TransactionDto
-import com.rexo.marketplace.ui.components.GlassSurface
 import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
 import com.rexo.marketplace.ui.viewmodel.WalletViewModel
@@ -30,7 +30,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Wallet Screen - Clean white minimal design
+ * Wallet Screen - Premium clean white design
  * Shows real balance from Supabase 'wallets' table
  * Lists real transactions from Supabase 'transactions' table
  * Supports deposit and withdrawal operations
@@ -76,32 +76,34 @@ fun WalletScreen(
     }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Wallet",
                         style = RexoTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = RexoColors.TextPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Outlined.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = RexoColors.TextPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = Color.White
                 )
             )
         }
     ) { paddingValues ->
         when {
             uiState.isLoading -> {
-                // Loading state
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -123,7 +125,6 @@ fun WalletScreen(
             }
 
             uiState.error != null && uiState.wallet == null -> {
-                // Error state
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -159,7 +160,8 @@ fun WalletScreen(
                             onClick = { walletViewModel.loadWalletData() },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = RexoColors.AccentOrange
-                            )
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("Retry")
                         }
@@ -168,7 +170,6 @@ fun WalletScreen(
             }
 
             else -> {
-                // Content
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -198,13 +199,13 @@ fun WalletScreen(
                     // Success message
                     if (uiState.successMessage != null) {
                         item {
-                            GlassSurface(
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp, vertical = 8.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                backgroundColor = RexoColors.SuccessLight,
-                                borderColor = RexoColors.Success
+                                color = RexoColors.SuccessLight,
+                                border = BorderStroke(1.dp, RexoColors.Success)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(16.dp),
@@ -303,11 +304,14 @@ private fun BalanceCard(
     currency: String,
     modifier: Modifier = Modifier
 ) {
-    val currencySymbol = if (currency == "INR") "₹" else "$"
+    val currencySymbol = if (currency == "INR") "\u20B9" else "$"
 
-    GlassSurface(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, RexoColors.CardBorder)
     ) {
         Column(
             modifier = Modifier.padding(24.dp)
@@ -329,7 +333,7 @@ private fun BalanceCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Divider(color = RexoColors.CardBorder)
+            HorizontalDivider(color = RexoColors.CardBorder)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -405,9 +409,12 @@ private fun QuickActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassSurface(
+    Surface(
         modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        border = BorderStroke(1.dp, RexoColors.CardBorder)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 16.dp),
@@ -507,9 +514,12 @@ private fun TransactionItem(
         }
     }
 
-    GlassSurface(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        border = BorderStroke(1.dp, RexoColors.CardBorder)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -554,7 +564,7 @@ private fun TransactionItem(
             }
 
             Text(
-                text = "${if (isCredit) "+" else "-"}₹${String.format("%,.2f", kotlin.math.abs(transaction.amount))}",
+                text = "${if (isCredit) "+" else "-"}\u20B9${String.format("%,.2f", kotlin.math.abs(transaction.amount))}",
                 style = RexoTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = amountColor
@@ -643,7 +653,7 @@ private fun AddMoneyDialog(
                     label = { Text("Amount") },
                     leadingIcon = {
                         Text(
-                            "₹",
+                            "\u20B9",
                             style = RexoTheme.typography.titleMedium,
                             color = RexoColors.TextSecondary
                         )
@@ -669,7 +679,11 @@ private fun AddMoneyDialog(
                             selected = selectedMethod == method,
                             onClick = { selectedMethod = method },
                             label = { Text(method) },
-                            enabled = !isProcessing
+                            enabled = !isProcessing,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = RexoColors.AccentOrange,
+                                selectedLabelColor = Color.White
+                            )
                         )
                     }
                 }
@@ -683,7 +697,8 @@ private fun AddMoneyDialog(
                 enabled = !isProcessing && amount.toDoubleOrNull() != null && (amount.toDoubleOrNull() ?: 0.0) > 0,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = RexoColors.AccentOrange
-                )
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 if (isProcessing) {
                     CircularProgressIndicator(
@@ -727,7 +742,7 @@ private fun WithdrawDialog(
         text = {
             Column {
                 Text(
-                    text = "Available: ₹${String.format("%,.2f", currentBalance)}",
+                    text = "Available: \u20B9${String.format("%,.2f", currentBalance)}",
                     style = RexoTheme.typography.bodyMedium,
                     color = RexoColors.TextSecondary
                 )
@@ -740,7 +755,7 @@ private fun WithdrawDialog(
                     label = { Text("Amount") },
                     leadingIcon = {
                         Text(
-                            "₹",
+                            "\u20B9",
                             style = RexoTheme.typography.titleMedium,
                             color = RexoColors.TextSecondary
                         )
@@ -776,7 +791,11 @@ private fun WithdrawDialog(
                             selected = selectedMethod == method,
                             onClick = { selectedMethod = method },
                             label = { Text(method) },
-                            enabled = !isProcessing
+                            enabled = !isProcessing,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = RexoColors.AccentOrange,
+                                selectedLabelColor = Color.White
+                            )
                         )
                     }
                 }
@@ -811,7 +830,8 @@ private fun WithdrawDialog(
                     payoutDetails.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = RexoColors.AccentOrange
-                )
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 if (isProcessing) {
                     CircularProgressIndicator(

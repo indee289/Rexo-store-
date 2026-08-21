@@ -2,6 +2,7 @@ package com.rexo.marketplace.ui.screens.campaigns
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,12 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.rexo.marketplace.ui.components.GlassSurface
 import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoTheme
 import com.rexo.marketplace.ui.viewmodel.CampaignItem
@@ -29,10 +30,10 @@ import com.rexo.marketplace.ui.viewmodel.CampaignViewModel
 /**
  * Campaigns Screen (Tasks tab)
  *
- * Clean white design showing real campaigns from Supabase via CampaignViewModel.
+ * Premium clean white design showing real campaigns from Supabase via CampaignViewModel.
  * Features:
  * - Search bar with category filter chips
- * - Campaign cards showing brand, title, description, budget, deadline, slots
+ * - Campaign cards with progress bars, platform icons, bookmark icons
  * - Campaign detail dialog when tapped
  * - Apply button that submits real applications to Supabase
  * - Proper loading/empty/error states
@@ -234,9 +235,12 @@ fun CampaignsScreen(
                             color = RexoColors.TextSecondary
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedButton(
+                        Button(
                             onClick = { viewModel?.loadCampaigns() },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RexoColors.AccentOrange
+                            )
                         ) {
                             Text("Retry")
                         }
@@ -345,22 +349,87 @@ private fun CampaignCardItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassSurface(
+    val slotsRatio = if (campaign.slots > 0) {
+        campaign.filledSlots.toFloat() / campaign.slots.toFloat()
+    } else 0f
+
+    val progressColor = when {
+        slotsRatio < 0.5f -> RexoColors.Success
+        slotsRatio < 0.8f -> RexoColors.Warning
+        else -> RexoColors.Error
+    }
+
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        border = BorderStroke(1.dp, RexoColors.CardBorder)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Header: Category badge + Status
+            // Header: Brand logo + Title + Bookmark
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                // Category badge
+                // Brand logo square
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = RexoColors.Gray100
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = campaign.brandName.firstOrNull()?.uppercase() ?: "?",
+                            style = RexoTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = RexoColors.AccentOrange
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = campaign.title,
+                        style = RexoTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = RexoColors.TextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = campaign.brandName,
+                        style = RexoTheme.typography.bodySmall,
+                        color = RexoColors.AccentOrange,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // Bookmark icon
+                IconButton(
+                    onClick = { /* Bookmark */ },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Bookmark",
+                        tint = RexoColors.Gray400,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Category + Deliverable badges
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = RexoColors.AccentOrange.copy(alpha = 0.1f)
@@ -374,7 +443,6 @@ private fun CampaignCardItem(
                     )
                 }
 
-                // Deliverable type
                 if (campaign.deliverableType.isNotBlank()) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -392,105 +460,91 @@ private fun CampaignCardItem(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Title
-            Text(
-                text = campaign.title,
-                style = RexoTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = RexoColors.TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            // Platform icons row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CameraAlt,
+                    contentDescription = "Instagram",
+                    modifier = Modifier.size(14.dp),
+                    tint = RexoColors.Gray400
+                )
+                Icon(
+                    imageVector = Icons.Outlined.MusicNote,
+                    contentDescription = "TikTok",
+                    modifier = Modifier.size(14.dp),
+                    tint = RexoColors.Gray400
+                )
+                Icon(
+                    imageVector = Icons.Outlined.PlayCircle,
+                    contentDescription = "YouTube",
+                    modifier = Modifier.size(14.dp),
+                    tint = RexoColors.Gray400
+                )
+            }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Brand name
-            Text(
-                text = campaign.brandName,
-                style = RexoTheme.typography.bodyMedium,
-                color = RexoColors.AccentOrange,
-                fontWeight = FontWeight.Medium
+            // Slots progress bar
+            LinearProgressIndicator(
+                progress = { slotsRatio.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = progressColor,
+                trackColor = RexoColors.Gray200
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Description snippet
-            Text(
-                text = campaign.description,
-                style = RexoTheme.typography.bodySmall,
-                color = RexoColors.TextSecondary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Footer: Budget + Deadline
+            // Footer: Budget + Slots + Deadline
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Budget
-                Column {
-                    Text(
-                        text = "Budget",
-                        style = RexoTheme.typography.labelSmall,
-                        color = RexoColors.TextSecondary
-                    )
-                    Text(
-                        text = "\u20B9${String.format("%,.0f", campaign.budget)}",
-                        style = RexoTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = RexoColors.Success
-                    )
-                }
+                Text(
+                    text = "\u20B9${String.format("%,.0f", campaign.payoutPerCreator)}/creator",
+                    style = RexoTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = RexoColors.Success
+                )
+
+                // Slots
+                Text(
+                    text = "${campaign.filledSlots}/${campaign.slots} slots",
+                    style = RexoTheme.typography.bodySmall,
+                    color = RexoColors.TextSecondary
+                )
 
                 // Deadline
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Deadline",
-                        style = RexoTheme.typography.labelSmall,
-                        color = RexoColors.TextSecondary
-                    )
-                    Text(
-                        text = campaign.deadline.take(10).ifBlank { "No deadline" },
-                        style = RexoTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = RexoColors.TextPrimary
-                    )
-                }
+                Text(
+                    text = campaign.deadline.take(10).ifBlank { "No deadline" },
+                    style = RexoTheme.typography.bodySmall,
+                    color = RexoColors.TextSecondary
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Slots progress
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            // Apply button
+            Button(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = RexoColors.AccentOrange
+                ),
+                contentPadding = PaddingValues(vertical = 12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.People,
-                    contentDescription = "Slots",
-                    modifier = Modifier.size(16.dp),
-                    tint = RexoColors.TextSecondary
-                )
-                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${campaign.filledSlots}/${campaign.slots} slots filled",
-                    style = RexoTheme.typography.bodySmall,
-                    color = RexoColors.TextSecondary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                // Progress bar
-                LinearProgressIndicator(
-                    progress = {
-                        if (campaign.slots > 0) campaign.filledSlots.toFloat() / campaign.slots.toFloat() else 0f
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(4.dp),
-                    color = RexoColors.AccentOrange,
-                    trackColor = RexoColors.Gray200
+                    "Apply Now",
+                    style = RexoTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -666,7 +720,8 @@ private fun CampaignDetailDialog(
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = RexoColors.AccentOrange
-                    )
+                    ),
+                    contentPadding = PaddingValues(vertical = 14.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Send,

@@ -32,6 +32,7 @@ import com.rexo.marketplace.ui.screens.campaigns.CampaignsScreen
 import com.rexo.marketplace.ui.screens.home.HomeScreen
 import com.rexo.marketplace.ui.screens.notifications.NotificationsScreen
 import com.rexo.marketplace.ui.screens.profile.ProfileScreen
+import com.rexo.marketplace.ui.screens.settings.PrivacyPolicyScreen
 import com.rexo.marketplace.ui.screens.settings.SettingsScreen
 import com.rexo.marketplace.ui.screens.shop.ShopScreen
 import com.rexo.marketplace.ui.screens.wallet.WalletScreen
@@ -57,6 +58,7 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object Admin : Screen("admin")
     object Shop : Screen("shop")
+    object PrivacyPolicy : Screen("privacy_policy")
 }
 
 // Bottom navigation items with updated labels
@@ -203,6 +205,9 @@ fun RexoNavGraph(
                 onNavigateToAdmin = {
                     navController.navigate(Screen.Admin.route)
                 },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
+                },
                 onSignOut = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
@@ -216,11 +221,21 @@ fun RexoNavGraph(
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
+                },
                 onSignOut = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        // Privacy Policy Screen
+        composable(Screen.PrivacyPolicy.route) {
+            PrivacyPolicyScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

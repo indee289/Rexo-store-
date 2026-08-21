@@ -20,20 +20,21 @@ import com.rexo.marketplace.ui.theme.RexoTheme
 import kotlinx.coroutines.launch
 
 /**
- * Settings Screen
+ * Settings Screen - Premium clean white design
  *
- * Clean white UI with:
- * - Theme toggle (UI only for now)
- * - Notification preferences (UI only for now)
- * - About section with app version 1.0.0
- * - Sign Out option that calls AuthRepository.signOut()
- * - Settings items styled like ProfileScreen (icon + label + arrow)
- * - No debug/development panels
+ * Features:
+ * - Appearance toggle (dark mode)
+ * - Notification preferences
+ * - About section with app version
+ * - Privacy Policy link
+ * - Help center
+ * - Sign Out with confirmation
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     var darkMode by remember { mutableStateOf(false) }
@@ -136,8 +137,17 @@ fun SettingsScreen(
             item {
                 SettingsNavItem(
                     icon = Icons.Outlined.Policy,
-                    title = "Terms & Privacy",
-                    subtitle = "Read our policies",
+                    title = "Privacy Policy",
+                    subtitle = "Read our privacy policy",
+                    onClick = onNavigateToPrivacyPolicy
+                )
+            }
+
+            item {
+                SettingsNavItem(
+                    icon = Icons.Outlined.Description,
+                    title = "Terms of Service",
+                    subtitle = "Read our terms",
                     onClick = { }
                 )
             }
