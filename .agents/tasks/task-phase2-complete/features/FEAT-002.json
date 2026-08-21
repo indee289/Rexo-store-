@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Complete Shop & E-Commerce implementation with full product catalog from Supabase, product detail screen, functional cart, checkout with address and payment method, and order tracking with status timeline. Also implements Campaign Detail Screen with apply functionality and full Chat/Messages system with real Supabase integration.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Rewrite app/src/main/java/com/rexo/marketplace/data/repository/ShopRepository.kt - Remove mock data dependency. Fetch products from Supabase 'store_products' table (using StoreProduct DTO or simpler ProductDto), cart from local state + Supabase, orders from 'store_orders' table. Add methods: getProducts(category filter, search), getProductById(id), addToCart(productId, qty), updateCartQty, removeFromCart, getCart, placeOrder(address, paymentMethod, items, total) that inserts into store_orders, getOrders() for current user, getOrderById(id).",
     "Rewrite app/src/main/java/com/rexo/marketplace/ui/viewmodel/ShopViewModel.kt - Remove constructor dependency on ShopDao. Use default constructor like other ViewModels. Manage product list, cart items (local mutable state list), selected product, orders, search/filter state. Include methods for all shop operations.",
@@ -39,5 +39,5 @@
     "Verify all ViewModels use default constructors matching existing pattern"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 12 steps implemented successfully. ShopRepository uses SupabaseClient singleton (no ShopDao). ChatRepository uses SupabaseClient singleton (no constructor param). All ViewModels have default constructors. NavGraph has all new routes with navArgument for parameterized routes. CampaignsScreen updated with onNavigateToCampaignDetail callback for navigation to detail. Cart managed locally in ShopViewModel (mutableStateListOf pattern via StateFlow). Order placement inserts into store_orders table. Chat groups messages by sender/receiver for conversations. All screens have loading/empty/error states. No new dependencies added."
 }
