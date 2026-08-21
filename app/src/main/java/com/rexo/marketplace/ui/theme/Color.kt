@@ -2,133 +2,118 @@ package com.rexo.marketplace.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Rexo Brand Colors - Based on React app's Tailwind config
+// Rexo Brand Colors - Clean White Minimal Design
 object RexoColors {
-    // Primary Brand Colors
-    val Indigo600 = Color(0xFF4F46E5)
-    val Indigo700 = Color(0xFF4338CA)
-    val Rose500 = Color(0xFFF43F5E)
-    val Rose600 = Color(0xFFE11D48)
-    
-    // Slate (Main UI Colors)
-    val Slate50 = Color(0xFFF8FAFC)
-    val Slate100 = Color(0xFFF1F5F9)
-    val Slate200 = Color(0xFFE2E8F0)
-    val Slate300 = Color(0xFFCBD5E1)
-    val Slate400 = Color(0xFF94A3B8)
-    val Slate500 = Color(0xFF64748B)
-    val Slate600 = Color(0xFF475569)
-    val Slate700 = Color(0xFF334155)
-    val Slate800 = Color(0xFF1E293B)
-    val Slate900 = Color(0xFF0F172A)
-    val Slate950 = Color(0xFF020617)
-    
-    // Emerald (Success/Money)
-    val Emerald50 = Color(0xFFF0FDF4)
-    val Emerald100 = Color(0xFFDCFCE7)
-    val Emerald400 = Color(0xFF4ADE80)
-    val Emerald500 = Color(0xFF22C55E)
-    val Emerald600 = Color(0xFF16A34A)
-    val Emerald700 = Color(0xFF15803D)
-    
-    // Amber (Warning/Pending)
-    val Amber50 = Color(0xFFFFFBEB)
-    val Amber100 = Color(0xFFFEF3C7)
-    val Amber500 = Color(0xFFF59E0B)
-    val Amber600 = Color(0xFFD97706)
-    
-    // Red/Rose (Error/Danger)
-    val Red50 = Color(0xFFFEF2F2)
-    val Red100 = Color(0xFFFEE2E2)
-    val Red500 = Color(0xFFEF4444)
-    val Red600 = Color(0xFFDC2626)
-    
-    // Purple (Premium Features)
-    val Purple50 = Color(0xFFFAF5FF)
-    val Purple500 = Color(0xFFA855F7)
-    val Purple600 = Color(0xFF9333EA)
-    
-    // Background Colors
-    val BackgroundLight = Color(0xFFF4F6F8)
-    val BackgroundDark = Slate950
-    
-    // Surface Colors
+    // Primary Accent - Orange-Red for CTAs and active states
+    val AccentOrange = Color(0xFFFF4500)
+    val AccentOrangeDark = Color(0xFFE03E00)
+
+    // Text Colors
+    val TextPrimary = Color(0xFF1A1A1A)      // Black for headings and main text
+    val TextSecondary = Color(0xFF6B7280)    // Gray for secondary text
+
+    // Background & Surface
+    val BackgroundLight = Color(0xFFFFFFFF)
+    val BackgroundDark = Color(0xFF121212)
     val SurfaceLight = Color(0xFFFFFFFF)
-    val SurfaceDark = Slate900
-    
-    // Glass Effect Colors (with transparency)
-    val GlassLight = Color(0xCCFFFFFF) // 80% white
-    val GlassDark = Color(0xCC1E293B)  // 80% slate-800
+    val SurfaceDark = Color(0xFF1E1E1E)
+
+    // Card & Border
+    val CardBorder = Color(0xFFF0F0F0)       // Light gray border for cards
+    val CardBorderDark = Color(0xFF2C2C2C)
+
+    // Status Colors
+    val Success = Color(0xFF22C55E)          // Green for success states
+    val SuccessLight = Color(0xFFF0FDF4)
+    val Warning = Color(0xFFF59E0B)          // Amber for warnings
+    val WarningLight = Color(0xFFFFFBEB)
+    val Error = Color(0xFFEF4444)            // Red for errors
+    val ErrorLight = Color(0xFFFEF2F2)
+
+    // Neutral shades
+    val Gray50 = Color(0xFFF9FAFB)
+    val Gray100 = Color(0xFFF3F4F6)
+    val Gray200 = Color(0xFFE5E7EB)
+    val Gray300 = Color(0xFFD1D5DB)
+    val Gray400 = Color(0xFF9CA3AF)
+    val Gray500 = Color(0xFF6B7280)
+    val Gray600 = Color(0xFF4B5563)
+    val Gray700 = Color(0xFF374151)
+    val Gray800 = Color(0xFF1F2937)
+    val Gray900 = Color(0xFF111827)
+
+    // Legacy compatibility - kept for GlassSurface component
+    val GlassLight = Color(0xFFFFFFFF)
 }
 
-// Light Theme Colors
+// Light Theme Colors - Clean white minimal design
 val LightColorScheme = androidx.compose.material3.lightColorScheme(
-    primary = RexoColors.Indigo600,
+    primary = RexoColors.AccentOrange,
     onPrimary = Color.White,
-    primaryContainer = RexoColors.Indigo700,
+    primaryContainer = RexoColors.AccentOrange,
     onPrimaryContainer = Color.White,
-    
-    secondary = RexoColors.Rose500,
+
+    secondary = RexoColors.TextSecondary,
     onSecondary = Color.White,
-    secondaryContainer = RexoColors.Rose600,
-    onSecondaryContainer = Color.White,
-    
-    tertiary = RexoColors.Emerald600,
+    secondaryContainer = RexoColors.Gray100,
+    onSecondaryContainer = RexoColors.TextPrimary,
+
+    tertiary = RexoColors.Success,
     onTertiary = Color.White,
-    
-    error = RexoColors.Red600,
+
+    error = RexoColors.Error,
     onError = Color.White,
-    errorContainer = RexoColors.Red50,
-    onErrorContainer = RexoColors.Red600,
-    
+    errorContainer = RexoColors.ErrorLight,
+    onErrorContainer = RexoColors.Error,
+
     background = RexoColors.BackgroundLight,
-    onBackground = RexoColors.Slate900,
-    
+    onBackground = RexoColors.TextPrimary,
+
     surface = RexoColors.SurfaceLight,
-    onSurface = RexoColors.Slate900,
-    surfaceVariant = RexoColors.Slate50,
-    onSurfaceVariant = RexoColors.Slate700,
-    
-    outline = RexoColors.Slate200,
-    outlineVariant = RexoColors.Slate100,
-    
-    surfaceTint = RexoColors.Indigo600,
-    inverseSurface = RexoColors.Slate900,
-    inverseOnSurface = RexoColors.Slate50,
+    onSurface = RexoColors.TextPrimary,
+    surfaceVariant = RexoColors.Gray50,
+    onSurfaceVariant = RexoColors.TextSecondary,
+
+    outline = RexoColors.CardBorder,
+    outlineVariant = RexoColors.Gray100,
+
+    surfaceTint = RexoColors.AccentOrange,
+    inverseSurface = RexoColors.Gray900,
+    inverseOnSurface = Color.White,
 )
 
 // Dark Theme Colors
 val DarkColorScheme = androidx.compose.material3.darkColorScheme(
-    primary = RexoColors.Indigo600,
+    primary = RexoColors.AccentOrange,
     onPrimary = Color.White,
-    primaryContainer = RexoColors.Indigo700,
+    primaryContainer = RexoColors.AccentOrangeDark,
     onPrimaryContainer = Color.White,
-    
-    secondary = RexoColors.Rose500,
+
+    secondary = RexoColors.Gray400,
     onSecondary = Color.White,
-    secondaryContainer = RexoColors.Rose600,
-    onSecondaryContainer = Color.White,
-    
-    tertiary = RexoColors.Emerald500,
+    secondaryContainer = RexoColors.Gray800,
+    onSecondaryContainer = RexoColors.Gray100,
+
+    tertiary = RexoColors.Success,
     onTertiary = Color.White,
-    
-    error = RexoColors.Red500,
+
+    error = RexoColors.Error,
     onError = Color.White,
-    errorContainer = RexoColors.Red600,
+    errorContainer = RexoColors.Error,
     onErrorContainer = Color.White,
-    
+
     background = RexoColors.BackgroundDark,
-    onBackground = RexoColors.Slate100,
-    
+    onBackground = Color.White,
+
     surface = RexoColors.SurfaceDark,
-    onSurface = RexoColors.Slate100,
-    surfaceVariant = RexoColors.Slate800,
-    onSurfaceVariant = RexoColors.Slate300,
-    
-    outline = RexoColors.Slate800,
-    outlineVariant = RexoColors.Slate700,
-    
-    surfaceTint = RexoColors.Indigo600,
-    inverseSurface = RexoColors.Slate50,
-    inverseOnSurface = RexoColors.Slate900,
+    onSurface = Color.White,
+    surfaceVariant = RexoColors.Gray800,
+    onSurfaceVariant = RexoColors.Gray300,
+
+    outline = RexoColors.CardBorderDark,
+    outlineVariant = RexoColors.Gray700,
+
+    surfaceTint = RexoColors.AccentOrange,
+    inverseSurface = RexoColors.Gray50,
+    inverseOnSurface = RexoColors.Gray900,
 )

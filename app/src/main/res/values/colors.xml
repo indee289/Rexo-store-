@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Rexo Brand Colors -->
-    <color name="indigo_600">#4F46E5</color>
-    <color name="indigo_700">#4338CA</color>
-    <color name="rose_500">#F43F5E</color>
-    <color name="rose_600">#E11D48</color>
-    
+    <!-- Rexo Brand Colors - Clean White Minimal Design -->
+    <color name="primary">#FF1A1A1A</color>
+    <color name="accent">#FFFF4500</color>
+    <color name="success">#FF22C55E</color>
+
     <!-- Notification Color -->
-    <color name="notification_color">@color/indigo_600</color>
-    
+    <color name="notification_color">@color/accent</color>
+
     <!-- Splash Screen Background -->
-    <color name="splash_background">#0F172A</color>
-    
+    <color name="splash_background">#FFFFFFFF</color>
+
     <!-- Launcher Icon Background -->
-    <color name="ic_launcher_background">#0F172A</color>
-    
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+
     <!-- System UI Colors -->
-    <color name="status_bar_light">#F8FAFC</color>
-    <color name="status_bar_dark">#020617</color>
+    <color name="status_bar_light">#FFFFFFFF</color>
+    <color name="status_bar_dark">#FF121212</color>
 </resources>

@@ -1,12 +1,12 @@
 package com.rexo.marketplace.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -16,70 +16,55 @@ import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.theme.RexoCustomShapes
 
 /**
- * Glass Surface Component
- * 
- * Creates a frosted glass/glassmorphism effect with:
- * - Blur background
- * - Semi-transparent surface
- * - Gradient overlay
- * - Border
- * 
- * Based on React app's glass/blur surfaces
+ * Clean Card Surface Component
+ *
+ * Renders a clean white card with subtle light gray border.
+ * No blur, no glass effects, no gradient overlays.
+ * Replaces the previous glassmorphism effect.
  */
 @Composable
 fun GlassSurface(
     modifier: Modifier = Modifier,
     shape: Shape = RexoCustomShapes.CardShape,
-    blurRadius: Dp = 20.dp,
-    backgroundColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+    blurRadius: Dp = 0.dp,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
+    borderColor: Color = RexoColors.CardBorder,
     content: @Composable () -> Unit
 ) {
     Surface(
         modifier = modifier,
         shape = shape,
         color = backgroundColor,
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             width = 1.dp,
             color = borderColor
         ),
-        shadowElevation = 4.dp
+        shadowElevation = 1.dp
     ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.1f),
-                            Color.White.copy(alpha = 0.05f)
-                        )
-                    )
-                )
-        ) {
-            content()
-        }
+        content()
     }
 }
 
 /**
- * Floating Card with Glass Effect
+ * Elevated Card Component
  * Used for bottom navigation, floating action buttons, etc.
+ * Clean white card with subtle border and minimal elevation.
  */
 @Composable
 fun FloatingGlassCard(
     modifier: Modifier = Modifier,
     shape: Shape = RexoCustomShapes.CardShape,
-    backgroundColor: Color = RexoColors.GlassLight.copy(alpha = 0.8f),
+    backgroundColor: Color = RexoColors.GlassLight,
     content: @Composable () -> Unit
 ) {
     Surface(
         modifier = modifier,
         shape = shape,
         color = backgroundColor,
-        shadowElevation = 8.dp,
-        border = androidx.compose.foundation.BorderStroke(
+        shadowElevation = 2.dp,
+        border = BorderStroke(
             width = 1.dp,
-            color = Color.White.copy(alpha = 0.4f)
+            color = RexoColors.CardBorder
         )
     ) {
         content()
@@ -87,7 +72,7 @@ fun FloatingGlassCard(
 }
 
 /**
- * Floating Card with Glass Effect using a Brush background
+ * Elevated Card Component with a Brush background
  */
 @Composable
 fun FloatingGlassCard(
@@ -100,10 +85,10 @@ fun FloatingGlassCard(
         modifier = modifier,
         shape = shape,
         color = Color.Transparent,
-        shadowElevation = 8.dp,
-        border = androidx.compose.foundation.BorderStroke(
+        shadowElevation = 2.dp,
+        border = BorderStroke(
             width = 1.dp,
-            color = Color.White.copy(alpha = 0.4f)
+            color = RexoColors.CardBorder
         )
     ) {
         Box(modifier = Modifier.background(backgroundColor)) {
