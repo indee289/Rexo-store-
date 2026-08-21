@@ -23,9 +23,28 @@ android {
             useSupportLibrary = true
         }
 
-        // Supabase Configuration from GitHub Secrets
-        buildConfigField("String", "SUPABASE_URL", "\"${System.getenv("SUPABASE_URL") ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${System.getenv("SUPABASE_ANON_KEY") ?: ""}\"")
+        // Supabase Configuration from local.properties or GitHub Secrets
+        val supabaseUrl = project.findProperty("SUPABASE_URL") as String? 
+            ?: System.getenv("SUPABASE_URL") 
+            ?: System.getenv("VITE_SUPABASE_URL") 
+            ?: ""
+        val supabaseAnonKey = project.findProperty("SUPABASE_ANON_KEY") as String? 
+            ?: System.getenv("SUPABASE_ANON_KEY") 
+            ?: System.getenv("VITE_SUPABASE_ANON_KEY") 
+            ?: ""
+        
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+    }
+    
+    signingConfigs {
+        create("release") {
+            // For local builds
+            storeFile = file("../keystore.jks").takeIf { it.exists() }
+            storePassword = project.findProperty("KEYSTORE_PASSWORD") as String? ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = project.findProperty("KEY_ALIAS") as String? ?: System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword = project.findProperty("KEY_PASSWORD") as String? ?: System.getenv("ANDROID_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -36,7 +55,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release signing if available, otherwise debug
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
         debug {
             isDebuggable = true

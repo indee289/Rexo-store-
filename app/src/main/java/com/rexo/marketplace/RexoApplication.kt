@@ -5,12 +5,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.rexo.marketplace.data.local.RexoDatabase
+import com.rexo.marketplace.data.remote.SupabaseClient
 
 /**
  * Rexo Marketplace Application Class
  * 
  * Initializes:
  * - Room Database
+ * - Supabase Client
  * - Notification Channels
  * - Firebase
  */
@@ -23,6 +25,9 @@ class RexoApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        
+        // Initialize Supabase Client
+        SupabaseClient.initialize(applicationContext)
         
         // Create notification channels for Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
