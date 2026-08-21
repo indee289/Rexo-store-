@@ -87,6 +87,8 @@ jobs:
       # Step 4: Setup Android SDK
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0'
 
       # Step 5: Install NDK
       - name: 🔧 Install NDK
@@ -111,12 +113,12 @@ jobs:
             echo "📥 Downloading gradle-wrapper.jar..."
             mkdir -p gradle/wrapper
             curl -L -o gradle/wrapper/gradle-wrapper.jar \
-              https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar
+              https://raw.githubusercontent.com/gradle/gradle/v8.7.0/gradle/wrapper/gradle-wrapper.jar
             echo "✅ gradle-wrapper.jar downloaded"
           fi
           chmod +x gradlew
           ls -la gradlew gradle/wrapper/
-          echo "✅ Gradle wrapper ready"
+          echo "✅ Gradle wrapper ready (v8.7)"
 
       # Step 8: Gradle Cache
       - name: 📦 Gradle Cache

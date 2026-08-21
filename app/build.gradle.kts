@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "com.rexo.marketplace"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.rexo.marketplace"
         minSdk = 29  // Android 10
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
 
