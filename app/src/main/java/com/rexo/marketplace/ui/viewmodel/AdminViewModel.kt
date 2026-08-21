@@ -3,6 +3,7 @@ package com.rexo.marketplace.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rexo.marketplace.data.repository.*
+import com.rexo.marketplace.utils.ErrorUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -114,7 +115,7 @@ class AdminViewModel(
                 val stats = repository.getDashboardStats()
                 _dashboardState.update { it.copy(isLoading = false, stats = stats) }
             } catch (e: Exception) {
-                _dashboardState.update { it.copy(isLoading = false, error = e.message) }
+                _dashboardState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -128,7 +129,7 @@ class AdminViewModel(
                 val users = repository.getUsers(search, role, status)
                 _userState.update { it.copy(isLoading = false, users = users) }
             } catch (e: Exception) {
-                _userState.update { it.copy(isLoading = false, error = e.message) }
+                _userState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -140,7 +141,7 @@ class AdminViewModel(
                 _actionMessage.value = if (!currentlyVerified) "User verified" else "Verification removed"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -152,7 +153,7 @@ class AdminViewModel(
                 _actionMessage.value = "Role changed to $newRole"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -164,7 +165,7 @@ class AdminViewModel(
                 _actionMessage.value = "User suspended"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -176,7 +177,7 @@ class AdminViewModel(
                 _actionMessage.value = "User unsuspended"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -188,7 +189,7 @@ class AdminViewModel(
                 _actionMessage.value = "User banned"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -200,7 +201,7 @@ class AdminViewModel(
                 _actionMessage.value = "User unbanned"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -212,7 +213,7 @@ class AdminViewModel(
                 _actionMessage.value = "User deleted"
                 loadUsers(_userState.value.searchQuery, _userState.value.roleFilter, _userState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -226,7 +227,7 @@ class AdminViewModel(
                 val campaigns = repository.getCampaigns(statusFilter)
                 _campaignState.update { it.copy(isLoading = false, campaigns = campaigns) }
             } catch (e: Exception) {
-                _campaignState.update { it.copy(isLoading = false, error = e.message) }
+                _campaignState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -238,7 +239,7 @@ class AdminViewModel(
                 _actionMessage.value = "Campaign paused"
                 loadCampaigns(_campaignState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -250,7 +251,7 @@ class AdminViewModel(
                 _actionMessage.value = "Campaign resumed"
                 loadCampaigns(_campaignState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -262,7 +263,7 @@ class AdminViewModel(
                 _actionMessage.value = "Campaign force completed"
                 loadCampaigns(_campaignState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -274,7 +275,7 @@ class AdminViewModel(
                 _actionMessage.value = "Campaign cancelled with refund"
                 loadCampaigns(_campaignState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -286,7 +287,7 @@ class AdminViewModel(
                 _actionMessage.value = "Campaign deleted"
                 loadCampaigns(_campaignState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -300,7 +301,7 @@ class AdminViewModel(
                 val submissions = repository.getSubmissions(statusFilter)
                 _submissionState.update { it.copy(isLoading = false, submissions = submissions) }
             } catch (e: Exception) {
-                _submissionState.update { it.copy(isLoading = false, error = e.message) }
+                _submissionState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -312,7 +313,7 @@ class AdminViewModel(
                 _actionMessage.value = "Submission approved"
                 loadSubmissions(_submissionState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -324,7 +325,7 @@ class AdminViewModel(
                 _actionMessage.value = "Submission rejected"
                 loadSubmissions(_submissionState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -336,7 +337,7 @@ class AdminViewModel(
                 _actionMessage.value = "Payout of ₹$amount disbursed"
                 loadSubmissions(_submissionState.value.statusFilter)
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -350,7 +351,7 @@ class AdminViewModel(
                 val deposits = repository.getPendingDeposits()
                 _depositState.update { it.copy(isLoading = false, deposits = deposits) }
             } catch (e: Exception) {
-                _depositState.update { it.copy(isLoading = false, error = e.message) }
+                _depositState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -362,7 +363,7 @@ class AdminViewModel(
                 _actionMessage.value = "Deposit approved and credited"
                 loadDeposits()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -374,7 +375,7 @@ class AdminViewModel(
                 _actionMessage.value = "Deposit rejected"
                 loadDeposits()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -388,7 +389,7 @@ class AdminViewModel(
                 val withdrawals = repository.getPendingWithdrawals()
                 _withdrawalState.update { it.copy(isLoading = false, withdrawals = withdrawals) }
             } catch (e: Exception) {
-                _withdrawalState.update { it.copy(isLoading = false, error = e.message) }
+                _withdrawalState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -400,7 +401,7 @@ class AdminViewModel(
                 _actionMessage.value = "Withdrawal approved"
                 loadWithdrawals()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -412,7 +413,7 @@ class AdminViewModel(
                 _actionMessage.value = "Withdrawal rejected"
                 loadWithdrawals()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -427,7 +428,7 @@ class AdminViewModel(
                 val orders = repository.getOrders()
                 _shopState.update { it.copy(isLoading = false, products = products, orders = orders) }
             } catch (e: Exception) {
-                _shopState.update { it.copy(isLoading = false, error = e.message) }
+                _shopState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -447,7 +448,7 @@ class AdminViewModel(
                 _actionMessage.value = "Product added"
                 loadShop()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -459,7 +460,7 @@ class AdminViewModel(
                 _actionMessage.value = "Product deleted"
                 loadShop()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -471,7 +472,7 @@ class AdminViewModel(
                 _actionMessage.value = "Order status updated to $newStatus"
                 loadShop()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -485,7 +486,7 @@ class AdminViewModel(
                 val disputes = repository.getDisputes()
                 _disputeState.update { it.copy(isLoading = false, disputes = disputes) }
             } catch (e: Exception) {
-                _disputeState.update { it.copy(isLoading = false, error = e.message) }
+                _disputeState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -497,7 +498,7 @@ class AdminViewModel(
                 _actionMessage.value = "Dispute resolved"
                 loadDisputes()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -509,7 +510,7 @@ class AdminViewModel(
                 _actionMessage.value = "Dispute dismissed"
                 loadDisputes()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -523,7 +524,7 @@ class AdminViewModel(
                 val kycDocs = repository.getPendingKyc()
                 _kycState.update { it.copy(isLoading = false, documents = kycDocs) }
             } catch (e: Exception) {
-                _kycState.update { it.copy(isLoading = false, error = e.message) }
+                _kycState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -535,7 +536,7 @@ class AdminViewModel(
                 _actionMessage.value = "KYC approved and badge granted"
                 loadKyc()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -547,7 +548,7 @@ class AdminViewModel(
                 _actionMessage.value = "KYC rejected"
                 loadKyc()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -561,7 +562,7 @@ class AdminViewModel(
                 val wallets = repository.getAllWallets()
                 _walletState.update { it.copy(isLoading = false, wallets = wallets) }
             } catch (e: Exception) {
-                _walletState.update { it.copy(isLoading = false, error = e.message) }
+                _walletState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -573,7 +574,7 @@ class AdminViewModel(
                 _actionMessage.value = "Wallet frozen"
                 loadWallets()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -585,7 +586,7 @@ class AdminViewModel(
                 _actionMessage.value = "Wallet unfrozen"
                 loadWallets()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -597,7 +598,7 @@ class AdminViewModel(
                 _actionMessage.value = "Credited wallet with amount $amount"
                 loadWallets()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -609,7 +610,7 @@ class AdminViewModel(
                 _actionMessage.value = "Debited wallet with amount $amount"
                 loadWallets()
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -623,7 +624,7 @@ class AdminViewModel(
                 val settings = repository.getSettings()
                 _settingsState.update { it.copy(isLoading = false, settings = settings) }
             } catch (e: Exception) {
-                _settingsState.update { it.copy(isLoading = false, error = e.message) }
+                _settingsState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -635,7 +636,7 @@ class AdminViewModel(
                 _actionMessage.value = "Settings saved"
                 _settingsState.update { it.copy(settings = settings) }
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
             }
         }
     }
@@ -649,7 +650,7 @@ class AdminViewModel(
                 val logs = repository.getAuditLogs(actionFilter)
                 _auditState.update { it.copy(isLoading = false, logs = logs) }
             } catch (e: Exception) {
-                _auditState.update { it.copy(isLoading = false, error = e.message) }
+                _auditState.update { it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message)) }
             }
         }
     }
@@ -664,7 +665,7 @@ class AdminViewModel(
                 _actionMessage.value = "Broadcast sent to $targetAudience"
                 _broadcastState.update { it.copy(isSending = false, sent = true) }
             } catch (e: Exception) {
-                _actionMessage.value = "Failed: ${e.message}"
+                _actionMessage.value = "Failed: ${ErrorUtils.sanitizeErrorMessage(e.message)}"
                 _broadcastState.update { it.copy(isSending = false) }
             }
         }

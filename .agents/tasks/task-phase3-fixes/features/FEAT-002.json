@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Remove Services tab from bottom nav, remove hero welcome card and stats from HomeScreen, make all buttons functional (theme/language persistence, edit profile, settings navigation), and UI/UX improvements",
+  "status": "pending",
+  "steps": [
+    "In NavGraph.kt: Remove BottomNavItem.Services object completely. Update the 'items' list in FloatingPillBottomNavigation to only have: Home, Campaigns, Shop, Profile (4 tabs). Remove Screen.Services.route from the showBottomBar list in MainScaffold",
+    "In NavGraph.kt: Remove the import for ServicesScreen. Keep the composable(Screen.Services.route) route definition so deep links still work but it is no longer in bottom nav",
+    "In HomeScreen.kt: Remove the WelcomeCard composable call from the LazyColumn items. Remove the QuickStatsRow composable call. The home screen should start with HomeHeader (Discover title + wallet badge + notifications) then go straight to FeaturedCampaignsSection, then RecentActivitySection, then SearchBar, then FilterChipsRow, then campaigns list",
+    "In HomeScreen.kt: Keep WelcomeCard and QuickStatsRow composable definitions in the file (they may be used elsewhere) but remove their items from the LazyColumn",
+    "Create app/src/main/java/com/rexo/marketplace/data/local/PreferencesManager.kt - a DataStore-based preferences manager that persists: selectedTheme (System/Light/Dark), selectedLanguage (English/Hindi). Use androidx.datastore:datastore-preferences which is already in dependencies",
+    "In MainActivity.kt: Accept theme preference from PreferencesManager and pass the darkTheme parameter to RexoMarketplaceTheme based on the saved preference (System uses isSystemInDarkTheme, Light = false, Dark = true)",
+    "In SettingsScreen.kt: Load initial values from PreferencesManager and save when user changes language or theme. The theme change should take effect immediately",
+    "In ProfileScreen.kt: Make the Language and Theme settings items navigate to the Settings screen (pass onNavigateToSettings callback). The edit pencil icon on avatar should trigger an edit profile bottom sheet or dialog where user can update name, handle, bio and save to Supabase users table",
+    "In ProfileScreen.kt: Add an EditProfileDialog composable that shows TextFields for name, handle, bio. On save, call UserRepository to update the user row in Supabase. Show loading state during save",
+    "In UserRepository.kt: Add an updateProfile(userId, name, handle, bio) function that updates the 'users' table row",
+    "In ProfileScreen.kt: Make the Notifications settings item navigate to the Settings screen. Make Help & Support navigate to Settings. Ensure all profile page buttons have working onClick handlers that navigate appropriately",
+    "In HomeScreen.kt ErrorState composable: Ensure the error message displayed is already sanitized (it comes from ViewModel which now uses ErrorUtils). Do not show raw error text"
+  ],
+  "acceptance_criteria": [
+    "Bottom navigation has exactly 4 tabs: Home, Campaigns, Shop, Profile",
+    "HomeScreen does not show WelcomeCard or QuickStatsRow",
+    "HomeScreen starts with Discover header then featured campaigns then search/filter",
+    "Theme preference persists across app restarts via DataStore",
+    "Language preference persists across app restarts via DataStore",
+    "Edit Profile dialog appears when tapping edit icon on profile avatar",
+    "Edit Profile saves changes to Supabase users table",
+    "All buttons on Profile page have functional onClick handlers",
+    "Settings Language/Theme dialogs save to DataStore and apply immediately"
+  ],
+  "verification": [
+    "Check NavGraph.kt bottom nav items list has exactly 4 items (no Services)",
+    "Check HomeScreen.kt LazyColumn does not include WelcomeCard or QuickStatsRow items",
+    "Check PreferencesManager.kt exists with theme and language DataStore preferences",
+    "Check UserRepository.kt has updateProfile function",
+    "Check ProfileScreen.kt has EditProfileDialog composable"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

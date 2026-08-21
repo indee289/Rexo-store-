@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rexo.marketplace.data.repository.ShopRepository
+import com.rexo.marketplace.utils.ErrorUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -75,7 +76,7 @@ class ShopViewModel(
             } catch (e: Exception) {
                 _products.value = emptyList()
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load products")
+                    it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }
@@ -111,7 +112,7 @@ class ShopViewModel(
                 _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load product")
+                    it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }
@@ -181,7 +182,7 @@ class ShopViewModel(
                 loadOrders()
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isProcessing = false, error = e.message ?: "Failed to place order")
+                    it.copy(isProcessing = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }
@@ -196,7 +197,7 @@ class ShopViewModel(
             } catch (e: Exception) {
                 _orders.value = emptyList()
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load orders")
+                    it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }

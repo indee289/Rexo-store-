@@ -3,6 +3,7 @@ package com.rexo.marketplace.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rexo.marketplace.data.repository.CampaignRepository
+import com.rexo.marketplace.utils.ErrorUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -67,7 +68,7 @@ class CampaignViewModel(
                 _allCampaigns.value = emptyList()
                 _campaigns.value = emptyList()
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load campaigns")
+                    it.copy(isLoading = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }
@@ -129,7 +130,7 @@ class CampaignViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isProcessing = false, error = e.message ?: "Application failed")
+                    it.copy(isProcessing = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }
@@ -150,7 +151,7 @@ class CampaignViewModel(
                 loadCampaigns()
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isProcessing = false, error = e.message ?: "Failed to create campaign")
+                    it.copy(isProcessing = false, error = ErrorUtils.sanitizeErrorMessage(e.message))
                 }
             }
         }

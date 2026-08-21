@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase3-fixes",
+  "task_description": "Phase 3 completion: Fix critical bugs (wrong table names, nullable DTO crashes, raw error exposure), remove Services tab and hero card from Home, make all buttons functional with persistent theme/language preferences and edit profile, UI/UX improvements",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

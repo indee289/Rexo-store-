@@ -440,7 +440,7 @@ private fun UserManagementCard(user: AdminUserDto, onActionClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = user.name.ifBlank { "Unknown" },
+                        text = (user.name ?: "").ifBlank { "Unknown" },
                         style = RexoTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = RexoColors.TextPrimary
@@ -450,7 +450,7 @@ private fun UserManagementCard(user: AdminUserDto, onActionClick: () -> Unit) {
                         Icon(Icons.Outlined.Verified, contentDescription = "Verified", tint = RexoColors.AccentOrange, modifier = Modifier.size(16.dp))
                     }
                 }
-                Text(text = user.email, style = RexoTheme.typography.bodySmall, color = RexoColors.TextSecondary)
+                Text(text = user.email ?: "", style = RexoTheme.typography.bodySmall, color = RexoColors.TextSecondary)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     StatusChip(user.role, Color(0xFF6366F1))
                     if (user.is_banned) StatusChip("Banned", RexoColors.Error)
@@ -478,7 +478,7 @@ private fun UserActionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Actions: ${user.name.ifBlank { user.email }}", fontWeight = FontWeight.Bold) },
+        title = { Text("Actions: ${(user.name ?: "").ifBlank { user.email ?: "User" }}", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(onClick = onVerifyToggle, modifier = Modifier.fillMaxWidth()) {

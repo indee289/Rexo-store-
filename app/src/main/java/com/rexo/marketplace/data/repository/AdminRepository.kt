@@ -77,8 +77,8 @@ class AdminRepository {
 
             users.filter { user ->
                 val matchesSearch = searchQuery.isBlank() ||
-                    user.name.contains(searchQuery, ignoreCase = true) ||
-                    user.email.contains(searchQuery, ignoreCase = true)
+                    user.name?.contains(searchQuery, ignoreCase = true) == true ||
+                    user.email?.contains(searchQuery, ignoreCase = true) == true
 
                 val matchesRole = roleFilter == "all" ||
                     user.role.equals(roleFilter, ignoreCase = true)
@@ -321,7 +321,7 @@ class AdminRepository {
 
     suspend fun getProducts(): List<AdminProductDto> = withContext(Dispatchers.IO) {
         try {
-            SupabaseClient.client.from("store_products").select()
+            SupabaseClient.client.from("products").select()
                 .decodeList<AdminProductDto>()
         } catch (e: Exception) {
             throw Exception("Failed to fetch products: ${e.message}")
@@ -329,12 +329,12 @@ class AdminRepository {
     }
 
     suspend fun addProduct(product: AdminProductInsertDto) = withContext(Dispatchers.IO) {
-        SupabaseClient.client.from("store_products").insert(product)
+        SupabaseClient.client.from("products").insert(product)
         logAction("product_add", product.id, "Added product: ${product.name}")
     }
 
     suspend fun updateProductStatus(productId: String, status: String) = withContext(Dispatchers.IO) {
-        SupabaseClient.client.from("store_products").update({
+        SupabaseClient.client.from("products").update({
             set("status", status)
         }) {
             filter { eq("id", productId) }
@@ -343,7 +343,7 @@ class AdminRepository {
     }
 
     suspend fun deleteProduct(productId: String) = withContext(Dispatchers.IO) {
-        SupabaseClient.client.from("store_products").delete {
+        SupabaseClient.client.from("products").delete {
             filter { eq("id", productId) }
         }
         logAction("product_delete", productId, "Deleted product")
@@ -351,7 +351,7 @@ class AdminRepository {
 
     suspend fun getOrders(): List<AdminOrderDto> = withContext(Dispatchers.IO) {
         try {
-            SupabaseClient.client.from("store_orders").select()
+            SupabaseClient.client.from("orders").select()
                 .decodeList<AdminOrderDto>()
         } catch (e: Exception) {
             throw Exception("Failed to fetch orders: ${e.message}")
@@ -359,7 +359,7 @@ class AdminRepository {
     }
 
     suspend fun updateOrderStatus(orderId: String, newStatus: String) = withContext(Dispatchers.IO) {
-        SupabaseClient.client.from("store_orders").update({
+        SupabaseClient.client.from("orders").update({
             set("status", newStatus)
         }) {
             filter { eq("id", orderId) }
@@ -572,13 +572,13 @@ data class AdminUserCountDto(
 @Serializable
 data class AdminUserDto(
     val id: String = "",
-    val email: String = "",
-    val name: String = "",
+    val email: String? = null,
+    val name: String? = null,
     val role: String = "creator",
     val is_verified: Boolean = false,
     val is_banned: Boolean = false,
     val is_suspended: Boolean = false,
-    val created_at: String = ""
+    val created_at: String? = null
 )
 
 @Serializable
@@ -596,49 +596,49 @@ data class AdminCampaignListDto(
 data class AdminSubmissionDto(
     val id: String = "",
     val campaign_id: String = "",
-    val campaign_title: String = "",
+    val campaign_title: String? = null,
     val creator_id: String = "",
-    val creator_name: String = "",
-    val deliverable_url: String = "",
-    val proposal: String = "",
+    val creator_name: String? = null,
+    val deliverable_url: String? = null,
+    val proposal: String? = null,
     val fee_requested: Double = 0.0,
     val status: String = "applied",
-    val created_at: String = ""
+    val created_at: String? = null
 )
 
 @Serializable
 data class AdminDepositDto(
     val id: String = "",
     val brand_id: String = "",
-    val brand_name: String = "",
+    val brand_name: String? = null,
     val amount: Double = 0.0,
-    val payment_method: String = "",
-    val transaction_ref: String = "",
+    val payment_method: String? = null,
+    val transaction_ref: String? = null,
     val status: String = "pending",
-    val created_at: String = ""
+    val created_at: String? = null
 )
 
 @Serializable
 data class AdminWithdrawalDto(
     val id: String = "",
     val user_id: String = "",
-    val user_name: String = "",
+    val user_name: String? = null,
     val amount: Double = 0.0,
-    val payout_method: String = "",
+    val payout_method: String? = null,
     val status: String = "pending",
-    val created_at: String = ""
+    val created_at: String? = null
 )
 
 @Serializable
 data class AdminProductDto(
     val id: String = "",
-    val name: String = "",
-    val description: String = "",
+    val name: String? = null,
+    val description: String? = null,
     val price: Double = 0.0,
     val stock: Int = 0,
     val status: String = "active",
-    val image_url: String = "",
-    val created_at: String = ""
+    val image_url: String? = null,
+    val created_at: String? = null
 )
 
 @Serializable
@@ -655,12 +655,12 @@ data class AdminProductInsertDto(
 @Serializable
 data class AdminOrderDto(
     val id: String = "",
-    val user_id: String = "",
-    val product_id: String = "",
+    val user_id: String? = null,
+    val product_id: String? = null,
     val quantity: Int = 1,
     val total_amount: Double = 0.0,
     val status: String = "pending",
-    val created_at: String = ""
+    val created_at: String? = null
 )
 
 @Serializable

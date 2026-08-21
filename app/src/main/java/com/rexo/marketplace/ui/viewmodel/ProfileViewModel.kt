@@ -8,6 +8,7 @@ import com.rexo.marketplace.data.repository.CreatorProfileDto
 import com.rexo.marketplace.data.repository.UserDto
 import com.rexo.marketplace.data.repository.UserRepository
 import com.rexo.marketplace.data.repository.WalletDto
+import com.rexo.marketplace.utils.ErrorUtils
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +69,7 @@ class ProfileViewModel : ViewModel() {
                 )
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error(
-                    e.message ?: "Failed to load profile"
+                    ErrorUtils.sanitizeErrorMessage(e.message)
                 )
             }
         }

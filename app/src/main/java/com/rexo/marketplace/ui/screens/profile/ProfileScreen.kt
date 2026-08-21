@@ -260,6 +260,8 @@ private fun ProfileContent(
 
 @Composable
 private fun ProfileAvatarSection(user: UserDto) {
+    val displayName = user.name ?: user.email.substringBefore("@")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +278,7 @@ private fun ProfileAvatarSection(user: UserDto) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = getInitials(user.name),
+                        text = getInitials(displayName),
                         style = RexoTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = RexoColors.TextPrimary
@@ -303,7 +305,7 @@ private fun ProfileAvatarSection(user: UserDto) {
 
         // Display name
         Text(
-            text = user.name,
+            text = displayName,
             style = RexoTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = RexoColors.TextPrimary

@@ -26,7 +26,7 @@ class ShopRepository {
         category: String = "All",
         searchQuery: String = ""
     ): List<ProductData> = withContext(Dispatchers.IO) {
-        val results = SupabaseClient.client.from("store_products").select()
+        val results = SupabaseClient.client.from("products").select()
             .decodeList<StoreProductDto>()
 
         results
@@ -47,7 +47,7 @@ class ShopRepository {
      */
     suspend fun getProductById(productId: String): ProductData? = withContext(Dispatchers.IO) {
         try {
-            val dto = SupabaseClient.client.from("store_products").select {
+            val dto = SupabaseClient.client.from("products").select {
                 filter { eq("id", productId) }
             }.decodeSingle<StoreProductDto>()
             dto.toProductData()
@@ -60,7 +60,7 @@ class ShopRepository {
      * Fetch unique product categories.
      */
     suspend fun getCategories(): List<String> = withContext(Dispatchers.IO) {
-        val results = SupabaseClient.client.from("store_products").select()
+        val results = SupabaseClient.client.from("products").select()
             .decodeList<StoreProductDto>()
         val categories = results.map { it.category }.distinct().sorted()
         listOf("All") + categories
@@ -91,7 +91,7 @@ class ShopRepository {
             items_json = itemsJson
         )
 
-        SupabaseClient.client.from("store_orders").insert(orderDto)
+        SupabaseClient.client.from("orders").insert(orderDto)
         orderId
     }
 
@@ -100,7 +100,7 @@ class ShopRepository {
      */
     suspend fun getOrders(): List<OrderData> = withContext(Dispatchers.IO) {
         val userId = getCurrentUserId() ?: return@withContext emptyList()
-        val results = SupabaseClient.client.from("store_orders").select {
+        val results = SupabaseClient.client.from("orders").select {
             filter { eq("user_id", userId) }
         }.decodeList<StoreOrderDto>()
 
@@ -112,7 +112,7 @@ class ShopRepository {
      */
     suspend fun getOrderById(orderId: String): OrderData? = withContext(Dispatchers.IO) {
         try {
-            val dto = SupabaseClient.client.from("store_orders").select {
+            val dto = SupabaseClient.client.from("orders").select {
                 filter { eq("id", orderId) }
             }.decodeSingle<StoreOrderDto>()
             dto.toOrderData()

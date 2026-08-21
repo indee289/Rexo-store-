@@ -137,7 +137,7 @@ data class UserInsertDto(
 data class UserDto(
     val id: String,
     val email: String,
-    val name: String,
+    val name: String? = null,
     val handle: String? = null,
     val avatar: String? = null,
     val role: String = "creator",

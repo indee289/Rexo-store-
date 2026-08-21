@@ -1,0 +1,42 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix critical bugs: wrong table names (store_products->products, store_orders->orders), nullable DTO fields causing JSON deserialization crashes, and raw error exposure to users",
+  "status": "in_progress",
+  "steps": [
+    "In app/src/main/java/com/rexo/marketplace/data/repository/ShopRepository.kt: Replace ALL occurrences of 'store_products' with 'products' and ALL occurrences of 'store_orders' with 'orders'",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Replace ALL occurrences of 'store_products' with 'products' and ALL occurrences of 'store_orders' with 'orders'",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Fix AdminUserDto to make 'name' nullable: change 'val name: String = \"\"' to 'val name: String? = null'. Also fix ALL other fields that could be null from the database: email, role, created_at should have safe defaults. Update the getUsers() filter to use 'user.name?.contains(...)' with null-safe access",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Fix AdminSubmissionDto fields that could be null - campaign_title, creator_name, deliverable_url, proposal should be nullable (String? with default null)",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Fix AdminDepositDto fields - brand_name, payment_method, transaction_ref should be nullable",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Fix AdminWithdrawalDto fields - user_name, payout_method should be nullable",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Fix AdminProductDto fields - name, description, image_url should be nullable",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/AdminRepository.kt: Fix AdminOrderDto fields - user_id, product_id should have safe defaults",
+    "In app/src/main/java/com/rexo/marketplace/data/repository/UserRepository.kt: Make UserDto.name nullable (val name: String? = null). Update ensureUserProfile to handle this properly",
+    "In app/src/main/java/com/rexo/marketplace/ui/screens/profile/ProfileScreen.kt: Handle nullable user.name throughout - use user.name ?: user.email.substringBefore('@') as display name",
+    "In ALL ViewModels (ShopViewModel, CampaignViewModel, ProfileViewModel, AdminViewModel): Sanitize error messages before exposing to UI. Replace raw exception messages with user-friendly versions. Never expose Supabase URLs. Pattern: catch (e: Exception) { sanitizeError(e.message) }",
+    "Create a utility file app/src/main/java/com/rexo/marketplace/utils/ErrorUtils.kt with a sanitizeErrorMessage(rawMessage: String?) function that strips Supabase URLs, API keys, and technical details, returning clean user-facing messages like 'Something went wrong. Please try again.' or 'No data available.'",
+    "In ShopViewModel.kt: Use the sanitizeErrorMessage utility in all catch blocks",
+    "In CampaignViewModel.kt: Use the sanitizeErrorMessage utility in all catch blocks",
+    "In ProfileViewModel.kt: Use the sanitizeErrorMessage utility in the catch block"
+  ],
+  "acceptance_criteria": [
+    "ShopRepository queries 'products' table instead of 'store_products'",
+    "ShopRepository queries 'orders' table instead of 'store_orders'",
+    "AdminRepository queries 'products' table instead of 'store_products'",
+    "AdminRepository queries 'orders' table instead of 'store_orders'",
+    "AdminUserDto has name: String? = null (nullable)",
+    "UserDto has name: String? = null (nullable)",
+    "No raw Supabase URLs or technical errors ever shown to users",
+    "ErrorUtils.kt exists with sanitizeErrorMessage function",
+    "All ViewModels use sanitized error messages"
+  ],
+  "verification": [
+    "grep -rn 'store_products' app/src/main/java/ should return 0 results (only in Room @Entity annotations which are fine)",
+    "grep -rn 'store_orders' app/src/main/java/ should return 0 results (only in Room @Entity annotations which are fine)",
+    "Check AdminUserDto and UserDto have nullable name field",
+    "Check ErrorUtils.kt exists and has sanitizeErrorMessage function"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
