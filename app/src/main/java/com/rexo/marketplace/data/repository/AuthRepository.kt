@@ -144,8 +144,8 @@ class AuthRepository {
      */
     suspend fun refreshSession(): Result<UserInfo> {
         return try {
-            val session = auth.refreshCurrentSession()
-            val user = session.user
+            auth.refreshCurrentSession()
+            val user = auth.currentUserOrNull()
                 ?: return Result.failure(Exception("Session refreshed but user is null"))
             Result.success(user)
         } catch (e: Exception) {
