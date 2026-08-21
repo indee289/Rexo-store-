@@ -106,21 +106,13 @@ jobs:
           EOF
           echo "✅ local.properties created"
 
-      # Step 7: Setup Gradle Wrapper
-      - name: 🔧 Setup Gradle Wrapper
-        run: |
-          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "📥 Downloading gradle-wrapper.jar..."
-            mkdir -p gradle/wrapper
-            curl -L -o gradle/wrapper/gradle-wrapper.jar \
-              https://raw.githubusercontent.com/gradle/gradle/v8.7.0/gradle/wrapper/gradle-wrapper.jar
-            echo "✅ gradle-wrapper.jar downloaded"
-          fi
-          chmod +x gradlew
-          ls -la gradlew gradle/wrapper/
-          echo "✅ Gradle wrapper ready (v8.7)"
+      # Step 8: Setup Gradle
+      - name: 📦 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
 
-      # Step 8: Gradle Cache
+      # Step 9: Gradle Cache
       - name: 📦 Gradle Cache
         uses: actions/cache@v4
         with:
@@ -131,26 +123,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Step 9: Build Debug APK
+      # Step 10: Build Debug APK
       - name: 🏗️ Build Debug APK
         run: |
           echo "🔨 Building Debug APK..."
-          # Retry logic for network issues
-          for i in 1 2 3; do
-            echo "Attempt $i of 3..."
-            ./gradlew assembleDebug --stacktrace --no-daemon --max-workers=2 && break || {
-              if [ $i -eq 3 ]; then
-                echo "❌ Build failed after 3 attempts"
-                exit 1
-              fi
-              echo "⚠️  Attempt $i failed, retrying in 10 seconds..."
-              sleep 10
-            }
-          done
+          # Use gradle command directly (setup-gradle provides it)
+          gradle assembleDebug --stacktrace --no-daemon --max-workers=2 || \
+          ./gradlew assembleDebug --stacktrace --no-daemon --max-workers=2
           echo "✅ Debug APK built successfully!"
         timeout-minutes: 20
 
-      # Step 10: Rename & Organize APK
+      # Step 11: Rename & Organize APK
       - name: 📦 Package APK
         run: |
           COMMIT_SHA=$(git rev-parse --short HEAD)
@@ -166,7 +149,7 @@ jobs:
             exit 1
           fi
 
-      # Step 11: Upload APK
+      # Step 12: Upload APK
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -174,7 +157,7 @@ jobs:
           path: output/*.apk
           retention-days: 30
 
-      # Step 12: Summary
+      # Step 13: Summary
       - name: 📊 Build Summary
         run: |
           APK_FILE=$(find output -name "*.apk" | head -n 1)
