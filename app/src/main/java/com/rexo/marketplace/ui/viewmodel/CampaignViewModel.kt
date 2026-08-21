@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
  * No mock/fallback data - shows proper error/empty states.
  */
 class CampaignViewModel(
-    private val repository: CampaignRepository
+    private val repository: CampaignRepository = CampaignRepository()
 ) : ViewModel() {
 
     // UI State

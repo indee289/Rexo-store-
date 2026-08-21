@@ -2,15 +2,24 @@ package com.rexo.marketplace.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -26,8 +35,11 @@ import com.rexo.marketplace.ui.screens.profile.ProfileScreen
 import com.rexo.marketplace.ui.screens.settings.SettingsScreen
 import com.rexo.marketplace.ui.screens.shop.ShopScreen
 import com.rexo.marketplace.ui.screens.wallet.WalletScreen
+import com.rexo.marketplace.ui.theme.RexoColors
 import com.rexo.marketplace.ui.viewmodel.AuthUiState
 import com.rexo.marketplace.ui.viewmodel.AuthViewModel
+import com.rexo.marketplace.ui.viewmodel.CampaignViewModel
+import com.rexo.marketplace.ui.viewmodel.NotificationViewModel
 
 /**
  * Navigation Graph for Rexo App
@@ -94,7 +106,9 @@ sealed class BottomNavItem(
 fun RexoNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Auth.route,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    campaignViewModel: CampaignViewModel = viewModel(),
+    notificationViewModel: NotificationViewModel = viewModel()
 ) {
     NavHost(
         navController = navController,
@@ -150,7 +164,8 @@ fun RexoNavGraph(
                 },
                 onNavigateToNotifications = {
                     navController.navigate(Screen.Notifications.route)
-                }
+                },
+                campaignViewModel = campaignViewModel
             )
         }
 
@@ -158,7 +173,7 @@ fun RexoNavGraph(
         composable(Screen.Campaigns.route) {
             CampaignsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                campaignViewModel = null
+                campaignViewModel = campaignViewModel
             )
         }
 
@@ -173,7 +188,7 @@ fun RexoNavGraph(
         composable(Screen.Notifications.route) {
             NotificationsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                viewModel = null
+                viewModel = notificationViewModel
             )
         }
 
@@ -258,8 +273,8 @@ fun PlaceholderScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(24.dp),
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = icon,
@@ -300,6 +315,8 @@ fun PlaceholderScreen(
 @Composable
 fun MainScaffold() {
     val authViewModel: AuthViewModel = viewModel()
+    val campaignViewModel: CampaignViewModel = viewModel()
+    val notificationViewModel: NotificationViewModel = viewModel()
     val uiState by authViewModel.uiState.collectAsState()
     val isAdmin by authViewModel.isAdmin.collectAsState()
     val navController = rememberNavController()
@@ -318,7 +335,7 @@ fun MainScaffold() {
     if (uiState is AuthUiState.Loading && currentRoute == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = androidx.compose.ui.Alignment.Center
+            contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(
                 color = MaterialTheme.colorScheme.primary
@@ -337,9 +354,10 @@ fun MainScaffold() {
     )
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
-                ModernBottomNavigation(
+                FloatingPillBottomNavigation(
                     navController = navController,
                     currentRoute = currentRoute,
                     isAdmin = isAdmin
@@ -351,14 +369,27 @@ fun MainScaffold() {
             RexoNavGraph(
                 navController = navController,
                 startDestination = startDestination,
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                campaignViewModel = campaignViewModel,
+                notificationViewModel = notificationViewModel
             )
         }
     }
 }
 
+/**
+ * Floating Pill-Style Bottom Navigation
+ *
+ * Premium design:
+ * - Floating container with 28dp corner radius
+ * - White background with subtle shadow (6dp elevation)
+ * - 16dp horizontal margin from screen edges
+ * - Active tab gets pill-shaped background with orange accent
+ * - Active tab shows icon + label inside the pill
+ * - Inactive tabs show only icon
+ */
 @Composable
-fun ModernBottomNavigation(
+fun FloatingPillBottomNavigation(
     navController: NavHostController,
     currentRoute: String?,
     isAdmin: Boolean = false
@@ -373,43 +404,101 @@ fun ModernBottomNavigation(
         add(BottomNavItem.Profile)
     }
 
-    NavigationBar(
-        tonalElevation = 0.dp,
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        items.forEach { item ->
-            val selected = currentRoute == item.route
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 6.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    clip = false
+                )
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color.White)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                val selected = currentRoute == item.route
 
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.title
-                    )
-                },
-                label = {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                },
-                selected = selected,
-                onClick = {
-                    if (currentRoute != item.route) {
-                        navController.navigate(item.route) {
-                            // Pop up to the start destination to avoid building a large stack
-                            popUpTo(Screen.Home.route) {
-                                saveState = true
+                if (selected) {
+                    // Active tab - pill with icon + label
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(RexoColors.AccentOrange.copy(alpha = 0.12f))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                // Already on this tab
                             }
-                            // Avoid multiple copies of the same destination
-                            launchSingleTop = true
-                            // Restore state when reselecting a previously selected item
-                            restoreState = true
-                        }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = item.selectedIcon,
+                            contentDescription = item.title,
+                            tint = RexoColors.AccentOrange,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = item.title,
+                            color = RexoColors.AccentOrange,
+                            fontSize = 13.sp,
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
-                },
-                alwaysShowLabel = true
-            )
+                } else {
+                    // Inactive tab - icon only
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                navController.navigate(item.route) {
+                                    popUpTo(Screen.Home.route) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = item.unselectedIcon,
+                            contentDescription = item.title,
+                            tint = RexoColors.Gray400,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+fun ModernBottomNavigation(
+    navController: NavHostController,
+    currentRoute: String?,
+    isAdmin: Boolean = false
+) {
+    // Delegate to the floating pill style
+    FloatingPillBottomNavigation(
+        navController = navController,
+        currentRoute = currentRoute,
+        isAdmin = isAdmin
+    )
 }

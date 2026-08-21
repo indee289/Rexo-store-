@@ -51,7 +51,8 @@ class ProfileViewModel : ViewModel() {
             }
 
             try {
-                val user = userRepository.getUser(userId)
+                // Ensure user profile exists (creates one if not found)
+                val user = userRepository.ensureUserProfile(userId)
                 if (user == null) {
                     _profileState.value = ProfileState.Empty
                     return@launch

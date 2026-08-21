@@ -13,8 +13,7 @@ import kotlinx.coroutines.withContext
  * No mock data fallback - shows proper error/empty states.
  */
 class CampaignRepository(
-    private val campaignDao: CampaignDao,
-    private val supabaseClient: SupabaseClient
+    private val campaignDao: CampaignDao? = null
 ) {
     /**
      * Fetch campaigns from Supabase.
@@ -25,7 +24,7 @@ class CampaignRepository(
         category: String = "All",
         searchQuery: String = ""
     ): List<CampaignItem> = withContext(Dispatchers.IO) {
-        val query = supabaseClient.client.from("campaigns").select()
+        val query = SupabaseClient.client.from("campaigns").select()
         val allCampaigns = query.decodeList<CampaignDto>()
 
         val filtered = allCampaigns
@@ -46,14 +45,14 @@ class CampaignRepository(
      * Fetch all unique categories from campaigns table.
      */
     suspend fun getCategories(): List<String> = withContext(Dispatchers.IO) {
-        val query = supabaseClient.client.from("campaigns").select()
+        val query = SupabaseClient.client.from("campaigns").select()
         val allCampaigns = query.decodeList<CampaignDto>()
         val categories = allCampaigns.map { it.category }.distinct().sorted()
         listOf("All") + categories
     }
 
     suspend fun applyToCampaign(campaignId: String, proposal: String) = withContext(Dispatchers.IO) {
-        supabaseClient.client.from("campaign_applications").insert(
+        SupabaseClient.client.from("campaign_applications").insert(
             mapOf(
                 "campaign_id" to campaignId,
                 "proposal" to proposal,
@@ -63,7 +62,7 @@ class CampaignRepository(
     }
 
     suspend fun createCampaign(request: CreateCampaignRequest) = withContext(Dispatchers.IO) {
-        supabaseClient.client.from("campaigns").insert(
+        SupabaseClient.client.from("campaigns").insert(
             mapOf(
                 "title" to request.title,
                 "description" to request.description,

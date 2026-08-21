@@ -27,6 +27,40 @@ class UserRepository {
     }
 
     /**
+     * Ensure a user profile row exists in the 'users' table.
+     * If no row exists for the given userId, create one using auth metadata.
+     * Uses upsert to avoid conflicts.
+     */
+    suspend fun ensureUserProfile(userId: String): UserDto? = withContext(Dispatchers.IO) {
+        // First try to fetch
+        val existing = getUser(userId)
+        if (existing != null) return@withContext existing
+
+        // No row exists - create one from auth session metadata
+        try {
+            val authUser = SupabaseClient.auth.currentUserOrNull()
+            val email = authUser?.email ?: ""
+            val name = authUser?.userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
+                ?: authUser?.userMetadata?.get("name")?.toString()?.removeSurrounding("\"")
+                ?: email.substringBefore("@")
+
+            val newUser = UserInsertDto(
+                id = userId,
+                email = email,
+                name = name,
+                role = if (isAdminEmail(email)) "admin" else "creator"
+            )
+
+            SupabaseClient.client.from("users").insert(newUser)
+
+            // Fetch and return the newly created row
+            getUser(userId)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
      * Fetch user role from Supabase 'users' table.
      * Returns the role string ("creator", "brand", "admin") or null on failure.
      * Also checks by email for admin identification.
@@ -82,6 +116,17 @@ class UserRepository {
         }
     }
 }
+
+/**
+ * DTO for inserting a new user row into the 'users' table.
+ */
+@kotlinx.serialization.Serializable
+data class UserInsertDto(
+    val id: String,
+    val email: String,
+    val name: String,
+    val role: String = "creator"
+)
 
 /**
  * DTO matching the Supabase 'users' table schema.
