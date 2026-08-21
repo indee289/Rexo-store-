@@ -37,8 +37,10 @@ import com.rexo.marketplace.ui.screens.chat.ChatListScreen
 import com.rexo.marketplace.ui.screens.home.HomeScreen
 import com.rexo.marketplace.ui.screens.notifications.NotificationsScreen
 import com.rexo.marketplace.ui.screens.profile.ProfileScreen
+import com.rexo.marketplace.ui.screens.settings.HelpSupportScreen
 import com.rexo.marketplace.ui.screens.settings.PrivacyPolicyScreen
 import com.rexo.marketplace.ui.screens.settings.SettingsScreen
+import com.rexo.marketplace.ui.screens.settings.TermsOfServiceScreen
 import com.rexo.marketplace.ui.screens.shop.CartScreen
 import com.rexo.marketplace.ui.screens.shop.CheckoutScreen
 import com.rexo.marketplace.ui.screens.shop.MyPurchasesScreen
@@ -85,6 +87,8 @@ sealed class Screen(val route: String) {
     object ChatDetail : Screen("chat_detail/{recipientId}") {
         fun createRoute(recipientId: String) = "chat_detail/$recipientId"
     }
+    object TermsOfService : Screen("terms_of_service")
+    object HelpSupport : Screen("help_support")
 }
 
 // Bottom navigation items - 5 tabs matching app blueprint
@@ -274,6 +278,12 @@ fun RexoNavGraph(
                 onNavigateToPrivacyPolicy = {
                     navController.navigate(Screen.PrivacyPolicy.route)
                 },
+                onNavigateToTermsOfService = {
+                    navController.navigate(Screen.TermsOfService.route)
+                },
+                onNavigateToHelpSupport = {
+                    navController.navigate(Screen.HelpSupport.route)
+                },
                 onSignOut = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
@@ -285,6 +295,20 @@ fun RexoNavGraph(
         // Privacy Policy Screen
         composable(Screen.PrivacyPolicy.route) {
             PrivacyPolicyScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Terms of Service Screen
+        composable(Screen.TermsOfService.route) {
+            TermsOfServiceScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Help & Support Screen
+        composable(Screen.HelpSupport.route) {
+            HelpSupportScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
