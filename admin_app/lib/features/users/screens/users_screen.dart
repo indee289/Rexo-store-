@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/premium_card.dart';
 import '../../admin/providers/admin_provider.dart';
 
@@ -53,9 +54,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 leading: const Icon(Iconsax.verify, color: AppColors.success),
                 title: const Text('Verify User'),
                 onTap: () {
-                  ref.read(adminActionsProvider.notifier).updateUserStatus(
+                  ref.read(adminActionsProvider.notifier).verifyUser(
                         user['id'],
-                        'verified',
                       );
                   Navigator.pop(context);
                 },
@@ -236,7 +236,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
               error: (error, _) => Center(
-                child: Text('Error: $error'),
+                child: Text(ErrorUtils.sanitize(error)),
               ),
             ),
           ),

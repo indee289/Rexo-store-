@@ -156,7 +156,20 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await SupabaseService.client
           .from('users')
-          .update({'status': status}).eq('id', userId);
+          .update({'account_status': status}).eq('id', userId);
+      ref.invalidate(adminUsersProvider);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> verifyUser(String userId) async {
+    state = const AsyncValue.loading();
+    try {
+      await SupabaseService.client
+          .from('users')
+          .update({'is_verified': true}).eq('id', userId);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -312,12 +325,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       final wallet = await SupabaseService.client
           .from('wallets')
-          .select('balance')
+          .select('available_balance')
           .eq('id', walletId)
           .single();
-      final currentBalance = (wallet['balance'] as num).toDouble();
+      final currentBalance = (wallet['available_balance'] as num).toDouble();
       await SupabaseService.client.from('wallets').update(
-          {'balance': currentBalance + amount}).eq('id', walletId);
+          {'available_balance': currentBalance + amount}).eq('id', walletId);
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -330,12 +343,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       final wallet = await SupabaseService.client
           .from('wallets')
-          .select('balance')
+          .select('available_balance')
           .eq('id', walletId)
           .single();
-      final currentBalance = (wallet['balance'] as num).toDouble();
+      final currentBalance = (wallet['available_balance'] as num).toDouble();
       await SupabaseService.client.from('wallets').update(
-          {'balance': currentBalance - amount}).eq('id', walletId);
+          {'available_balance': currentBalance - amount}).eq('id', walletId);
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {

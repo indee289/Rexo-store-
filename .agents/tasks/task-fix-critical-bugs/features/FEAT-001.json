@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix critical Supabase column mismatches and query failures: (1) Admin campaign creation uses 'created_by' but table has 'brand_id', (2) Admin user status update uses 'status' but table has 'account_status', (3) Admin wallet credit uses 'balance' but table has 'available_balance', (4) Edit profile may send invalid columns. Also fix all raw error messages shown to users.",
+  "status": "in_progress",
+  "steps": [
+    "Fix admin_app/lib/features/actions/screens/campaign_control_screen.dart: Replace 'created_by' with 'brand_id' in the insert call. Add all proper fields to campaign creation form (title, description, budget, per_creator_payout, platform dropdown, category dropdown, total_slots, deadline, guidelines, min_followers, cover_image_url). Wrap error in user-friendly message.",
+    "Fix admin_app/lib/features/admin/providers/admin_provider.dart: In updateUserStatus(), change 'status' to 'account_status'. In creditWallet()/debitWallet(), change 'balance' to 'available_balance'. Wrap all error states with ErrorUtils.sanitize or a local equivalent.",
+    "Fix admin_app/lib/features/users/screens/users_screen.dart: 'Verify User' should call a new method that updates users.is_verified to true (not account_status to 'verified'). Suspend/Ban should update account_status. Show user-friendly error message instead of raw 'Error: $error'.",
+    "Fix lib/features/profile/providers/profile_provider.dart: In updateProfile(), filter the fields map to only include valid users table columns (name, handle, bio, phone, avatar_url, updated_at) before sending to Supabase. This prevents sending any invalid column names.",
+    "Fix lib/features/profile/screens/edit_profile_screen.dart: In the catch block of _saveProfile(), use ErrorUtils.sanitize(e) instead of showing raw e.toString().",
+    "Fix admin_app/lib/features/actions/screens/wallets_escrow_screen.dart and any admin screen that shows raw 'Error: $error' - sanitize all error displays.",
+    "Add an error_utils.dart file to admin_app/lib/core/utils/ with the same ErrorUtils class pattern from the user app."
+  ],
+  "acceptance_criteria": [
+    "Campaign creation in admin uses 'brand_id' instead of 'created_by'",
+    "Admin user ban/suspend updates 'account_status' column",
+    "Admin verify updates 'is_verified' to true",
+    "Admin wallet credit/debit uses 'available_balance' column",
+    "Edit profile only sends valid column names: name, handle, bio, phone, avatar_url, updated_at",
+    "No raw PostgrestException messages shown to users anywhere",
+    "All error displays use sanitized user-friendly messages"
+  ],
+  "verification": [
+    "Grep for 'created_by' in admin_app - should not exist in campaign insert",
+    "Grep for \"'status'\" in admin updateUserStatus - should be 'account_status'",
+    "Grep for \"'balance'\" in admin creditWallet/debitWallet - should be 'available_balance'",
+    "Grep for 'e.toString()' or '\\$e' in SnackBar/error displays - should all use sanitized messages"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/premium_card.dart';
 import '../../admin/providers/admin_provider.dart';
 
@@ -108,7 +109,7 @@ class AuditLogsScreen extends ConsumerWidget {
         },
         loading: () =>
             const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(child: Text(ErrorUtils.sanitize(error))),
       ),
     );
   }

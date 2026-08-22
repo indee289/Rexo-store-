@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Fix dark mode support across all screens by replacing hardcoded AppColors references with Theme.of(context) colors. Ensure background, text, and card colors all follow the active theme.",
+  "status": "pending",
+  "steps": [
+    "Fix lib/features/home/screens/home_screen.dart: Replace AppColors.background with theme.scaffoldBackgroundColor, AppColors.surface with theme.colorScheme.surface, AppColors.textPrimary with theme.colorScheme.onSurface, AppColors.textSecondary with theme.colorScheme.onSurface.withOpacity(0.6). Keep AppColors.primary, AppColors.success, AppColors.error, AppColors.warning as-is since those are accent colors.",
+    "Fix lib/features/home/widgets/campaign_card.dart and creator_card.dart: Same pattern - replace text/background color references with theme-based colors.",
+    "Fix lib/features/auth/screens/login_screen.dart and register_screen.dart: Replace hardcoded AppColors.textPrimary/textSecondary/background with theme equivalents.",
+    "Fix lib/features/campaigns/screens/ - all campaign screens: Replace hardcoded color references.",
+    "Fix lib/features/wallet/screens/wallet_screen.dart, deposit_screen.dart, withdraw_screen.dart: Replace hardcoded colors.",
+    "Fix admin_app/lib/features/ screens that use AppColors.background directly as Scaffold backgroundColor - replace with theme.scaffoldBackgroundColor. Same for text colors.",
+    "Fix lib/features/auth/screens/splash_screen.dart: Replace backgroundColor: Colors.white with theme.scaffoldBackgroundColor.",
+    "Scan and fix remaining screens (shop, messages, notifications, orders, etc.) for hardcoded AppColors.background/textPrimary/textSecondary/surface/card usage. Replace with Theme.of(context) equivalents."
+  ],
+  "acceptance_criteria": [
+    "No screen uses AppColors.background as scaffold background - all use theme.scaffoldBackgroundColor",
+    "No screen uses AppColors.textPrimary for text - all use theme.colorScheme.onSurface",
+    "No screen uses AppColors.textSecondary for text - all use theme.colorScheme.onSurface.withOpacity(0.6) or similar",
+    "No screen uses AppColors.surface for card/container backgrounds - all use theme.colorScheme.surface",
+    "AppColors.primary, AppColors.success, AppColors.error, AppColors.warning remain unchanged (accent colors)",
+    "All screens respect dark mode when toggled"
+  ],
+  "verification": [
+    "Grep for 'AppColors.background' in lib/features/ and admin_app/lib/features/ - should have zero occurrences (except in theme definition files)",
+    "Grep for 'AppColors.textPrimary' in screen/widget files - should have zero occurrences",
+    "Grep for 'Colors.white' used as background color in Scaffold - should have zero occurrences"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

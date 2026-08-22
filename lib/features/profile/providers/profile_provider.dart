@@ -94,7 +94,10 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
 class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
   ProfileNotifier() : super(const AsyncValue.data(null));
 
-  /// Update user profile fields
+  /// Update user profile fields.
+  ///
+  /// Only valid users table columns are sent to Supabase to prevent
+  /// "column not found" errors.
   Future<bool> updateProfile(Map<String, dynamic> fields) async {
     final user = SupabaseService.currentUser;
     if (user == null) return false;
@@ -102,10 +105,28 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      fields['updated_at'] = DateTime.now().toIso8601String();
+      // Only allow valid users table columns to be sent
+      const validColumns = {
+        'name',
+        'handle',
+        'bio',
+        'phone',
+        'avatar_url',
+        'updated_at',
+      };
+
+      final filteredFields = <String, dynamic>{};
+      for (final entry in fields.entries) {
+        if (validColumns.contains(entry.key)) {
+          filteredFields[entry.key] = entry.value;
+        }
+      }
+
+      filteredFields['updated_at'] = DateTime.now().toIso8601String();
+
       await SupabaseService.updateUserProfile(
         userId: user.id,
-        data: fields,
+        data: filteredFields,
       );
       state = const AsyncValue.data(null);
       return true;

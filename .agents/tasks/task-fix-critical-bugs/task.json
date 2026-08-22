@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-critical-bugs",
+  "task_description": "Fix all critical bugs in both User and Admin Flutter apps: Supabase column mismatches (campaigns.created_by, users.status, wallets.balance), edit profile failure, 2FA crash, profile/settings reorganization, subscription plans, splash delay, dark mode support, and error message sanitization.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

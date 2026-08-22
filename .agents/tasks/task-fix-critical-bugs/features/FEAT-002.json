@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Fix 2FA crash, splash screen delay, and reorganize profile/settings pages. Also add hardcoded subscription plans and remove language selector.",
+  "status": "pending",
+  "steps": [
+    "Replace lib/features/settings/screens/two_factor_auth_screen.dart entirely: Make it a simple static page with NO MFA API calls. Show 'Two-Factor Authentication' title, a shield icon, an 'Enable 2FA' toggle that is disabled with text 'TOTP-based 2FA will be available soon'. No loading states needed. Keep the same file structure (ConsumerWidget, same AppBar style).",
+    "Fix lib/features/auth/screens/splash_screen.dart: Change the delay from 2500ms to 1500ms.",
+    "Reorganize lib/features/profile/screens/profile_screen.dart: Remove the Rexo Program card entirely. Remove Sessions & Devices, Security, Disputes, KYC Verification, Linked Accounts, Notifications, Help & Support, Services menu items. Keep ONLY: Avatar+Name+Handle+Role badge+Stats section, then quick action items: Edit Profile, Wallet, My Orders, Subscriptions. Keep the Settings gear icon in the AppBar. Remove the logout button from profile (it's in settings).",
+    "Reorganize lib/features/settings/screens/settings_screen.dart: Add new menu items in proper sections - Account section: Edit Profile, Linked Accounts, KYC Verification, Rexo Program (for creators - navigate to /rexo-program or show apply dialog). Sessions & Devices section: Sessions & Devices, Security (2FA here). Remove Language section entirely. Keep Appearance (theme selector), Notifications section, Legal section. Add Logout at bottom.",
+    "Fix lib/features/subscriptions/screens/subscriptions_screen.dart: When the DB returns empty plans, show 4 hardcoded default plans directly in the UI instead of 'No plans available': Free (INR 0/month, Basic features, 5 campaign applications/month), Pro (INR 299/month, Unlimited applications, priority listing, analytics), Ultra (INR 599/month, Everything in Pro + verified badge, featured placement), Premium Max (INR 999/month, Everything + dedicated manager, custom media kit, priority payouts). Show these from the subscriptions_provider.dart by returning default plans when DB is empty.",
+    "Remove the rexo_program import from profile_screen.dart since the card is removed."
+  ],
+  "acceptance_criteria": [
+    "2FA screen shows static 'coming soon' page with no API calls whatsoever - no mfa.listFactors(), no mfa.enroll(), etc.",
+    "Splash screen uses 1500ms delay instead of 2500ms",
+    "Profile page shows only: Avatar, Name, Handle, Role badge, Stats, then 4 quick actions (Edit Profile, Wallet, My Orders, Subscriptions) plus Settings gear in AppBar",
+    "Settings page includes: Appearance (theme), Account (Edit Profile, Linked Accounts, KYC, Rexo Program), Security (Sessions, 2FA), Notifications, Legal, Logout",
+    "Language selector is completely removed from settings",
+    "Subscription screen shows 4 hardcoded plans when DB returns empty",
+    "No crashes on any screen"
+  ],
+  "verification": [
+    "Grep for 'mfa' in two_factor_auth_screen.dart - should not exist",
+    "Grep for '2500' in splash_screen.dart - should not exist, should find '1500'",
+    "Grep for 'rexo_program' in profile_screen.dart - should not exist",
+    "Grep for 'Language' in settings_screen.dart - should not exist",
+    "Check subscriptions_provider.dart returns default plans when DB is empty"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
