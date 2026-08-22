@@ -35,15 +35,19 @@ import '../../features/legal/screens/terms_of_service_screen.dart';
 import '../../features/linked_accounts/screens/linked_accounts_screen.dart';
 import '../../features/messages/screens/chat_screen.dart';
 import '../../features/messages/screens/messages_screen.dart';
+import '../../features/moderation/screens/moderation_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/orders/screens/order_detail_screen.dart';
 import '../../features/orders/screens/orders_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/reviews/screens/reviews_screen.dart';
+import '../../features/security/screens/security_logs_screen.dart';
 import '../../features/sellers/screens/seller_profile_screen.dart';
 import '../../features/services/screens/media_kit_screen.dart';
 import '../../features/services/screens/rate_calculator_screen.dart';
 import '../../features/services/screens/services_screen.dart';
+import '../../features/sessions/screens/sessions_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shop/screens/cart_screen.dart';
 import '../../features/shop/screens/checkout_screen.dart';
@@ -53,6 +57,7 @@ import '../../features/subscriptions/screens/subscriptions_screen.dart';
 import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/wallet/screens/withdraw_screen.dart';
+import '../../features/warnings/screens/warnings_screen.dart';
 import '../widgets/app_shell.dart';
 
 /// Route paths
@@ -109,6 +114,11 @@ class AppRoutes {
   static const String servicesRateCalculator = '/services/rate-calculator';
   static const String servicesMediaKit = '/services/media-kit';
   static const String subscriptions = '/subscriptions';
+  static const String sessions = '/sessions';
+  static const String securityLogs = '/security-logs';
+  static const String warnings = '/warnings';
+  static const String moderation = '/moderation';
+  static const String publicProfile = '/profile/:handle';
 }
 
 /// GoRouter provider
@@ -491,6 +501,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.subscriptions,
         builder: (context, state) => const SubscriptionsScreen(),
+      ),
+
+      /// Sessions & Devices screen
+      GoRoute(
+        path: AppRoutes.sessions,
+        builder: (context, state) => const SessionsScreen(),
+      ),
+
+      /// Security Logs screen
+      GoRoute(
+        path: AppRoutes.securityLogs,
+        builder: (context, state) => const SecurityLogsScreen(),
+      ),
+
+      /// Warnings & Suspensions screen
+      GoRoute(
+        path: AppRoutes.warnings,
+        builder: (context, state) => const WarningsScreen(),
+      ),
+
+      /// Moderation screen (admin only)
+      GoRoute(
+        path: AppRoutes.moderation,
+        builder: (context, state) => const ModerationScreen(),
+      ),
+
+      /// Public Profile screen (deep link)
+      GoRoute(
+        path: AppRoutes.publicProfile,
+        builder: (context, state) {
+          final handle = state.pathParameters['handle']!;
+          return PublicProfileScreen(handle: handle);
+        },
       ),
     ],
   );

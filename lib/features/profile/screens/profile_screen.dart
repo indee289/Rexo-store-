@@ -154,6 +154,16 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           // Menu items
           _buildMenuItem(
+            icon: Iconsax.mobile,
+            title: 'Sessions & Devices',
+            onTap: () => context.push('/sessions'),
+          ),
+          _buildMenuItem(
+            icon: Iconsax.shield_tick,
+            title: 'Security',
+            onTap: () => context.push('/security-logs'),
+          ),
+          _buildMenuItem(
             icon: Iconsax.edit,
             title: 'Edit Profile',
             onTap: () {

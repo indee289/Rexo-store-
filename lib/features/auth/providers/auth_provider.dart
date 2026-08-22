@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../services/supabase_service.dart';
+import '../../device_fingerprint/providers/device_fingerprint_provider.dart';
 
 /// Auth state enum
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
@@ -38,9 +39,10 @@ class AuthState {
 
 /// Auth state notifier
 class AuthNotifier extends StateNotifier<AuthState> {
+  final Ref _ref;
   StreamSubscription<supabase.AuthState>? _authSubscription;
 
-  AuthNotifier() : super(const AuthState()) {
+  AuthNotifier(this._ref) : super(const AuthState()) {
     _initialize();
   }
 
@@ -101,6 +103,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           status: AuthStatus.authenticated,
           user: response.user,
         );
+        // Record device fingerprint after successful login
+        _recordDeviceFingerprint();
       } else {
         state = const AuthState(
           status: AuthStatus.error,
@@ -117,6 +121,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.error,
         errorMessage: 'An unexpected error occurred. Please try again.',
       );
+    }
+  }
+
+  /// Record device fingerprint after login
+  void _recordDeviceFingerprint() {
+    try {
+      _ref.read(deviceFingerprintProvider.notifier).recordDeviceFingerprint();
+    } catch (_) {
+      // Non-critical - don't block auth flow
     }
   }
 
@@ -189,7 +202,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 /// Main auth provider
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
+  return AuthNotifier(ref);
 });
 
 /// Convenience providers
