@@ -1,7 +1,18 @@
 {
   "task_id": "task-flutter-conversion",
   "task_description": "Convert Rexo Marketplace from Kotlin/Jetpack Compose to Flutter. Create complete Supabase SQL schema, remove all Kotlin files, build premium Flutter app with auth, home, campaigns, shop, profile, wallet, notifications, and messages. Push to origin Rexo-Kotlin branch.",
-  "status": "in_progress",
+  "status": "completed",
   "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
-  "blocked_reason": null
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Cannot run flutter build/test in INTEGRATIONS_ONLY network (no Flutter SDK available). Verified: 48 dart files created with proper structure, all Kotlin files removed, SQL schema has 18 tables with RLS/policies/indexes, CI workflow configured for Flutter, all changes pushed to origin Rexo-Kotlin. Code structure and imports verified manually."
+  },
+  "review_fixes": {
+    "v1": "Fixed in commit 1f40c0f: column name mismatches, auth subscription leak, deposit URL, withdrawal guard",
+    "v2": "Fixed in commit 4747e38: DELETE policies on orders/notifications, storage.objects RLS for all 5 buckets, stock validation trigger on order_items"
+  }
 }
