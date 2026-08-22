@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Fix 2FA crash, splash screen delay, and reorganize profile/settings pages. Also add hardcoded subscription plans and remove language selector.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Replace lib/features/settings/screens/two_factor_auth_screen.dart entirely: Make it a simple static page with NO MFA API calls. Show 'Two-Factor Authentication' title, a shield icon, an 'Enable 2FA' toggle that is disabled with text 'TOTP-based 2FA will be available soon'. No loading states needed. Keep the same file structure (ConsumerWidget, same AppBar style).",
     "Fix lib/features/auth/screens/splash_screen.dart: Change the delay from 2500ms to 1500ms.",
@@ -28,5 +28,5 @@
     "Check subscriptions_provider.dart returns default plans when DB is empty"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All changes verified by code inspection and grep. No /rexo-program route exists in the user app router so Rexo Program in settings shows an info dialog instead of navigating. No /edit-profile route exists so Edit Profile in settings uses MaterialPageRoute (same pattern as the original profile screen). The 2FA screen was converted from ConsumerStatefulWidget to ConsumerWidget since no state management is needed for a static page. The subscriptions_provider now returns 4 hardcoded plans (Free/Pro/Ultra/Premium Max) when DB returns empty or errors."
 }
