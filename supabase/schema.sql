@@ -793,6 +793,671 @@ CREATE TRIGGER on_order_item_check_stock
   EXECUTE FUNCTION check_and_decrement_stock();
 
 -- ============================================================
+-- TABLE: linked_accounts
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.linked_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL,
+    handle TEXT NOT NULL,
+    verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.linked_accounts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own linked accounts"
+    ON public.linked_accounts FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own linked accounts"
+    ON public.linked_accounts FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own linked accounts"
+    ON public.linked_accounts FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own linked accounts"
+    ON public.linked_accounts FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all linked accounts"
+    ON public.linked_accounts FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: addresses
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.addresses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT,
+    address_line1 TEXT NOT NULL,
+    address_line2 TEXT,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    pincode TEXT NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own addresses"
+    ON public.addresses FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own addresses"
+    ON public.addresses FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own addresses"
+    ON public.addresses FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own addresses"
+    ON public.addresses FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all addresses"
+    ON public.addresses FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: reviews
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    target_id UUID,
+    target_type TEXT,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own reviews"
+    ON public.reviews FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own reviews"
+    ON public.reviews FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own reviews"
+    ON public.reviews FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own reviews"
+    ON public.reviews FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all reviews"
+    ON public.reviews FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: reward_points
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.reward_points (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    points INTEGER DEFAULT 0,
+    last_earned_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.reward_points ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own reward points"
+    ON public.reward_points FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own reward points"
+    ON public.reward_points FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all reward points"
+    ON public.reward_points FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: coupons
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.coupons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT UNIQUE NOT NULL,
+    discount_type TEXT NOT NULL,
+    discount_value DECIMAL NOT NULL,
+    min_order DECIMAL,
+    max_uses INTEGER,
+    used_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read active coupons"
+    ON public.coupons FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins can manage all coupons"
+    ON public.coupons FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: product_categories
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.product_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    parent_id UUID REFERENCES public.product_categories(id) ON DELETE SET NULL,
+    icon_url TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.product_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read product categories"
+    ON public.product_categories FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins can manage all product categories"
+    ON public.product_categories FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: seller_profiles
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.seller_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    store_name TEXT,
+    description TEXT,
+    logo_url TEXT,
+    rating DECIMAL DEFAULT 0,
+    total_sales INTEGER DEFAULT 0,
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.seller_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own seller profile"
+    ON public.seller_profiles FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own seller profile"
+    ON public.seller_profiles FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own seller profile"
+    ON public.seller_profiles FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all seller profiles"
+    ON public.seller_profiles FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: services
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.services (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    service_type TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    price DECIMAL NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own services"
+    ON public.services FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own services"
+    ON public.services FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own services"
+    ON public.services FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own services"
+    ON public.services FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all services"
+    ON public.services FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: subscription_plans
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.subscription_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    price DECIMAL NOT NULL,
+    features JSONB,
+    duration_days INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read subscription plans"
+    ON public.subscription_plans FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins can manage all subscription plans"
+    ON public.subscription_plans FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_subscriptions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    plan_id UUID NOT NULL REFERENCES public.subscription_plans(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'active',
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own subscriptions"
+    ON public.user_subscriptions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscriptions"
+    ON public.user_subscriptions FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all subscriptions"
+    ON public.user_subscriptions FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_devices
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_devices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    device_name TEXT,
+    device_type TEXT,
+    os_version TEXT,
+    app_version TEXT,
+    fcm_token TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_devices ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own devices"
+    ON public.user_devices FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own devices"
+    ON public.user_devices FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own devices"
+    ON public.user_devices FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own devices"
+    ON public.user_devices FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all devices"
+    ON public.user_devices FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_sessions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    device_id UUID,
+    ip_address TEXT,
+    user_agent TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_active_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own sessions"
+    ON public.user_sessions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own sessions"
+    ON public.user_sessions FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own sessions"
+    ON public.user_sessions FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all sessions"
+    ON public.user_sessions FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_settings
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+    theme TEXT DEFAULT 'system',
+    language TEXT DEFAULT 'en',
+    notifications_enabled BOOLEAN DEFAULT TRUE,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own settings"
+    ON public.user_settings FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own settings"
+    ON public.user_settings FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own settings"
+    ON public.user_settings FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all settings"
+    ON public.user_settings FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_suspensions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_suspensions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    reason TEXT,
+    suspended_by UUID REFERENCES public.users(id),
+    starts_at TIMESTAMPTZ DEFAULT NOW(),
+    ends_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE,
+    appeal_text TEXT,
+    appeal_status TEXT DEFAULT 'none',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_suspensions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own suspensions"
+    ON public.user_suspensions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all suspensions"
+    ON public.user_suspensions FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_warnings
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_warnings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    reason TEXT,
+    severity TEXT DEFAULT 'low',
+    issued_by UUID REFERENCES public.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_warnings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own warnings"
+    ON public.user_warnings FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all warnings"
+    ON public.user_warnings FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: ai_moderation_logs
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.ai_moderation_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content_id UUID,
+    content_type TEXT,
+    flagged_reason TEXT,
+    confidence_score DECIMAL,
+    action_taken TEXT,
+    reviewed_by UUID REFERENCES public.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.ai_moderation_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage ai moderation logs"
+    ON public.ai_moderation_logs FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: device_fingerprints
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.device_fingerprints (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    fingerprint_hash TEXT,
+    device_info JSONB,
+    ip_address TEXT,
+    is_trusted BOOLEAN DEFAULT FALSE,
+    first_seen_at TIMESTAMPTZ DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.device_fingerprints ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own device fingerprints"
+    ON public.device_fingerprints FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all device fingerprints"
+    ON public.device_fingerprints FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: security_audit_logs
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.security_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    event_type TEXT NOT NULL,
+    ip_address TEXT,
+    device_info TEXT,
+    severity TEXT DEFAULT 'info',
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.security_audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage security audit logs"
+    ON public.security_audit_logs FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: security_logs
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.security_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    ip_address TEXT,
+    device_info TEXT,
+    location TEXT,
+    is_suspicious BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.security_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own security logs"
+    ON public.security_logs FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all security logs"
+    ON public.security_logs FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: disputes
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.disputes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    order_id UUID,
+    campaign_id UUID,
+    subject TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'open',
+    resolution TEXT,
+    admin_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.disputes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own disputes"
+    ON public.disputes FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own disputes"
+    ON public.disputes FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own disputes"
+    ON public.disputes FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all disputes"
+    ON public.disputes FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: moderation_queue
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.moderation_queue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content_id UUID,
+    content_type TEXT,
+    reported_by UUID REFERENCES public.users(id),
+    reason TEXT,
+    status TEXT DEFAULT 'pending',
+    reviewed_by UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.moderation_queue ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can insert moderation reports"
+    ON public.moderation_queue FOR INSERT
+    WITH CHECK (auth.uid() = reported_by);
+
+CREATE POLICY "Users can read own moderation reports"
+    ON public.moderation_queue FOR SELECT
+    USING (auth.uid() = reported_by);
+
+CREATE POLICY "Admins can manage all moderation queue"
+    ON public.moderation_queue FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- INDEXES for new tables
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_linked_accounts_user_id ON public.linked_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON public.reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_target ON public.reviews(target_id, target_type);
+CREATE INDEX IF NOT EXISTS idx_reward_points_user_id ON public.reward_points(user_id);
+CREATE INDEX IF NOT EXISTS idx_seller_profiles_user_id ON public.seller_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_services_user_id ON public.services(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON public.user_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_devices_user_id ON public.user_devices(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON public.user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_suspensions_user_id ON public.user_suspensions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_warnings_user_id ON public.user_warnings(user_id);
+CREATE INDEX IF NOT EXISTS idx_device_fingerprints_user_id ON public.device_fingerprints(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_user_id ON public.security_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_logs_user_id ON public.security_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_disputes_user_id ON public.disputes(user_id);
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_status ON public.moderation_queue(status);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
+CREATE INDEX IF NOT EXISTS idx_product_categories_parent ON public.product_categories(parent_id);
+
+-- ============================================================
 -- SEED: Admin user
 -- ============================================================
 -- The admin user must first sign up through the app via Supabase Auth.

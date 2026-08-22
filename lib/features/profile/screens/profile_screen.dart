@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
@@ -34,7 +35,7 @@ class ProfileScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => context.push('/settings'),
             icon: const Icon(
               Iconsax.setting_2,
               color: AppColors.textPrimary,
@@ -166,7 +167,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildMenuItem(
             icon: Iconsax.wallet_1,
             title: 'Wallet',
-            onTap: () {},
+            onTap: () => context.push('/wallet'),
           ),
           _buildMenuItem(
             icon: Iconsax.bag_2,
@@ -176,23 +177,39 @@ class ProfileScreen extends ConsumerWidget {
           _buildMenuItem(
             icon: Iconsax.shield_tick,
             title: 'KYC Verification',
-            onTap: () {},
+            onTap: () => context.push('/kyc'),
+          ),
+          _buildMenuItem(
+            icon: Iconsax.link,
+            title: 'Linked Accounts',
+            onTap: () => context.push('/linked-accounts'),
+          ),
+          _buildMenuItem(
+            icon: Iconsax.location,
+            title: 'My Addresses',
+            onTap: () => context.push('/addresses'),
           ),
           _buildMenuItem(
             icon: Iconsax.notification,
             title: 'Notifications',
-            onTap: () {},
+            onTap: () => context.push('/notifications'),
           ),
           _buildMenuItem(
             icon: Iconsax.setting_2,
             title: 'Settings',
-            onTap: () {},
+            onTap: () => context.push('/settings'),
           ),
           _buildMenuItem(
             icon: Iconsax.message_question,
             title: 'Help & Support',
             onTap: () {},
           ),
+          if (profileState.isAdmin)
+            _buildMenuItem(
+              icon: Iconsax.security_user,
+              title: 'Admin Panel',
+              onTap: () {},
+            ),
           const SizedBox(height: 16),
           // Logout button
           Padding(

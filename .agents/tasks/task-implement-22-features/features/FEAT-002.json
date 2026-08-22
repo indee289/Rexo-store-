@@ -1,0 +1,48 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement the complete Admin Panel (13 modules) with role-based access. Admin email is rexoagency.in@gmail.com. Admin panel accessible from Profile screen. Includes Dashboard, User Management, Campaign Control, Submission Review, Deposit Queue, Withdrawal Queue, Shop Admin, Disputes, KYC Verification, Wallets & Escrow, System Settings, Audit Logs, and Push Broadcast.",
+  "status": "pending",
+  "steps": [
+    "1. Create lib/features/admin/ directory structure with: providers/admin_provider.dart (admin check, stats fetching, all admin CRUD operations), screens/admin_dashboard_screen.dart (analytics cards: total users, active campaigns, pending deposits, pending withdrawals, total revenue, platform stats).",
+    "2. Create screens/admin_users_screen.dart - User Management: list all users, search/filter, verify/ban/suspend/role change actions. Each action writes to audit_logs.",
+    "3. Create screens/admin_campaigns_screen.dart - Campaign Control: list all campaigns (any status), actions: pause, resume, force complete, cancel. Updates campaign status in campaigns table.",
+    "4. Create screens/admin_submissions_screen.dart - Submission Review: list pending submissions, approve/reject with notes, disburse payout (update wallet balance + mark submission as paid).",
+    "5. Create screens/admin_deposits_screen.dart - Deposit Queue: list pending deposits, approve (add to user wallet) or reject with reason.",
+    "6. Create screens/admin_withdrawals_screen.dart - Withdrawal Queue: list pending withdrawals, approve (deduct from wallet) or reject with reason.",
+    "7. Create screens/admin_shop_screen.dart - Products CRUD (add/edit/delete products), Order Management (view all orders, update status).",
+    "8. Create screens/admin_disputes_screen.dart - Investigation/resolution: list disputes, assign, resolve with notes.",
+    "9. Create screens/admin_kyc_screen.dart - KYC Verification: list pending KYC docs, view document image, approve/reject with notes.",
+    "10. Create screens/admin_wallets_screen.dart - Platform overview of all wallets, credit/debit any user wallet manually.",
+    "11. Create screens/admin_settings_screen.dart - System Settings: commission %, min withdrawal amount, maintenance mode toggle. Uses platform_settings table.",
+    "12. Create screens/admin_audit_logs_screen.dart - Immutable audit log viewer with filters (action_type, date range, admin_id).",
+    "13. Create screens/admin_broadcast_screen.dart - Push Broadcast: compose notification, select audience (all/creators/brands), insert into notifications table for all matching users.",
+    "14. Add admin routes to app_router.dart: /admin, /admin/users, /admin/campaigns, /admin/submissions, /admin/deposits, /admin/withdrawals, /admin/shop, /admin/disputes, /admin/kyc, /admin/wallets, /admin/settings, /admin/audit-logs, /admin/broadcast.",
+    "15. Update profile_screen.dart to show 'Admin Panel' menu item ONLY when user role is 'admin' (check from profile data). Navigate to /admin.",
+    "16. All admin screens must have role guard - if user is not admin, redirect to home. Use the existing auth/profile providers to check role."
+  ],
+  "acceptance_criteria": [
+    "Admin dashboard shows stats cards with data from Supabase",
+    "User management allows verify/ban/suspend/role changes with audit log entries",
+    "Campaign control allows pause/resume/force-complete/cancel",
+    "Submission review allows approve/reject/disburse payout",
+    "Deposit and Withdrawal queues allow approve/reject with wallet balance updates",
+    "Shop admin has full products CRUD and order status management",
+    "Disputes screen shows list with resolution workflow",
+    "KYC screen shows documents with approve/reject",
+    "Wallets overview shows all platform wallets with credit/debit",
+    "System settings saves to platform_settings table",
+    "Audit logs viewer shows immutable records with filters",
+    "Push broadcast inserts notifications for target audience",
+    "Admin panel only visible to admin role users",
+    "All admin routes are properly guarded",
+    "flutter analyze passes on all admin files"
+  ],
+  "verification": [
+    "Read all admin files and verify proper Dart syntax and imports",
+    "Verify admin routes in app_router.dart",
+    "Verify profile_screen.dart shows Admin Panel conditionally"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

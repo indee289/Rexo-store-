@@ -3,6 +3,38 @@ import 'package:shimmer/shimmer.dart';
 
 import '../theme/app_colors.dart';
 
+/// Generic shimmer loading placeholder for list screens
+class ShimmerLoading extends StatelessWidget {
+  const ShimmerLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.border,
+      highlightColor: AppColors.divider,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: List.generate(
+            4,
+            (index) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Container(
+                height: 80,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Rectangular shimmer placeholder for cards
 class ShimmerCard extends StatelessWidget {
   final double width;

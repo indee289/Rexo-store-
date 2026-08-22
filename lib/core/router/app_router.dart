@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/addresses/screens/add_address_screen.dart';
+import '../../features/addresses/screens/addresses_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
@@ -11,10 +13,15 @@ import '../../features/campaigns/screens/campaign_detail_screen.dart';
 import '../../features/campaigns/screens/campaigns_screen.dart';
 import '../../features/campaigns/screens/my_campaigns_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/kyc/screens/kyc_upload_screen.dart';
+import '../../features/legal/screens/privacy_policy_screen.dart';
+import '../../features/legal/screens/terms_of_service_screen.dart';
+import '../../features/linked_accounts/screens/linked_accounts_screen.dart';
 import '../../features/messages/screens/chat_screen.dart';
 import '../../features/messages/screens/messages_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shop/screens/cart_screen.dart';
 import '../../features/shop/screens/checkout_screen.dart';
 import '../../features/shop/screens/product_detail_screen.dart';
@@ -47,6 +54,13 @@ class AppRoutes {
   static const String messages = '/messages';
   static const String chat = '/messages/:userId';
   static const String myCampaigns = '/my-campaigns';
+  static const String settings = '/settings';
+  static const String linkedAccounts = '/linked-accounts';
+  static const String kyc = '/kyc';
+  static const String addresses = '/addresses';
+  static const String addAddress = '/add-address';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String termsOfService = '/terms-of-service';
 }
 
 /// GoRouter provider
@@ -226,6 +240,51 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.myCampaigns,
         builder: (context, state) => const MyCampaignsScreen(),
+      ),
+
+      /// Settings screen
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (context, state) => const SettingsScreen(),
+      ),
+
+      /// Linked Accounts screen
+      GoRoute(
+        path: AppRoutes.linkedAccounts,
+        builder: (context, state) => const LinkedAccountsScreen(),
+      ),
+
+      /// KYC Upload screen
+      GoRoute(
+        path: AppRoutes.kyc,
+        builder: (context, state) => const KycUploadScreen(),
+      ),
+
+      /// Addresses screen
+      GoRoute(
+        path: AppRoutes.addresses,
+        builder: (context, state) => const AddressesScreen(),
+      ),
+
+      /// Add Address screen
+      GoRoute(
+        path: AppRoutes.addAddress,
+        builder: (context, state) {
+          final existingAddress = state.extra as Map<String, dynamic>?;
+          return AddAddressScreen(existingAddress: existingAddress);
+        },
+      ),
+
+      /// Privacy Policy screen
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+
+      /// Terms of Service screen
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (context, state) => const TermsOfServiceScreen(),
       ),
     ],
   );
