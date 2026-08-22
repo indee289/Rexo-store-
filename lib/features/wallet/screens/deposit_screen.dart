@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/wallet_provider.dart';
 
@@ -58,19 +61,16 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     if (user == null) return null;
 
     final bytes = await _proofFile!.readAsBytes();
-    final fileName =
-        '${user.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileName = '${const Uuid().v4()}.jpg';
+    final filePath = 'deposit-proofs/${user.id}/$fileName';
 
-    await SupabaseService.client.storage
-        .from('deposit-proofs')
-        .uploadBinary(fileName, bytes);
+    final publicUrl = await R2StorageService.uploadFile(
+      filePath,
+      bytes,
+      'image/jpeg',
+    );
 
-    // deposit-proofs is a private bucket, use signed URL instead of public URL
-    final signedUrl = await SupabaseService.client.storage
-        .from('deposit-proofs')
-        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 365 days
-
-    return signedUrl;
+    return publicUrl;
   }
 
   Future<void> _submit() async {

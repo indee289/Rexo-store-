@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
 
 /// Realtime stream provider for KYC documents.
@@ -40,14 +42,15 @@ class KycNotifier extends StateNotifier<AsyncValue<void>> {
       final fileName = '${const Uuid().v4()}.$fileExt';
       final filePath = '${user.id}/$fileName';
 
-      // Upload to Supabase Storage
-      await SupabaseService.client.storage
-          .from('kyc-documents')
-          .upload(filePath, file);
+      // Upload to Cloudflare R2
+      final fileBytes = await file.readAsBytes();
+      final contentType = _getContentType(fileExt);
 
-      final publicUrl = SupabaseService.client.storage
-          .from('kyc-documents')
-          .getPublicUrl(filePath);
+      final publicUrl = await R2StorageService.uploadFile(
+        'kyc-documents/$filePath',
+        fileBytes,
+        contentType,
+      );
 
       // Save reference in kyc_documents table
       await SupabaseService.client.from('kyc_documents').insert({
@@ -65,6 +68,24 @@ class KycNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return false;
+    }
+  }
+
+  String _getContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'pdf':
+        return 'application/pdf';
+      default:
+        return 'application/octet-stream';
     }
   }
 }

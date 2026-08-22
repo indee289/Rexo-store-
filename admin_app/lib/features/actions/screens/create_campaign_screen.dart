@@ -277,7 +277,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               // Campaign Cover Image
               ImageUploadField(
                 label: 'Campaign Cover Image',
-                storageBucket: 'campaign-images',
+                storageFolder: 'campaign-images',
                 onImageUploaded: (url) {
                   setState(() => _coverImageUrl = url);
                 },

@@ -15,6 +15,27 @@ class AppConstants {
     defaultValue: '',
   );
 
+  /// Cloudflare R2 configuration
+  static const String r2AccessKeyId = String.fromEnvironment(
+    'R2_ACCESS_KEY_ID',
+    defaultValue: '',
+  );
+
+  static const String r2SecretAccessKey = String.fromEnvironment(
+    'R2_SECRET_ACCESS_KEY',
+    defaultValue: '',
+  );
+
+  static const String r2AccountId = String.fromEnvironment(
+    'R2_ACCOUNT_ID',
+    defaultValue: '',
+  );
+
+  static const String r2BucketName = String.fromEnvironment(
+    'R2_BUCKET_NAME',
+    defaultValue: '',
+  );
+
   /// Admin email
   static const String adminEmail = 'rexoagency.in@gmail.com';
 

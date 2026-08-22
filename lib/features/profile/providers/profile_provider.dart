@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
 
 /// Profile state model
@@ -136,7 +138,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Upload avatar to Supabase storage and update profile
+  /// Upload avatar to Cloudflare R2 and update profile
   Future<String?> uploadAvatar(File file) async {
     final user = SupabaseService.currentUser;
     if (user == null) return null;
@@ -146,15 +148,16 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       final fileExt = file.path.split('.').last;
       final fileName = '${const Uuid().v4()}.$fileExt';
-      final filePath = '${user.id}/$fileName';
+      final filePath = 'avatars/${user.id}/$fileName';
+      final fileBytes = await file.readAsBytes();
 
-      await SupabaseService.client.storage
-          .from('avatars')
-          .upload(filePath, file);
+      final contentType = _getAvatarContentType(fileExt);
 
-      final publicUrl = SupabaseService.client.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
+      final publicUrl = await R2StorageService.uploadFile(
+        filePath,
+        fileBytes,
+        contentType,
+      );
 
       // Update user profile with new avatar URL
       await SupabaseService.updateUserProfile(
@@ -170,6 +173,22 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return null;
+    }
+  }
+
+  String _getAvatarContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'application/octet-stream';
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,21 +7,22 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../services/r2_storage_service.dart';
 import '../../services/supabase_service.dart';
 import '../theme/app_colors.dart';
 
 /// A reusable image upload widget that picks an image from camera/gallery,
-/// uploads it to Supabase Storage, and returns the public URL.
+/// uploads it to Cloudflare R2 Storage, and returns the public URL.
 class ImageUploadField extends StatefulWidget {
   final String? currentImageUrl;
-  final String storageBucket;
+  final String storageFolder;
   final String label;
   final ValueChanged<String> onImageUploaded;
 
   const ImageUploadField({
     super.key,
     this.currentImageUrl,
-    this.storageBucket = 'product-images',
+    this.storageFolder = 'product-images',
     this.label = 'Upload Image',
     required this.onImageUploaded,
   });
@@ -274,15 +276,16 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     try {
       final fileExt = _selectedFile!.path.split('.').last;
       final fileName = '${const Uuid().v4()}.$fileExt';
-      final filePath = '${user.id}/$fileName';
+      final filePath = '${widget.storageFolder}/${user.id}/$fileName';
+      final fileBytes = await _selectedFile!.readAsBytes();
 
-      await SupabaseService.client.storage
-          .from(widget.storageBucket)
-          .upload(filePath, _selectedFile!);
+      final contentType = _getContentType(fileExt);
 
-      final publicUrl = SupabaseService.client.storage
-          .from(widget.storageBucket)
-          .getPublicUrl(filePath);
+      final publicUrl = await R2StorageService.uploadFile(
+        filePath,
+        fileBytes,
+        contentType,
+      );
 
       setState(() {
         _uploadedUrl = publicUrl;
@@ -300,6 +303,22 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
           ),
         );
       }
+    }
+  }
+
+  String _getContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'application/octet-stream';
     }
   }
 }
