@@ -8,8 +8,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/stat_chip.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../rexo_program/providers/rexo_program_provider.dart';
 import '../providers/profile_provider.dart';
 import 'edit_profile_screen.dart';
 
@@ -97,14 +95,13 @@ class ProfileScreen extends ConsumerWidget {
     final name = profile['name'] ?? 'User';
     final handle = profile['handle'] ?? '';
     final role = profile['role'] ?? 'creator';
-    final bio = profile['bio'] ?? '';
     final avatarUrl = profile['avatar_url'];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          // Avatar with edit overlay
+          // Avatar
           _buildAvatarSection(context, avatarUrl, name),
           const SizedBox(height: 16),
           // Name
@@ -130,44 +127,13 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           // Role badge
           _buildRoleBadge(role),
-          // Bio
-          if (bio.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                bio,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
           const SizedBox(height: 24),
           // Stats row
           _buildStatsRow(profileState),
           const SizedBox(height: 24),
           const Divider(color: AppColors.divider, height: 1),
           const SizedBox(height: 8),
-          // Rexo Program card (only for creators)
-          if (profileState.isCreator)
-            _buildRexoProgramCard(context, ref),
-          // Menu items
-          _buildMenuItem(
-            icon: Iconsax.mobile,
-            title: 'Sessions & Devices',
-            onTap: () => context.push('/sessions'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.shield_tick,
-            title: 'Security',
-            onTap: () => context.push('/security-logs'),
-          ),
+          // Quick action menu items - only 4 items
           _buildMenuItem(
             icon: Iconsax.edit,
             title: 'Edit Profile',
@@ -190,102 +156,9 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push('/orders'),
           ),
           _buildMenuItem(
-            icon: Iconsax.message_question,
-            title: 'Disputes',
-            onTap: () => context.push('/disputes'),
-          ),
-          _buildMenuItem(
             icon: Iconsax.crown_1,
             title: 'Subscriptions',
             onTap: () => context.push('/subscriptions'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.briefcase,
-            title: 'Services',
-            onTap: () => context.push('/services'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.shield_tick,
-            title: 'KYC Verification',
-            onTap: () => context.push('/kyc'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.link,
-            title: 'Linked Accounts',
-            onTap: () => context.push('/linked-accounts'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.location,
-            title: 'My Addresses',
-            onTap: () => context.push('/addresses'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.notification,
-            title: 'Notifications',
-            onTap: () => context.push('/notifications'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.setting_2,
-            title: 'Settings',
-            onTap: () => context.push('/settings'),
-          ),
-          _buildMenuItem(
-            icon: Iconsax.message_question,
-            title: 'Help & Support',
-            onTap: () {},
-          ),
-
-          const SizedBox(height: 16),
-          // Logout button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: OutlinedButton(
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(
-                      'Logout',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                    ),
-                    content: const Text('Are you sure you want to logout?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text(
-                          'Logout',
-                          style: TextStyle(color: AppColors.error),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  ref.read(authProvider.notifier).signOut();
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                minimumSize: const Size(double.infinity, 48),
-              ),
-              child: Text(
-                'Logout',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.error,
-                ),
-              ),
-            ),
           ),
           const SizedBox(height: 40),
         ],
@@ -405,7 +278,6 @@ class ProfileScreen extends ConsumerWidget {
         ),
       );
     } else if (profileState.isBrand) {
-      // For brands: Campaigns Posted, Total Spent, Active Campaigns
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(
@@ -442,140 +314,6 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     return const SizedBox.shrink();
-  }
-
-  Widget _buildRexoProgramCard(BuildContext context, WidgetRef ref) {
-    final rexoStatusAsync = ref.watch(rexoProgramStatusProvider);
-
-    return rexoStatusAsync.when(
-      data: (application) {
-        final status = application?['status'] as String?;
-
-        Color cardColor;
-        IconData cardIcon;
-        String cardTitle;
-        String cardSubtitle;
-        bool showApplyButton = false;
-
-        if (application == null || status == null) {
-          cardColor = AppColors.primary;
-          cardIcon = Iconsax.crown_1;
-          cardTitle = 'Rexo Program';
-          cardSubtitle = 'Apply to sell products on the marketplace';
-          showApplyButton = true;
-        } else if (status == 'pending') {
-          cardColor = AppColors.warning;
-          cardIcon = Iconsax.clock;
-          cardTitle = 'Rexo Program - Pending';
-          cardSubtitle = 'Your application is under review';
-        } else if (status == 'approved') {
-          cardColor = AppColors.success;
-          cardIcon = Iconsax.tick_circle;
-          cardTitle = 'Rexo Program - Approved';
-          cardSubtitle = 'You can now sell products in the Shop';
-        } else {
-          cardColor = AppColors.error;
-          cardIcon = Iconsax.close_circle;
-          cardTitle = 'Rexo Program - Rejected';
-          cardSubtitle = 'Your application was not approved';
-          showApplyButton = true;
-        }
-
-        return SizedBox(
-          width: double.infinity,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cardColor.withOpacity(0.3)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: cardColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(cardIcon, color: cardColor, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        cardTitle,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        cardSubtitle,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (showApplyButton) ...[
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final success = await ref
-                          .read(rexoProgramActionsProvider.notifier)
-                          .applyForProgram();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              success
-                                  ? 'Application submitted!'
-                                  : 'Failed to apply. Try again.',
-                              style: GoogleFonts.poppins(fontSize: 13),
-                            ),
-                            backgroundColor: success ? AppColors.success : AppColors.error,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cardColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                    child: const Text('Apply'),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: SizedBox(height: 60, width: double.infinity),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
-    );
   }
 
   Widget _buildMenuItem({

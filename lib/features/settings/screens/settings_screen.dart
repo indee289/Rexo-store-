@@ -7,6 +7,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../profile/screens/edit_profile_screen.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -46,19 +47,52 @@ class SettingsScreen extends ConsumerWidget {
             _buildThemeSelector(context, ref, settings),
             const SizedBox(height: 16),
 
-            // Language section
-            _buildSectionHeader(context, 'Language'),
-            _buildLanguageSelector(context, ref, settings),
-            const SizedBox(height: 16),
-
             // Account section
             _buildSectionHeader(context, 'Account'),
             _buildMenuItem(
               context: context,
-              icon: Iconsax.lock_1,
-              title: 'Change Password',
-              subtitle: 'Send password reset email',
-              onTap: () => _handleChangePassword(context),
+              icon: Iconsax.edit,
+              title: 'Edit Profile',
+              subtitle: 'Update your personal information',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const EditProfileScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Iconsax.link,
+              title: 'Linked Accounts',
+              subtitle: 'Manage connected social accounts',
+              onTap: () => context.push('/linked-accounts'),
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Iconsax.shield_tick,
+              title: 'KYC Verification',
+              subtitle: 'Verify your identity',
+              onTap: () => context.push('/kyc'),
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Iconsax.crown_1,
+              title: 'Rexo Program',
+              subtitle: 'Apply to sell on the marketplace',
+              onTap: () => _showRexoProgramInfo(context),
+            ),
+            const SizedBox(height: 16),
+
+            // Security section
+            _buildSectionHeader(context, 'Security'),
+            _buildMenuItem(
+              context: context,
+              icon: Iconsax.mobile,
+              title: 'Sessions & Devices',
+              subtitle: 'Manage active sessions',
+              onTap: () => context.push('/sessions'),
             ),
             _buildMenuItem(
               context: context,
@@ -66,6 +100,13 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Two-Factor Authentication',
               subtitle: 'Secure your account with TOTP',
               onTap: () => context.push('/two-factor-auth'),
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Iconsax.lock_1,
+              title: 'Change Password',
+              subtitle: 'Send password reset email',
+              onTap: () => _handleChangePassword(context),
             ),
             const SizedBox(height: 16),
 
@@ -258,112 +299,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLanguageSelector(
-    BuildContext context,
-    WidgetRef ref,
-    SettingsState settings,
-  ) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Row(
-        children: [
-          _buildLanguageOption(
-            context: context,
-            ref: ref,
-            label: 'English',
-            code: 'en',
-            isSelected: settings.language == 'en',
-          ),
-          _buildLanguageOption(
-            context: context,
-            ref: ref,
-            label: 'Hindi',
-            code: 'hi',
-            isSelected: settings.language == 'hi',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLanguageOption({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String label,
-    required String code,
-    required bool isSelected,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          ref.read(settingsProvider.notifier).setLanguage(code);
-          final message = code == 'hi'
-              ? 'Hindi selected - Full Hindi language support coming soon'
-              : 'English selected';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                message,
-                style: GoogleFonts.poppins(fontSize: 13),
-              ),
-              backgroundColor: AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
-            borderRadius: BorderRadius.circular(8),
-            border: isSelected
-                ? Border.all(color: AppColors.primary.withOpacity(0.3))
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color:
-                      isSelected ? AppColors.primary : AppColors.textSecondary,
-                ),
-              ),
-              if (code == 'hi')
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '(Coming soon)',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                      color: isSelected
-                          ? AppColors.primary.withOpacity(0.7)
-                          : AppColors.textHint,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildMenuItem({
     required BuildContext context,
     required IconData icon,
@@ -433,6 +368,32 @@ class SettingsScreen extends ConsumerWidget {
         activeColor: AppColors.primary,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    );
+  }
+
+  void _showRexoProgramInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Rexo Program',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'The Rexo Program allows creators to sell products on the marketplace. '
+          'You can apply from your profile or contact support for more details.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'OK',
+              style: GoogleFonts.poppins(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

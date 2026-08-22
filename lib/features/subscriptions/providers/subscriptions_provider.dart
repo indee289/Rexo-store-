@@ -4,6 +4,58 @@ import 'package:uuid/uuid.dart';
 
 import '../../../services/supabase_service.dart';
 
+/// Default subscription plans returned when DB is empty or unavailable
+const List<Map<String, dynamic>> _defaultPlans = [
+  {
+    'id': 'default-free',
+    'name': 'Free',
+    'price': 0,
+    'duration_days': 30,
+    'is_active': true,
+    'features': ['Basic profile', '5 campaign applications/month', 'Standard support'],
+  },
+  {
+    'id': 'default-pro',
+    'name': 'Pro',
+    'price': 299,
+    'duration_days': 30,
+    'is_active': true,
+    'features': [
+      'Unlimited campaign applications',
+      'Priority listing',
+      'Advanced analytics',
+      'Pro badge',
+    ],
+  },
+  {
+    'id': 'default-ultra',
+    'name': 'Ultra',
+    'price': 599,
+    'duration_days': 30,
+    'is_active': true,
+    'features': [
+      'Everything in Pro',
+      'Verified badge',
+      'Featured placement',
+      'Priority support',
+    ],
+  },
+  {
+    'id': 'default-premium-max',
+    'name': 'Premium Max',
+    'price': 999,
+    'duration_days': 30,
+    'is_active': true,
+    'features': [
+      'Everything in Ultra',
+      'Dedicated account manager',
+      'Custom media kit',
+      'Priority payouts',
+      'Early access to features',
+    ],
+  },
+];
+
 /// Provider for available subscription plans
 final subscriptionPlansProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -14,11 +66,18 @@ final subscriptionPlansProvider =
         .eq('is_active', true)
         .order('price', ascending: true);
 
-    return List<Map<String, dynamic>>.from(response);
+    final plans = List<Map<String, dynamic>>.from(response);
+
+    // Return hardcoded default plans when DB returns empty
+    if (plans.isEmpty) {
+      return _defaultPlans;
+    }
+
+    return plans;
   } catch (e) {
     debugPrint('Subscriptions error: $e');
-    // Return empty list on error (e.g., table doesn't exist or RLS issue)
-    return [];
+    // Return default plans on error (e.g., table doesn't exist or RLS issue)
+    return _defaultPlans;
   }
 });
 

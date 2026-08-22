@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Fix 2FA crash, splash screen delay, and reorganize profile/settings pages. Also add hardcoded subscription plans and remove language selector.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Replace lib/features/settings/screens/two_factor_auth_screen.dart entirely: Make it a simple static page with NO MFA API calls. Show 'Two-Factor Authentication' title, a shield icon, an 'Enable 2FA' toggle that is disabled with text 'TOTP-based 2FA will be available soon'. No loading states needed. Keep the same file structure (ConsumerWidget, same AppBar style).",
     "Fix lib/features/auth/screens/splash_screen.dart: Change the delay from 2500ms to 1500ms.",

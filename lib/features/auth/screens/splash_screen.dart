@@ -20,8 +20,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Navigate after 2.5 second delay
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    // Navigate after 1.5 second delay
+    Future.delayed(const Duration(milliseconds: 1500), () {
       _checkAuthAndNavigate();
     });
   }
