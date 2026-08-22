@@ -9,10 +9,11 @@
     "tests": "skipped",
     "test_quality": "skipped",
     "docker_build": "skipped",
-    "summary": "Cannot run flutter build/test in INTEGRATIONS_ONLY network (no Flutter SDK available). Verified: 48 dart files created with proper structure, all Kotlin files removed, SQL schema has 18 tables with RLS/policies/indexes, CI workflow configured for Flutter, all changes pushed to origin Rexo-Kotlin. Code structure and imports verified manually."
+    "summary": "Cannot run flutter build/test in INTEGRATIONS_ONLY network (no Flutter SDK). All 48 dart files created, all Kotlin removed, SQL schema has 17 tables with complete RLS/storage policies/triggers, CI workflow configured. 3 review passes performed - all blocking issues resolved. Pushed to origin Rexo-Kotlin."
   },
   "review_fixes": {
-    "v1": "Fixed in commit 1f40c0f: column name mismatches, auth subscription leak, deposit URL, withdrawal guard",
-    "v2": "Fixed in commit 4747e38: DELETE policies on orders/notifications, storage.objects RLS for all 5 buckets, stock validation trigger on order_items"
+    "v1": "Fixed in commit 1f40c0f: column name mismatches (full_name->name), auth subscription leak, deposit URL (getPublicUrl->createSignedUrl), withdrawal balance guard trigger, hardcoded URL removed, admin seed commented out",
+    "v2": "Fixed in commit 4747e38: DELETE policies on orders/notifications, storage.objects RLS for all 5 buckets, stock validation trigger on order_items",
+    "v3": "Fixed in commit b255bfa: users table RLS updated to allow authenticated users to read profiles (required for cross-user joins in campaigns, messages, creators)"
   }
 }
