@@ -100,16 +100,16 @@ class TwoFactorAuthScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.08),
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.3)),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Iconsax.info_circle,
-                    color: Color(0xFF2196F3),
+                    color: theme.colorScheme.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 12),

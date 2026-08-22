@@ -260,7 +260,14 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('deposits')
           .update({'status': 'approved'}).eq('id', depositId);
 
-      // Credit the user's wallet: fetch current balance and increment
+      // RACE CONDITION NOTE: This read-then-write pattern is NOT atomic.
+      // If two admins approve deposits for the same user concurrently, one
+      // credit may be lost. For production use, deploy the RPC function from
+      // supabase/wallet_balance_rpc.sql and replace this block with:
+      //   await SupabaseService.client.rpc('increment_wallet_balance', params: {
+      //     'p_user_id': userId,
+      //     'p_amount': amount,
+      //   });
       final wallet = await SupabaseService.client
           .from('wallets')
           .select('id, available_balance')
@@ -308,7 +315,15 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final userId = withdrawal['user_id'] as String;
       final amount = (withdrawal['amount'] as num).toDouble();
 
-      // Fetch the user's wallet and check balance
+      // RACE CONDITION NOTE: This read-then-write pattern is NOT atomic.
+      // If two admins approve withdrawals for the same user concurrently,
+      // the balance check may pass for both but only one deduction will
+      // be recorded correctly. For production use, deploy the RPC function
+      // from supabase/wallet_balance_rpc.sql and replace this block with:
+      //   await SupabaseService.client.rpc('decrement_wallet_balance', params: {
+      //     'p_user_id': userId,
+      //     'p_amount': amount,
+      //   });
       final wallet = await SupabaseService.client
           .from('wallets')
           .select('id, available_balance')
@@ -382,6 +397,8 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> creditWallet(String walletId, double amount) async {
     state = const AsyncValue.loading();
     try {
+      // RACE CONDITION NOTE: Same read-then-write limitation as approveDeposit.
+      // See supabase/wallet_balance_rpc.sql for the atomic RPC alternative.
       final wallet = await SupabaseService.client
           .from('wallets')
           .select('available_balance')
@@ -400,6 +417,8 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> debitWallet(String walletId, double amount) async {
     state = const AsyncValue.loading();
     try {
+      // RACE CONDITION NOTE: Same read-then-write limitation as approveWithdrawal.
+      // See supabase/wallet_balance_rpc.sql for the atomic RPC alternative.
       final wallet = await SupabaseService.client
           .from('wallets')
           .select('available_balance')

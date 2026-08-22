@@ -190,15 +190,36 @@ final chatMessagesStreamProvider =
   // Fetch initial messages
   fetchMessages();
 
-  // Subscribe to realtime changes on the messages table
+  // Subscribe to realtime changes on the messages table, filtered to messages
+  // relevant to this conversation (where the current user is the receiver).
+  // This prevents unnecessary refetches on messages between other users.
   final channel = SupabaseService.client
-      .channel('messages_$otherUserId')
+      .channel('messages_${user.id}_$otherUserId')
       .onPostgresChanges(
         event: PostgresChangeEvent.insert,
         schema: 'public',
         table: 'messages',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'receiver_id',
+          value: user.id,
+        ),
         callback: (payload) {
-          // When a new message is inserted, refetch all messages
+          // When a new message is received by this user, refetch conversation
+          fetchMessages();
+        },
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'messages',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'sender_id',
+          value: user.id,
+        ),
+        callback: (payload) {
+          // When this user sends a message (from another device), refetch
           fetchMessages();
         },
       )

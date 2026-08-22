@@ -50,6 +50,9 @@ class FollowActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// Follow a creator
   Future<bool> follow(String creatorUserId) async {
+    // Re-entry guard: prevent duplicate inserts from rapid taps
+    if (state.isLoading) return false;
+
     try {
       state = const AsyncValue.loading();
       final user = SupabaseService.currentUser;
@@ -77,6 +80,9 @@ class FollowActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// Unfollow a creator
   Future<bool> unfollow(String creatorUserId) async {
+    // Re-entry guard: prevent duplicate calls from rapid taps
+    if (state.isLoading) return false;
+
     try {
       state = const AsyncValue.loading();
       final user = SupabaseService.currentUser;

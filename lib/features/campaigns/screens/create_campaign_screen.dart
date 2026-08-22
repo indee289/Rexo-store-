@@ -92,7 +92,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'filled_slots': 0,
         'budget': double.tryParse(_budgetController.text.trim()) ?? 0,
         'company_name': _companyNameController.text.trim(),
-        'cover_image_url': _coverImageUrl ?? '',
+        'cover_image_url': _coverImageUrl,
         'gender': _selectedGender,
         'page_profile_category': _selectedPageProfileCategory,
         'status': 'active',
