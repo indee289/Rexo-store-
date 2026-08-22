@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../services/supabase_service.dart';
-
-// FactorStatus and FactorType come from supabase_flutter (re-exported from gotrue)
-import 'package:supabase_flutter/supabase_flutter.dart' show FactorStatus, FactorType;
 
 class TwoFactorAuthScreen extends ConsumerStatefulWidget {
   const TwoFactorAuthScreen({super.key});
