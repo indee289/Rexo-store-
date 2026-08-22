@@ -38,7 +38,7 @@ DROP TABLE IF EXISTS applications CASCADE;
 CREATE TABLE users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL,
+    name TEXT DEFAULT '',
     handle TEXT UNIQUE,
     role TEXT NOT NULL DEFAULT 'creator' CHECK (role IN ('creator', 'brand', 'admin')),
     admin_sub_role TEXT CHECK (admin_sub_role IN ('super_admin', 'finance_admin', 'support_admin')),
@@ -697,6 +697,29 @@ CREATE POLICY "Users can update own deposit proofs" ON storage.objects
 
 CREATE POLICY "Users can delete own deposit proofs" ON storage.objects
     FOR DELETE USING (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================================
+-- TRIGGER: Auto-create user profile when auth.users signup
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.users (id, email, name, role, account_status)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'creator'),
+        'active'
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_auth_user();
 
 -- ============================================================
 -- TRIGGER: Auto-create wallet when user is created
