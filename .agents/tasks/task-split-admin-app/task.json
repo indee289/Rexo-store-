@@ -1,0 +1,7 @@
+{
+  "task_id": "task-split-admin-app",
+  "task_description": "Split the single Flutter app into a clean user app (no admin features) and a separate admin_app/ project with full admin functionality, plus CI workflows for both.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
