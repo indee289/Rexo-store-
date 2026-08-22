@@ -203,7 +203,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.3),
+                  disabledBackgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

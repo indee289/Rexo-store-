@@ -7,7 +7,7 @@ import '../../../services/supabase_service.dart';
 /// Default subscription plans returned when DB is empty or unavailable
 const List<Map<String, dynamic>> _defaultPlans = [
   {
-    'id': 'default-free',
+    'id': 'a1b2c3d4-0001-4000-8000-000000000001',
     'name': 'Free',
     'price': 0,
     'duration_days': 30,
@@ -15,7 +15,7 @@ const List<Map<String, dynamic>> _defaultPlans = [
     'features': ['Basic profile', '5 campaign applications/month', 'Standard support'],
   },
   {
-    'id': 'default-pro',
+    'id': 'a1b2c3d4-0002-4000-8000-000000000002',
     'name': 'Pro',
     'price': 299,
     'duration_days': 30,
@@ -28,7 +28,7 @@ const List<Map<String, dynamic>> _defaultPlans = [
     ],
   },
   {
-    'id': 'default-ultra',
+    'id': 'a1b2c3d4-0003-4000-8000-000000000003',
     'name': 'Ultra',
     'price': 599,
     'duration_days': 30,
@@ -41,7 +41,7 @@ const List<Map<String, dynamic>> _defaultPlans = [
     ],
   },
   {
-    'id': 'default-premium-max',
+    'id': 'a1b2c3d4-0004-4000-8000-000000000004',
     'name': 'Premium Max',
     'price': 999,
     'duration_days': 30,

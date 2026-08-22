@@ -381,7 +381,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         content: Text(
           'The Rexo Program allows creators to sell products on the marketplace. '
-          'You can apply from your profile or contact support for more details.',
+          'Contact support to apply or check your eligibility.',
           style: GoogleFonts.poppins(fontSize: 14),
         ),
         actions: [

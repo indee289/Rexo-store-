@@ -347,6 +347,9 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .eq('id', walletId)
           .single();
       final currentBalance = (wallet['available_balance'] as num).toDouble();
+      if (currentBalance - amount < 0) {
+        throw Exception('Insufficient balance for this debit.');
+      }
       await SupabaseService.client.from('wallets').update(
           {'available_balance': currentBalance - amount}).eq('id', walletId);
       ref.invalidate(adminWalletsProvider);

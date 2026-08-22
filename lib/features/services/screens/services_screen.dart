@@ -103,7 +103,7 @@ class ServicesScreen extends ConsumerWidget {
                         Icon(
                           Iconsax.shop,
                           size: 48,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                         ),
                         const SizedBox(height: 12),
                         Text(

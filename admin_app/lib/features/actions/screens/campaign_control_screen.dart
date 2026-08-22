@@ -259,7 +259,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
       body: campaigns.when(
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('No campaigns found',
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             );
@@ -294,7 +294,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                         campaign['description'] ?? '',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),

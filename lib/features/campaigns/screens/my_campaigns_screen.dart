@@ -374,7 +374,7 @@ Widget _buildEmptyState({
         Icon(
           icon,
           size: 64,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
         ),
         const SizedBox(height: 16),
         Text(
