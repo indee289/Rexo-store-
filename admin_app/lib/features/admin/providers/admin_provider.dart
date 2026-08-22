@@ -245,10 +245,37 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> approveDeposit(String depositId) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch the deposit to get user_id and amount
+      final deposit = await SupabaseService.client
+          .from('deposits')
+          .select('user_id, amount')
+          .eq('id', depositId)
+          .single();
+
+      final userId = deposit['user_id'] as String;
+      final amount = (deposit['amount'] as num).toDouble();
+
+      // Update deposit status to approved
       await SupabaseService.client
           .from('deposits')
           .update({'status': 'approved'}).eq('id', depositId);
+
+      // Credit the user's wallet: fetch current balance and increment
+      final wallet = await SupabaseService.client
+          .from('wallets')
+          .select('id, available_balance')
+          .eq('user_id', userId)
+          .single();
+
+      final walletId = wallet['id'] as String;
+      final currentBalance =
+          (wallet['available_balance'] as num).toDouble();
+
+      await SupabaseService.client.from('wallets').update(
+          {'available_balance': currentBalance + amount}).eq('id', walletId);
+
       ref.invalidate(adminDepositsProvider);
+      ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -271,10 +298,42 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> approveWithdrawal(String withdrawalId) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch the withdrawal to get user_id and amount
+      final withdrawal = await SupabaseService.client
+          .from('withdrawals')
+          .select('user_id, amount')
+          .eq('id', withdrawalId)
+          .single();
+
+      final userId = withdrawal['user_id'] as String;
+      final amount = (withdrawal['amount'] as num).toDouble();
+
+      // Fetch the user's wallet and check balance
+      final wallet = await SupabaseService.client
+          .from('wallets')
+          .select('id, available_balance')
+          .eq('user_id', userId)
+          .single();
+
+      final walletId = wallet['id'] as String;
+      final currentBalance =
+          (wallet['available_balance'] as num).toDouble();
+
+      if (currentBalance < amount) {
+        throw Exception('Insufficient wallet balance for this withdrawal.');
+      }
+
+      // Update withdrawal status to approved
       await SupabaseService.client
           .from('withdrawals')
           .update({'status': 'approved'}).eq('id', withdrawalId);
+
+      // Debit the user's wallet
+      await SupabaseService.client.from('wallets').update(
+          {'available_balance': currentBalance - amount}).eq('id', walletId);
+
       ref.invalidate(adminWithdrawalsProvider);
+      ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

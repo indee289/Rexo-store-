@@ -298,6 +298,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
     Color statusColor;
     IconData statusIcon;
     switch (status) {
+      case 'approved':
       case 'verified':
         statusColor = AppColors.success;
         statusIcon = Iconsax.tick_circle;

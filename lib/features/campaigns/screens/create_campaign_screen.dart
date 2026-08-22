@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
@@ -21,88 +19,60 @@ class CreateCampaignScreen extends ConsumerStatefulWidget {
 
 class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _campaignNameController = TextEditingController();
+  final _slotsController = TextEditingController();
   final _budgetController = TextEditingController();
-  final _perCreatorPayoutController = TextEditingController();
-  final _totalSlotsController = TextEditingController();
-  final _guidelinesController = TextEditingController();
-  final _minFollowersController = TextEditingController();
+  final _companyNameController = TextEditingController();
 
+  String _selectedCategory = 'Logo';
   String _selectedPlatform = 'Instagram';
-  String _selectedCategory = 'Fashion';
-  DateTime? _deadline;
+  String _selectedGender = 'All';
+  String _selectedPageProfileCategory = 'Comedy';
   bool _isSubmitting = false;
   String? _coverImageUrl;
 
-  final List<String> _platforms = [
-    'Instagram',
-    'YouTube',
-    'TikTok',
+  final List<String> _categories = [
+    'Logo',
+    'UGC',
+    'Barter',
+    'Clipping',
+    'Paid',
+    'Repost',
   ];
 
-  final List<String> _categories = [
-    'Fashion',
+  final List<String> _platforms = [
+    'Instagram',
+    'Facebook',
+    'YouTube',
+  ];
+
+  final List<String> _genders = [
+    'All',
+    'Male',
+    'Female',
+  ];
+
+  final List<String> _pageProfileCategories = [
+    'Comedy',
+    'Vlog',
+    'Meme',
+    'Funny',
     'Tech',
-    'Food',
-    'Beauty',
-    'Fitness',
     'Travel',
-    'Gaming',
-    'Lifestyle',
-    'Music',
-    'Education',
+    'Other',
   ];
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
+    _campaignNameController.dispose();
+    _slotsController.dispose();
     _budgetController.dispose();
-    _perCreatorPayoutController.dispose();
-    _totalSlotsController.dispose();
-    _guidelinesController.dispose();
-    _minFollowersController.dispose();
+    _companyNameController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectDeadline() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() => _deadline = picked);
-    }
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_deadline == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please select a deadline'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-      return;
-    }
 
     setState(() => _isSubmitting = true);
 
@@ -110,22 +80,21 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       final user = SupabaseService.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
+      // Store platform lowercase for DB CHECK constraint compatibility
+      final platformForDb = _selectedPlatform.toLowerCase();
+
       await SupabaseService.client.from('campaigns').insert({
         'brand_id': user.id,
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'budget': double.tryParse(_budgetController.text.trim()) ?? 0,
-        'per_creator_payout':
-            double.tryParse(_perCreatorPayoutController.text.trim()) ?? 0,
-        'platform': _selectedPlatform,
+        'title': _campaignNameController.text.trim(),
         'category': _selectedCategory,
-        'total_slots': int.tryParse(_totalSlotsController.text.trim()) ?? 1,
+        'platform': platformForDb,
+        'total_slots': int.tryParse(_slotsController.text.trim()) ?? 1,
         'filled_slots': 0,
-        'deadline': _deadline!.toIso8601String(),
-        'guidelines': _guidelinesController.text.trim(),
-        'min_followers':
-            int.tryParse(_minFollowersController.text.trim()) ?? 0,
+        'budget': double.tryParse(_budgetController.text.trim()) ?? 0,
+        'company_name': _companyNameController.text.trim(),
         'cover_image_url': _coverImageUrl ?? '',
+        'gender': _selectedGender,
+        'page_profile_category': _selectedPageProfileCategory,
         'status': 'active',
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
@@ -152,7 +121,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to create campaign. Please try again.'),
+          content: const Text('Failed to create campaign. Please try again.'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -184,7 +153,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
+          icon: Icon(Iconsax.arrow_left,
+              color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
@@ -194,16 +164,16 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
-              _buildLabel('Campaign Title'),
+              // 1. Campaign Name
+              _buildLabel('Campaign Name'),
               const SizedBox(height: 8),
               _buildTextField(
-                controller: _titleController,
-                hint: 'Enter campaign title',
+                controller: _campaignNameController,
+                hint: 'Enter campaign name',
                 icon: Iconsax.document_text,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
+                    return 'Please enter a campaign name';
                   }
                   return null;
                 },
@@ -211,97 +181,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: 16),
 
-              // Description
-              _buildLabel('Description'),
-              const SizedBox(height: 8),
-              _buildTextField(
-                controller: _descriptionController,
-                hint: 'Describe your campaign',
-                icon: Iconsax.note_text,
-                maxLines: 4,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Budget and Per Creator Payout
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Budget (\u20B9)'),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _budgetController,
-                          hint: 'Total budget',
-                          icon: Iconsax.money,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Required';
-                            }
-                            if (double.tryParse(value) == null) {
-                              return 'Invalid amount';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Per Creator (\u20B9)'),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _perCreatorPayoutController,
-                          hint: 'Payout per creator',
-                          icon: Iconsax.wallet,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Required';
-                            }
-                            if (double.tryParse(value) == null) {
-                              return 'Invalid amount';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Platform
-              _buildLabel('Platform'),
-              const SizedBox(height: 8),
-              _buildDropdown(
-                value: _selectedPlatform,
-                items: _platforms,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedPlatform = value);
-                  }
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Category
+              // 2. Category dropdown
               _buildLabel('Category'),
               const SizedBox(height: 8),
               _buildDropdown(
@@ -316,104 +196,83 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: 16),
 
-              // Total Slots and Min Followers
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Total Slots'),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _totalSlotsController,
-                          hint: 'e.g. 10',
-                          icon: Iconsax.people,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Required';
-                            }
-                            if (int.tryParse(value) == null) {
-                              return 'Invalid number';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Min Followers'),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _minFollowersController,
-                          hint: 'e.g. 1000',
-                          icon: Iconsax.chart,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value != null &&
-                                value.isNotEmpty &&
-                                int.tryParse(value) == null) {
-                              return 'Invalid number';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Deadline
-              _buildLabel('Deadline'),
+              // 3. Platform dropdown
+              _buildLabel('Platform'),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _selectDeadline,
-                child: Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Iconsax.calendar_1,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _deadline != null
-                            ? DateFormat('MMM dd, yyyy').format(_deadline!)
-                            : 'Select deadline',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: _deadline != null
-                              ? Theme.of(context).colorScheme.onSurface
-                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _buildDropdown(
+                value: _selectedPlatform,
+                items: _platforms,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedPlatform = value);
+                  }
+                },
               ),
 
               const SizedBox(height: 16),
 
-              // Cover Image Upload
+              // 4. Slots (number)
+              _buildLabel('Slots'),
+              const SizedBox(height: 8),
+              _buildTextField(
+                controller: _slotsController,
+                hint: 'Number of slots (e.g. 10)',
+                icon: Iconsax.people,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter number of slots';
+                  }
+                  if (int.tryParse(value.trim()) == null) {
+                    return 'Please enter a valid number';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // 5. Budget (number)
+              _buildLabel('Budget (\u20B9)'),
+              const SizedBox(height: 8),
+              _buildTextField(
+                controller: _budgetController,
+                hint: 'Total budget',
+                icon: Iconsax.money,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter the budget';
+                  }
+                  if (double.tryParse(value.trim()) == null) {
+                    return 'Please enter a valid amount';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // 6. Company Name
+              _buildLabel('Company Name'),
+              const SizedBox(height: 8),
+              _buildTextField(
+                controller: _companyNameController,
+                hint: 'Enter company name',
+                icon: Iconsax.building,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter company name';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // 7. Campaign Cover Image
               ImageUploadField(
-                label: 'Cover Image',
+                label: 'Campaign Cover Image',
                 storageBucket: 'campaign-assets',
                 onImageUploaded: (url) {
                   _coverImageUrl = url;
@@ -422,15 +281,32 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: 16),
 
-              // Guidelines
-              _buildLabel('Guidelines'),
+              // 8. Gender dropdown
+              _buildLabel('Gender'),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _guidelinesController,
-                hint: 'Campaign guidelines and requirements',
-                icon: Iconsax.clipboard_text,
-                maxLines: 4,
-                validator: (value) => null,
+              _buildDropdown(
+                value: _selectedGender,
+                items: _genders,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedGender = value);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // 9. Page Profile Category dropdown
+              _buildLabel('Page Profile Category'),
+              const SizedBox(height: 8),
+              _buildDropdown(
+                value: _selectedPageProfileCategory,
+                items: _pageProfileCategories,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedPageProfileCategory = value);
+                  }
+                },
               ),
 
               const SizedBox(height: 32),
@@ -500,15 +376,21 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       maxLines: maxLines,
       keyboardType: keyboardType,
       validator: validator,
-      style: GoogleFonts.poppins(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
+      style: GoogleFonts.poppins(
+          fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+        hintStyle: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         prefixIcon: maxLines == 1
-            ? Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))
+            ? Icon(icon,
+                size: 20,
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.4))
             : null,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Theme.of(context).colorScheme.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Theme.of(context).dividerColor),
@@ -542,7 +424,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Theme.of(context).dividerColor),
       ),

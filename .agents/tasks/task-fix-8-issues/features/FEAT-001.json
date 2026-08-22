@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix Issues #1, #2, #3: Deposit/Withdrawal approval must credit/debit wallet atomically, KYC status icon consistency, Campaign creation form redesign with new DB columns",
+  "status": "in_progress",
+  "steps": [
+    "1. Fix admin_app/lib/features/admin/providers/admin_provider.dart: In approveDeposit(), after updating deposit status to 'approved', fetch the deposit record to get user_id and amount, then look up the wallet by user_id and increment available_balance atomically (fetch current balance, add amount, update). Similarly in approveWithdrawal(), after updating status to 'approved', fetch the withdrawal record, look up wallet by user_id, and deduct available_balance (with insufficient balance check).",
+    "2. Fix KYC status icon in lib/features/kyc/screens/kyc_upload_screen.dart: In _buildDocumentCard(), the status switch uses 'verified' for approved status but the admin sets status to 'approved'. Add 'approved' case to match 'verified' behavior (tick_circle + success color). Keep 'verified' as well for backwards compatibility. Ensure: checkmark (tick_circle) for approved/verified, clock for pending, X (close_circle) for rejected.",
+    "3. Completely redesign lib/features/campaigns/screens/create_campaign_screen.dart: Remove ALL existing fields. Replace with exactly: Campaign Name (text), Category dropdown (Logo, UGC, Barter, Clipping, Paid, Repost), Platform dropdown (Instagram, Facebook, YouTube), Slots (number), Budget (number), Company Name (text), Campaign Cover Image (ImageUploadField widget from lib/core/widgets/image_upload_field.dart), Gender dropdown (All, Male, Female), Page Profile Category dropdown (Comedy, Vlog, Meme, Funny, Tech, Travel, Other). Update the _handleSubmit to insert these new fields into the campaigns table. Remove deadline, description, guidelines, per_creator_payout, min_followers fields.",
+    "4. Add SQL migration file at supabase/add_campaign_columns.sql: ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS company_name TEXT; ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('All', 'Male', 'Female')); ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS page_profile_category TEXT;"
+  ],
+  "acceptance_criteria": [
+    "approveDeposit() in admin_provider.dart fetches the deposit's user_id and amount, then increments wallets.available_balance for that user",
+    "approveWithdrawal() in admin_provider.dart fetches the withdrawal's user_id and amount, then decrements wallets.available_balance for that user",
+    "KYC _buildDocumentCard handles 'approved' status with tick_circle icon and success color, 'pending' with clock icon, 'rejected' with close_circle icon",
+    "Campaign creation form has exactly the 9 specified fields: Campaign Name, Category (Logo/UGC/Barter/Clipping/Paid/Repost), Platform (Instagram/Facebook/YouTube), Slots, Budget, Company Name, Cover Image, Gender (All/Male/Female), Page Profile Category (Comedy/Vlog/Meme/Funny/Tech/Travel/Other)",
+    "SQL migration file exists with ALTER TABLE statements for company_name, gender, page_profile_category"
+  ],
+  "verification": [
+    "Read admin_provider.dart and confirm approveDeposit/approveWithdrawal both update wallet balance",
+    "Read kyc_upload_screen.dart and confirm status icon mapping is correct for approved/pending/rejected",
+    "Read create_campaign_screen.dart and confirm only the 9 specified fields are present",
+    "Read supabase/add_campaign_columns.sql and confirm ALTER TABLE statements exist"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
