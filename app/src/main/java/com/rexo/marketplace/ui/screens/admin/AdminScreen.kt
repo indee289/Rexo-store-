@@ -756,17 +756,17 @@ private fun SubmissionCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = submission.campaign_title.ifBlank { "Campaign" },
+                        text = submission.campaign_title?.ifBlank { "Campaign" } ?: "Campaign",
                         style = RexoTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = RexoColors.TextPrimary
                     )
                     Text(
-                        text = "by ${submission.creator_name.ifBlank { "Creator" }} | ₹${formatAmount(submission.fee_requested)}",
+                        text = "by ${submission.creator_name?.ifBlank { "Creator" } ?: "Creator"} | ₹${formatAmount(submission.fee_requested)}",
                         style = RexoTheme.typography.bodySmall,
                         color = RexoColors.TextSecondary
                     )
-                    if (submission.deliverable_url.isNotBlank()) {
+                    if (!submission.deliverable_url.isNullOrBlank()) {
                         Text(
                             text = "Deliverable: ${submission.deliverable_url}",
                             style = RexoTheme.typography.bodySmall,
@@ -852,7 +852,7 @@ private fun DepositCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = deposit.brand_name.ifBlank { "Brand" },
+                        text = deposit.brand_name?.ifBlank { "Brand" } ?: "Brand",
                         style = RexoTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = RexoColors.TextPrimary
@@ -864,12 +864,12 @@ private fun DepositCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Method: ${deposit.payment_method} | Ref: ${deposit.transaction_ref}",
+                        text = "Method: ${deposit.payment_method ?: "N/A"} | Ref: ${deposit.transaction_ref ?: "N/A"}",
                         style = RexoTheme.typography.bodySmall,
                         color = RexoColors.TextSecondary
                     )
                     Text(
-                        text = formatDate(deposit.created_at),
+                        text = formatDate(deposit.created_at ?: ""),
                         style = RexoTheme.typography.bodySmall,
                         color = RexoColors.Gray400
                     )
@@ -942,7 +942,7 @@ private fun WithdrawalCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = withdrawal.user_name.ifBlank { "User" },
+                        text = withdrawal.user_name?.ifBlank { "User" } ?: "User",
                         style = RexoTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = RexoColors.TextPrimary
@@ -954,12 +954,12 @@ private fun WithdrawalCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Method: ${withdrawal.payout_method}",
+                        text = "Method: ${withdrawal.payout_method ?: "N/A"}",
                         style = RexoTheme.typography.bodySmall,
                         color = RexoColors.TextSecondary
                     )
                     Text(
-                        text = formatDate(withdrawal.created_at),
+                        text = formatDate(withdrawal.created_at ?: ""),
                         style = RexoTheme.typography.bodySmall,
                         color = RexoColors.Gray400
                     )
@@ -1079,7 +1079,7 @@ private fun ProductCard(product: AdminProductDto, onDelete: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(product.name, style = RexoTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = RexoColors.TextPrimary)
+                Text(product.name ?: "Product", style = RexoTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = RexoColors.TextPrimary)
                 Text("₹${formatAmount(product.price)} | Stock: ${product.stock}", style = RexoTheme.typography.bodySmall, color = RexoColors.TextSecondary)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
