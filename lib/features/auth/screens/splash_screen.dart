@@ -86,30 +86,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   duration: 800.ms,
                   curve: Curves.easeOut,
                 ),
-            const SizedBox(height: 24),
-            // App name
-            Text(
-              'Rexo',
-              style: GoogleFonts.poppins(
-                fontSize: 36,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 400.ms, duration: 600.ms),
-            const SizedBox(height: 8),
-            // Tagline
-            Text(
-              'Premium Influencer Marketing',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textSecondary,
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 700.ms, duration: 600.ms),
             const SizedBox(height: 48),
             // Loading indicator
             SizedBox(

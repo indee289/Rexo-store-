@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../categories/widgets/category_filter_widget.dart';
+import '../../rexo_program/providers/rexo_program_provider.dart';
 import '../providers/shop_provider.dart';
 import '../widgets/product_card.dart';
 
@@ -35,6 +36,13 @@ class ShopScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [
+          IconButton(
+            onPressed: () => _handleAddProduct(context, ref),
+            icon: const Icon(
+              Iconsax.add_circle,
+              color: AppColors.textPrimary,
+            ),
+          ),
           Stack(
             children: [
               IconButton(
@@ -204,5 +212,37 @@ class ShopScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _handleAddProduct(BuildContext context, WidgetRef ref) async {
+    final canAdd = await ref.read(canAddProductsProvider.future);
+    if (!context.mounted) return;
+
+    if (canAdd) {
+      context.push('/admin/shop');
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            'Cannot Add Products',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'You need to be approved for the Rexo Program to sell products. Go to your Profile page and apply for the Rexo Program.',
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'OK',
+                style: GoogleFonts.poppins(color: AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

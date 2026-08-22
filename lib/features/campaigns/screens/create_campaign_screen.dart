@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
 
@@ -31,6 +32,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   String _selectedCategory = 'Fashion';
   DateTime? _deadline;
   bool _isSubmitting = false;
+  String? _coverImageUrl;
 
   final List<String> _platforms = [
     'Instagram',
@@ -122,6 +124,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'guidelines': _guidelinesController.text.trim(),
         'min_followers':
             int.tryParse(_minFollowersController.text.trim()) ?? 0,
+        'cover_image_url': _coverImageUrl ?? '',
         'status': 'active',
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
@@ -403,6 +406,17 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                     ],
                   ),
                 ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Cover Image Upload
+              ImageUploadField(
+                label: 'Cover Image',
+                storageBucket: 'campaign-assets',
+                onImageUploaded: (url) {
+                  _coverImageUrl = url;
+                },
               ),
 
               const SizedBox(height: 16),

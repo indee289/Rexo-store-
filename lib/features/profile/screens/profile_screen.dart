@@ -9,6 +9,7 @@ import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/stat_chip.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../rexo_program/providers/rexo_program_provider.dart';
 import '../providers/profile_provider.dart';
 import 'edit_profile_screen.dart';
 
@@ -152,6 +153,9 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const Divider(color: AppColors.divider, height: 1),
           const SizedBox(height: 8),
+          // Rexo Program card (only for creators)
+          if (profileState.isCreator)
+            _buildRexoProgramCard(context, ref),
           // Menu items
           _buildMenuItem(
             icon: Iconsax.mobile,
@@ -442,6 +446,129 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     return const SizedBox.shrink();
+  }
+
+  Widget _buildRexoProgramCard(BuildContext context, WidgetRef ref) {
+    final rexoStatusAsync = ref.watch(rexoProgramStatusProvider);
+
+    return rexoStatusAsync.when(
+      data: (application) {
+        final status = application?['status'] as String?;
+
+        Color cardColor;
+        IconData cardIcon;
+        String cardTitle;
+        String cardSubtitle;
+        bool showApplyButton = false;
+
+        if (application == null || status == null) {
+          cardColor = AppColors.primary;
+          cardIcon = Iconsax.crown_1;
+          cardTitle = 'Rexo Program';
+          cardSubtitle = 'Apply to sell products on the marketplace';
+          showApplyButton = true;
+        } else if (status == 'pending') {
+          cardColor = AppColors.warning;
+          cardIcon = Iconsax.clock;
+          cardTitle = 'Rexo Program - Pending';
+          cardSubtitle = 'Your application is under review';
+        } else if (status == 'approved') {
+          cardColor = AppColors.success;
+          cardIcon = Iconsax.tick_circle;
+          cardTitle = 'Rexo Program - Approved';
+          cardSubtitle = 'You can now sell products in the Shop';
+        } else {
+          cardColor = AppColors.error;
+          cardIcon = Iconsax.close_circle;
+          cardTitle = 'Rexo Program - Rejected';
+          cardSubtitle = 'Your application was not approved';
+          showApplyButton = true;
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: cardColor.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: cardColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(cardIcon, color: cardColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cardTitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      cardSubtitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (showApplyButton)
+                ElevatedButton(
+                  onPressed: () async {
+                    final success = await ref
+                        .read(rexoProgramActionsProvider.notifier)
+                        .applyForProgram();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? 'Application submitted!'
+                                : 'Failed to apply. Try again.',
+                            style: GoogleFonts.poppins(fontSize: 13),
+                          ),
+                          backgroundColor: success ? AppColors.success : AppColors.error,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cardColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('Apply'),
+                ),
+            ],
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: SizedBox(height: 60),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
   }
 
   Widget _buildMenuItem({

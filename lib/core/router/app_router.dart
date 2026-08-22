@@ -59,6 +59,8 @@ import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/wallet/screens/withdraw_screen.dart';
 import '../../features/warnings/screens/warnings_screen.dart';
+import '../../features/rexo_program/screens/admin_rexo_program_screen.dart';
+import '../../features/settings/screens/two_factor_auth_screen.dart';
 import '../widgets/app_shell.dart';
 
 /// Route paths
@@ -121,6 +123,8 @@ class AppRoutes {
   static const String warnings = '/warnings';
   static const String moderation = '/moderation';
   static const String publicProfile = '/profile/:handle';
+  static const String adminRexoProgram = '/admin/rexo-program';
+  static const String twoFactorAuth = '/two-factor-auth';
 }
 
 /// GoRouter provider
@@ -434,6 +438,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.adminBroadcast,
         builder: (context, state) => const AdminBroadcastScreen(),
+      ),
+
+      /// Admin Rexo Program screen
+      GoRoute(
+        path: AppRoutes.adminRexoProgram,
+        builder: (context, state) => const AdminRexoProgramScreen(),
+      ),
+
+      /// Two-Factor Authentication screen
+      GoRoute(
+        path: AppRoutes.twoFactorAuth,
+        builder: (context, state) => const TwoFactorAuthScreen(),
       ),
 
       /// Orders screen

@@ -742,6 +742,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionsState> {
     try {
       data['created_at'] = DateTime.now().toIso8601String();
       data['is_active'] = true;
+      data['seller_id'] = SupabaseService.currentUser?.id;
       await SupabaseService.client.from('products').insert(data);
       await createAuditLog(
         actionType: 'create_product',

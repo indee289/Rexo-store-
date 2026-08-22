@@ -15,7 +15,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      extendBody: true,
+      extendBody: false,
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {

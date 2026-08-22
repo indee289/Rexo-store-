@@ -98,6 +98,7 @@ CREATE TABLE campaigns (
     description TEXT,
     budget DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     per_creator_payout DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    cover_image_url TEXT,
     platform TEXT CHECK (platform IN ('instagram', 'youtube', 'tiktok', 'twitter', 'multiple')),
     category TEXT,
     total_slots INTEGER NOT NULL DEFAULT 1,
@@ -175,7 +176,9 @@ CREATE TABLE products (
     original_price DECIMAL(10, 2),
     stock INTEGER NOT NULL DEFAULT 0,
     category TEXT,
+    image_url TEXT,
     images JSONB DEFAULT '[]'::jsonb,
+    seller_id UUID REFERENCES users(id) ON DELETE SET NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -438,9 +441,14 @@ CREATE POLICY "Anyone can read active products" ON products
         EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
     );
 
-CREATE POLICY "Admins can create products" ON products
+CREATE POLICY "Authorized users can create products" ON products
     FOR INSERT WITH CHECK (
         EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+        OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'brand')
+        OR EXISTS (
+            SELECT 1 FROM rexo_program_applications
+            WHERE creator_id = auth.uid() AND status = 'approved'
+        )
     );
 
 CREATE POLICY "Admins can update products" ON products
@@ -1470,6 +1478,47 @@ CREATE INDEX IF NOT EXISTS idx_disputes_user_id ON public.disputes(user_id);
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_status ON public.moderation_queue(status);
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
 CREATE INDEX IF NOT EXISTS idx_product_categories_parent ON public.product_categories(parent_id);
+
+-- ============================================================
+-- TABLE: rexo_program_applications
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.rexo_program_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    creator_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ,
+    reviewed_by UUID REFERENCES public.users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE public.rexo_program_applications ENABLE ROW LEVEL SECURITY;
+
+-- Creator can view own applications
+CREATE POLICY "Creators can read own rexo applications"
+    ON public.rexo_program_applications FOR SELECT
+    USING (auth.uid() = creator_id);
+
+-- Creator can insert own application
+CREATE POLICY "Creators can apply for rexo program"
+    ON public.rexo_program_applications FOR INSERT
+    WITH CHECK (auth.uid() = creator_id);
+
+-- Admins can view all applications
+CREATE POLICY "Admins can read all rexo applications"
+    ON public.rexo_program_applications FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Admins can update (approve/reject) any application
+CREATE POLICY "Admins can update rexo applications"
+    ON public.rexo_program_applications FOR UPDATE
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE INDEX IF NOT EXISTS idx_rexo_program_creator_id ON public.rexo_program_applications(creator_id);
+CREATE INDEX IF NOT EXISTS idx_rexo_program_status ON public.rexo_program_applications(status);
 
 -- ============================================================
 -- SEED: Admin user

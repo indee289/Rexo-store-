@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/image_upload_field.dart';
 import '../../../core/widgets/premium_card.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/admin_provider.dart';
@@ -348,8 +349,16 @@ class _AdminShopScreenState extends ConsumerState<AdminShopScreen>
     final priceController = TextEditingController(text: product?['price']?.toString() ?? '');
     final stockController = TextEditingController(text: product?['stock']?.toString() ?? '');
     final categoryController = TextEditingController(text: product?['category'] ?? '');
-    final imageUrlController = TextEditingController(text: product?['image_url'] ?? '');
     final isEdit = product != null;
+    String imageUrl = product?['image_url'] ?? '';
+    // Try to get from images array if image_url is empty
+    if (imageUrl.isEmpty && product?['images'] != null) {
+      final images = product!['images'];
+      if (images is List && images.isNotEmpty) {
+        imageUrl = images[0].toString();
+      }
+    }
+    String uploadedImageUrl = imageUrl;
 
     showModalBottomSheet(
       context: context,
@@ -388,7 +397,14 @@ class _AdminShopScreenState extends ConsumerState<AdminShopScreen>
               const SizedBox(height: 12),
               _buildTextField(categoryController, 'Category'),
               const SizedBox(height: 12),
-              _buildTextField(imageUrlController, 'Image URL'),
+              ImageUploadField(
+                label: 'Product Image',
+                storageBucket: 'product-images',
+                currentImageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+                onImageUploaded: (url) {
+                  uploadedImageUrl = url;
+                },
+              ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -400,7 +416,10 @@ class _AdminShopScreenState extends ConsumerState<AdminShopScreen>
                       'price': double.tryParse(priceController.text) ?? 0,
                       'stock': int.tryParse(stockController.text) ?? 0,
                       'category': categoryController.text,
-                      'image_url': imageUrlController.text,
+                      'image_url': uploadedImageUrl,
+                      'images': uploadedImageUrl.isNotEmpty
+                          ? [uploadedImageUrl]
+                          : <String>[],
                     };
                     Navigator.pop(ctx);
                     bool success;
@@ -410,9 +429,12 @@ class _AdminShopScreenState extends ConsumerState<AdminShopScreen>
                       success = await ref.read(adminActionsProvider.notifier).createProduct(data);
                     }
                     if (mounted) {
+                      final adminState = ref.read(adminActionsProvider);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(success ? (isEdit ? 'Product updated' : 'Product created') : 'Action failed'),
+                          content: Text(success
+                              ? (isEdit ? 'Product updated' : 'Product created')
+                              : 'Action failed: ${adminState.error ?? 'Unknown error'}'),
                           backgroundColor: success ? AppColors.success : AppColors.error,
                         ),
                       );

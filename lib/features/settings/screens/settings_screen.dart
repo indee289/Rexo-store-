@@ -58,6 +58,12 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Send password reset email',
               onTap: () => _handleChangePassword(context),
             ),
+            _buildMenuItem(
+              icon: Iconsax.shield_tick,
+              title: 'Two-Factor Authentication',
+              subtitle: 'Secure your account with TOTP',
+              onTap: () => context.push('/two-factor-auth'),
+            ),
             const SizedBox(height: 16),
 
             // Notifications section

@@ -199,6 +199,7 @@ class AdminDashboardScreen extends ConsumerWidget {
       _QuickAction('Settings', Iconsax.setting_2, '/admin/settings', AppColors.textSecondary),
       _QuickAction('Audit Logs', Iconsax.document, '/admin/audit-logs', const Color(0xFF795548)),
       _QuickAction('Broadcast', Iconsax.notification, '/admin/broadcast', const Color(0xFFE91E63)),
+      _QuickAction('Rexo Program', Iconsax.crown_1, '/admin/rexo-program', const Color(0xFFFF5722)),
     ];
 
     return GridView.builder(
