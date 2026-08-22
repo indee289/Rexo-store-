@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/disputes_provider.dart';
 
@@ -71,7 +72,7 @@ class DisputesScreen extends ConsumerWidget {
           );
         },
         loading: () => const ShimmerLoading(),
-        error: (error, _) => _buildErrorState(ref, error.toString()),
+        error: (error, _) => _buildErrorState(ref, ErrorUtils.sanitize(error)),
       ),
     );
   }

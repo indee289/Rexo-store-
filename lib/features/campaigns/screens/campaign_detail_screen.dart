@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
@@ -34,7 +35,7 @@ class CampaignDetailScreen extends ConsumerWidget {
           return _buildContent(context, ref, campaign, hasApplied);
         },
         loading: () => _buildLoading(),
-        error: (error, _) => _buildError(context, ref, error.toString()),
+        error: (error, _) => _buildError(context, ref, ErrorUtils.sanitize(error)),
       ),
       bottomNavigationBar: campaignAsync.whenOrNull(
         data: (campaign) {

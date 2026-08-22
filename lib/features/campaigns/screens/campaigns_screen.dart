@@ -5,6 +5,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 import '../widgets/campaign_list_card.dart';
@@ -135,7 +136,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
               ),
               error: (error, _) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildErrorState(error.toString()),
+                child: _buildErrorState(ErrorUtils.sanitize(error)),
               ),
             ),
 

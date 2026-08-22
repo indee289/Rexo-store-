@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/reviews_provider.dart';
 import '../widgets/review_card.dart';
@@ -74,7 +75,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           return _buildContent(reviews);
         },
         loading: () => const ShimmerLoading(),
-        error: (error, _) => _buildErrorState(error.toString()),
+        error: (error, _) => _buildErrorState(ErrorUtils.sanitize(error)),
       ),
     );
   }

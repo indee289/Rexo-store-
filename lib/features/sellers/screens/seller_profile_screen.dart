@@ -7,6 +7,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../reviews/widgets/star_rating_widget.dart';
 import '../../shop/widgets/product_card.dart';
@@ -47,7 +48,7 @@ class SellerProfileScreen extends ConsumerWidget {
           return _buildContent(context, seller, productsAsync);
         },
         loading: () => const ShimmerLoading(),
-        error: (error, _) => _buildError(ref, error.toString()),
+        error: (error, _) => _buildError(ref, ErrorUtils.sanitize(error)),
       ),
     );
   }

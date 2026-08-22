@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../reviews/widgets/star_rating_widget.dart';
 import '../providers/shop_provider.dart';
@@ -97,7 +98,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           return _buildContent(product);
         },
         loading: () => _buildLoading(),
-        error: (error, _) => _buildError(error.toString()),
+        error: (error, _) => _buildError(ErrorUtils.sanitize(error)),
       ),
     );
   }

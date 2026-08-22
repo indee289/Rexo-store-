@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../categories/widgets/category_filter_widget.dart';
 import '../providers/shop_provider.dart';
@@ -131,7 +132,7 @@ class ShopScreen extends ConsumerWidget {
               ),
               error: (error, _) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildErrorState(ref, error.toString()),
+                child: _buildErrorState(ref, ErrorUtils.sanitize(error)),
               ),
             ),
 

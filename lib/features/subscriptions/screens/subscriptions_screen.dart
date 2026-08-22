@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/subscriptions_provider.dart';
 
@@ -92,7 +93,7 @@ class SubscriptionsScreen extends ConsumerWidget {
                 );
               },
               loading: () => const ShimmerLoading(),
-              error: (error, _) => _buildError(ref, error.toString()),
+              error: (error, _) => _buildError(ref, ErrorUtils.sanitize(error)),
             ),
             const SizedBox(height: 40),
           ],

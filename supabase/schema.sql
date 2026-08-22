@@ -281,26 +281,32 @@ ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 
 -- Users policies
--- Allow authenticated users to read public profile data (name, avatar, handle)
--- This is required for cross-user joins (campaign brand info, message contacts, creator listings)
+-- IMPORTANT: Policies on the users table must NEVER subquery the users table itself.
+-- Doing so causes infinite recursion (PostgreSQL error 42P17).
+-- Instead, use auth.uid() checks or auth.jwt() claims for role-based access.
+
+-- Any authenticated user can read profiles (needed for cross-user joins)
 CREATE POLICY "Authenticated users can read all profiles" ON users
     FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Admins can read all users" ON users
-    FOR SELECT USING (
-        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
-    );
-
+-- Users can update their own data
 CREATE POLICY "Users can update own data" ON users
     FOR UPDATE USING (auth.uid() = id);
 
+-- Admins can update any user - use JWT claim to avoid recursion
 CREATE POLICY "Admins can update any user" ON users
     FOR UPDATE USING (
-        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+        OR auth.uid() = id
     );
 
+-- Allow insert for authenticated users (own row only)
 CREATE POLICY "Allow insert for authenticated users" ON users
     FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Allow delete for service role only (admin operations via server-side)
+CREATE POLICY "Service role can delete users" ON users
+    FOR DELETE USING (auth.role() = 'service_role');
 
 -- Wallets policies
 CREATE POLICY "Users can read own wallet" ON wallets
