@@ -42,6 +42,8 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -50,7 +52,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -60,9 +62,9 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
             width: double.infinity,
             height: 160,
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: _buildContent(),
           ),
@@ -165,20 +167,22 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
   }
 
   Widget _buildPlaceholder() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(
+        Icon(
           Iconsax.gallery_add,
           size: 40,
-          color: AppColors.textHint,
+          color: colorScheme.onSurface.withOpacity(0.4),
         ),
         const SizedBox(height: 8),
         Text(
           'Tap to upload image',
           style: GoogleFonts.poppins(
             fontSize: 13,
-            color: AppColors.textSecondary,
+            color: colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
         const SizedBox(height: 4),
@@ -186,7 +190,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
           'Camera or Gallery',
           style: GoogleFonts.poppins(
             fontSize: 11,
-            color: AppColors.textHint,
+            color: colorScheme.onSurface.withOpacity(0.4),
           ),
         ),
       ],

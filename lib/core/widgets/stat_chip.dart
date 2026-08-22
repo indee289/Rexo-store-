@@ -20,6 +20,8 @@ class StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -34,7 +36,7 @@ class StatChip extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 2),
@@ -43,7 +45,7 @@ class StatChip extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w400,
-            color: AppColors.textSecondary,
+            color: colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
       ],

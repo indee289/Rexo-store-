@@ -99,7 +99,7 @@ class CampaignListCard extends StatelessWidget {
                 subtitle: 'Per Creator',
               ),
               const Spacer(),
-              if (category.isNotEmpty) _buildCategoryChip(category),
+              if (category.isNotEmpty) _buildCategoryChip(context, category),
             ],
           ),
           const SizedBox(height: 12),
@@ -154,17 +154,17 @@ class CampaignListCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryChip(String category) {
+  Widget _buildCategoryChip(BuildContext context, String category) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         category,
         style: AppTextStyles.caption.copyWith(
-          color: AppColors.secondary,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           fontWeight: FontWeight.w500,
         ),
       ),

@@ -2,21 +2,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../services/supabase_service.dart';
 
-/// Provider for the user's wallet data
-final walletProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+/// Realtime stream provider for the user's wallet data.
+/// Subscribes to Supabase Realtime so admin actions (deposit approvals,
+/// withdrawal completions) reflect immediately without app restart.
+final walletProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   final user = SupabaseService.currentUser;
-  if (user == null) return null;
+  if (user == null) return Stream.value(null);
 
-  final response = await SupabaseService.client
+  return SupabaseService.client
       .from('wallets')
-      .select()
+      .stream(primaryKey: ['id'])
       .eq('user_id', user.id)
-      .maybeSingle();
-
-  return response;
+      .map((List<Map<String, dynamic>> rows) {
+        if (rows.isEmpty) return null;
+        return rows.first;
+      });
 });
 
-/// Provider for combined transaction history (deposits + withdrawals)
+/// Provider for combined transaction history (deposits + withdrawals).
+/// Kept as FutureProvider since transaction lists are less critical for
+/// real-time updates and can be refreshed via invalidation.
 final transactionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final user = SupabaseService.currentUser;
@@ -54,6 +59,32 @@ final transactionsProvider =
   return combined;
 });
 
+/// Realtime stream provider for deposits so users see status changes
+/// (pending -> approved/rejected) made by admin in real-time.
+final depositsRealtimeProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final user = SupabaseService.currentUser;
+  if (user == null) return Stream.value([]);
+
+  return SupabaseService.client
+      .from('deposits')
+      .stream(primaryKey: ['id'])
+      .eq('user_id', user.id);
+});
+
+/// Realtime stream provider for withdrawals so users see status changes
+/// (pending -> approved/rejected) made by admin in real-time.
+final withdrawalsRealtimeProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final user = SupabaseService.currentUser;
+  if (user == null) return Stream.value([]);
+
+  return SupabaseService.client
+      .from('withdrawals')
+      .stream(primaryKey: ['id'])
+      .eq('user_id', user.id);
+});
+
 /// Wallet actions notifier for deposits and withdrawals
 class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
@@ -88,8 +119,7 @@ class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       state = const AsyncValue.data(null);
 
-      // Refresh data
-      ref.invalidate(walletProvider);
+      // Refresh transaction list (realtime handles wallet balance)
       ref.invalidate(transactionsProvider);
 
       return true;
@@ -125,8 +155,7 @@ class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       state = const AsyncValue.data(null);
 
-      // Refresh data
-      ref.invalidate(walletProvider);
+      // Refresh transaction list (realtime handles wallet balance)
       ref.invalidate(transactionsProvider);
 
       return true;

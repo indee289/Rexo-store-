@@ -184,13 +184,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.secondary.withOpacity(0.08),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             category,
                             style: AppTextStyles.labelMedium.copyWith(
-                              color: AppColors.secondary,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
                         ),

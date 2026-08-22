@@ -272,13 +272,13 @@ class ServicesScreen extends ConsumerWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.08),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       serviceType,
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.secondary,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         fontSize: 10,
                       ),
                     ),

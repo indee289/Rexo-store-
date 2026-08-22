@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Fix Issues #4, #5: Dark mode text contrast (replace hardcoded dark colors with theme-aware equivalents) and add Supabase Realtime subscriptions for wallet and KYC screens",
+  "status": "in_progress",
+  "steps": [
+    "1. Fix lib/core/theme/app_text_styles.dart: The file uses hardcoded AppColors.textPrimary (0xFF1A1A2E) and AppColors.textSecondary for all text styles. These are dark colors invisible in dark mode. Since AppTextStyles are static and don't have access to BuildContext, they cannot use Theme.of(context). The fix is to NOT set a color in the text styles (remove the color property or set it to null), letting the theme's textTheme colors take over at runtime. Alternatively, leave the file as-is and ensure all screens that use AppTextStyles do .copyWith(color: theme.colorScheme.onSurface) - but the cleaner fix is removing hardcoded color from AppTextStyles entirely.",
+    "2. Fix lib/core/widgets/image_upload_field.dart: Replace AppColors.textPrimary with Theme.of(context) equivalent. The label text uses AppColors.textPrimary directly - change to use Theme.of(context).colorScheme.onSurface. Also replace AppColors.textSecondary and AppColors.textHint with theme-aware colors.",
+    "3. Fix lib/features/campaigns/screens/create_campaign_screen.dart: Replace all hardcoded 'fillColor: Colors.white' and 'color: Colors.white' (for container backgrounds) with Theme.of(context).colorScheme.surface. The form text fields and dropdowns use Colors.white as background which is invisible in dark mode.",
+    "4. Fix lib/features/shop/screens/product_detail_screen.dart: This file uses AppTextStyles (which have hardcoded colors). After the AppTextStyles fix, ensure product_detail_screen uses theme-aware colors. Check for any direct AppColors.textPrimary or Colors.white background usage and replace with theme equivalents.",
+    "5. Add Supabase Realtime subscription to lib/features/wallet/providers/wallet_provider.dart: Convert walletProvider from a simple FutureProvider to a StreamProvider that subscribes to the wallets table filtered by user_id using Supabase realtime (SupabaseService.client.from('wallets').stream(primaryKey: ['id']).eq('user_id', userId)). Also add a stream for deposits/withdrawals status changes so transactions update in real-time.",
+    "6. Add Supabase Realtime subscription to lib/features/kyc/providers/kyc_provider.dart: Convert kycDocumentsProvider from FutureProvider to StreamProvider that subscribes to kyc_documents table filtered by user_id using Supabase realtime stream."
+  ],
+  "acceptance_criteria": [
+    "AppTextStyles no longer hardcodes dark colors - either removes color property or uses a neutral approach",
+    "ImageUploadField uses Theme.of(context).colorScheme.onSurface instead of AppColors.textPrimary",
+    "create_campaign_screen.dart uses theme-aware surface colors instead of Colors.white for backgrounds",
+    "product_detail_screen.dart has no hardcoded dark text colors that would be invisible in dark mode",
+    "walletProvider uses Supabase realtime stream for wallet balance updates",
+    "kycDocumentsProvider uses Supabase realtime stream for KYC status updates"
+  ],
+  "verification": [
+    "Read app_text_styles.dart and confirm no hardcoded dark colors remain",
+    "Read image_upload_field.dart and confirm theme-aware colors",
+    "Read create_campaign_screen.dart and confirm no Colors.white backgrounds",
+    "Read wallet_provider.dart and confirm realtime stream subscription",
+    "Read kyc_provider.dart and confirm realtime stream subscription"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

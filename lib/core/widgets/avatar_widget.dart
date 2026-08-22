@@ -69,15 +69,20 @@ class AvatarWidget extends StatelessWidget {
         ),
       );
     }
-    return Container(
-      width: size,
-      height: size,
-      color: AppColors.border,
-      child: Icon(
-        Icons.person,
-        size: size * 0.5,
-        color: AppColors.textHint,
-      ),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          width: size,
+          height: size,
+          color: colorScheme.onSurface.withOpacity(0.08),
+          child: Icon(
+            Icons.person,
+            size: size * 0.5,
+            color: colorScheme.onSurface.withOpacity(0.4),
+          ),
+        );
+      },
     );
   }
 

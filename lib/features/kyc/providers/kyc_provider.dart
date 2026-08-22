@@ -5,19 +5,18 @@ import 'package:uuid/uuid.dart';
 
 import '../../../services/supabase_service.dart';
 
-/// Provider to fetch KYC document status for the current user
+/// Realtime stream provider for KYC documents.
+/// Subscribes to Supabase Realtime so admin verification actions
+/// (pending -> approved/rejected) reflect immediately without app restart.
 final kycDocumentsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
   final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  if (user == null) return Stream.value([]);
 
-  final response = await SupabaseService.client
+  return SupabaseService.client
       .from('kyc_documents')
-      .select()
-      .eq('user_id', user.id)
-      .order('created_at', ascending: false);
-
-  return List<Map<String, dynamic>>.from(response);
+      .stream(primaryKey: ['id'])
+      .eq('user_id', user.id);
 });
 
 /// KYC upload notifier
@@ -60,6 +59,7 @@ class KycNotifier extends StateNotifier<AsyncValue<void>> {
       });
 
       state = const AsyncValue.data(null);
+      // Realtime stream will auto-update, but invalidate to force immediate refresh
       ref.invalidate(kycDocumentsProvider);
       return true;
     } catch (e, st) {
