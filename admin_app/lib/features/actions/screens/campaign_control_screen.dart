@@ -76,18 +76,37 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                if (titleController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a campaign title')),
+                  );
+                  return;
+                }
                 final budget = double.tryParse(budgetController.text);
-                if (titleController.text.isNotEmpty && budget != null) {
+                if (budget == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid budget amount')),
+                  );
+                  return;
+                }
+                try {
                   await SupabaseService.client.from('campaigns').insert({
                     'title': titleController.text,
                     'description': descriptionController.text,
                     'budget': budget,
                     'platform': selectedPlatform,
                     'status': 'active',
+                    'created_by': SupabaseService.currentUser?.id,
                     'created_at': DateTime.now().toIso8601String(),
                   });
                   ref.invalidate(adminCampaignsProvider);
                   if (context.mounted) Navigator.pop(context);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to create campaign: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('Create'),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -15,6 +16,7 @@ final subscriptionPlansProvider =
 
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
+    debugPrint('Subscriptions error: $e');
     // Return empty list on error (e.g., table doesn't exist or RLS issue)
     return [];
   }
@@ -35,6 +37,7 @@ final userSubscriptionsProvider =
 
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
+    debugPrint('Subscriptions error: $e');
     // Return empty list on error
     return [];
   }
