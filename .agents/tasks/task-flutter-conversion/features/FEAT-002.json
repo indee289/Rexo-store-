@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement the core Flutter app: theme system, Supabase service, routing, auth flow (login/register screens with real Supabase auth), and the main app shell with bottom navigation.",
+  "status": "pending",
+  "steps": [
+    "Create lib/core/constants/app_constants.dart with app name, Supabase config (read from env/dart-define), color hex values (primary orange-red: #FF5722 or similar premium warm tone, background white, surface colors)",
+    "Create lib/core/theme/app_theme.dart with premium ThemeData: custom ColorScheme, TextTheme using Google Fonts (Inter or Poppins for headings, body), elevated card styles, custom button themes, input decoration themes. No stock Material look.",
+    "Create lib/core/theme/app_colors.dart with the color palette as a class of static constants",
+    "Create lib/core/theme/app_text_styles.dart with text style definitions",
+    "Create lib/services/supabase_service.dart - singleton service that initializes Supabase client using Supabase.initialize() with URL and anon key from dart-define or hardcoded fallback constants",
+    "Create lib/core/widgets/app_bottom_nav.dart - premium floating bottom navigation bar with 4 tabs (Home, Campaigns, Shop, Profile) using Iconsax icons, with smooth animations and active indicator",
+    "Create lib/app.dart with MaterialApp.router using GoRouter, the custom theme, and route configuration",
+    "Create lib/main.dart that initializes WidgetsFlutterBinding, Supabase, then runs the app",
+    "Create lib/core/router/app_router.dart with GoRouter config: splash, login, register, home shell with bottom nav (home, campaigns, shop, profile tabs), and nested routes",
+    "Create lib/features/auth/screens/login_screen.dart - premium login screen with email/password fields, Supabase signInWithPassword, error handling, link to register. Clean white design with orange-red accent buttons.",
+    "Create lib/features/auth/screens/register_screen.dart - premium register screen with name, email, password, role selection (Creator/Brand), Supabase signUp, then insert into users table with role",
+    "Create lib/features/auth/screens/splash_screen.dart - animated splash with Rexo logo, checks auth state and redirects",
+    "Create lib/features/auth/providers/auth_provider.dart - Riverpod providers for auth state, current user, sign in, sign up, sign out",
+    "Create lib/core/widgets/app_shell.dart - the main scaffold with bottom nav that wraps authenticated screens"
+  ],
+  "acceptance_criteria": [
+    "lib/main.dart initializes Supabase and runs the app",
+    "lib/app.dart uses GoRouter with proper route definitions",
+    "Login screen calls Supabase signInWithPassword and handles success/error",
+    "Register screen calls Supabase signUp and inserts user record into users table",
+    "Bottom navigation has 4 tabs with Iconsax icons and animated transitions",
+    "Theme uses custom colors (orange-red accent on white) and Google Fonts, not stock Material",
+    "GoRouter redirects unauthenticated users to login and authenticated users to home",
+    "All dart files have proper imports and no syntax errors"
+  ],
+  "verification": [
+    "Read lib/main.dart and verify it has Supabase.initialize call",
+    "Read lib/features/auth/screens/login_screen.dart and verify Supabase auth call",
+    "Read lib/core/router/app_router.dart and verify route guards",
+    "Check all .dart files in lib/ compile (no obvious syntax issues like unclosed brackets)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

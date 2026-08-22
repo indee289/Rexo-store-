@@ -1,255 +1,98 @@
-# 🚀 Rexo Marketplace - Native Kotlin Android
+# Rexo Marketplace - Flutter
 
-> **Influencer Marketing Platform** - Fully native Android app built with Jetpack Compose, Material 3, and Kotlin
+Premium influencer marketing platform connecting brands with creators for impactful campaigns.
 
-## 📱 About
+## Tech Stack
 
-Rexo Marketplace connects **Creators** and **Brands** for seamless influencer marketing campaigns with:
-- **Campaign Management** - Browse, apply, and track campaigns
-- **Secure Wallet** - Escrow-based payment system with deposits/withdrawals
-- **Real-time Notifications** - Firebase Cloud Messaging integration
-- **Shop & Products** - Digital, physical, and service marketplace
-- **Admin Panel** - KYC verification, financial operations, content moderation
-- **Multi-role System** - Creator, Brand, and Admin access levels
+- **Flutter** - Cross-platform mobile framework
+- **Dart** - Programming language
+- **Supabase** - Backend as a Service (Auth, Database, Storage, Realtime)
+- **Riverpod** - State management
+- **GoRouter** - Declarative routing
 
----
+## Features
 
-## 🏗️ Architecture
+- User authentication (creators, brands, admins)
+- Campaign management and creator applications
+- Wallet system with deposits and withdrawals
+- In-app messaging between users
+- Product marketplace with orders
+- KYC document verification
+- Push notifications
+- Admin panel for platform management
 
-### **Tech Stack**
-
-| Category | Technology |
-|----------|-----------|
-| **Language** | Kotlin 2.1.0 |
-| **UI Framework** | Jetpack Compose (BOM 2024.12.01) |
-| **Design System** | Material 3 |
-| **Architecture** | MVVM + Clean Architecture |
-| **Database** | Room (Local caching) |
-| **Backend** | Supabase (PostgreSQL + Auth + Storage) |
-| **API** | Retrofit 2 + OkHttp |
-| **Push Notifications** | Firebase Cloud Messaging |
-| **Image Loading** | Coil |
-| **Async** | Kotlin Coroutines + Flow |
-| **Navigation** | Navigation Compose |
-| **Min SDK** | Android 10 (API 29) |
-| **Target SDK** | Android 14 (API 35) |
-
-### **Project Structure**
+## Project Structure
 
 ```
-app/src/main/
-├── java/com/rexo/marketplace/
-│   ├── data/
-│   │   ├── local/          # Room database & DAOs
-│   │   ├── model/          # Data models & entities
-│   │   ├── remote/         # API services (Supabase, Retrofit)
-│   │   └── repository/     # Data repositories
-│   ├── ui/
-│   │   ├── theme/          # Material 3 theme, colors, typography
-│   │   ├── components/     # Reusable UI components
-│   │   └── screens/        # App screens (Home, Wallet, etc.)
-│   ├── navigation/         # Navigation graphs
-│   ├── services/           # FCM, deep linking, background tasks
-│   ├── MainActivity.kt     # Main entry point
-│   └── RexoApplication.kt  # Application class
-└── res/
-    ├── values/             # Strings, colors, themes
-    └── xml/                # Network config, data rules
+lib/
+  main.dart              # App entry point
+  app.dart               # Root widget and app configuration
+  core/
+    constants/           # App-wide constants
+    theme/               # Theme data and styling
+    utils/               # Utility functions
+    widgets/             # Shared widgets
+    router/              # GoRouter configuration
+  features/
+    auth/                # Authentication screens and logic
+    home/                # Home/dashboard feature
+    campaigns/           # Campaign browsing and management
+    shop/                # Product marketplace
+    profile/             # User profile
+    wallet/              # Wallet and transactions
+    notifications/       # Notification center
+    messages/            # In-app messaging
+  services/              # Backend service integrations
 ```
 
----
+## Setup
 
-## 🎨 Design System
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/indee289/Rexo-store-.git
+   cd Rexo-store-
+   ```
 
-### **Rexo Custom Design Language**
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
 
-Based on the original React app's Tailwind CSS design, converted to Material 3:
+3. Set up environment variables (Supabase credentials):
+   - `SUPABASE_URL` - Your Supabase project URL
+   - `SUPABASE_ANON_KEY` - Your Supabase anonymous key
 
-#### **Colors**
-- **Primary**: Indigo 600 (`#4F46E5`)
-- **Secondary**: Rose 500 (`#F43F5E`)
-- **Success**: Emerald 600 (`#16A34A`)
-- **Warning**: Amber 500 (`#F59E0B`)
-- **Surfaces**: Slate palette (50-950)
+4. Run the app:
+   ```bash
+   flutter run --dart-define=SUPABASE_URL=your_url --dart-define=SUPABASE_ANON_KEY=your_key
+   ```
 
-#### **Typography**
-- **Font**: System default (Inter-style)
-- **Sizes**: 10sp - 34sp (matching Tailwind's text-xs to text-3xl)
-- **Weights**: Normal, SemiBold, Bold, ExtraBold
+## Build
 
-#### **Shapes**
-- **Cards**: 24dp rounded corners (`rounded-3xl`)
-- **Buttons**: 12dp rounded (`rounded-xl`)
-- **Inputs**: 16dp rounded (`rounded-2xl`)
-- **Pills/Badges**: Fully rounded (999dp)
-
-#### **Special Effects**
-- **Glass Surface**: Frosted glass with 20dp blur
-- **Floating Cards**: Elevated with backdrop blur
-- **Edge-to-edge**: Full immersive display on Android 10+
-
----
-
-## 🗄️ Database Schema
-
-### **Room Entities**
-
-1. **users** - User profiles (Creator/Brand/Admin)
-2. **campaigns** - Campaign listings with escrow
-3. **campaign_applications** - Creator applications to campaigns
-4. **wallets** - User wallet balances
-5. **wallet_transactions** - Transaction history
-6. **withdrawal_requests** - Payout requests
-7. **deposit_requests** - Brand deposit submissions
-8. **notifications** - In-app notifications
-9. **user_devices** - FCM token registry
-10. **store_products** - Shop catalog
-11. **store_orders** - Purchase orders
-
----
-
-## 🔧 Setup Instructions
-
-### **1. Prerequisites**
-
-- **Android Studio** Iguana or newer
-- **JDK** 17
-- **Gradle** 8.9+
-- **Android SDK** 29+ (Android 10+)
-
-### **2. Environment Variables**
-
-Create GitHub Secrets for CI/CD:
-
+Build a release APK:
 ```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key_here
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+flutter build apk --release \
+  --dart-define=SUPABASE_URL=your_url \
+  --dart-define=SUPABASE_ANON_KEY=your_key
 ```
 
-For local development, add to `local.properties`:
+## Database
 
-```properties
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key_here
-```
+The Supabase schema is located at `supabase/schema.sql`. It includes:
+- 17 tables with proper relationships and constraints
+- Row Level Security (RLS) policies for all tables
+- Performance indexes on frequently queried columns
+- Storage buckets for file uploads
+- Auto-wallet creation trigger
 
-### **3. Firebase Setup**
+## CI/CD
 
-1. Create Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Add Android app with package `com.rexo.marketplace`
-3. Download `google-services.json` 
-4. Replace `app/google-services.json` with your file
-5. Enable **Cloud Messaging** in Firebase console
+GitHub Actions workflow (`.github/workflows/flutter-build.yml`) handles:
+- Flutter setup and dependency installation
+- Code analysis
+- Release APK build
+- Artifact upload
 
-### **4. Supabase Setup**
-
-Required tables and RLS policies should be created via Supabase dashboard:
-
-```sql
--- See supabase/ directory for full schema
--- Tables: users, campaigns, wallets, notifications, etc.
-```
-
-### **5. Build & Run**
-
-```bash
-# Clone repository
-git clone https://github.com/indee289/Rexo-store-.git
-cd Rexo-store-
-
-# Install dependencies (Android Studio will sync)
-# Build debug APK
-./gradlew assembleDebug
-
-# Build release APK
-./gradlew assembleRelease
-
-# Install to device
-./gradlew installDebug
-```
-
----
-
-## 📦 Features
-
-### ✅ **Implemented**
-- [x] Jetpack Compose UI framework
-- [x] Material 3 design system
-- [x] Room database with offline caching
-- [x] Complete data models (User, Campaign, Wallet, Shop, Notifications)
-- [x] Rexo custom theme (colors, typography, shapes)
-- [x] Glass/blur surface effects
-- [x] Edge-to-edge display support
-- [x] FCM notification infrastructure
-- [x] ProGuard rules for release builds
-
-### 🚧 **TODO** (Next Phase)
-- [ ] Supabase Auth integration (Login/Signup with MFA)
-- [ ] Home Screen with campaign discovery
-- [ ] Campaigns Screen with application flow
-- [ ] Wallet Screen with transactions
-- [ ] Notifications Screen with FCM
-- [ ] Profile Screen with KYC
-- [ ] Admin Center (KYC, deposits, withdrawals)
-- [ ] Shop Screen with products
-- [ ] Settings Screen
-- [ ] Bottom navigation
-- [ ] Deep linking support
-- [ ] Haptic feedback
-- [ ] Spring animations
-
----
-
-## 🤝 Contributing
-
-This is a **private project** converted from React+Capacitor to native Kotlin Android.
-
-**Original Stack**: React 19 + TypeScript + Capacitor + Supabase  
-**New Stack**: Kotlin + Jetpack Compose + Material 3 + Supabase
-
----
-
-## 📄 License
-
-Copyright © 2024 Rexo Marketplace. All rights reserved.
-
----
-
-## 🔗 Links
-
-- **GitHub**: [indee289/Rexo-store-](https://github.com/indee289/Rexo-store-)
-- **Supabase**: Project backend & database
-- **Firebase**: Push notifications & analytics
-
----
-
-## 📝 Conversion Notes
-
-**From**: React + Capacitor (Web wrapper)  
-**To**: Native Kotlin Android (No WebView)
-
-### **Why Native?**
-- 🚀 **50-70% faster** performance
-- 📦 **Smaller APK size** (~15MB vs 40+MB)
-- 🔋 **Better battery life**
-- 🎨 **Smooth 120fps animations**
-- 📱 **Full Android API access**
-- 🎯 **Material You** dynamic theming
-
-### **Migration Mapping**
-
-| React Component | Kotlin Equivalent |
-|----------------|-------------------|
-| `useState` | `remember` + `mutableStateOf` |
-| `useEffect` | `LaunchedEffect` + `DisposableEffect` |
-| `useContext` | `ViewModel` + `StateFlow` |
-| React Router | Navigation Compose |
-| Tailwind CSS | Material 3 + Custom Theme |
-| Capacitor Plugins | Native Android APIs |
-| LocalStorage | DataStore Preferences |
-| Framer Motion | Compose Animations |
-
----
-
-**Built with ❤️ using Jetpack Compose & Material 3**
+Required GitHub Secrets:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`

@@ -1,0 +1,7 @@
+{
+  "task_id": "task-flutter-conversion",
+  "task_description": "Convert Rexo Marketplace from Kotlin/Jetpack Compose to Flutter. Create complete Supabase SQL schema, remove all Kotlin files, build premium Flutter app with auth, home, campaigns, shop, profile, wallet, notifications, and messages. Push to origin Rexo-Kotlin branch.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}
