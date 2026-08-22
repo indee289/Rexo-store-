@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Fix Issues #6, #7, #8: Top Creators with follow/messaging, push notifications permission, and 2FA UI improvement",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Create supabase/add_follows_table.sql: CREATE TABLE follows (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(follower_id, following_id)); ALTER TABLE follows ENABLE ROW LEVEL SECURITY; Add RLS policies: users can read all follows (SELECT TRUE), users can insert/delete own follows (follower_id = auth.uid()).",
     "2. Create lib/features/home/providers/creators_provider.dart: Add a provider that fetches creator_profiles with user info (name, avatar_url, handle) ordered by followers descending. Add a followProvider(creatorUserId) that checks if current user follows a given creator. Add a FollowActionsNotifier with follow/unfollow methods that insert/delete from follows table.",
@@ -33,5 +33,5 @@
     "Read two_factor_auth_screen.dart and confirm improved UI"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Issue #6 (FIXED): Created follows table SQL migration with RLS, creators_provider with follow/unfollow, creator_profile_screen with Follow+Message buttons, added navigation from CreatorCard, added realtime stream provider for messages, registered /creators/:id route. Issue #7 (CANNOT-VERIFY-WITHOUT-DEVICE): Push notification service was already fully implemented with try-catch, permission request, FCM token saving. Added comprehensive CANNOT-VERIFY-WITHOUT-DEVICE comment block documenting that actual push delivery requires real device + real Firebase credentials. Issue #8 (NEEDS-SUPABASE-CONFIG): Improved 2FA UI with benefits list, step-by-step guide, info box about MFA requirement. AppColors.info does not exist so used inline Color(0xFF2196F3) for the info box. Verification was code-inspection only due to INTEGRATIONS_ONLY network mode preventing flutter analyze/build."
 }
