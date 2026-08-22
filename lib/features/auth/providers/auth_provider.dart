@@ -107,18 +107,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         _recordDeviceFingerprint();
       } else {
         state = const AuthState(
-          status: AuthStatus.error,
+          status: AuthStatus.unauthenticated,
           errorMessage: 'Sign in failed. Please try again.',
         );
       }
     } on supabase.AuthException catch (e) {
       state = AuthState(
-        status: AuthStatus.error,
+        status: AuthStatus.unauthenticated,
         errorMessage: e.message,
       );
     } catch (e) {
       state = AuthState(
-        status: AuthStatus.error,
+        status: AuthStatus.unauthenticated,
         errorMessage: 'An unexpected error occurred. Please try again.',
       );
     }
