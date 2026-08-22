@@ -21,6 +21,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
   bool _isLoading = true;
   bool _isEnrolled = false;
   bool _isEnrolling = false;
+  bool _mfaNotSupported = false;
   String? _qrCodeUrl;
   String? _secret;
   String? _factorId;
@@ -41,7 +42,10 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
   }
 
   Future<void> _checkMfaStatus() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final factors = await SupabaseService.client.auth.mfa.listFactors();
@@ -56,7 +60,19 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         setState(() => _isEnrolled = false);
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Failed to check MFA status: ${e.toString()}');
+      // If MFA API is not available or throws, show graceful message
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('mfa') ||
+          errorStr.contains('not supported') ||
+          errorStr.contains('unimplemented') ||
+          errorStr.contains('method not found') ||
+          errorStr.contains('404') ||
+          errorStr.contains('not enabled')) {
+        setState(() => _mfaNotSupported = true);
+      } else {
+        setState(() =>
+            _errorMessage = 'Unable to check 2FA status. Please try again later.');
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -81,10 +97,20 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         _isEnrolling = false;
       });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to enroll: ${e.toString()}';
-        _isEnrolling = false;
-      });
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('mfa') ||
+          errorStr.contains('not supported') ||
+          errorStr.contains('not enabled')) {
+        setState(() {
+          _mfaNotSupported = true;
+          _isEnrolling = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to start 2FA enrollment. Please try again.';
+          _isEnrolling = false;
+        });
+      }
     }
   }
 
@@ -101,7 +127,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
     });
 
     try {
-      final challengeResponse = await SupabaseService.client.auth.mfa.challenge(
+      final challengeResponse =
+          await SupabaseService.client.auth.mfa.challenge(
         factorId: _factorId!,
       );
       _challengeId = challengeResponse.id;
@@ -132,7 +159,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Verification failed: ${e.toString()}';
+        _errorMessage = 'Verification failed. Please check the code and try again.';
         _isEnrolling = false;
       });
     }
@@ -189,7 +216,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         );
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Failed to disable 2FA: ${e.toString()}');
+      setState(
+          () => _errorMessage = 'Failed to disable 2FA. Please try again.');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -216,55 +244,125 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Status card
-                  _buildStatusCard(),
-                  const SizedBox(height: 24),
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
+          : _mfaNotSupported
+              ? _buildComingSoon()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Status card
+                      _buildStatusCard(),
+                      const SizedBox(height: 24),
 
-                  // Error message
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Iconsax.warning_2, color: AppColors.error, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: AppColors.error,
-                              ),
-                            ),
+                      // Error message
+                      if (_errorMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: AppColors.error.withOpacity(0.3)),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                          child: Row(
+                            children: [
+                              const Icon(Iconsax.warning_2,
+                                  color: AppColors.error, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
-                  // QR Code enrollment flow
-                  if (_qrCodeUrl != null) ...[
-                    _buildEnrollmentFlow(),
-                  ] else if (!_isEnrolled) ...[
-                    _buildEnrollButton(),
-                  ] else ...[
-                    _buildUnenrollButton(),
-                  ],
-                ],
+                      // QR Code enrollment flow
+                      if (_qrCodeUrl != null) ...[
+                        _buildEnrollmentFlow(),
+                      ] else if (!_isEnrolled) ...[
+                        _buildEnrollButton(),
+                      ] else ...[
+                        _buildUnenrollButton(),
+                      ],
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildComingSoon() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Iconsax.shield_tick,
+                size: 40,
+                color: AppColors.primary,
               ),
             ),
+            const SizedBox(height: 24),
+            Text(
+              'Coming Soon',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Two-factor authentication is not yet available for your account. '
+              'We are working on enabling this feature. Please check back later.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => context.pop(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  'Go Back',
+                  style: GoogleFonts.poppins(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -272,10 +370,12 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: (_isEnrolled ? AppColors.success : AppColors.warning).withOpacity(0.05),
+        color: (_isEnrolled ? AppColors.success : AppColors.warning)
+            .withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: (_isEnrolled ? AppColors.success : AppColors.warning).withOpacity(0.3),
+          color: (_isEnrolled ? AppColors.success : AppColors.warning)
+              .withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -325,18 +425,21 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white),
               )
             : const Icon(Iconsax.shield_tick),
         label: Text(
           'Enable Two-Factor Authentication',
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+          style:
+              GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -382,11 +485,13 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Iconsax.scan, size: 40, color: AppColors.textHint),
+                          const Icon(Iconsax.scan,
+                              size: 40, color: AppColors.textHint),
                           const SizedBox(height: 8),
                           Text(
                             'QR Code',
-                            style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textHint),
+                            style: GoogleFonts.poppins(
+                                fontSize: 12, color: AppColors.textHint),
                           ),
                         ],
                       ),
@@ -433,7 +538,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                       const SnackBar(content: Text('Secret key copied!')),
                     );
                   },
-                  icon: const Icon(Iconsax.copy, size: 20, color: AppColors.primary),
+                  icon: const Icon(Iconsax.copy,
+                      size: 20, color: AppColors.primary),
                 ),
               ],
             ),
@@ -491,7 +597,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
         ),
@@ -505,17 +612,20 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: _isEnrolling
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : Text(
                     'Verify & Enable',
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.poppins(
+                        fontSize: 14, fontWeight: FontWeight.w600),
                   ),
           ),
         ),
@@ -541,7 +651,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
           foregroundColor: AppColors.error,
           side: const BorderSide(color: AppColors.error),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );

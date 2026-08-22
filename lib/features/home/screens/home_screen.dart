@@ -7,6 +7,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../services/supabase_service.dart';
 import '../providers/home_provider.dart';
 import '../widgets/campaign_card.dart';
 import '../widgets/category_chips.dart';
@@ -44,6 +45,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Email verification banner
+                    _buildEmailVerificationBanner(),
                     const SizedBox(height: 16),
                     _buildSearchBar(),
                     const SizedBox(height: 16),
@@ -303,6 +306,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       error: (error, _) => _buildErrorState('Failed to load creators'),
     );
+  }
+
+  Widget _buildEmailVerificationBanner() {
+    // Check if user's email is confirmed
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return const SizedBox.shrink();
+
+      // Supabase user has emailConfirmedAt which is null if not confirmed
+      final emailConfirmedAt = user.emailConfirmedAt;
+      if (emailConfirmedAt != null) {
+        return const SizedBox.shrink(); // Email is verified
+      }
+
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Iconsax.sms,
+                color: AppColors.warning,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Verify your email',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Please check your inbox and verify your email address to access all features.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _buildEmptyState(String message) {

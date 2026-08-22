@@ -18,19 +18,25 @@ void main() async {
   ));
 
   // Initialize Firebase for push notifications
+  // Wrapped in try-catch: app must work without Firebase
+  bool firebaseAvailable = false;
   try {
     await Firebase.initializeApp();
+    firebaseAvailable = true;
   } catch (_) {
-    // Firebase may not be configured in all environments
+    // Firebase may not be configured in all environments - skip silently
   }
 
   await SupabaseService.initialize();
 
   // Initialize push notifications after Supabase is ready
-  try {
-    await PushNotificationService.initialize();
-  } catch (_) {
-    // Push notifications may not be available in all environments
+  // Only attempt if Firebase initialized successfully
+  if (firebaseAvailable) {
+    try {
+      await PushNotificationService.initialize();
+    } catch (_) {
+      // Push notifications may not be available in all environments - skip silently
+    }
   }
 
   runApp(
