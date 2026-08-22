@@ -524,7 +524,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
           ),
           const Icon(
-            Iconsax.verify5,
+            Iconsax.verify,
             size: 20,
             color: Color(0xFF2196F3),
           ),

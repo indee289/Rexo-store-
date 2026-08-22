@@ -96,7 +96,7 @@ class _BrandCampaignsList extends ConsumerWidget {
       data: (campaigns) {
         if (campaigns.isEmpty) {
           return _buildEmptyState(
-            icon: Iconsax.megaphone,
+            icon: Iconsax.volume_high,
             title: 'No campaigns yet',
             subtitle: 'Create your first campaign to find creators',
           );

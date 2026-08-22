@@ -263,7 +263,7 @@ class CampaignDetailScreen extends ConsumerWidget {
             ),
           ),
           const Icon(
-            Iconsax.verify5,
+            Iconsax.verify,
             color: AppColors.primary,
             size: 20,
           ),

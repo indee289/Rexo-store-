@@ -108,7 +108,7 @@ class SellerProfileScreen extends ConsumerWidget {
                     if (isVerified) ...[
                       const SizedBox(width: 6),
                       const Icon(
-                        Iconsax.verify5,
+                        Iconsax.verify,
                         size: 20,
                         color: Color(0xFF2196F3),
                       ),

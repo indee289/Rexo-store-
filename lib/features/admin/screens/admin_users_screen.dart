@@ -155,7 +155,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                       ),
                       if (isVerified) ...[
                         const SizedBox(width: 4),
-                        const Icon(Iconsax.verify5, size: 16, color: AppColors.success),
+                        Icon(Iconsax.verify, size: 16, color: AppColors.success),
                       ],
                     ],
                   ),

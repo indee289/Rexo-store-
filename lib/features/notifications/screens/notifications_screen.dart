@@ -279,7 +279,7 @@ class _NotificationTile extends ConsumerWidget {
   IconData _getTypeIcon(String type) {
     switch (type) {
       case 'campaign':
-        return Iconsax.megaphone;
+        return Iconsax.volume_high;
       case 'payment':
         return Iconsax.wallet;
       case 'order':
