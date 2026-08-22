@@ -3,23 +3,225 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../services/supabase_service.dart';
 
-// =============================================================================
-// NEEDS-SUPABASE-CONFIG:
-// Cannot implement real MFA flow if Supabase project does not have MFA enabled
-// in dashboard. To enable: Supabase Dashboard -> Authentication -> Multi-Factor Auth.
-// Once enabled, the TOTP enrollment flow (enroll -> verify -> unenroll) can be
-// implemented using supabase_flutter's auth.mfa.enroll() / auth.mfa.verify().
-// Until then, this screen shows a "Coming Soon" state with educational UI.
-// =============================================================================
-
-class TwoFactorAuthScreen extends ConsumerWidget {
+class TwoFactorAuthScreen extends ConsumerStatefulWidget {
   const TwoFactorAuthScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TwoFactorAuthScreen> createState() =>
+      _TwoFactorAuthScreenState();
+}
+
+class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
+  bool _isLoading = true;
+  bool _isMfaEnabled = false;
+  bool _isEnrolling = false;
+  bool _isVerifying = false;
+  bool _isUnenrolling = false;
+
+  String? _qrCodeUrl;
+  String? _secret;
+  String? _factorId;
+  String? _challengeId;
+  String? _enrolledFactorId;
+  String? _errorMessage;
+
+  final _otpController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkMfaStatus();
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkMfaStatus() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final factors = await SupabaseService.client.auth.mfa.listFactors();
+      final totpFactors = factors.totp;
+
+      if (totpFactors.isNotEmpty) {
+        // Check for verified factors
+        final verifiedFactors = totpFactors
+            .where((f) => f.status == FactorStatus.verified)
+            .toList();
+        if (verifiedFactors.isNotEmpty) {
+          setState(() {
+            _isMfaEnabled = true;
+            _enrolledFactorId = verifiedFactors.first.id;
+          });
+        } else {
+          // Has unverified factors, clean state
+          setState(() => _isMfaEnabled = false);
+        }
+      } else {
+        setState(() => _isMfaEnabled = false);
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to check MFA status: ${e.toString()}';
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _enrollMfa() async {
+    setState(() {
+      _isEnrolling = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await SupabaseService.client.auth.mfa.enroll(
+        factorType: FactorType.totp,
+      );
+
+      setState(() {
+        _factorId = response.id;
+        _qrCodeUrl = response.totp.qrCode;
+        _secret = response.totp.secret;
+        _isEnrolling = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isEnrolling = false;
+        _errorMessage = 'Failed to enroll MFA: ${e.toString()}';
+      });
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    final code = _otpController.text.trim();
+    if (code.isEmpty || code.length != 6) {
+      setState(() => _errorMessage = 'Please enter a valid 6-digit code');
+      return;
+    }
+
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final challengeResponse =
+          await SupabaseService.client.auth.mfa.challenge(
+        factorId: _factorId!,
+      );
+      _challengeId = challengeResponse.id;
+
+      await SupabaseService.client.auth.mfa.verify(
+        factorId: _factorId!,
+        challengeId: _challengeId!,
+        code: code,
+      );
+
+      setState(() {
+        _isMfaEnabled = true;
+        _enrolledFactorId = _factorId;
+        _qrCodeUrl = null;
+        _secret = null;
+        _factorId = null;
+        _challengeId = null;
+        _isVerifying = false;
+      });
+
+      _otpController.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Two-factor authentication enabled successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isVerifying = false;
+        _errorMessage = 'Verification failed: ${e.toString()}';
+      });
+    }
+  }
+
+  Future<void> _unenrollMfa() async {
+    if (_enrolledFactorId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Disable 2FA'),
+        content: const Text(
+          'Are you sure you want to disable two-factor authentication? '
+          'This will make your account less secure.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _isUnenrolling = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await SupabaseService.client.auth.mfa.unenroll(
+        _enrolledFactorId!,
+      );
+
+      setState(() {
+        _isMfaEnabled = false;
+        _enrolledFactorId = null;
+        _isUnenrolling = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Two-factor authentication disabled'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isUnenrolling = false;
+        _errorMessage = 'Failed to disable 2FA: ${e.toString()}';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -40,244 +242,499 @@ class TwoFactorAuthScreen extends ConsumerWidget {
           icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header icon and title
-            Center(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
               child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Iconsax.shield_tick,
-                      size: 40,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Two-Factor Authentication',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Coming Soon',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.warning,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Supabase requirement info box
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
-              ),
-              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Iconsax.info_circle,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  // Header
+                  Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: _isMfaEnabled
+                                ? AppColors.success.withOpacity(0.1)
+                                : AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _isMfaEnabled
+                                ? Iconsax.shield_tick
+                                : Iconsax.shield_cross,
+                            size: 40,
+                            color: _isMfaEnabled
+                                ? AppColors.success
+                                : AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Text(
-                          'Requires Server Configuration',
+                          'Two-Factor Authentication',
                           style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Enable MFA in Supabase Dashboard \u2192 Authentication \u2192 Multi-Factor Auth first. '
-                          'Once enabled by the administrator, 2FA setup will be available here.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            height: 1.5,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _isMfaEnabled
+                                ? AppColors.success.withOpacity(0.1)
+                                : theme.colorScheme.onSurface.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _isMfaEnabled ? 'Enabled' : 'Disabled',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _isMfaEnabled
+                                  ? AppColors.success
+                                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
-            // Benefits section
-            Text(
-              'Benefits of 2FA',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildBenefitItem(
-              theme,
-              icon: Iconsax.shield_tick,
-              title: 'Prevents unauthorized access',
-              description:
-                  'Even if your password is compromised, attackers cannot access your account without the second factor.',
-            ),
-            _buildBenefitItem(
-              theme,
-              icon: Iconsax.wallet_3,
-              title: 'Required for large withdrawals',
-              description:
-                  'Wallet withdrawals above a certain threshold will require 2FA verification for added security.',
-            ),
-            _buildBenefitItem(
-              theme,
-              icon: Iconsax.lock,
-              title: 'Protects sensitive account changes',
-              description:
-                  'Email changes, password resets, and other critical actions will need 2FA confirmation.',
-            ),
-            _buildBenefitItem(
-              theme,
-              icon: Iconsax.verify,
-              title: 'Industry-standard security',
-              description:
-                  'TOTP-based authentication works with Google Authenticator, Authy, and other authenticator apps.',
-            ),
-
-            const SizedBox(height: 28),
-
-            // How it will work section
-            Text(
-              'How It Will Work',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            _buildStepItem(theme, stepNumber: 1, title: 'Scan QR Code',
-                description: 'Open your authenticator app and scan the QR code displayed on screen.'),
-            _buildStepItem(theme, stepNumber: 2, title: 'Enter Verification Code',
-                description: 'Type the 6-digit code from your authenticator app to verify setup.'),
-            _buildStepItem(theme, stepNumber: 3, title: 'Save Backup Codes',
-                description: 'Store your recovery codes safely in case you lose access to your authenticator.'),
-
-            const SizedBox(height: 32),
-
-            // Enable 2FA toggle (disabled - coming soon)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Iconsax.lock_1,
-                    color: theme.colorScheme.onSurface.withOpacity(0.4),
-                    size: 22,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Enable 2FA',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                  // Error message
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.error.withOpacity(0.3),
                         ),
-                        Text(
-                          'Available once MFA is configured on the server',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Iconsax.warning_2,
+                              color: AppColors.error, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: AppColors.error,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Switch.adaptive(
-                    value: false,
-                    onChanged: null,
-                    activeColor: AppColors.primary,
-                  ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // MFA enabled state - show disable option
+                  if (_isMfaEnabled && _qrCodeUrl == null) ...[
+                    _buildEnabledView(theme),
+                  ]
+                  // Enrollment in progress - show QR code and verification
+                  else if (_qrCodeUrl != null) ...[
+                    _buildEnrollmentView(theme),
+                  ]
+                  // MFA not enabled - show enable option
+                  else ...[
+                    _buildDisabledView(theme),
+                  ],
+
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
+    );
+  }
 
-            const SizedBox(height: 24),
-
-            // Go back button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => context.pop(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(
-                  'Go Back',
-                  style: GoogleFonts.poppins(
-                      fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-          ],
+  Widget _buildDisabledView(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Benefits section
+        Text(
+          'Benefits of 2FA',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        _buildBenefitItem(
+          theme,
+          icon: Iconsax.shield_tick,
+          title: 'Prevents unauthorized access',
+          description:
+              'Even if your password is compromised, attackers cannot access your account without the second factor.',
+        ),
+        _buildBenefitItem(
+          theme,
+          icon: Iconsax.wallet_3,
+          title: 'Required for large withdrawals',
+          description:
+              'Wallet withdrawals above a certain threshold will require 2FA verification for added security.',
+        ),
+        _buildBenefitItem(
+          theme,
+          icon: Iconsax.lock,
+          title: 'Protects sensitive account changes',
+          description:
+              'Email changes, password resets, and other critical actions will need 2FA confirmation.',
+        ),
+        _buildBenefitItem(
+          theme,
+          icon: Iconsax.verify,
+          title: 'Industry-standard security',
+          description:
+              'TOTP-based authentication works with Google Authenticator, Authy, and other authenticator apps.',
+        ),
+
+        const SizedBox(height: 24),
+
+        // Enable button
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: _isEnrolling ? null : _enrollMfa,
+            icon: _isEnrolling
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Iconsax.shield_tick),
+            label: Text(
+              _isEnrolling ? 'Setting up...' : 'Enable Two-Factor Authentication',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnrollmentView(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Step 1: QR Code
+        Text(
+          'Step 1: Scan QR Code',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Open your authenticator app (Google Authenticator, Authy, etc.) and scan this QR code:',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // QR Code display
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: _qrCodeUrl != null
+                ? Image.network(
+                    _qrCodeUrl!,
+                    width: 200,
+                    height: 200,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 200,
+                      height: 200,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'QR Code\n(Use secret key below)',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox(width: 200, height: 200),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Manual secret key
+        if (_secret != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Manual entry key:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  _secret!,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 24),
+
+        // Step 2: Enter code
+        Text(
+          'Step 2: Enter Verification Code',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Enter the 6-digit code from your authenticator app:',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        TextField(
+          controller: _otpController,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.robotoMono(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 8,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '000000',
+            hintStyle: GoogleFonts.robotoMono(
+              fontSize: 24,
+              color: theme.colorScheme.onSurface.withOpacity(0.2),
+              letterSpacing: 8,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Verify button
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isVerifying ? null : _verifyOtp,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: _isVerifying
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    'Verify and Enable',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Cancel button
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: () {
+              setState(() {
+                _qrCodeUrl = null;
+                _secret = null;
+                _factorId = null;
+                _errorMessage = null;
+              });
+              _otpController.clear();
+            },
+            child: Text(
+              'Cancel Setup',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnabledView(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Success message
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.success.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.success.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Iconsax.shield_tick,
+                  color: AppColors.success, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Two-Factor Authentication is Active',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your account is protected with an additional layer of security.',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Disable button
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: _isUnenrolling ? null : _unenrollMfa,
+            icon: _isUnenrolling
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.error,
+                    ),
+                  )
+                : const Icon(Iconsax.shield_cross),
+            label: Text(
+              _isUnenrolling ? 'Disabling...' : 'Disable Two-Factor Authentication',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -300,64 +757,6 @@ class TwoFactorAuthScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 18, color: AppColors.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepItem(
-    ThemeData theme, {
-    required int stepNumber,
-    required String title,
-    required String description,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              stepNumber.toString(),
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
           ),
           const SizedBox(width: 12),
           Expanded(

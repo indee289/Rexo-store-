@@ -260,26 +260,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('deposits')
           .update({'status': 'approved'}).eq('id', depositId);
 
-      // RACE CONDITION NOTE: This read-then-write pattern is NOT atomic.
-      // If two admins approve deposits for the same user concurrently, one
-      // credit may be lost. For production use, deploy the RPC function from
-      // supabase/wallet_balance_rpc.sql and replace this block with:
-      //   await SupabaseService.client.rpc('increment_wallet_balance', params: {
-      //     'p_user_id': userId,
-      //     'p_amount': amount,
-      //   });
-      final wallet = await SupabaseService.client
-          .from('wallets')
-          .select('id, available_balance')
-          .eq('user_id', userId)
-          .single();
-
-      final walletId = wallet['id'] as String;
-      final currentBalance =
-          (wallet['available_balance'] as num).toDouble();
-
-      await SupabaseService.client.from('wallets').update(
-          {'available_balance': currentBalance + amount}).eq('id', walletId);
+      // Credit the user's wallet using atomic RPC function
+      await SupabaseService.client.rpc('credit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
 
       ref.invalidate(adminDepositsProvider);
       ref.invalidate(adminWalletsProvider);
@@ -315,37 +300,16 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final userId = withdrawal['user_id'] as String;
       final amount = (withdrawal['amount'] as num).toDouble();
 
-      // RACE CONDITION NOTE: This read-then-write pattern is NOT atomic.
-      // If two admins approve withdrawals for the same user concurrently,
-      // the balance check may pass for both but only one deduction will
-      // be recorded correctly. For production use, deploy the RPC function
-      // from supabase/wallet_balance_rpc.sql and replace this block with:
-      //   await SupabaseService.client.rpc('decrement_wallet_balance', params: {
-      //     'p_user_id': userId,
-      //     'p_amount': amount,
-      //   });
-      final wallet = await SupabaseService.client
-          .from('wallets')
-          .select('id, available_balance')
-          .eq('user_id', userId)
-          .single();
-
-      final walletId = wallet['id'] as String;
-      final currentBalance =
-          (wallet['available_balance'] as num).toDouble();
-
-      if (currentBalance < amount) {
-        throw Exception('Insufficient wallet balance for this withdrawal.');
-      }
-
       // Update withdrawal status to approved
       await SupabaseService.client
           .from('withdrawals')
           .update({'status': 'approved'}).eq('id', withdrawalId);
 
-      // Debit the user's wallet
-      await SupabaseService.client.from('wallets').update(
-          {'available_balance': currentBalance - amount}).eq('id', walletId);
+      // Debit the user's wallet using atomic RPC function
+      await SupabaseService.client.rpc('debit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
 
       ref.invalidate(adminWithdrawalsProvider);
       ref.invalidate(adminWalletsProvider);

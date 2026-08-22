@@ -5,6 +5,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/premium_card.dart';
+import '../../../services/supabase_service.dart';
 import '../../admin/providers/admin_provider.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
@@ -53,62 +54,118 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ListTile(
                 leading: const Icon(Iconsax.verify, color: AppColors.success),
                 title: const Text('Verify User'),
-                onTap: () {
-                  ref.read(adminActionsProvider.notifier).verifyUser(
-                        user['id'],
-                      );
-                  Navigator.pop(context);
-                },
+                onTap: () => _performUserAction(
+                  context,
+                  user['id'],
+                  'verify',
+                  'User verified successfully',
+                ),
               ),
               ListTile(
                 leading: const Icon(Iconsax.slash, color: AppColors.warning),
                 title: const Text('Suspend User'),
-                onTap: () {
-                  ref.read(adminActionsProvider.notifier).updateUserStatus(
-                        user['id'],
-                        'suspended',
-                      );
-                  Navigator.pop(context);
-                },
+                onTap: () => _performUserAction(
+                  context,
+                  user['id'],
+                  'suspend',
+                  'User suspended successfully',
+                ),
               ),
               ListTile(
                 leading: const Icon(Iconsax.close_circle, color: AppColors.error),
                 title: const Text('Ban User'),
-                onTap: () {
-                  ref.read(adminActionsProvider.notifier).updateUserStatus(
-                        user['id'],
-                        'banned',
-                      );
-                  Navigator.pop(context);
-                },
+                onTap: () => _performUserAction(
+                  context,
+                  user['id'],
+                  'ban',
+                  'User banned successfully',
+                ),
               ),
               ListTile(
                 leading: const Icon(Iconsax.user_edit, color: AppColors.primary),
                 title: const Text('Change Role to Admin'),
-                onTap: () {
-                  ref.read(adminActionsProvider.notifier).updateUserRole(
-                        user['id'],
-                        'admin',
-                      );
-                  Navigator.pop(context);
-                },
+                onTap: () => _performUserAction(
+                  context,
+                  user['id'],
+                  'role_admin',
+                  'User role changed to admin',
+                ),
               ),
               ListTile(
                 leading: Icon(Iconsax.user, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 title: const Text('Change Role to User'),
-                onTap: () {
-                  ref.read(adminActionsProvider.notifier).updateUserRole(
-                        user['id'],
-                        'user',
-                      );
-                  Navigator.pop(context);
-                },
+                onTap: () => _performUserAction(
+                  context,
+                  user['id'],
+                  'role_creator',
+                  'User role changed to creator',
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _performUserAction(
+    BuildContext context,
+    String userId,
+    String action,
+    String successMessage,
+  ) async {
+    Navigator.pop(context); // Close bottom sheet first
+
+    try {
+      switch (action) {
+        case 'verify':
+          await SupabaseService.client
+              .from('users')
+              .update({'is_verified': true}).eq('id', userId);
+          break;
+        case 'suspend':
+          await SupabaseService.client
+              .from('users')
+              .update({'account_status': 'suspended'}).eq('id', userId);
+          break;
+        case 'ban':
+          await SupabaseService.client
+              .from('users')
+              .update({'account_status': 'banned'}).eq('id', userId);
+          break;
+        case 'role_admin':
+          await SupabaseService.client
+              .from('users')
+              .update({'role': 'admin'}).eq('id', userId);
+          break;
+        case 'role_creator':
+          await SupabaseService.client
+              .from('users')
+              .update({'role': 'creator'}).eq('id', userId);
+          break;
+      }
+
+      // Refresh user list
+      ref.invalidate(adminUsersProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(successMessage),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Action failed: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   @override
