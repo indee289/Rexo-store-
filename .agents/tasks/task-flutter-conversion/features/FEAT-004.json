@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Implement Campaigns screen (browse, detail, apply) and Shop screen (product listing, detail, order) with full Supabase integration.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create lib/features/campaigns/screens/campaigns_screen.dart - list/grid of campaigns with filtering (by category, platform, status), search, sort options. Each campaign shown as a premium card.",
     "Create lib/features/campaigns/screens/campaign_detail_screen.dart - full campaign detail: hero image, brand info, title, description, budget, per-creator payout, deadline, platform, requirements list, slots progress bar, Apply button (for creators), applicants list (for brand owners/admins)",
