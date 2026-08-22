@@ -20,6 +20,7 @@ import '../../features/actions/screens/push_broadcast_screen.dart';
 import '../../features/actions/screens/rexo_program_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/audit_logs_screen.dart';
+import '../../features/settings/screens/admin_profile_screen.dart';
 import '../widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -90,6 +91,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/settings',
                 builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const AdminProfileScreen(),
               ),
             ],
           ),

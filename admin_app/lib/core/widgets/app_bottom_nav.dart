@@ -69,6 +69,13 @@ class AppBottomNav extends StatelessWidget {
               isActive: currentIndex == 3,
               onTap: () => onTap(3),
             ),
+            _NavItem(
+              icon: Iconsax.profile_circle,
+              activeIcon: Iconsax.profile_circle,
+              label: 'Profile',
+              isActive: currentIndex == 4,
+              onTap: () => onTap(4),
+            ),
           ],
         ),
       ),

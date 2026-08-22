@@ -4,19 +4,113 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/premium_card.dart';
+import '../../../services/supabase_service.dart';
 import '../../admin/providers/admin_provider.dart';
 
-class CampaignControlScreen extends ConsumerWidget {
+class CampaignControlScreen extends ConsumerStatefulWidget {
   const CampaignControlScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CampaignControlScreen> createState() =>
+      _CampaignControlScreenState();
+}
+
+class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
+  void _showCreateCampaignDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final budgetController = TextEditingController();
+    String selectedPlatform = 'Instagram';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create Campaign'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: budgetController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget',
+                    prefixText: '\u20B9 ',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedPlatform,
+                  decoration: const InputDecoration(labelText: 'Platform'),
+                  items: const [
+                    DropdownMenuItem(value: 'Instagram', child: Text('Instagram')),
+                    DropdownMenuItem(value: 'YouTube', child: Text('YouTube')),
+                    DropdownMenuItem(value: 'Twitter', child: Text('Twitter')),
+                    DropdownMenuItem(value: 'TikTok', child: Text('TikTok')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => selectedPlatform = value);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final budget = double.tryParse(budgetController.text);
+                if (titleController.text.isNotEmpty && budget != null) {
+                  await SupabaseService.client.from('campaigns').insert({
+                    'title': titleController.text,
+                    'description': descriptionController.text,
+                    'budget': budget,
+                    'platform': selectedPlatform,
+                    'status': 'active',
+                    'created_at': DateTime.now().toIso8601String(),
+                  });
+                  ref.invalidate(adminCampaignsProvider);
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final campaigns = ref.watch(adminCampaignsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Campaign Control'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => _showCreateCampaignDialog(context),
+        child: const Icon(Iconsax.add, color: Colors.white),
       ),
       body: campaigns.when(
         data: (list) {
