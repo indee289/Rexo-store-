@@ -208,7 +208,7 @@ class ProfileScreen extends ConsumerWidget {
             _buildMenuItem(
               icon: Iconsax.security_user,
               title: 'Admin Panel',
-              onTap: () {},
+              onTap: () => context.push('/admin'),
             ),
           const SizedBox(height: 16),
           // Logout button

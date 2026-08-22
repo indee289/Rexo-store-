@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Implement the complete Admin Panel (13 modules) with role-based access. Admin email is rexoagency.in@gmail.com. Admin panel accessible from Profile screen. Includes Dashboard, User Management, Campaign Control, Submission Review, Deposit Queue, Withdrawal Queue, Shop Admin, Disputes, KYC Verification, Wallets & Escrow, System Settings, Audit Logs, and Push Broadcast.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "1. Create lib/features/admin/ directory structure with: providers/admin_provider.dart (admin check, stats fetching, all admin CRUD operations), screens/admin_dashboard_screen.dart (analytics cards: total users, active campaigns, pending deposits, pending withdrawals, total revenue, platform stats).",
     "2. Create screens/admin_users_screen.dart - User Management: list all users, search/filter, verify/ban/suspend/role change actions. Each action writes to audit_logs.",

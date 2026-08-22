@@ -5,7 +5,9 @@ import '../theme/app_colors.dart';
 
 /// Generic shimmer loading placeholder for list screens
 class ShimmerLoading extends StatelessWidget {
-  const ShimmerLoading({super.key});
+  final double? height;
+
+  const ShimmerLoading({super.key, this.height});
 
   @override
   Widget build(BuildContext context) {
@@ -14,17 +16,20 @@ class ShimmerLoading extends StatelessWidget {
       highlightColor: AppColors.divider,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: List.generate(
-            4,
-            (index) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Container(
-                height: 80,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: height,
+          child: Column(
+            children: List.generate(
+              4,
+              (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  height: 80,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
