@@ -19,27 +19,28 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentUserProfileProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Profile',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
             onPressed: () => context.push('/settings'),
-            icon: const Icon(
+            icon: Icon(
               Iconsax.setting_2,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -112,7 +113,7 @@ class ProfileScreen extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           // Handle
@@ -122,7 +123,7 @@ class ProfileScreen extends ConsumerWidget {
               '@$handle',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],
@@ -138,7 +139,7 @@ class ProfileScreen extends ConsumerWidget {
                 bio,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   height: 1.4,
                 ),
                 textAlign: TextAlign.center,
@@ -582,23 +583,28 @@ class ProfileScreen extends ConsumerWidget {
     required String title,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary, size: 22),
-      title: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      trailing: const Icon(
-        Iconsax.arrow_right_3,
-        size: 18,
-        color: AppColors.textHint,
-      ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return ListTile(
+          leading: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
+          title: Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          trailing: Icon(
+            Iconsax.arrow_right_3,
+            size: 18,
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+          ),
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        );
+      },
     );
   }
 }

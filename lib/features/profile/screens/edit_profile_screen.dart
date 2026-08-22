@@ -154,22 +154,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Edit Profile',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Iconsax.arrow_left, color: AppColors.textPrimary),
+          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
         ),
         actions: [
           TextButton(
@@ -246,7 +247,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 'Tap to change photo',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 32),
@@ -340,6 +341,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -348,7 +350,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
@@ -359,29 +361,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           validator: validator,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
               fontSize: 14,
-              color: AppColors.textHint,
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
-            prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondary),
+            prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.6)),
             prefixText: prefixText,
             prefixStyle: GoogleFonts.poppins(
               fontSize: 14,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: theme.colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

@@ -15,24 +15,25 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Settings',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left, color: AppColors.textPrimary),
+          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
@@ -41,24 +42,26 @@ class SettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Appearance section
-            _buildSectionHeader('Appearance'),
+            _buildSectionHeader(context, 'Appearance'),
             _buildThemeSelector(context, ref, settings),
             const SizedBox(height: 16),
 
             // Language section
-            _buildSectionHeader('Language'),
+            _buildSectionHeader(context, 'Language'),
             _buildLanguageSelector(context, ref, settings),
             const SizedBox(height: 16),
 
             // Account section
-            _buildSectionHeader('Account'),
+            _buildSectionHeader(context, 'Account'),
             _buildMenuItem(
+              context: context,
               icon: Iconsax.lock_1,
               title: 'Change Password',
               subtitle: 'Send password reset email',
               onTap: () => _handleChangePassword(context),
             ),
             _buildMenuItem(
+              context: context,
               icon: Iconsax.shield_tick,
               title: 'Two-Factor Authentication',
               subtitle: 'Secure your account with TOTP',
@@ -67,8 +70,9 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Notifications section
-            _buildSectionHeader('Notifications'),
+            _buildSectionHeader(context, 'Notifications'),
             _buildSwitchTile(
+              context: context,
               icon: Iconsax.notification,
               title: 'Push Notifications',
               subtitle: 'Receive push notifications',
@@ -78,6 +82,7 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
             _buildSwitchTile(
+              context: context,
               icon: Iconsax.sms,
               title: 'Email Notifications',
               subtitle: 'Receive email updates',
@@ -91,23 +96,27 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Legal section
-            _buildSectionHeader('Legal'),
+            _buildSectionHeader(context, 'Legal'),
             _buildMenuItem(
+              context: context,
               icon: Iconsax.shield_tick,
               title: 'Privacy Policy',
               onTap: () => context.push('/privacy-policy'),
             ),
             _buildMenuItem(
+              context: context,
               icon: Iconsax.document_text,
               title: 'Terms of Service',
               onTap: () => context.push('/terms-of-service'),
             ),
             _buildMenuItem(
+              context: context,
               icon: Iconsax.message_question,
               title: 'Help & Support',
               onTap: () {},
             ),
             _buildMenuItem(
+              context: context,
               icon: Iconsax.info_circle,
               title: 'About',
               subtitle: 'Version 1.0.0',
@@ -149,7 +158,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Text(
@@ -157,7 +166,7 @@ class SettingsScreen extends ConsumerWidget {
         style: GoogleFonts.poppins(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           letterSpacing: 0.5,
         ),
       ),
@@ -169,13 +178,14 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     SettingsState settings,
   ) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
@@ -253,13 +263,14 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     SettingsState settings,
   ) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
@@ -315,19 +326,21 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildMenuItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     String? subtitle,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary, size: 22),
+      leading: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
       title: Text(
         title,
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: theme.colorScheme.onSurface,
         ),
       ),
       subtitle: subtitle != null
@@ -335,14 +348,14 @@ class SettingsScreen extends ConsumerWidget {
               subtitle,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppColors.textHint,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
             )
           : null,
-      trailing: const Icon(
+      trailing: Icon(
         Iconsax.arrow_right_3,
         size: 18,
-        color: AppColors.textHint,
+        color: theme.colorScheme.onSurface.withOpacity(0.5),
       ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -350,27 +363,29 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSwitchTile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary, size: 22),
+      leading: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
       title: Text(
         title,
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: theme.colorScheme.onSurface,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: GoogleFonts.poppins(
           fontSize: 12,
-          color: AppColors.textHint,
+          color: theme.colorScheme.onSurface.withOpacity(0.5),
         ),
       ),
       trailing: Switch.adaptive(
