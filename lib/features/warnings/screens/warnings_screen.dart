@@ -17,19 +17,19 @@ class WarningsScreen extends ConsumerWidget {
     final suspensionsAsync = ref.watch(userSuspensionsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Warnings & Suspensions',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -68,7 +68,7 @@ class WarningsScreen extends ConsumerWidget {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -139,7 +139,7 @@ class WarningsScreen extends ConsumerWidget {
             reason,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -147,7 +147,7 @@ class WarningsScreen extends ConsumerWidget {
             'Duration: $startsAt - $endsAt',
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 12),
@@ -205,9 +205,9 @@ class WarningsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +223,7 @@ class WarningsScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -231,7 +231,7 @@ class WarningsScreen extends ConsumerWidget {
                   createdAt,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: AppColors.textHint,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                   ),
                 ),
               ],
@@ -282,7 +282,7 @@ class WarningsScreen extends ConsumerWidget {
       case 'rejected':
         return AppColors.error;
       default:
-        return AppColors.textHint;
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
     }
   }
 
@@ -291,9 +291,9 @@ class WarningsScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -308,7 +308,7 @@ class WarningsScreen extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -316,7 +316,7 @@ class WarningsScreen extends ConsumerWidget {
             'Your account is in good standing',
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
         ],
@@ -364,7 +364,7 @@ class WarningsScreen extends ConsumerWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
@@ -372,7 +372,7 @@ class WarningsScreen extends ConsumerWidget {
                 'Explain why you believe this suspension should be lifted.',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 16),
@@ -383,15 +383,15 @@ class WarningsScreen extends ConsumerWidget {
                   hintText: 'Write your appeal...',
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppColors.textHint,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

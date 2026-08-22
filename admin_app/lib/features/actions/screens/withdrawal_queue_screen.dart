@@ -15,7 +15,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
     final withdrawals = ref.watch(adminWithdrawalsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Withdrawal Queue'),
       ),
@@ -29,7 +29,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
                   Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
                   SizedBox(height: 12),
                   Text('No pending withdrawals',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             );
@@ -70,7 +70,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
                         'User: ${withdrawal['user_id']?.toString().substring(0, 8) ?? 'Unknown'}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                       if (withdrawal['bank_details'] != null) ...[
@@ -79,7 +79,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
                           'Bank: ${withdrawal['bank_details']}',
                           style: const TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],

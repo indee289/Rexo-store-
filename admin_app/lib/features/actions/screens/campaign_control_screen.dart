@@ -247,7 +247,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
     final campaigns = ref.watch(adminCampaignsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Campaign Control'),
       ),
@@ -261,7 +261,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
           if (list.isEmpty) {
             return const Center(
               child: Text('No campaigns found',
-                  style: TextStyle(color: AppColors.textSecondary)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             );
           }
           return ListView.builder(
@@ -296,7 +296,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -379,7 +379,7 @@ class _StatusBadge extends StatelessWidget {
         color = AppColors.error;
         break;
       default:
-        color = AppColors.textSecondary;
+        color = Colors.grey;
     }
 
     return Container(

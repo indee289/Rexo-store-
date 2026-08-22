@@ -57,21 +57,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (cartItems.isEmpty) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             'Checkout',
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          backgroundColor: AppColors.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
         body: Center(
@@ -81,7 +81,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               const Icon(
                 Iconsax.shopping_cart,
                 size: 64,
-                color: AppColors.textHint,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 16),
               Text('Your cart is empty', style: AppTextStyles.h5),
@@ -100,22 +100,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Checkout',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: Column(
@@ -236,7 +236,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     icon: const Icon(
                       Icons.close,
                       size: 18,
-                      color: AppColors.textHint,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -256,15 +256,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       prefixIcon: const Icon(
                         Iconsax.ticket_discount,
                         size: 18,
-                        color: AppColors.textHint,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -509,14 +509,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: AppTextStyles.bodySmall,
-        prefixIcon: Icon(icon, size: 18, color: AppColors.textHint),
+        prefixIcon: Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -554,7 +554,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Column(
         children: [
           _buildPaymentOption('UPI', Iconsax.mobile),
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: Theme.of(context).dividerColor),
           _buildPaymentOption('Wallet Balance', Iconsax.wallet_2),
         ],
       ),
@@ -575,7 +575,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Icon(
               icon,
               size: 20,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -592,7 +592,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
+                  color: isSelected ? AppColors.primary : Theme.of(context).dividerColor,
                   width: 2,
                 ),
               ),
@@ -658,7 +658,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ],
             ),
-            const Divider(color: AppColors.divider, height: 16),
+            Divider(color: Theme.of(context).dividerColor, height: 16),
           ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -679,7 +679,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),

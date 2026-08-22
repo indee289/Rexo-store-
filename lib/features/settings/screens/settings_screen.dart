@@ -280,7 +280,7 @@ class SettingsScreen extends ConsumerWidget {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? AppColors.primary : AppColors.textHint,
+                color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 4),
               Text(
@@ -289,7 +289,7 @@ class SettingsScreen extends ConsumerWidget {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   color:
-                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                      isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ],

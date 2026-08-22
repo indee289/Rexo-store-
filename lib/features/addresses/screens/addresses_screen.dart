@@ -16,22 +16,22 @@ class AddressesScreen extends ConsumerWidget {
     final addressesAsync = ref.watch(addressesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'My Addresses',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left, color: AppColors.textPrimary),
+          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -49,7 +49,7 @@ class AddressesScreen extends ConsumerWidget {
                   const Icon(
                     Iconsax.location,
                     size: 64,
-                    color: AppColors.textHint,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -57,7 +57,7 @@ class AddressesScreen extends ConsumerWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -65,7 +65,7 @@ class AddressesScreen extends ConsumerWidget {
                     'Add your first address to get started',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: AppColors.textHint,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                     ),
                   ),
                 ],
@@ -88,14 +88,14 @@ class AddressesScreen extends ConsumerWidget {
               const Icon(
                 Iconsax.warning_2,
                 size: 48,
-                color: AppColors.textHint,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load addresses',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 12),
@@ -142,10 +142,10 @@ class AddressesScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDefault ? AppColors.primary.withOpacity(0.3) : AppColors.border,
+          color: isDefault ? AppColors.primary.withOpacity(0.3) : Theme.of(context).dividerColor,
         ),
       ),
       child: Column(
@@ -159,7 +159,7 @@ class AddressesScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -188,7 +188,7 @@ class AddressesScreen extends ConsumerWidget {
               phone,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           const SizedBox(height: 4),
@@ -196,7 +196,7 @@ class AddressesScreen extends ConsumerWidget {
             fullAddress,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               height: 1.4,
             ),
           ),

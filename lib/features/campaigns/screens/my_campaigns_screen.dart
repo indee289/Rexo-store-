@@ -44,13 +44,13 @@ class MyCampaignsScreen extends ConsumerWidget {
       data: (role) {
         final isBrand = role == 'brand';
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
             title: Text(
               isBrand ? 'My Campaigns' : 'My Applications',
               style: AppTextStyles.h5,
             ),
-            backgroundColor: AppColors.surface,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
             surfaceTintColor: Colors.transparent,
           ),
@@ -60,10 +60,10 @@ class MyCampaignsScreen extends ConsumerWidget {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text('My Campaigns', style: AppTextStyles.h5),
-          backgroundColor: AppColors.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
         ),
@@ -72,10 +72,10 @@ class MyCampaignsScreen extends ConsumerWidget {
         ),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text('My Campaigns', style: AppTextStyles.h5),
-          backgroundColor: AppColors.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
         ),
@@ -207,16 +207,16 @@ class _BrandCampaignCard extends StatelessWidget {
         statusColor = AppColors.warning;
         break;
       default:
-        statusColor = AppColors.textSecondary;
+        statusColor = Colors.grey;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,14 +252,14 @@ class _BrandCampaignCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Iconsax.people, size: 14, color: AppColors.textSecondary),
+              Icon(Iconsax.people, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
               const SizedBox(width: 4),
               Text(
                 '$filledSlots / $totalSlots slots filled',
                 style: AppTextStyles.bodySmall,
               ),
               const Spacer(),
-              Icon(Iconsax.calendar, size: 14, color: AppColors.textSecondary),
+              Icon(Iconsax.calendar, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
               const SizedBox(width: 4),
               Text(dateStr, style: AppTextStyles.bodySmall),
             ],
@@ -294,7 +294,7 @@ class _ApplicationCard extends StatelessWidget {
         statusColor = AppColors.error;
         break;
       case 'withdrawn':
-        statusColor = AppColors.textSecondary;
+        statusColor = Colors.grey;
         break;
       default:
         statusColor = AppColors.warning;
@@ -304,9 +304,9 @@ class _ApplicationCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +351,7 @@ class _ApplicationCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Iconsax.calendar, size: 14, color: AppColors.textSecondary),
+              Icon(Iconsax.calendar, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
               const SizedBox(width: 4),
               Text('Applied $dateStr', style: AppTextStyles.bodySmall),
             ],
@@ -374,13 +374,13 @@ Widget _buildEmptyState({
         Icon(
           icon,
           size: 64,
-          color: AppColors.textHint.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
         ),
         const SizedBox(height: 16),
         Text(
           title,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
         const SizedBox(height: 4),

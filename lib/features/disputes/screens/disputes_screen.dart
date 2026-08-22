@@ -19,22 +19,22 @@ class DisputesScreen extends ConsumerWidget {
     final disputesAsync = ref.watch(userDisputesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Disputes',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           TextButton.icon(
@@ -93,7 +93,7 @@ class DisputesScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -144,10 +144,10 @@ class DisputesScreen extends ConsumerWidget {
         badgeColor = AppColors.success;
         break;
       case 'closed':
-        badgeColor = AppColors.textHint;
+        badgeColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
         break;
       default:
-        badgeColor = AppColors.textHint;
+        badgeColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
     }
 
     return Container(
@@ -174,12 +174,12 @@ class DisputesScreen extends ConsumerWidget {
           Icon(
             Iconsax.message_question,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'No disputes',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(

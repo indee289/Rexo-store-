@@ -18,19 +18,19 @@ class SessionsScreen extends ConsumerWidget {
     final sessionsState = ref.watch(sessionsNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Sessions & Devices',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -43,7 +43,7 @@ class SessionsScreen extends ConsumerWidget {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -68,7 +68,7 @@ class SessionsScreen extends ConsumerWidget {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -145,9 +145,9 @@ class SessionsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -174,7 +174,7 @@ class SessionsScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -182,14 +182,14 @@ class SessionsScreen extends ConsumerWidget {
                   'IP: $ipAddress',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
                 Text(
                   'Last active: $lastActive',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: AppColors.textHint,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                   ),
                 ),
               ],
@@ -236,9 +236,9 @@ class SessionsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -265,7 +265,7 @@ class SessionsScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -273,7 +273,7 @@ class SessionsScreen extends ConsumerWidget {
                   'Type: $deviceType | OS: $osVersion',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
                 if (appVersion.isNotEmpty)
@@ -281,7 +281,7 @@ class SessionsScreen extends ConsumerWidget {
                     'App Version: $appVersion',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppColors.textHint,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                     ),
                   ),
               ],
@@ -297,15 +297,15 @@ class SessionsScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
           const Icon(
             Iconsax.info_circle,
-            color: AppColors.textHint,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             size: 32,
           ),
           const SizedBox(height: 8),
@@ -313,7 +313,7 @@ class SessionsScreen extends ConsumerWidget {
             message,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
         ],
@@ -358,7 +358,7 @@ class SessionsScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+              style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
           ),
           TextButton(

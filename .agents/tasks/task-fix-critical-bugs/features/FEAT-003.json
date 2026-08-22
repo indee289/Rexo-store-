@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "fix",
   "description": "Fix dark mode support across all screens by replacing hardcoded AppColors references with Theme.of(context) colors. Ensure background, text, and card colors all follow the active theme.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Fix lib/features/home/screens/home_screen.dart: Replace AppColors.background with theme.scaffoldBackgroundColor, AppColors.surface with theme.colorScheme.surface, AppColors.textPrimary with theme.colorScheme.onSurface, AppColors.textSecondary with theme.colorScheme.onSurface.withOpacity(0.6). Keep AppColors.primary, AppColors.success, AppColors.error, AppColors.warning as-is since those are accent colors.",
     "Fix lib/features/home/widgets/campaign_card.dart and creator_card.dart: Same pattern - replace text/background color references with theme-based colors.",
@@ -27,5 +27,5 @@
     "Grep for 'Colors.white' used as background color in Scaffold - should have zero occurrences"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Applied dark mode support across all screens in both lib/features/ and admin_app/lib/features/. Replaced all AppColors.background, AppColors.textPrimary, AppColors.textSecondary, AppColors.textHint, AppColors.surface, AppColors.border, and AppColors.divider references with theme-based equivalents (theme.scaffoldBackgroundColor, theme.colorScheme.onSurface, theme.colorScheme.surface, theme.dividerColor, etc.). Kept AppColors.primary, AppColors.success, AppColors.warning, AppColors.error as accent colors. Could not run Flutter build/test due to INTEGRATIONS_ONLY network mode - verified by code inspection and grep only. Total files modified: ~60 screen and widget files across both apps."
 }

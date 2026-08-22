@@ -59,22 +59,22 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Edit Address' : 'Add Address',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left, color: AppColors.textPrimary),
+          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
@@ -163,16 +163,16 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Iconsax.star_1,
                       size: 20,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -180,7 +180,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                         'Set as default address',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -247,7 +247,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
@@ -259,18 +259,18 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
               fontSize: 14,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             ),
-            prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondary),
+            prefixIcon: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: Theme.of(context).dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: Theme.of(context).dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

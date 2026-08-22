@@ -53,14 +53,14 @@ class ProfileScreen extends ConsumerWidget {
               const Icon(
                 Iconsax.warning_2,
                 size: 48,
-                color: AppColors.textHint,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load profile',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 12),
@@ -131,7 +131,7 @@ class ProfileScreen extends ConsumerWidget {
           // Stats row
           _buildStatsRow(profileState),
           const SizedBox(height: 24),
-          const Divider(color: AppColors.divider, height: 1),
+          Divider(color: Theme.of(context).dividerColor, height: 1),
           const SizedBox(height: 8),
           // Quick action menu items - only 4 items
           _buildMenuItem(
@@ -256,7 +256,7 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               width: 1,
               height: 40,
-              color: AppColors.divider,
+              color: Theme.of(context).dividerColor,
             ),
             StatChip(
               icon: Iconsax.wallet_1,
@@ -266,7 +266,7 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               width: 1,
               height: 40,
-              color: AppColors.divider,
+              color: Theme.of(context).dividerColor,
             ),
             StatChip(
               icon: Iconsax.star_1,
@@ -291,7 +291,7 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               width: 1,
               height: 40,
-              color: AppColors.divider,
+              color: Theme.of(context).dividerColor,
             ),
             StatChip(
               icon: Iconsax.wallet_1,
@@ -301,7 +301,7 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               width: 1,
               height: 40,
-              color: AppColors.divider,
+              color: Theme.of(context).dividerColor,
             ),
             const StatChip(
               icon: Iconsax.chart_2,

@@ -17,22 +17,22 @@ class ServicesScreen extends ConsumerWidget {
     final servicesAsync = ref.watch(activeServicesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Creator Services',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
@@ -95,7 +95,7 @@ class ServicesScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -103,7 +103,7 @@ class ServicesScreen extends ConsumerWidget {
                         Icon(
                           Iconsax.shop,
                           size: 48,
-                          color: AppColors.textHint.withOpacity(0.5),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -168,7 +168,7 @@ class ServicesScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -219,7 +219,7 @@ class ServicesScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(

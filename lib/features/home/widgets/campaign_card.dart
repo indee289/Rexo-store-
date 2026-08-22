@@ -21,6 +21,7 @@ class CampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final title = campaign['title'] ?? 'Untitled Campaign';
     final budget = campaign['budget'] ?? 0;
     final platform = campaign['platform'] ?? '';
@@ -37,7 +38,7 @@ class CampaignCard extends StatelessWidget {
             ? const EdgeInsets.only(bottom: 12)
             : const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -169,7 +170,7 @@ class CampaignCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -179,17 +180,17 @@ class CampaignCard extends StatelessWidget {
                   if (deadline != null)
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Iconsax.calendar_1,
                           size: 14,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _formatDeadline(deadline),
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],
@@ -205,7 +206,7 @@ class CampaignCard extends StatelessWidget {
                             value: totalSlots > 0
                                 ? filledSlots / totalSlots
                                 : 0,
-                            backgroundColor: AppColors.border,
+                            backgroundColor: theme.dividerColor,
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               AppColors.primary,
                             ),
@@ -219,7 +220,7 @@ class CampaignCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ],

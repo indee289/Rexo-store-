@@ -321,7 +321,7 @@ class SubscriptionsScreen extends ConsumerWidget {
                       child: Text(
                         feature.toString(),
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -392,12 +392,12 @@ class SubscriptionsScreen extends ConsumerWidget {
             Icon(
               Iconsax.crown_1,
               size: 64,
-              color: AppColors.textHint.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'No plans available yet',
-              style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
             const SizedBox(height: 8),
             Text(

@@ -14,20 +14,21 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Messages', style: AppTextStyles.h5),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
       body: conversationsAsync.when(
         data: (conversations) {
           if (conversations.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(theme);
           }
           return RefreshIndicator(
             color: AppColors.primary,
@@ -37,10 +38,10 @@ class MessagesScreen extends ConsumerWidget {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: conversations.length,
-              separatorBuilder: (_, __) => const Divider(
+              separatorBuilder: (_, __) => Divider(
                 height: 1,
                 indent: 76,
-                color: AppColors.divider,
+                color: theme.dividerColor,
               ),
               itemBuilder: (context, index) {
                 final conversation = conversations[index];
@@ -65,7 +66,7 @@ class MessagesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -73,13 +74,13 @@ class MessagesScreen extends ConsumerWidget {
           Icon(
             Iconsax.message,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'No messages yet',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -100,6 +101,7 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final otherUserId = conversation['other_user_id'] as String;
     final name = conversation['other_user_name'] as String? ?? 'User';
     final avatarUrl = conversation['other_user_avatar'] as String?;
@@ -113,7 +115,7 @@ class _ConversationTile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: CircleAvatar(
         radius: 26,
-        backgroundColor: AppColors.border,
+        backgroundColor: theme.dividerColor,
         backgroundImage:
             avatarUrl != null ? NetworkImage(avatarUrl) : null,
         child: avatarUrl == null
@@ -145,7 +147,9 @@ class _ConversationTile extends StatelessWidget {
               lastMessage,
               style: AppTextStyles.bodySmall.copyWith(
                 fontWeight: isRead ? FontWeight.w400 : FontWeight.w500,
-                color: isRead ? AppColors.textSecondary : AppColors.textPrimary,
+                color: isRead
+                    ? theme.colorScheme.onSurface.withOpacity(0.6)
+                    : theme.colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

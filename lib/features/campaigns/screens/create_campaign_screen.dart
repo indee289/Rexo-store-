@@ -169,21 +169,21 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Create Campaign',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left, color: AppColors.textPrimary),
+          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
@@ -382,14 +382,14 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Iconsax.calendar_1,
                         size: 20,
-                        color: AppColors.textHint,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -399,8 +399,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           color: _deadline != null
-                              ? AppColors.textPrimary
-                              : AppColors.textHint,
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                         ),
                       ),
                     ],
@@ -481,7 +481,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       style: GoogleFonts.poppins(
         fontSize: 13,
         fontWeight: FontWeight.w500,
-        color: AppColors.textPrimary,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -499,22 +499,22 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       maxLines: maxLines,
       keyboardType: keyboardType,
       validator: validator,
-      style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textPrimary),
+      style: GoogleFonts.poppins(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(fontSize: 14, color: AppColors.textHint),
+        hintStyle: GoogleFonts.poppins(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         prefixIcon: maxLines == 1
-            ? Icon(icon, size: 20, color: AppColors.textHint)
+            ? Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))
             : null,
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -543,7 +543,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -552,7 +552,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
           icon: const Icon(Iconsax.arrow_down_1, size: 20),
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           items: items.map((item) {
             return DropdownMenuItem<String>(

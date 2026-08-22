@@ -35,22 +35,22 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     final accountsAsync = ref.watch(linkedAccountsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Linked Accounts',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left, color: AppColors.textPrimary),
+          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: accountsAsync.when(
@@ -66,14 +66,14 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
               const Icon(
                 Iconsax.warning_2,
                 size: 48,
-                color: AppColors.textHint,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load linked accounts',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 12),
@@ -129,7 +129,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
             'Connect your social media accounts to showcase your reach and engagement to brands.',
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               height: 1.5,
             ),
           ),
@@ -191,14 +191,14 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
           const SizedBox(height: 16),
           // Show verified status
           if (accounts.isNotEmpty) ...[
-            const Divider(color: AppColors.divider),
+            Divider(color: Theme.of(context).dividerColor),
             const SizedBox(height: 16),
             Text(
               'Account Status',
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -228,7 +228,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -240,17 +240,17 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
               fontSize: 14,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             ),
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: Theme.of(context).dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: Theme.of(context).dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -283,7 +283,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
             platform[0].toUpperCase() + platform.substring(1),
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const Spacer(),

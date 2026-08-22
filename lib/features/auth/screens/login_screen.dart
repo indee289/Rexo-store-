@@ -57,10 +57,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -108,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -116,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   'Sign in to continue to Rexo',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
 
@@ -130,9 +131,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'Enter your email',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.sms,
-                      color: AppColors.textHint,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                   ),
@@ -157,9 +158,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Enter your password',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.lock,
-                      color: AppColors.textHint,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                     suffixIcon: IconButton(
@@ -170,7 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                       icon: Icon(
                         _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                        color: AppColors.textHint,
+                        color: theme.colorScheme.onSurface.withOpacity(0.4),
                         size: 20,
                       ),
                     ),
@@ -244,7 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         "Don't have an account? ",
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                       GestureDetector(

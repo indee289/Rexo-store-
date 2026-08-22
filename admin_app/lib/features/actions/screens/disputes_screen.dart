@@ -15,7 +15,7 @@ class DisputesScreen extends ConsumerWidget {
     final disputes = ref.watch(adminDisputesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Disputes'),
       ),
@@ -29,7 +29,7 @@ class DisputesScreen extends ConsumerWidget {
                   Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
                   SizedBox(height: 12),
                   Text('No open disputes',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             );
@@ -72,7 +72,7 @@ class DisputesScreen extends ConsumerWidget {
                                   'Status: ${dispute['status'] ?? 'open'}',
                                   style: const TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ),
                               ],
@@ -88,7 +88,7 @@ class DisputesScreen extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],

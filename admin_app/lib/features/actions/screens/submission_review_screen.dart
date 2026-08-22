@@ -15,7 +15,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
     final submissions = ref.watch(adminSubmissionsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Submission Review'),
       ),
@@ -29,10 +29,10 @@ class SubmissionReviewScreen extends ConsumerWidget {
                   Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
                   SizedBox(height: 12),
                   Text('All caught up!',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                   Text('No pending submissions',
                       style: TextStyle(
-                          color: AppColors.textHint, fontSize: 12)),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 12)),
                 ],
               ),
             );
@@ -62,7 +62,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 12),

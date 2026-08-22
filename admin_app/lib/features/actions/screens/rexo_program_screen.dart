@@ -24,7 +24,7 @@ class RexoProgramScreen extends ConsumerWidget {
     final applications = ref.watch(_rexoProgramProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Rexo Program Review'),
       ),
@@ -38,7 +38,7 @@ class RexoProgramScreen extends ConsumerWidget {
                   Icon(Iconsax.award, size: 48, color: AppColors.warning),
                   SizedBox(height: 12),
                   Text('No applications to review',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             );
@@ -81,7 +81,7 @@ class RexoProgramScreen extends ConsumerWidget {
                                   app['status'] ?? 'pending',
                                   style: const TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ),
                               ],
@@ -97,7 +97,7 @@ class RexoProgramScreen extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],

@@ -16,31 +16,32 @@ class OrdersScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final ordersAsync = ref.watch(userOrdersProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'My Orders',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
         ),
       ),
       body: ordersAsync.when(
         data: (orders) {
           if (orders.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(theme);
           }
           return RefreshIndicator(
             color: AppColors.primary,
@@ -52,7 +53,7 @@ class OrdersScreen extends ConsumerWidget {
               itemCount: orders.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return _buildOrderCard(context, orders[index]);
+                return _buildOrderCard(context, orders[index], theme);
               },
             ),
           );
@@ -63,7 +64,7 @@ class OrdersScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
+  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order, ThemeData theme) {
     final status = order['status'] as String? ?? 'pending';
     final total = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final createdAt = order['created_at'] as String?;
@@ -82,7 +83,7 @@ class OrdersScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -125,10 +126,10 @@ class OrdersScreen extends ConsumerWidget {
                     color: AppColors.primary,
                   ),
                 ),
-                const Icon(
+                Icon(
                   Iconsax.arrow_right_3,
                   size: 18,
-                  color: AppColors.textHint,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
               ],
             ),
@@ -155,7 +156,7 @@ class OrdersScreen extends ConsumerWidget {
         chipColor = AppColors.error;
         break;
       default:
-        chipColor = AppColors.textHint;
+        chipColor = AppColors.warning;
     }
 
     return Container(
@@ -174,7 +175,7 @@ class OrdersScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -182,12 +183,12 @@ class OrdersScreen extends ConsumerWidget {
           Icon(
             Iconsax.bag_2,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'No orders yet',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(

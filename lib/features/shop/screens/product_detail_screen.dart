@@ -40,13 +40,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final productAsync = ref.watch(productDetailProvider(widget.productId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           Stack(
@@ -55,7 +55,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 onPressed: () => context.push('/cart'),
                 icon: const Icon(
                   Iconsax.shopping_cart,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               Consumer(
@@ -150,7 +150,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               '\u20B9${originalPrice.toStringAsFixed(0)}',
                               style: AppTextStyles.bodyLarge.copyWith(
                                 decoration: TextDecoration.lineThrough,
-                                color: AppColors.textHint,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -207,7 +207,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         Text(
                           description,
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -245,12 +245,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return Container(
         height: 280,
         width: double.infinity,
-        color: AppColors.border,
+        color: Theme.of(context).dividerColor,
         child: const Center(
           child: Icon(
             Iconsax.image,
             size: 64,
-            color: AppColors.textHint,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           ),
         ),
       );
@@ -272,18 +272,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 imageUrl: imageUrl,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  color: AppColors.border,
+                  color: Theme.of(context).dividerColor,
                   child: const Center(
                     child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  color: AppColors.border,
+                  color: Theme.of(context).dividerColor,
                   child: const Center(
                     child: Icon(
                       Iconsax.image,
                       size: 48,
-                      color: AppColors.textHint,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                     ),
                   ),
                 ),
@@ -304,7 +304,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 decoration: BoxDecoration(
                   color: index == _currentImageIndex
                       ? AppColors.primary
-                      : AppColors.border,
+                      : Theme.of(context).dividerColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -352,7 +352,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget _buildQuantitySelector(int stock) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -363,8 +363,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ? () => setState(() => _quantity--)
                 : null,
             icon: const Icon(Icons.remove, size: 20),
-            color: AppColors.textPrimary,
-            disabledColor: AppColors.textHint,
+            color: Theme.of(context).colorScheme.onSurface,
+            disabledColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -378,8 +378,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ? () => setState(() => _quantity++)
                 : null,
             icon: const Icon(Icons.add, size: 20),
-            color: AppColors.textPrimary,
-            disabledColor: AppColors.textHint,
+            color: Theme.of(context).colorScheme.onSurface,
+            disabledColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           ),
         ],
       ),
@@ -392,7 +392,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -429,7 +429,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.border,
+                    disabledBackgroundColor: Theme.of(context).dividerColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -458,7 +458,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: isOutOfStock ? AppColors.border : AppColors.primary,
+                      color: isOutOfStock ? Theme.of(context).dividerColor : AppColors.primary,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -468,7 +468,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     'Buy Now',
                     style: AppTextStyles.button.copyWith(
                       color: isOutOfStock
-                          ? AppColors.textHint
+                          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
                           : AppColors.primary,
                     ),
                   ),
@@ -485,9 +485,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -544,9 +544,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(
           children: [
@@ -564,7 +564,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             const Icon(
               Iconsax.arrow_right_3,
               size: 18,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             ),
           ],
         ),
@@ -580,7 +580,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           const Icon(
             Iconsax.box_1,
             size: 64,
-            color: AppColors.textHint,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           ),
           const SizedBox(height: 16),
           Text('Product not found', style: AppTextStyles.h5),

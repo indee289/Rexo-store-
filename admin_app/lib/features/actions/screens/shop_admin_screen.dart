@@ -33,14 +33,14 @@ class _ShopAdminScreenState extends ConsumerState<ShopAdminScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Shop Admin'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           tabs: const [
             Tab(text: 'Products'),
             Tab(text: 'Orders'),
@@ -133,7 +133,7 @@ class _ProductsTab extends ConsumerWidget {
         if (list.isEmpty) {
           return const Center(
             child: Text('No products',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
           );
         }
         return ListView.builder(
@@ -208,7 +208,7 @@ class _OrdersTab extends ConsumerWidget {
         if (list.isEmpty) {
           return const Center(
             child: Text('No orders',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
           );
         }
         return ListView.builder(
@@ -236,7 +236,7 @@ class _OrdersTab extends ConsumerWidget {
                             'Status: ${order['status'] ?? 'pending'}',
                             style: const TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],

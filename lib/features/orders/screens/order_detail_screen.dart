@@ -21,22 +21,22 @@ class OrderDetailScreen extends ConsumerWidget {
     final orderAsync = ref.watch(orderDetailProvider(orderId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Order Details',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: orderAsync.when(
@@ -107,7 +107,7 @@ class OrderDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -120,9 +120,9 @@ class OrderDetailScreen extends ConsumerWidget {
       child: Column(
         children: [
           _buildInfoRow('Order ID', '#${orderId.substring(0, 8).toUpperCase()}'),
-          const Divider(color: AppColors.divider, height: 20),
+          Divider(color: Theme.of(context).dividerColor, height: 20),
           _buildInfoRow('Date', date),
-          const Divider(color: AppColors.divider, height: 20),
+          Divider(color: Theme.of(context).dividerColor, height: 20),
           _buildInfoRow('Payment', paymentMethod),
         ],
       ),
@@ -150,7 +150,7 @@ class OrderDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -190,7 +190,7 @@ class OrderDetailScreen extends ConsumerWidget {
     } else if (isCurrent) {
       dotColor = AppColors.warning;
     } else {
-      dotColor = AppColors.border;
+      dotColor = Theme.of(context).dividerColor;
     }
 
     return Row(
@@ -226,7 +226,7 @@ class OrderDetailScreen extends ConsumerWidget {
               Container(
                 width: 2,
                 height: 32,
-                color: isCompleted ? AppColors.success : AppColors.border,
+                color: isCompleted ? AppColors.success : Theme.of(context).dividerColor,
               ),
           ],
         ),
@@ -239,8 +239,8 @@ class OrderDetailScreen extends ConsumerWidget {
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
               color: isCompleted
-                  ? AppColors.textPrimary
-                  : AppColors.textHint,
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             ),
           ),
         ),
@@ -253,7 +253,7 @@ class OrderDetailScreen extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -266,7 +266,7 @@ class OrderDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -330,7 +330,7 @@ class OrderDetailScreen extends ConsumerWidget {
                 ],
               ),
               if (index < items.length - 1)
-                const Divider(color: AppColors.divider, height: 20),
+                Divider(color: Theme.of(context).dividerColor, height: 20),
             ],
           );
         }).toList(),
@@ -350,7 +350,7 @@ class OrderDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -412,7 +412,7 @@ class OrderDetailScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Iconsax.bag_2, size: 64, color: AppColors.textHint),
+          Icon(Iconsax.bag_2, size: 64, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
           const SizedBox(height: 16),
           Text('Order not found', style: AppTextStyles.h5),
           const SizedBox(height: 16),

@@ -65,10 +65,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -86,14 +87,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: theme.dividerColor),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Iconsax.arrow_left,
                       size: 20,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -106,7 +107,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -114,7 +115,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   'Join Rexo and start your journey',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
 
@@ -128,9 +129,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Full Name',
                     hintText: 'Enter your full name',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.user,
-                      color: AppColors.textHint,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                   ),
@@ -155,9 +156,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'Enter your email',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.sms,
-                      color: AppColors.textHint,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                   ),
@@ -182,9 +183,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Create a password',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.lock,
-                      color: AppColors.textHint,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                     suffixIcon: IconButton(
@@ -195,7 +196,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       },
                       icon: Icon(
                         _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                        color: AppColors.textHint,
+                        color: theme.colorScheme.onSurface.withOpacity(0.4),
                         size: 20,
                       ),
                     ),
@@ -227,9 +228,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     hintText: 'Re-enter your password',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.lock,
-                      color: AppColors.textHint,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                     suffixIcon: IconButton(
@@ -242,7 +243,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         _obscureConfirmPassword
                             ? Iconsax.eye_slash
                             : Iconsax.eye,
-                        color: AppColors.textHint,
+                        color: theme.colorScheme.onSurface.withOpacity(0.4),
                         size: 20,
                       ),
                     ),
@@ -266,7 +267,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -336,7 +337,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         'Already have an account? ',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                       GestureDetector(
@@ -382,6 +383,8 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -390,10 +393,10 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withOpacity(0.05)
-              : AppColors.background,
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary : theme.dividerColor,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -401,7 +404,7 @@ class _RoleCard extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : AppColors.textHint,
+              color: isSelected ? AppColors.primary : theme.colorScheme.onSurface.withOpacity(0.4),
               size: 28,
             ),
             const SizedBox(height: 8),
@@ -410,7 +413,7 @@ class _RoleCard extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                color: isSelected ? AppColors.primary : theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
@@ -419,7 +422,7 @@ class _RoleCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],

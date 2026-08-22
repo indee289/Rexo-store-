@@ -48,11 +48,11 @@ class CategoryFilterWidget extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color:
-                        isSelected ? AppColors.primary : AppColors.surface,
+                        isSelected ? AppColors.primary : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color:
-                          isSelected ? AppColors.primary : AppColors.border,
+                          isSelected ? AppColors.primary : Theme.of(context).dividerColor,
                     ),
                   ),
                   child: Text(
@@ -60,7 +60,7 @@ class CategoryFilterWidget extends ConsumerWidget {
                     style: AppTextStyles.labelMedium.copyWith(
                       color: isSelected
                           ? Colors.white
-                          : AppColors.textPrimary,
+                          : Theme.of(context).colorScheme.onSurface,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -82,7 +82,7 @@ class CategoryFilterWidget extends ConsumerWidget {
               width: 80,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(20),
               ),
             );

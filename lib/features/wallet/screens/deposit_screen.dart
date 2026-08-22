@@ -122,11 +122,13 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Deposit Funds', style: AppTextStyles.h5),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -153,18 +155,18 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   hintText: '0.00',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -196,18 +198,18 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                 ),
               ),
 
@@ -222,18 +224,18 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   hintText: 'Enter transaction ID or reference',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -254,10 +256,10 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.border,
+                      color: theme.dividerColor,
                       style: BorderStyle.solid,
                     ),
                   ),
@@ -275,7 +277,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                             Icon(
                               Iconsax.image,
                               size: 32,
-                              color: AppColors.textHint,
+                              color: theme.colorScheme.onSurface.withOpacity(0.4),
                             ),
                             const SizedBox(height: 8),
                             Text(

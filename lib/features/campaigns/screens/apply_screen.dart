@@ -35,25 +35,26 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final campaignAsync = ref.watch(campaignDetailProvider(widget.campaignId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Apply to Campaign',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
@@ -115,15 +116,15 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 decoration: InputDecoration(
                   hintText: 'Tell the brand why you are the right fit for this campaign...',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textHint,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -134,7 +135,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                     borderSide: const BorderSide(color: AppColors.error),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                   contentPadding: const EdgeInsets.all(16),
                 ),
                 validator: (value) {
@@ -161,20 +162,20 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 decoration: InputDecoration(
                   hintText: 'https://your-portfolio.com',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textHint,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4),
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Iconsax.link,
-                    color: AppColors.textHint,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4),
                     size: 20,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -185,7 +186,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                     borderSide: const BorderSide(color: AppColors.error),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,

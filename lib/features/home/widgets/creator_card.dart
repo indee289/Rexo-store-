@@ -18,6 +18,7 @@ class CreatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final userData = creator['users'] as Map<String, dynamic>?;
     final name = userData?['name'] ?? 'Creator';
     final avatarUrl = userData?['avatar_url'];
@@ -32,9 +33,9 @@ class CreatorCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: theme.dividerColor, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.02),
@@ -58,7 +59,7 @@ class CreatorCard extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -70,7 +71,7 @@ class CreatorCard extends StatelessWidget {
                 category,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -80,10 +81,10 @@ class CreatorCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Iconsax.people,
                   size: 12,
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
                 const SizedBox(width: 3),
                 Text(
@@ -91,7 +92,7 @@ class CreatorCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -106,7 +107,7 @@ class CreatorCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ],

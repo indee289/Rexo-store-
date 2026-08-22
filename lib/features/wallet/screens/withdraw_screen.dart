@@ -93,6 +93,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final walletAsync = ref.watch(walletProvider);
 
     walletAsync.whenData((wallet) {
@@ -102,10 +103,10 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Withdraw Funds', style: AppTextStyles.h5),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -166,18 +167,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                   hintText: '0.00',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -214,18 +215,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: theme.colorScheme.surface,
                 ),
               ),
 
@@ -241,18 +242,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     hintText: 'yourname@upi',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppColors.primary),
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: theme.colorScheme.surface,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -271,18 +272,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     hintText: 'Enter account number',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppColors.primary),
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: theme.colorScheme.surface,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -301,18 +302,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     hintText: 'e.g. SBIN0001234',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppColors.primary),
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: theme.colorScheme.surface,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -331,18 +332,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     hintText: 'Enter account holder name',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: theme.dividerColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppColors.primary),
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: theme.colorScheme.surface,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {

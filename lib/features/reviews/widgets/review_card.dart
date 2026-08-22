@@ -29,7 +29,7 @@ class ReviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -86,7 +86,7 @@ class ReviewCard extends StatelessWidget {
             Text(
               comment,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],

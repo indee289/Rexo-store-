@@ -57,7 +57,7 @@ class CampaignListCard extends StatelessWidget {
                     Text(
                       brandName,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -111,13 +111,13 @@ class CampaignListCard extends StatelessWidget {
                 Icon(
                   Iconsax.calendar_1,
                   size: 14,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'Deadline: ${_formatDeadline(deadline)}',
                   style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ],

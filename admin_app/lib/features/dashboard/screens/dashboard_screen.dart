@@ -13,11 +13,12 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final stats = ref.watch(adminStatsProvider);
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
@@ -64,15 +65,15 @@ class DashboardScreen extends ConsumerWidget {
                             'Welcome back,',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                           Text(
                             authState.userProfile?['name'] ?? 'Admin',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -84,12 +85,12 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Stats heading
-              const Text(
+              Text(
                 'Overview',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
@@ -158,7 +159,7 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         Text(
                           'Failed to load stats',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
                         ),
                         const SizedBox(height: 8),
                         TextButton(

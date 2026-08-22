@@ -24,6 +24,7 @@ class CategoryChips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return SizedBox(
@@ -47,14 +48,14 @@ class CategoryChips extends ConsumerWidget {
                 }
               },
               selectedColor: AppColors.primary,
-              backgroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.surface,
               labelStyle: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.6),
               ),
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? AppColors.primary : theme.dividerColor,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),

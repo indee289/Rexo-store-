@@ -32,7 +32,7 @@ class StarRatingWidget extends StatelessWidget {
             child: Icon(
               isFilled ? Icons.star_rounded : Icons.star_outline_rounded,
               size: size,
-              color: isFilled ? AppColors.warning : AppColors.border,
+              color: isFilled ? AppColors.warning : Theme.of(context).dividerColor,
             ),
           ),
         );
@@ -66,7 +66,7 @@ class StarRatingCompact extends StatelessWidget {
               ? Icons.star_rounded
               : Icons.star_outline_rounded,
           size: size,
-          color: isFilled || isHalf ? AppColors.warning : AppColors.border,
+          color: isFilled || isHalf ? AppColors.warning : Theme.of(context).dividerColor,
         );
       }),
     );

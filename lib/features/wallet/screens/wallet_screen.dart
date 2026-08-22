@@ -14,14 +14,15 @@ class WalletScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final walletAsync = ref.watch(walletProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Wallet', style: AppTextStyles.h5),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -76,12 +77,12 @@ class WalletScreen extends ConsumerWidget {
               transactionsAsync.when(
                 data: (transactions) {
                   if (transactions.isEmpty) {
-                    return _buildEmptyState();
+                    return _buildEmptyState(theme);
                   }
                   return Column(
                     children: transactions
                         .take(20)
-                        .map((t) => _buildTransactionTile(t))
+                        .map((t) => _buildTransactionTile(t, theme))
                         .toList(),
                   );
                 },
@@ -181,7 +182,7 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionTile(Map<String, dynamic> transaction) {
+  Widget _buildTransactionTile(Map<String, dynamic> transaction, ThemeData theme) {
     final type = transaction['type'] as String;
     final amount = (transaction['amount'] ?? 0).toDouble();
     final status = transaction['status'] as String? ?? 'pending';
@@ -209,9 +210,9 @@ class WalletScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
@@ -254,7 +255,7 @@ class WalletScreen extends ConsumerWidget {
               Text(
                 '${isDeposit ? '+' : '-'}\u20b9${_formatAmount(amount)}',
                 style: AppTextStyles.labelLarge.copyWith(
-                  color: isDeposit ? AppColors.success : AppColors.textPrimary,
+                  color: isDeposit ? AppColors.success : theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -282,7 +283,7 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48),
@@ -291,13 +292,13 @@ class WalletScreen extends ConsumerWidget {
           Icon(
             Iconsax.empty_wallet,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'No transactions yet',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -363,8 +364,10 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Material(
-      color: AppColors.surface,
+      color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -373,7 +376,7 @@ class _ActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: theme.dividerColor),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -13,13 +13,14 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Notifications', style: AppTextStyles.h5),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -39,7 +40,7 @@ class NotificationsScreen extends ConsumerWidget {
       body: notificationsAsync.when(
         data: (notifications) {
           if (notifications.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(theme);
           }
 
           // Group by date
@@ -95,7 +96,7 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -103,13 +104,13 @@ class NotificationsScreen extends ConsumerWidget {
           Icon(
             Iconsax.notification,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'No notifications yet',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -170,6 +171,7 @@ class _NotificationTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final isRead = notification['is_read'] == true;
     final title = notification['title'] ?? '';
     final body = notification['body'] ?? '';
@@ -200,7 +202,7 @@ class _NotificationTile extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border(
               left: BorderSide(
@@ -306,7 +308,7 @@ class _NotificationTile extends ConsumerWidget {
       case 'application':
         return AppColors.warning;
       default:
-        return AppColors.textSecondary;
+        return AppColors.primary;
     }
   }
 

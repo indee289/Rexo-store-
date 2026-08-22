@@ -16,7 +16,7 @@ class SettingsScreen extends ConsumerWidget {
     final platformSettings = ref.watch(adminPlatformSettingsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Settings'),
       ),
@@ -31,7 +31,7 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
                         title: setting['key'] ?? '',
                         subtitle: 'Value: ${setting['value'] ?? 'N/A'}',
                         trailing: const Icon(Iconsax.edit_2,
-                            size: 18, color: AppColors.textHint),
+                            size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                         onTap: () => _showEditSettingDialog(
                           context,
                           ref,
@@ -103,7 +103,7 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -128,13 +128,13 @@ class SettingsScreen extends ConsumerWidget {
                           'View all admin actions',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Iconsax.arrow_right_3, color: AppColors.textHint, size: 18),
+                  Icon(Iconsax.arrow_right_3, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), size: 18),
                 ],
               ),
             ),
@@ -236,7 +236,7 @@ class _SettingTile extends StatelessWidget {
                     subtitle,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ],

@@ -18,26 +18,26 @@ class CouponsScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             'Coupons & Rewards',
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           centerTitle: false,
-          backgroundColor: AppColors.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           ),
           bottom: TabBar(
             labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textHint,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             labelStyle: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -124,7 +124,7 @@ class _CouponsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primary.withOpacity(0.2),
@@ -198,12 +198,12 @@ class _CouponsTab extends ConsumerWidget {
           Icon(
             Iconsax.ticket_discount,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'No coupons available',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -272,7 +272,7 @@ class _RewardsTab extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -300,7 +300,7 @@ class _RewardsTab extends ConsumerWidget {
                           side: BorderSide(
                             color: points >= 100
                                 ? AppColors.primary
-                                : AppColors.border,
+                                : Theme.of(context).dividerColor,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -311,7 +311,7 @@ class _RewardsTab extends ConsumerWidget {
                           style: AppTextStyles.labelLarge.copyWith(
                             color: points >= 100
                                 ? AppColors.primary
-                                : AppColors.textHint,
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                           ),
                         ),
                       ),

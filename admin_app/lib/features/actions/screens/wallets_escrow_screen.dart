@@ -15,7 +15,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
     final wallets = ref.watch(adminWalletsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Wallets & Escrow'),
       ),
@@ -24,7 +24,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
           if (list.isEmpty) {
             return const Center(
               child: Text('No wallets found',
-                  style: TextStyle(color: AppColors.textSecondary)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             );
           }
           return ListView.builder(
@@ -65,7 +65,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                                   'Status: ${wallet['status'] ?? 'active'}',
                                   style: const TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ),
                               ],

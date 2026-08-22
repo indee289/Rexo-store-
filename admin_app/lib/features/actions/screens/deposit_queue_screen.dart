@@ -15,7 +15,7 @@ class DepositQueueScreen extends ConsumerWidget {
     final deposits = ref.watch(adminDepositsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Deposit Queue'),
       ),
@@ -29,7 +29,7 @@ class DepositQueueScreen extends ConsumerWidget {
                   Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
                   SizedBox(height: 12),
                   Text('No pending deposits',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             );
@@ -70,7 +70,7 @@ class DepositQueueScreen extends ConsumerWidget {
                         'User: ${deposit['user_id']?.toString().substring(0, 8) ?? 'Unknown'}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                       const SizedBox(height: 12),

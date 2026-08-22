@@ -25,8 +25,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,
@@ -68,18 +70,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSliverAppBar() {
+    final theme = Theme.of(context);
+
     return SliverAppBar(
       floating: true,
       snap: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.colorScheme.surface,
       elevation: 0,
       leading: IconButton(
         onPressed: () {
           context.push(AppRoutes.profile);
         },
-        icon: const Icon(
+        icon: Icon(
           Iconsax.user,
-          color: AppColors.textPrimary,
+          color: theme.colorScheme.onSurface,
         ),
       ),
       centerTitle: true,
@@ -96,9 +100,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onPressed: () {
             context.push(AppRoutes.notifications);
           },
-          icon: const Icon(
+          icon: Icon(
             Iconsax.notification,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
@@ -106,14 +110,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSearchBar() {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: theme.dividerColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.02),
@@ -125,17 +131,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Row(
           children: [
             const SizedBox(width: 16),
-            const Icon(
+            Icon(
               Iconsax.search_normal,
               size: 20,
-              color: AppColors.textHint,
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
             const SizedBox(width: 12),
             Text(
               'Search campaigns...',
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: AppColors.textHint,
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
               ),
             ),
           ],
@@ -145,12 +151,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildToggleTabs() {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: AppColors.border.withOpacity(0.5),
+          color: theme.dividerColor.withOpacity(0.5),
           borderRadius: BorderRadius.circular(22),
         ),
         child: Row(
@@ -178,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       fontWeight: FontWeight.w600,
                       color: _selectedTabIndex == 0
                           ? Colors.white
-                          : AppColors.textSecondary,
+                          : theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ),
@@ -207,7 +215,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       fontWeight: FontWeight.w600,
                       color: _selectedTabIndex == 1
                           ? Colors.white
-                          : AppColors.textSecondary,
+                          : theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ),
@@ -309,6 +317,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmailVerificationBanner() {
+    final theme = Theme.of(context);
+
     // Check if user's email is confirmed
     try {
       final user = SupabaseService.currentUser;
@@ -353,7 +363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -361,7 +371,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     'Please check your inbox and verify your email address to access all features.',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                       height: 1.3,
                     ),
                   ),
@@ -377,6 +387,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmptyState(String message) {
+    final theme = Theme.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -385,14 +397,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Icon(
               Iconsax.document,
               size: 48,
-              color: AppColors.textHint.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
             ),
             const SizedBox(height: 12),
             Text(
               message,
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],

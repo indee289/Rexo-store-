@@ -24,22 +24,22 @@ class SellerProfileScreen extends ConsumerWidget {
     final productsAsync = ref.watch(sellerProductsProvider(sellerId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Seller Profile',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: sellerAsync.when(
@@ -74,7 +74,7 @@ class SellerProfileScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -139,7 +139,7 @@ class SellerProfileScreen extends ConsumerWidget {
                     Container(
                       width: 1,
                       height: 36,
-                      color: AppColors.divider,
+                      color: Theme.of(context).dividerColor,
                     ),
                     _buildStat(
                       icon: Iconsax.shopping_bag,
@@ -238,7 +238,7 @@ class SellerProfileScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Iconsax.shop, size: 64, color: AppColors.textHint),
+          Icon(Iconsax.shop, size: 64, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
           const SizedBox(height: 16),
           Text('Seller not found', style: AppTextStyles.h5),
           const SizedBox(height: 16),

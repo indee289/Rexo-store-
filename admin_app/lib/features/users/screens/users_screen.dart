@@ -43,9 +43,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
               Text(
                 user['email'] ?? '',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 16),
@@ -94,7 +94,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Iconsax.user, color: AppColors.textSecondary),
+                leading: Icon(Iconsax.user, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 title: const Text('Change Role to User'),
                 onTap: () {
                   ref.read(adminActionsProvider.notifier).updateUserRole(
@@ -113,10 +113,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final users = ref.watch(adminUsersProvider(_searchQuery));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('User Management'),
       ),
@@ -130,7 +131,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               decoration: InputDecoration(
                 hintText: 'Search users...',
                 prefixIcon:
-                    const Icon(Iconsax.search_normal, color: AppColors.textHint),
+                    Icon(Iconsax.search_normal, color: theme.colorScheme.onSurface.withOpacity(0.4)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Iconsax.close_circle),
@@ -155,7 +156,6 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   return const Center(
                     child: Text(
                       'No users found',
-                      style: TextStyle(color: AppColors.textSecondary),
                     ),
                   );
                 }
@@ -198,9 +198,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                   ),
                                   Text(
                                     user['email'] ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.textSecondary,
+                                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                                     ),
                                   ),
                                 ],
@@ -254,7 +254,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       case 'brand':
         return Colors.purple;
       default:
-        return AppColors.textSecondary;
+        return AppColors.warning;
     }
   }
 }

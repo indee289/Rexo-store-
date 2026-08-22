@@ -29,19 +29,19 @@ class PublicProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(publicProfileProvider(handle));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           '@$handle',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: profileAsync.when(
         data: (profile) {
@@ -61,14 +61,14 @@ class PublicProfileScreen extends ConsumerWidget {
               const Icon(
                 Iconsax.warning_2,
                 size: 48,
-                color: AppColors.textHint,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 12),
               Text(
                 'Failed to load profile',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ],
@@ -86,7 +86,7 @@ class PublicProfileScreen extends ConsumerWidget {
           const Icon(
             Iconsax.user,
             size: 64,
-            color: AppColors.textHint,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           ),
           const SizedBox(height: 16),
           Text(
@@ -94,7 +94,7 @@ class PublicProfileScreen extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -102,7 +102,7 @@ class PublicProfileScreen extends ConsumerWidget {
             'No user with handle @$handle exists.',
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
         ],
@@ -146,7 +146,7 @@ class PublicProfileScreen extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -155,7 +155,7 @@ class PublicProfileScreen extends ConsumerWidget {
             '@$userHandle',
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 12),
@@ -168,7 +168,7 @@ class PublicProfileScreen extends ConsumerWidget {
               bio.toString(),
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -222,17 +222,17 @@ class PublicProfileScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildStat('Campaigns', profile['campaigns_count']?.toString() ?? '0'),
-          Container(width: 1, height: 32, color: AppColors.divider),
+          Container(width: 1, height: 32, color: Theme.of(context).dividerColor),
           _buildStat('Rating', profile['rating']?.toString() ?? '-'),
-          Container(width: 1, height: 32, color: AppColors.divider),
+          Container(width: 1, height: 32, color: Theme.of(context).dividerColor),
           _buildStat('Joined', _formatJoinDate(profile['created_at'])),
         ],
       ),
@@ -247,7 +247,7 @@ class PublicProfileScreen extends ConsumerWidget {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 2),
@@ -255,7 +255,7 @@ class PublicProfileScreen extends ConsumerWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 11,
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
       ],

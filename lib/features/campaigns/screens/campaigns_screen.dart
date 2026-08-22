@@ -52,6 +52,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final campaigns = ref.watch(campaignsListProvider);
     final selectedCategory = ref.watch(campaignFilterProvider);
     final roleAsync = ref.watch(_campaignsUserRoleProvider);
@@ -63,18 +64,18 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
         false;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Campaigns',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
@@ -85,7 +86,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
             },
             icon: Icon(
               Iconsax.filter,
-              color: _showFilters ? AppColors.primary : AppColors.textPrimary,
+              color: _showFilters ? AppColors.primary : theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -114,7 +115,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: _buildSearchBar(),
+                child: _buildSearchBar(theme),
               ),
             ),
 
@@ -123,7 +124,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildCategoryChips(selectedCategory),
+                  child: _buildCategoryChips(selectedCategory, theme),
                 ),
               ),
 
@@ -135,7 +136,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
                 if (data.isEmpty) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _buildEmptyState(),
+                    child: _buildEmptyState(theme),
                   );
                 }
                 return SliverPadding(
@@ -167,7 +168,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
               ),
               error: (error, _) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildErrorState(ErrorUtils.sanitize(error)),
+                child: _buildErrorState(ErrorUtils.sanitize(error), theme),
               ),
             ),
 
@@ -179,10 +180,10 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -200,11 +201,11 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
         decoration: InputDecoration(
           hintText: 'Search campaigns...',
           hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textHint,
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
           ),
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Iconsax.search_normal,
-            color: AppColors.textHint,
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
             size: 20,
           ),
           suffixIcon: _searchController.text.isNotEmpty
@@ -213,9 +214,9 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
                     _searchController.clear();
                     ref.read(campaignSearchProvider.notifier).state = '';
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
-                    color: AppColors.textHint,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4),
                     size: 20,
                   ),
                 )
@@ -230,7 +231,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
     );
   }
 
-  Widget _buildCategoryChips(String selectedCategory) {
+  Widget _buildCategoryChips(String selectedCategory, ThemeData theme) {
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -249,13 +250,13 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
               label: Text(
                 category,
                 style: AppTextStyles.labelMedium.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? Colors.white : theme.colorScheme.onSurface,
                 ),
               ),
               backgroundColor:
-                  isSelected ? AppColors.primary : AppColors.surface,
+                  isSelected ? AppColors.primary : theme.colorScheme.surface,
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? AppColors.primary : theme.dividerColor,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 4),
             ),
@@ -265,7 +266,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -273,12 +274,12 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
           Icon(
             Iconsax.document,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'No campaigns found',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -290,7 +291,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState(String error, ThemeData theme) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -305,7 +306,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
             const SizedBox(height: 16),
             Text(
               'Something went wrong',
-              style: AppTextStyles.h5.copyWith(color: AppColors.textPrimary),
+              style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(

@@ -104,7 +104,7 @@ class ProductCard extends StatelessWidget {
                           '\u20B9${originalPrice.toStringAsFixed(0)}',
                           style: AppTextStyles.caption.copyWith(
                             decoration: TextDecoration.lineThrough,
-                            color: AppColors.textHint,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                           ),
                         ),
                       ],
@@ -125,21 +125,21 @@ class ProductCard extends StatelessWidget {
         imageUrl: imageUrl,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
-          color: AppColors.border,
+          color: Theme.of(context).dividerColor,
           child: const Center(
             child: Icon(
               Iconsax.image,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               size: 32,
             ),
           ),
         ),
         errorWidget: (context, url, error) => Container(
-          color: AppColors.border,
+          color: Theme.of(context).dividerColor,
           child: const Center(
             child: Icon(
               Iconsax.image,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               size: 32,
             ),
           ),
@@ -148,11 +148,11 @@ class ProductCard extends StatelessWidget {
     }
 
     return Container(
-      color: AppColors.border,
+      color: Theme.of(context).dividerColor,
       child: const Center(
         child: Icon(
           Iconsax.image,
-          color: AppColors.textHint,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           size: 32,
         ),
       ),
@@ -190,7 +190,7 @@ class ProductCard extends StatelessWidget {
       child: Text(
         category,
         style: AppTextStyles.caption.copyWith(
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w500,
         ),
       ),

@@ -14,30 +14,31 @@ class CartScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final cartItems = ref.watch(cartProvider);
     final totalAmount = ref.watch(cartTotalProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Cart',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
         ),
       ),
       body: cartItems.isEmpty
-          ? _buildEmptyCart(context)
+          ? _buildEmptyCart(context, theme)
           : Column(
               children: [
                 // Cart items list
@@ -47,13 +48,13 @@ class CartScreen extends ConsumerWidget {
                     itemCount: cartItems.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      return _buildCartItem(context, ref, cartItems[index]);
+                      return _buildCartItem(context, ref, cartItems[index], theme);
                     },
                   ),
                 ),
 
                 // Order summary and checkout button
-                _buildOrderSummary(context, totalAmount, cartItems.length),
+                _buildOrderSummary(context, totalAmount, cartItems.length, theme),
               ],
             ),
     );
@@ -63,6 +64,7 @@ class CartScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     CartItem item,
+    ThemeData theme,
   ) {
     final product = item.product;
     final title = product['title'] ?? 'Untitled';
@@ -75,7 +77,7 @@ class CartScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -98,21 +100,21 @@ class CartScreen extends ConsumerWidget {
                       imageUrl: imageUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        color: AppColors.border,
+                        color: theme.dividerColor,
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: AppColors.border,
-                        child: const Icon(
+                        color: theme.dividerColor,
+                        child: Icon(
                           Iconsax.image,
-                          color: AppColors.textHint,
+                          color: theme.colorScheme.onSurface.withOpacity(0.4),
                         ),
                       ),
                     )
                   : Container(
-                      color: AppColors.border,
-                      child: const Icon(
+                      color: theme.dividerColor,
+                      child: Icon(
                         Iconsax.image,
-                        color: AppColors.textHint,
+                        color: theme.colorScheme.onSurface.withOpacity(0.4),
                       ),
                     ),
             ),
@@ -152,6 +154,7 @@ class CartScreen extends ConsumerWidget {
                             .read(cartProvider.notifier)
                             .updateQuantity(productId, item.quantity - 1);
                       },
+                      theme: theme,
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -169,6 +172,7 @@ class CartScreen extends ConsumerWidget {
                             .read(cartProvider.notifier)
                             .updateQuantity(productId, item.quantity + 1);
                       },
+                      theme: theme,
                     ),
                   ],
                 ),
@@ -195,6 +199,7 @@ class CartScreen extends ConsumerWidget {
   Widget _buildQuantityButton({
     required IconData icon,
     required VoidCallback onPressed,
+    required ThemeData theme,
   }) {
     return GestureDetector(
       onTap: onPressed,
@@ -202,10 +207,10 @@ class CartScreen extends ConsumerWidget {
         width: 28,
         height: 28,
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: theme.dividerColor),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, size: 16, color: AppColors.textPrimary),
+        child: Icon(icon, size: 16, color: theme.colorScheme.onSurface),
       ),
     );
   }
@@ -214,11 +219,12 @@ class CartScreen extends ConsumerWidget {
     BuildContext context,
     double totalAmount,
     int itemCount,
+    ThemeData theme,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -236,7 +242,7 @@ class CartScreen extends ConsumerWidget {
                 Text(
                   'Subtotal ($itemCount items)',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
                 Text(
@@ -288,7 +294,7 @@ class CartScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyCart(BuildContext context) {
+  Widget _buildEmptyCart(BuildContext context, ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -296,12 +302,12 @@ class CartScreen extends ConsumerWidget {
           Icon(
             Iconsax.shopping_cart,
             size: 72,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'Your cart is empty',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(

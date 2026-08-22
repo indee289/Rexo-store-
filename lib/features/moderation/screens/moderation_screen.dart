@@ -32,19 +32,19 @@ class ModerationScreen extends ConsumerWidget {
 
   Widget _buildAccessDenied() {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Moderation',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: Center(
         child: Column(
@@ -53,7 +53,7 @@ class ModerationScreen extends ConsumerWidget {
             const Icon(
               Iconsax.lock,
               size: 64,
-              color: AppColors.textHint,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -61,7 +61,7 @@ class ModerationScreen extends ConsumerWidget {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -69,7 +69,7 @@ class ModerationScreen extends ConsumerWidget {
               'Only administrators can access moderation tools.',
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
             ),
@@ -83,22 +83,22 @@ class ModerationScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             'Moderation',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          backgroundColor: AppColors.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
-          iconTheme: const IconThemeData(color: AppColors.textPrimary),
+          iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
           bottom: TabBar(
             labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             indicatorColor: AppColors.primary,
             labelStyle: GoogleFonts.poppins(
               fontSize: 14,
@@ -145,7 +145,7 @@ class ModerationScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -153,7 +153,7 @@ class ModerationScreen extends ConsumerWidget {
                   'No pending moderation items',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ],
@@ -195,9 +195,9 @@ class ModerationScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +224,7 @@ class ModerationScreen extends ConsumerWidget {
                 createdAt,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: AppColors.textHint,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
             ],
@@ -235,7 +235,7 @@ class ModerationScreen extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -243,7 +243,7 @@ class ModerationScreen extends ConsumerWidget {
             'Reported by: $reportedBy',
             style: GoogleFonts.poppins(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 12),
@@ -312,14 +312,14 @@ class ModerationScreen extends ConsumerWidget {
                 const Icon(
                   Iconsax.chart_2,
                   size: 48,
-                  color: AppColors.textHint,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'No AI moderation logs',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ],
@@ -361,9 +361,9 @@ class ModerationScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,7 +378,7 @@ class ModerationScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -386,7 +386,7 @@ class ModerationScreen extends ConsumerWidget {
                 contentType,
                 style: GoogleFonts.poppins(
                   fontSize: 10,
-                  color: AppColors.textHint,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
             ],
@@ -399,7 +399,7 @@ class ModerationScreen extends ConsumerWidget {
                 'Confidence:',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(width: 8),
@@ -408,7 +408,7 @@ class ModerationScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: confidenceScore,
-                    backgroundColor: AppColors.divider,
+                    backgroundColor: Theme.of(context).dividerColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       confidenceScore > 0.8
                           ? AppColors.error
@@ -426,7 +426,7 @@ class ModerationScreen extends ConsumerWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -438,7 +438,7 @@ class ModerationScreen extends ConsumerWidget {
                 'Action: $actionTaken',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const Spacer(),
@@ -446,7 +446,7 @@ class ModerationScreen extends ConsumerWidget {
                 createdAt,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: AppColors.textHint,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
             ],

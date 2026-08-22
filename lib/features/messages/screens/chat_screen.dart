@@ -67,6 +67,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final messagesAsync = ref.watch(chatMessagesProvider(widget.otherUserId));
     final conversationsAsync = ref.watch(conversationsProvider);
 
@@ -84,16 +85,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.border,
+              backgroundColor: theme.dividerColor,
               backgroundImage: otherUserAvatar != null
                   ? NetworkImage(otherUserAvatar!)
                   : null,
@@ -126,13 +127,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         Icon(
                           Iconsax.message_text,
                           size: 48,
-                          color: AppColors.textHint.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withOpacity(0.3),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'No messages yet',
                           style: AppTextStyles.bodyMedium
-                              .copyWith(color: AppColors.textSecondary),
+                              .copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -179,10 +180,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // Message input
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
               border: Border(
-                top: BorderSide(color: AppColors.border),
+                top: BorderSide(color: theme.dividerColor),
               ),
             ),
             child: SafeArea(
@@ -192,9 +193,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: theme.scaffoldBackgroundColor,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: theme.dividerColor),
                       ),
                       child: TextField(
                         controller: _messageController,
@@ -204,7 +205,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
                           hintStyle: AppTextStyles.bodyMedium
-                              .copyWith(color: AppColors.textHint),
+                              .copyWith(color: theme.colorScheme.onSurface.withOpacity(0.4)),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -250,6 +251,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final content = message['content'] ?? '';
     final createdAt = DateTime.tryParse(message['created_at'] ?? '');
     final timeStr =
@@ -264,7 +266,9 @@ class _MessageBubble extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMine ? AppColors.primary : const Color(0xFFF0F0F0),
+          color: isMine
+              ? AppColors.primary
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -278,14 +282,16 @@ class _MessageBubble extends StatelessWidget {
             Text(
               content,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: isMine ? Colors.white : AppColors.textPrimary,
+                color: isMine ? Colors.white : theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               timeStr,
               style: AppTextStyles.caption.copyWith(
-                color: isMine ? Colors.white70 : AppColors.textHint,
+                color: isMine
+                    ? Colors.white70
+                    : theme.colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 10,
               ),
             ),

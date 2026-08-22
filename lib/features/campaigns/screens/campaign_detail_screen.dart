@@ -22,20 +22,21 @@ class CampaignDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final campaignAsync = ref.watch(campaignDetailProvider(campaignId));
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: campaignAsync.when(
         data: (campaign) {
           if (campaign == null) {
-            return _buildNotFound(context);
+            return _buildNotFound(context, theme);
           }
-          return _buildContent(context, ref, campaign, hasApplied);
+          return _buildContent(context, ref, campaign, hasApplied, theme);
         },
         loading: () => _buildLoading(),
-        error: (error, _) => _buildError(context, ref, ErrorUtils.sanitize(error)),
+        error: (error, _) => _buildError(context, ref, ErrorUtils.sanitize(error), theme),
       ),
       bottomNavigationBar: campaignAsync.whenOrNull(
         data: (campaign) {
@@ -51,6 +52,7 @@ class CampaignDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     Map<String, dynamic> campaign,
     AsyncValue<bool> hasApplied,
+    ThemeData theme,
   ) {
     final title = campaign['title'] ?? 'Untitled Campaign';
     final description = campaign['description'] ?? '';
@@ -127,11 +129,11 @@ class CampaignDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Brand info row
-                _buildBrandRow(brandName, brandAvatar),
+                _buildBrandRow(brandName, brandAvatar, theme),
                 const SizedBox(height: 20),
 
                 // Stats row
-                _buildStatsRow(budget, perCreatorPayout, deadline),
+                _buildStatsRow(budget, perCreatorPayout, deadline, theme),
                 const SizedBox(height: 20),
 
                 // Description
@@ -141,7 +143,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                   Text(
                     description,
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -155,14 +157,14 @@ class CampaignDetailScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: theme.dividerColor),
                     ),
                     child: Text(
                       guidelines,
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                   ),
@@ -209,7 +211,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                         Text(
                           'Minimum ${NumberFormat.compact().format(minFollowers)} followers required',
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -229,13 +231,13 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBrandRow(String brandName, String? brandAvatar) {
+  Widget _buildBrandRow(String brandName, String? brandAvatar, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
@@ -273,7 +275,7 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(dynamic budget, dynamic perCreatorPayout, String? deadline) {
+  Widget _buildStatsRow(dynamic budget, dynamic perCreatorPayout, String? deadline, ThemeData theme) {
     return Row(
       children: [
         Expanded(
@@ -283,6 +285,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                 ? '\u20B9${NumberFormat.compact().format(budget)}'
                 : 'N/A',
             Iconsax.wallet_2,
+            theme,
           ),
         ),
         const SizedBox(width: 8),
@@ -293,6 +296,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                 ? '\u20B9${NumberFormat.compact().format(perCreatorPayout)}'
                 : 'N/A',
             Iconsax.money_recive,
+            theme,
           ),
         ),
         const SizedBox(width: 8),
@@ -301,19 +305,20 @@ class CampaignDetailScreen extends ConsumerWidget {
             'Deadline',
             deadline != null ? _formatShortDeadline(deadline) : 'N/A',
             Iconsax.calendar_1,
+            theme,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildStatCard(String label, String value, IconData icon, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
         children: [
@@ -361,15 +366,15 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotFound(BuildContext context) {
+  Widget _buildNotFound(BuildContext context, ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Iconsax.document,
             size: 64,
-            color: AppColors.textHint,
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
           ),
           const SizedBox(height: 16),
           Text(
@@ -411,7 +416,7 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
+  Widget _buildError(BuildContext context, WidgetRef ref, String error, ThemeData theme) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -471,12 +476,13 @@ class CampaignDetailBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -495,7 +501,7 @@ class CampaignDetailBottomBar extends ConsumerWidget {
                 child: ElevatedButton(
                   onPressed: null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.border,
+                    backgroundColor: theme.dividerColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -503,7 +509,7 @@ class CampaignDetailBottomBar extends ConsumerWidget {
                   child: Text(
                     'Already Applied',
                     style: AppTextStyles.button.copyWith(
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ),

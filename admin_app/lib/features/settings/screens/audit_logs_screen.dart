@@ -16,7 +16,7 @@ class AuditLogsScreen extends ConsumerWidget {
     final logs = ref.watch(adminAuditLogsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Audit Logs'),
         actions: [
@@ -33,10 +33,10 @@ class AuditLogsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.document_text, size: 48, color: AppColors.textHint),
+                  Icon(Iconsax.document_text, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                   SizedBox(height: 12),
                   Text('No audit logs',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             );
@@ -84,7 +84,7 @@ class AuditLogsScreen extends ConsumerWidget {
                                 log['details'],
                                 style: const TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -94,7 +94,7 @@ class AuditLogsScreen extends ConsumerWidget {
                               createdAt,
                               style: const TextStyle(
                                 fontSize: 10,
-                                color: AppColors.textHint,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                               ),
                             ),
                           ],

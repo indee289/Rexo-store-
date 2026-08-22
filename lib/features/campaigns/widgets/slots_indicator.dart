@@ -45,7 +45,7 @@ class SlotsIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: progress,
-            backgroundColor: AppColors.border,
+            backgroundColor: Theme.of(context).dividerColor,
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 6,
           ),

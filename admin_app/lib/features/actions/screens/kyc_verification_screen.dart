@@ -15,7 +15,7 @@ class KycVerificationScreen extends ConsumerWidget {
     final kycDocs = ref.watch(adminKycProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('KYC Verification'),
       ),
@@ -29,7 +29,7 @@ class KycVerificationScreen extends ConsumerWidget {
                   Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
                   SizedBox(height: 12),
                   Text('No pending KYC requests',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             );
@@ -72,7 +72,7 @@ class KycVerificationScreen extends ConsumerWidget {
                                   'User: ${doc['user_id']?.toString().substring(0, 8) ?? 'Unknown'}',
                                   style: const TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ),
                               ],
@@ -85,7 +85,7 @@ class KycVerificationScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.background,
+                            color: Theme.of(context).scaffoldBackgroundColor,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(

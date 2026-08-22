@@ -18,38 +18,39 @@ class ShopScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final products = ref.watch(productsProvider);
     final cartCount = ref.watch(cartItemCountProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Shop',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
             onPressed: () => _handleAddProduct(context, ref),
-            icon: const Icon(
+            icon: Icon(
               Iconsax.add_circle,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           Stack(
             children: [
               IconButton(
                 onPressed: () => context.push('/cart'),
-                icon: const Icon(
+                icon: Icon(
                   Iconsax.shopping_cart,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               if (cartCount > 0)
@@ -102,7 +103,7 @@ class ShopScreen extends ConsumerWidget {
                 if (data.isEmpty) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _buildEmptyState(),
+                    child: _buildEmptyState(theme),
                   );
                 }
                 return SliverPadding(
@@ -152,7 +153,7 @@ class ShopScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -160,12 +161,12 @@ class ShopScreen extends ConsumerWidget {
           Icon(
             Iconsax.shop,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'No products available',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(

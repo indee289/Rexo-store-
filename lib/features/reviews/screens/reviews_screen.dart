@@ -36,22 +36,22 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     final reviewsAsync = ref.watch(reviewsProvider(param));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Reviews',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -113,7 +113,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -172,7 +172,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: Theme.of(context).dividerColor,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -198,11 +198,11 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                       hintStyle: AppTextStyles.bodySmall,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -226,7 +226,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: AppColors.border,
+                        disabledBackgroundColor: Theme.of(context).dividerColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -298,12 +298,12 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           Icon(
             Iconsax.star_1,
             size: 64,
-            color: AppColors.textHint.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4).withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'No reviews yet',
-            style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
           Text(

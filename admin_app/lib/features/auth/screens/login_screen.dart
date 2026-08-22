@@ -37,6 +37,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
     ref.listen<AuthState>(authProvider, (previous, next) {
@@ -55,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -85,22 +86,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 32),
 
                   // Title
-                  const Text(
+                  Text(
                     'Admin Login',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Sign in with your admin credentials',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -109,11 +110,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Email',
                       hintText: 'Enter your email',
                       prefixIcon:
-                          Icon(Iconsax.sms, color: AppColors.textHint),
+                          Icon(Iconsax.sms, color: theme.colorScheme.onSurface.withOpacity(0.4)),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -134,14 +135,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: InputDecoration(
                       labelText: 'Password',
                       hintText: 'Enter your password',
-                      prefixIcon: const Icon(Iconsax.lock,
-                          color: AppColors.textHint),
+                      prefixIcon: Icon(Iconsax.lock,
+                          color: theme.colorScheme.onSurface.withOpacity(0.4)),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Iconsax.eye_slash
                               : Iconsax.eye,
-                          color: AppColors.textHint,
+                          color: theme.colorScheme.onSurface.withOpacity(0.4),
                         ),
                         onPressed: () {
                           setState(() {
@@ -187,17 +188,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.warning.withOpacity(0.3),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Iconsax.info_circle,
+                        const Icon(Iconsax.info_circle,
                             color: AppColors.warning, size: 20),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Only admin accounts can access this app.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ),
