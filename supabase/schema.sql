@@ -457,6 +457,9 @@ CREATE POLICY "Admins can update orders" ON orders
         EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
     );
 
+CREATE POLICY "Users can delete own orders" ON orders
+    FOR DELETE USING (auth.uid() = user_id);
+
 -- Order items policies
 CREATE POLICY "Users can read own order items" ON order_items
     FOR SELECT USING (
@@ -482,6 +485,9 @@ CREATE POLICY "Users can update own notifications" ON notifications
 
 CREATE POLICY "System can create notifications" ON notifications
     FOR INSERT WITH CHECK (TRUE);
+
+CREATE POLICY "Users can delete own notifications" ON notifications
+    FOR DELETE USING (auth.uid() = user_id);
 
 -- Audit logs policies
 CREATE POLICY "Admins can read audit logs" ON audit_logs
@@ -620,6 +626,77 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
+-- STORAGE OBJECTS RLS POLICIES
+-- ============================================================
+
+-- Avatars (public bucket) policies
+CREATE POLICY "Users can upload avatars" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Anyone can view avatars" ON storage.objects
+    FOR SELECT USING (bucket_id = 'avatars');
+
+CREATE POLICY "Users can update own avatars" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own avatars" ON storage.objects
+    FOR DELETE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- KYC Documents (private bucket) policies
+CREATE POLICY "Users can upload kyc documents" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view own kyc documents" ON storage.objects
+    FOR SELECT USING (bucket_id = 'kyc-documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')));
+
+CREATE POLICY "Users can update own kyc documents" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own kyc documents" ON storage.objects
+    FOR DELETE USING (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Campaign Assets (public bucket) policies
+CREATE POLICY "Users can upload campaign assets" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'campaign-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Anyone can view campaign assets" ON storage.objects
+    FOR SELECT USING (bucket_id = 'campaign-assets');
+
+CREATE POLICY "Users can update own campaign assets" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'campaign-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own campaign assets" ON storage.objects
+    FOR DELETE USING (bucket_id = 'campaign-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Product Images (public bucket) policies
+CREATE POLICY "Users can upload product images" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'product-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Anyone can view product images" ON storage.objects
+    FOR SELECT USING (bucket_id = 'product-images');
+
+CREATE POLICY "Users can update own product images" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'product-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own product images" ON storage.objects
+    FOR DELETE USING (bucket_id = 'product-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Deposit Proofs (private bucket) policies
+CREATE POLICY "Users can upload deposit proofs" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view own deposit proofs" ON storage.objects
+    FOR SELECT USING (bucket_id = 'deposit-proofs' AND (auth.uid()::text = (storage.foldername(name))[1] OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')));
+
+CREATE POLICY "Users can update own deposit proofs" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own deposit proofs" ON storage.objects
+    FOR DELETE USING (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================================
 -- TRIGGER: Auto-create wallet when user is created
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user_wallet()
@@ -664,6 +741,31 @@ CREATE TRIGGER on_withdrawal_check_balance
     BEFORE INSERT ON public.withdrawals
     FOR EACH ROW
     EXECUTE FUNCTION public.check_withdrawal_balance();
+
+-- ============================================================
+-- TRIGGER: Check and decrement stock on order item insert
+-- ============================================================
+CREATE OR REPLACE FUNCTION check_and_decrement_stock()
+RETURNS TRIGGER AS $$
+DECLARE
+  current_stock INTEGER;
+BEGIN
+  SELECT stock INTO current_stock FROM products WHERE id = NEW.product_id FOR UPDATE;
+  IF current_stock IS NULL THEN
+    RAISE EXCEPTION 'Product not found';
+  END IF;
+  IF current_stock < NEW.quantity THEN
+    RAISE EXCEPTION 'Insufficient stock. Available: %, Requested: %', current_stock, NEW.quantity;
+  END IF;
+  UPDATE products SET stock = stock - NEW.quantity WHERE id = NEW.product_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_order_item_check_stock
+  BEFORE INSERT ON order_items
+  FOR EACH ROW
+  EXECUTE FUNCTION check_and_decrement_stock();
 
 -- ============================================================
 -- SEED: Admin user
