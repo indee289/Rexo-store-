@@ -9,10 +9,6 @@
     "tests": "skipped",
     "test_quality": "skipped",
     "docker_build": "skipped",
-    "summary": "Cannot run flutter build/test/analyze due to INTEGRATIONS_ONLY network mode (Flutter SDK downloads are blocked). All verification performed by code inspection. CI will perform actual build validation on push."
-  },
-  "review_fixes": {
-    "v1": "Fixed: messages realtime filter, follow re-entry guard, campaign cover image null, 2FA info box colors",
-    "v2": "Fixed: (1) Added admin role check inside RPC function bodies - non-admin users now get 'Unauthorized: admin role required' exception. (2) Removed dead depositsRealtimeProvider and withdrawalsRealtimeProvider from wallet_provider.dart. (3) Wallet read-then-write documented as known limitation - no further changes needed."
+    "summary": "Cannot run flutter build/test/analyze due to INTEGRATIONS_ONLY network mode. All verification performed by code inspection and semantic review (2 review iterations). Remaining known limitation: wallet balance update uses client-side read-then-write pattern with documented RPC alternative for production deployment."
   }
 }
