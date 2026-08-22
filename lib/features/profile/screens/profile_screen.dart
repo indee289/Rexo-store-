@@ -50,17 +50,17 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Iconsax.warning_2,
                 size: 48,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
               ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load profile',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 12),
@@ -129,7 +129,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildRoleBadge(role),
           const SizedBox(height: 24),
           // Stats row
-          _buildStatsRow(profileState),
+          _buildStatsRow(context, profileState),
           const SizedBox(height: 24),
           Divider(color: Theme.of(context).dividerColor, height: 1),
           const SizedBox(height: 8),
@@ -234,7 +234,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(ProfileState profileState) {
+  Widget _buildStatsRow(BuildContext context, ProfileState profileState) {
     if (profileState.isCreator) {
       final completedCampaigns =
           profileState.roleProfile?['completed_campaigns']?.toString() ?? '0';
