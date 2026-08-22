@@ -1298,7 +1298,7 @@ CREATE POLICY "Admins can manage ai moderation logs"
 CREATE TABLE IF NOT EXISTS public.device_fingerprints (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    fingerprint_hash TEXT,
+    fingerprint_hash TEXT UNIQUE,
     device_info JSONB,
     ip_address TEXT,
     is_trusted BOOLEAN DEFAULT FALSE,
@@ -1310,6 +1310,14 @@ ALTER TABLE public.device_fingerprints ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can read own device fingerprints"
     ON public.device_fingerprints FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own device fingerprints"
+    ON public.device_fingerprints FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own device fingerprints"
+    ON public.device_fingerprints FOR UPDATE
     USING (auth.uid() = user_id);
 
 CREATE POLICY "Admins can manage all device fingerprints"
