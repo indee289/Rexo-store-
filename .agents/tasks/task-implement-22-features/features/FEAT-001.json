@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Implement Settings, Linked Accounts, KYC Upload, Addresses, and update the Supabase schema to include ALL missing tables (linked_accounts, addresses, reviews, reward_points, coupons, product_categories, seller_profiles, services, subscription_plans, user_devices, user_sessions, user_settings, user_subscriptions, user_suspensions, user_warnings, ai_moderation_logs, device_fingerprints, security_audit_logs, security_logs, disputes, moderation_queue). Also add proper RLS policies for all new tables.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Update supabase/schema.sql to add ALL missing tables: linked_accounts, addresses, reviews, reward_points, coupons, product_categories, seller_profiles, services, subscription_plans, user_devices, user_sessions, user_settings, user_subscriptions, user_suspensions, user_warnings, ai_moderation_logs, device_fingerprints, security_audit_logs, security_logs, disputes, moderation_queue. Each table needs proper columns matching Supabase conventions, RLS enabled, and appropriate policies (users read own, admins read all, etc).",
     "2. Create lib/features/settings/ directory with: providers/settings_provider.dart (theme mode state using shared_preferences, language toggle EN/HI), screens/settings_screen.dart (full settings screen with: language toggle, dark/light/system mode, change password, notification prefs, links to privacy/terms/help/about, logout). Follow the premium UI pattern from profile_screen.dart.",
@@ -32,5 +32,5 @@
     "Verify app_router.dart has all new routes properly imported and configured"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Flutter CLI not available in sandbox (network blocked). All code manually verified for correct Dart syntax, proper imports, and pattern compliance. ShimmerLoading generic widget was missing from core/widgets/shimmer_loading.dart - added it. The existing shimmer_loading.dart had ShimmerProfile, ShimmerCard, etc but no generic ShimmerLoading class. The profile_screen.dart needed go_router import added for context.push() extension method usage."
 }
