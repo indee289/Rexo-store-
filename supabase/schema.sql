@@ -281,8 +281,10 @@ ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 
 -- Users policies
-CREATE POLICY "Users can read own data" ON users
-    FOR SELECT USING (auth.uid() = id);
+-- Allow authenticated users to read public profile data (name, avatar, handle)
+-- This is required for cross-user joins (campaign brand info, message contacts, creator listings)
+CREATE POLICY "Authenticated users can read all profiles" ON users
+    FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Admins can read all users" ON users
     FOR SELECT USING (
