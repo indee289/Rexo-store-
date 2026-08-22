@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-8-issues",
+  "task_description": "Fix 8 issues across User and Admin Flutter apps: deposit/withdrawal wallet crediting, KYC status icons, campaign form redesign, dark mode contrast, realtime subscriptions, Top Creators with follow/messaging, push notifications, and 2FA UI.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

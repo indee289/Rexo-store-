@@ -9,6 +9,26 @@ import 'supabase_service.dart';
 ///
 /// All operations are wrapped in try-catch so that failures never crash the app.
 /// Push notifications are optional - the app must work without Firebase.
+///
+/// ============================================================================
+/// CANNOT-VERIFY-WITHOUT-DEVICE:
+/// Actual push notification delivery requires:
+///   1. A real physical device or emulator with Google Play Services
+///   2. Real Firebase credentials configured in google-services.json (Android)
+///      and GoogleService-Info.plist (iOS)
+///   3. A valid Firebase project with Cloud Messaging enabled
+///   4. POST_NOTIFICATIONS permission granted by the user (Android 13+)
+///
+/// This service correctly:
+///   - Requests POST_NOTIFICATIONS permission via requestPermission()
+///   - Retrieves and saves FCM token to user_devices table
+///   - Wraps all operations in try-catch (Firebase may not be configured)
+///   - Listens for token refresh events
+///   - Handles foreground/background messages
+///
+/// STATUS: CANNOT-VERIFY-WITHOUT-DEVICE - Code is implemented correctly but
+/// push delivery cannot be tested without real device + real Firebase credentials.
+/// ============================================================================
 class PushNotificationService {
   PushNotificationService._();
 

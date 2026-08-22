@@ -16,6 +16,7 @@ import '../../features/campaigns/screens/my_campaigns_screen.dart';
 import '../../features/coupons/screens/coupons_screen.dart';
 import '../../features/disputes/screens/disputes_screen.dart';
 import '../../features/disputes/screens/raise_dispute_screen.dart';
+import '../../features/home/screens/creator_profile_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/kyc/screens/kyc_upload_screen.dart';
 import '../../features/legal/screens/privacy_policy_screen.dart';
@@ -97,6 +98,8 @@ class AppRoutes {
   static const String warnings = '/warnings';
   static const String moderation = '/moderation';
   static const String publicProfile = '/profile/:handle';
+
+  static const String creatorProfile = '/creators/:id';
 
   static const String twoFactorAuth = '/two-factor-auth';
 }
@@ -454,6 +457,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final handle = state.pathParameters['handle']!;
           return PublicProfileScreen(handle: handle);
+        },
+      ),
+
+      /// Creator Profile screen
+      GoRoute(
+        path: AppRoutes.creatorProfile,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return CreatorProfileScreen(creatorUserId: id);
         },
       ),
     ],

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
 
@@ -131,6 +134,83 @@ final chatMessagesProvider =
       .eq('is_read', false);
 
   return allMessages;
+});
+
+/// Realtime stream provider for chat messages.
+/// Subscribes to the messages table via Supabase Realtime for live updates.
+/// This enables real-time message delivery without polling.
+final chatMessagesStreamProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>(
+        (ref, otherUserId) {
+  final user = SupabaseService.currentUser;
+  if (user == null) {
+    return Stream.value([]);
+  }
+
+  final controller = StreamController<List<Map<String, dynamic>>>();
+
+  // Initial fetch of messages
+  Future<void> fetchMessages() async {
+    try {
+      final sent = await SupabaseService.client
+          .from('messages')
+          .select()
+          .eq('sender_id', user.id)
+          .eq('receiver_id', otherUserId)
+          .order('created_at', ascending: true);
+
+      final received = await SupabaseService.client
+          .from('messages')
+          .select()
+          .eq('sender_id', otherUserId)
+          .eq('receiver_id', user.id)
+          .order('created_at', ascending: true);
+
+      final List<Map<String, dynamic>> allMessages = [
+        ...List<Map<String, dynamic>>.from(sent),
+        ...List<Map<String, dynamic>>.from(received),
+      ];
+
+      allMessages.sort((a, b) {
+        final aDate = DateTime.parse(a['created_at'] as String);
+        final bDate = DateTime.parse(b['created_at'] as String);
+        return aDate.compareTo(bDate);
+      });
+
+      if (!controller.isClosed) {
+        controller.add(allMessages);
+      }
+    } catch (e) {
+      if (!controller.isClosed) {
+        controller.addError(e);
+      }
+    }
+  }
+
+  // Fetch initial messages
+  fetchMessages();
+
+  // Subscribe to realtime changes on the messages table
+  final channel = SupabaseService.client
+      .channel('messages_$otherUserId')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'messages',
+        callback: (payload) {
+          // When a new message is inserted, refetch all messages
+          fetchMessages();
+        },
+      )
+      .subscribe();
+
+  // Cleanup on dispose
+  ref.onDispose(() {
+    controller.close();
+    SupabaseService.client.removeChannel(channel);
+  });
+
+  return controller.stream;
 });
 
 /// Message actions notifier

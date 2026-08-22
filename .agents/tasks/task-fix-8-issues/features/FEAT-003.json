@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Fix Issues #6, #7, #8: Top Creators with follow/messaging, push notifications permission, and 2FA UI improvement",
+  "status": "in_progress",
+  "steps": [
+    "1. Create supabase/add_follows_table.sql: CREATE TABLE follows (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(follower_id, following_id)); ALTER TABLE follows ENABLE ROW LEVEL SECURITY; Add RLS policies: users can read all follows (SELECT TRUE), users can insert/delete own follows (follower_id = auth.uid()).",
+    "2. Create lib/features/home/providers/creators_provider.dart: Add a provider that fetches creator_profiles with user info (name, avatar_url, handle) ordered by followers descending. Add a followProvider(creatorUserId) that checks if current user follows a given creator. Add a FollowActionsNotifier with follow/unfollow methods that insert/delete from follows table.",
+    "3. Create lib/features/home/screens/creator_profile_screen.dart: A screen showing a creator's profile with their stats (followers, campaigns completed, rating). Include a Follow/Unfollow button that uses the FollowActionsNotifier. Include a 'Message' button that navigates to the chat screen with that creator's user_id.",
+    "4. Update lib/features/home/screens/home_screen.dart: In _buildCreatorsContent, make the CreatorCard's onTap navigate to the new creator_profile_screen with the creator's user_id. The trendingCreatorsProvider already fetches from creator_profiles - ensure it works with real data.",
+    "5. Add Supabase Realtime to messages: In lib/features/messages/providers/messages_provider.dart, add a realtime stream provider for chat messages (chatMessagesStreamProvider) that subscribes to the messages table filtered by sender_id or receiver_id = current user. This enables real-time message delivery without polling.",
+    "6. Push notifications: In lib/main.dart, the push notification setup already exists and is wrapped in try-catch. Verify PushNotificationService.initialize() is called (it is). The service already requests POST_NOTIFICATIONS permission via requestPermission() and saves FCM token to user_devices. No code changes needed - just confirm it's all correctly wired. Add a comment block in push_notification_service.dart clearly stating: 'CANNOT-VERIFY-WITHOUT-DEVICE: Actual push delivery requires real device + real Firebase credentials configured in google-services.json / GoogleService-Info.plist'.",
+    "7. Improve 2FA UI in lib/features/settings/screens/two_factor_auth_screen.dart: Keep the 'Coming Soon' approach but improve the UI with: a list of benefits (prevents unauthorized access, required for large withdrawals, etc.), a visual step-by-step guide showing what 2FA setup will look like (scan QR, enter code), and a prominent info box stating 'Enable MFA in Supabase Dashboard -> Authentication -> Multi-Factor Auth first'. Add a note comment: 'NEEDS-SUPABASE-CONFIG: Cannot implement real MFA flow if Supabase project does not have MFA enabled in dashboard'.",
+    "8. Register the creator_profile_screen route in the app router. Find the router file and add a route for '/creators/:id' that shows CreatorProfileScreen."
+  ],
+  "acceptance_criteria": [
+    "SQL migration file for follows table with proper RLS exists",
+    "creators_provider.dart exists with follow/unfollow functionality",
+    "creator_profile_screen.dart exists with Follow button and Message button",
+    "CreatorCard onTap in home_screen.dart navigates to creator profile",
+    "Messages provider has a realtime stream for live message updates",
+    "push_notification_service.dart has clear CANNOT-VERIFY comment",
+    "two_factor_auth_screen.dart has improved UI with benefits list and Supabase MFA requirement note",
+    "Route for creator profile is registered in the app router"
+  ],
+  "verification": [
+    "Read supabase/add_follows_table.sql and confirm table + RLS",
+    "Read lib/features/home/providers/creators_provider.dart",
+    "Read lib/features/home/screens/creator_profile_screen.dart",
+    "Read home_screen.dart and confirm navigation to creator profile",
+    "Read messages_provider.dart and confirm realtime stream",
+    "Read push_notification_service.dart and confirm CANNOT-VERIFY comment",
+    "Read two_factor_auth_screen.dart and confirm improved UI"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

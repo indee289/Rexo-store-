@@ -289,7 +289,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: CreatorCard(
                   creator: creator,
                   onTap: () {
-                    // Navigate to creator profile
+                    final userId = creator['user_id']?.toString();
+                    if (userId != null) {
+                      context.push('/creators/$userId');
+                    }
                   },
                 ),
               );
