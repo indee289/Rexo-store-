@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix dark mode not working: The settings provider correctly persists ThemeMode and app.dart correctly passes settings.themeMode to MaterialApp. The REAL issue is that nearly all screens hardcode AppColors.background (Color(0xFFFAFAFA) - always white) and AppColors.surface (white) as their scaffold/container colors instead of using Theme.of(context) colors. The dark theme in AppTheme.darkTheme defines proper dark colors but they are never applied because screens bypass the theme system. Fix the settings screen and key screens to use theme-aware colors so dark mode visually takes effect.",
+  "status": "completed",
+  "steps": [
+    "In lib/features/settings/screens/settings_screen.dart: Replace all hardcoded AppColors.background with Theme.of(context).scaffoldBackgroundColor, AppColors.surface with Theme.of(context).colorScheme.surface, AppColors.textPrimary with Theme.of(context).colorScheme.onSurface, AppColors.textSecondary with Theme.of(context).textTheme.bodySmall!.color. Focus on the Scaffold backgroundColor and Container colors.",
+    "In lib/features/settings/screens/settings_screen.dart: The _buildThemeSelector and _buildLanguageSelector use AppColors.surface for Container color - change to Theme.of(context).colorScheme.surface. Change AppColors.border to Theme.of(context).dividerColor.",
+    "In lib/features/profile/screens/profile_screen.dart: Replace Scaffold backgroundColor: AppColors.background with Theme.of(context).scaffoldBackgroundColor. Replace AppBar backgroundColor: AppColors.surface with Theme.of(context).appBarTheme.backgroundColor.",
+    "In lib/features/profile/screens/edit_profile_screen.dart: Same pattern - replace hardcoded AppColors.background/surface with Theme equivalents.",
+    "In lib/features/subscriptions/screens/subscriptions_screen.dart: Same pattern for Scaffold backgroundColor.",
+    "CRITICAL: Verify that lib/app.dart still has themeMode: settings.themeMode (it does currently). Verify the settings provider's _loadSettings reads the persisted theme correctly (it does).",
+    "Ensure the settings_screen.dart passes context to _buildThemeSelector and _buildLanguageSelector properly (it already passes context - just need to use it inside for Theme.of(context))."
+  ],
+  "acceptance_criteria": [
+    "When user selects Dark mode in settings, the settings screen itself changes to dark background/text",
+    "Profile screen and edit profile screen respond to dark mode selection",
+    "Subscriptions screen responds to dark mode selection",
+    "The app.dart themeMode is still reactive to settings provider changes",
+    "Code compiles without errors (no missing imports, no type errors)"
+  ],
+  "verification": [
+    "Verify flutter analyze passes without errors for the modified files",
+    "Verify the MaterialApp.router themeMode still references settings.themeMode",
+    "Verify no hardcoded light-only colors remain in the modified screens' scaffold/appbar"
+  ],
+  "blocked_reason": null,
+  "findings": "Flutter/Dart not installed in sandbox - cannot run flutter analyze locally. CI will validate. All changes are syntactically correct by manual review. The four screen files now use Theme.of(context).scaffoldBackgroundColor, theme.colorScheme.surface, theme.colorScheme.onSurface, and theme.dividerColor instead of hardcoded AppColors equivalents. The app.dart themeMode binding was already correct and was not modified."
+}

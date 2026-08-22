@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Admin app enhancements: Add campaign creation FAB to campaign_control_screen, add admin profile screen with logout, add profile tab to bottom nav. The deposit/withdrawal screens already correctly query the tables - they show pending items and allow approve/reject.",
+  "status": "completed",
+  "steps": [
+    "CAMPAIGN CREATION: In admin_app/lib/features/actions/screens/campaign_control_screen.dart, add a FloatingActionButton that shows a dialog to create a new campaign. The dialog should have fields: title, description, budget (number), platform (dropdown: Instagram/YouTube/Twitter), status defaults to 'active'. On submit, insert into 'campaigns' table via SupabaseService.client.from('campaigns').insert({...}) and invalidate adminCampaignsProvider. Follow the same pattern as ShopAdminScreen's _showCreateProductDialog.",
+    "ADMIN PROFILE SCREEN: Create admin_app/lib/features/settings/screens/admin_profile_screen.dart. Show admin name and email from SupabaseService.currentUser (email) and getUserProfile. Show admin role badge. Add logout button that calls ref.read(authProvider.notifier).signOut() and navigates to /login. Include an avatar section showing first letter of name. Follow the styling patterns in the admin app (PremiumCard, AppColors, etc.).",
+    "ADD PROFILE TO BOTTOM NAV: In admin_app/lib/core/widgets/app_bottom_nav.dart, add a 5th nav item 'Profile' with Iconsax.profile_circle icon. Update the router in admin_app/lib/core/router/app_router.dart to add a 5th StatefulShellBranch for /profile that shows AdminProfileScreen.",
+    "VERIFY DEPOSITS/WITHDRAWALS: The admin deposit_queue_screen.dart and withdrawal_queue_screen.dart already query 'deposits' and 'withdrawals' tables with .eq('status', 'pending'). They have approve/reject buttons. The admin_provider.dart has approveDeposit, rejectDeposit, approveWithdrawal, rejectWithdrawal methods. This is working as designed - no changes needed. Just verify the screens render correctly."
+  ],
+  "acceptance_criteria": [
+    "Campaign control screen has a FAB (+) button to create campaigns",
+    "Campaign creation dialog has title, description, budget, platform fields",
+    "Campaign creation inserts to campaigns table via Supabase",
+    "Admin profile screen shows admin email, name, role, and logout button",
+    "Bottom nav has 5 items: Dashboard, Users, Actions, Settings, Profile",
+    "Admin app router has /profile route mapped to AdminProfileScreen",
+    "All code compiles without errors"
+  ],
+  "verification": [
+    "Verify campaign_control_screen.dart has a FloatingActionButton",
+    "Verify admin_profile_screen.dart exists and has proper widget structure",
+    "Verify app_bottom_nav.dart has 5 nav items",
+    "Verify app_router.dart has 5 StatefulShellBranch entries"
+  ],
+  "blocked_reason": null,
+  "findings": "All 3 tasks implemented successfully. Campaign creation FAB follows the same pattern as ShopAdminScreen's _showCreateProductDialog. Profile screen uses FutureProvider for async profile loading. Bottom nav now has 5 items with proper indexing. Cannot run flutter analyze locally due to INTEGRATIONS_ONLY network - CI will validate."
+}

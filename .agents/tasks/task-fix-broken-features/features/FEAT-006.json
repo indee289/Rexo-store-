@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-006",
+  "type": "fix",
+  "description": "Address 5 post-review issues: campaign insert missing owner, admin profile ignoring dark mode, subscriptions swallowing errors silently, admin profile sign-out not awaited, campaign dialog missing validation UX.",
+  "status": "completed",
+  "steps": [
+    "Add 'created_by': SupabaseService.currentUser?.id to the campaign insert map in campaign_control_screen.dart",
+    "Wrap the campaign insert call in try-catch and show a SnackBar on error",
+    "Add validation UX: show SnackBar when title is empty or budget is invalid instead of silently doing nothing",
+    "In admin_profile_screen.dart, replace AppColors.background with theme.scaffoldBackgroundColor, AppColors.textPrimary with theme.colorScheme.onSurface, AppColors.textSecondary with theme.colorScheme.onSurface.withOpacity(0.6)",
+    "In subscriptions_provider.dart, add debugPrint('Subscriptions error: $e') before returning empty list in both catch blocks",
+    "In admin_profile_screen.dart, await the signOut() call before navigating: await ref.read(authProvider.notifier).signOut(); if (context.mounted) context.go('/login');"
+  ],
+  "acceptance_criteria": [
+    "Campaign insert includes created_by field with current user ID",
+    "Campaign creation shows SnackBar on error",
+    "Campaign dialog shows validation SnackBars for empty title or invalid budget",
+    "AdminProfileScreen uses Theme.of(context) colors, not hardcoded AppColors for text/background",
+    "Subscriptions provider logs errors with debugPrint before returning empty list",
+    "signOut() is awaited before navigating to /login"
+  ],
+  "verification": [
+    "All three modified files have correct Dart syntax",
+    "No hardcoded AppColors.background/textPrimary/textSecondary in admin_profile_screen.dart",
+    "debugPrint import (flutter/foundation.dart) present in subscriptions_provider.dart"
+  ],
+  "blocked_reason": null,
+  "findings": "All 5 review issues addressed in a single commit. signOut() in auth_provider.dart is Future<void> so it must be awaited. AdminProfileScreen kept AppColors.primary for accent color (role badge, avatar) since that is a semantic accent shared across themes. Only text colors and backgrounds were converted to theme-aware values."
+}
