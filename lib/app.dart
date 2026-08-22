@@ -1,25 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RexoApp extends StatelessWidget {
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+
+class RexoApp extends ConsumerWidget {
   const RexoApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      child: MaterialApp(
-        title: 'Rexo Marketplace',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-          useMaterial3: true,
-        ),
-        home: const Scaffold(
-          body: Center(
-            child: Text('Rexo Marketplace'),
-          ),
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
+      title: 'Rexo',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      routerConfig: router,
     );
   }
 }
