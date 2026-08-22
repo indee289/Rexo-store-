@@ -637,11 +637,41 @@ CREATE TRIGGER on_user_created_create_wallet
     EXECUTE FUNCTION public.handle_new_user_wallet();
 
 -- ============================================================
+-- TRIGGER: Prevent withdrawals exceeding available balance
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.check_withdrawal_balance()
+RETURNS TRIGGER AS $$
+DECLARE
+    current_balance DECIMAL(12, 2);
+BEGIN
+    SELECT available_balance INTO current_balance
+    FROM public.wallets
+    WHERE user_id = NEW.user_id;
+
+    IF current_balance IS NULL THEN
+        RAISE EXCEPTION 'No wallet found for user %', NEW.user_id;
+    END IF;
+
+    IF NEW.amount > current_balance THEN
+        RAISE EXCEPTION 'Insufficient balance: requested %, available %', NEW.amount, current_balance;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_withdrawal_check_balance
+    BEFORE INSERT ON public.withdrawals
+    FOR EACH ROW
+    EXECUTE FUNCTION public.check_withdrawal_balance();
+
+-- ============================================================
 -- SEED: Admin user
 -- ============================================================
--- Note: The admin user must first sign up via Supabase Auth.
--- After auth signup, this insert creates their profile.
--- Run this after the admin has authenticated:
+-- The admin user must first sign up through the app via Supabase Auth.
+-- After the admin user has signed up and authenticated, run the following
+-- SQL to promote their account to admin (replace <auth-user-uuid> with the
+-- actual UUID from auth.users after signup):
 --
 -- INSERT INTO public.users (id, email, name, role, admin_sub_role, is_verified, account_status)
 -- VALUES (
@@ -654,14 +684,8 @@ CREATE TRIGGER on_user_created_create_wallet
 --     'active'
 -- );
 --
--- For development/testing, use the following with a placeholder UUID:
-INSERT INTO public.users (id, email, name, role, admin_sub_role, is_verified, account_status)
-VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'rexoagency.in@gmail.com',
-    'Rexo Admin',
-    'admin',
-    'super_admin',
-    TRUE,
-    'active'
-) ON CONFLICT (id) DO NOTHING;
+-- Alternatively, if the user already exists from signup, update their role:
+--
+-- UPDATE public.users
+-- SET role = 'admin', admin_sub_role = 'super_admin', is_verified = TRUE
+-- WHERE email = 'rexoagency.in@gmail.com';

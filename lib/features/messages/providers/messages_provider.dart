@@ -11,13 +11,13 @@ final conversationsProvider =
   // Fetch all messages where user is sender or receiver
   final sentMessages = await SupabaseService.client
       .from('messages')
-      .select('*, receiver:users!receiver_id(id, full_name, avatar_url)')
+      .select('*, receiver:users!receiver_id(id, name, avatar_url)')
       .eq('sender_id', user.id)
       .order('created_at', ascending: false);
 
   final receivedMessages = await SupabaseService.client
       .from('messages')
-      .select('*, sender:users!sender_id(id, full_name, avatar_url)')
+      .select('*, sender:users!sender_id(id, name, avatar_url)')
       .eq('receiver_id', user.id)
       .order('created_at', ascending: false);
 
@@ -32,7 +32,7 @@ final conversationsProvider =
     if (!conversationsMap.containsKey(otherUserId)) {
       conversationsMap[otherUserId] = {
         'other_user_id': otherUserId,
-        'other_user_name': otherUser['full_name'] ?? 'User',
+        'other_user_name': otherUser['name'] ?? 'User',
         'other_user_avatar': otherUser['avatar_url'],
         'last_message': msg['content'],
         'last_message_at': msg['created_at'],
@@ -49,7 +49,7 @@ final conversationsProvider =
     if (!conversationsMap.containsKey(otherUserId)) {
       conversationsMap[otherUserId] = {
         'other_user_id': otherUserId,
-        'other_user_name': otherUser['full_name'] ?? 'User',
+        'other_user_name': otherUser['name'] ?? 'User',
         'other_user_avatar': otherUser['avatar_url'],
         'last_message': msg['content'],
         'last_message_at': msg['created_at'],
@@ -63,7 +63,7 @@ final conversationsProvider =
       if (msgDate.isAfter(existingDate)) {
         conversationsMap[otherUserId] = {
           'other_user_id': otherUserId,
-          'other_user_name': otherUser['full_name'] ?? 'User',
+          'other_user_name': otherUser['name'] ?? 'User',
           'other_user_avatar': otherUser['avatar_url'],
           'last_message': msg['content'],
           'last_message_at': msg['created_at'],

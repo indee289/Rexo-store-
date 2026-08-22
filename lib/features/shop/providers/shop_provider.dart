@@ -169,7 +169,13 @@ Future<bool> placeOrder({
       };
     }).toList();
 
-    await SupabaseService.client.from('order_items').insert(orderItems);
+    try {
+      await SupabaseService.client.from('order_items').insert(orderItems);
+    } catch (e) {
+      // Delete the orphaned order if order_items insert fails
+      await SupabaseService.client.from('orders').delete().eq('id', orderId);
+      rethrow;
+    }
 
     return true;
   } catch (e) {

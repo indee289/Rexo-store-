@@ -64,11 +64,12 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
         .from('deposit-proofs')
         .uploadBinary(fileName, bytes);
 
-    final publicUrl = SupabaseService.client.storage
+    // deposit-proofs is a private bucket, use signed URL instead of public URL
+    final signedUrl = await SupabaseService.client.storage
         .from('deposit-proofs')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 365 days
 
-    return publicUrl;
+    return signedUrl;
   }
 
   Future<void> _submit() async {

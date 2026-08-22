@@ -7,7 +7,7 @@ class AppConstants {
   /// Supabase configuration
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://npzomevhjdxbgbuojwoo.supabase.co',
+    defaultValue: '',
   );
 
   static const String supabaseAnonKey = String.fromEnvironment(

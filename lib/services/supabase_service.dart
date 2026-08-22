@@ -69,7 +69,7 @@ class SupabaseService {
     await client.from('users').insert({
       'id': userId,
       'email': email,
-      'full_name': fullName,
+      'name': fullName,
       'role': role,
       'created_at': DateTime.now().toIso8601String(),
     });

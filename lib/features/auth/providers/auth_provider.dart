@@ -57,7 +57,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     // Listen to auth state changes
-    SupabaseService.onAuthStateChange.listen((data) {
+    _authSubscription = SupabaseService.onAuthStateChange.listen((data) {
       final event = data.event;
       final session = data.session;
 
