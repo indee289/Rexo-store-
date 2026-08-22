@@ -4,19 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/addresses/screens/add_address_screen.dart';
 import '../../features/addresses/screens/addresses_screen.dart';
-import '../../features/admin/screens/admin_audit_logs_screen.dart';
-import '../../features/admin/screens/admin_broadcast_screen.dart';
-import '../../features/admin/screens/admin_campaigns_screen.dart';
-import '../../features/admin/screens/admin_dashboard_screen.dart';
-import '../../features/admin/screens/admin_deposits_screen.dart';
-import '../../features/admin/screens/admin_disputes_screen.dart';
-import '../../features/admin/screens/admin_kyc_screen.dart';
-import '../../features/admin/screens/admin_settings_screen.dart';
-import '../../features/admin/screens/admin_shop_screen.dart';
-import '../../features/admin/screens/admin_submissions_screen.dart';
-import '../../features/admin/screens/admin_users_screen.dart';
-import '../../features/admin/screens/admin_wallets_screen.dart';
-import '../../features/admin/screens/admin_withdrawals_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
@@ -59,7 +46,6 @@ import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/wallet/screens/withdraw_screen.dart';
 import '../../features/warnings/screens/warnings_screen.dart';
-import '../../features/rexo_program/screens/admin_rexo_program_screen.dart';
 import '../../features/settings/screens/two_factor_auth_screen.dart';
 import '../widgets/app_shell.dart';
 
@@ -94,19 +80,7 @@ class AppRoutes {
   static const String addAddress = '/add-address';
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
-  static const String admin = '/admin';
-  static const String adminUsers = '/admin/users';
-  static const String adminCampaigns = '/admin/campaigns';
-  static const String adminSubmissions = '/admin/submissions';
-  static const String adminDeposits = '/admin/deposits';
-  static const String adminWithdrawals = '/admin/withdrawals';
-  static const String adminShop = '/admin/shop';
-  static const String adminDisputes = '/admin/disputes';
-  static const String adminKyc = '/admin/kyc';
-  static const String adminWallets = '/admin/wallets';
-  static const String adminSettings = '/admin/settings';
-  static const String adminAuditLogs = '/admin/audit-logs';
-  static const String adminBroadcast = '/admin/broadcast';
+
   static const String orders = '/orders';
   static const String orderDetail = '/orders/:id';
   static const String disputes = '/disputes';
@@ -123,7 +97,7 @@ class AppRoutes {
   static const String warnings = '/warnings';
   static const String moderation = '/moderation';
   static const String publicProfile = '/profile/:handle';
-  static const String adminRexoProgram = '/admin/rexo-program';
+
   static const String twoFactorAuth = '/two-factor-auth';
 }
 
@@ -362,89 +336,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TermsOfServiceScreen(),
       ),
 
-      /// Admin Dashboard screen
-      GoRoute(
-        path: AppRoutes.admin,
-        builder: (context, state) => const AdminDashboardScreen(),
-      ),
 
-      /// Admin Users screen
-      GoRoute(
-        path: AppRoutes.adminUsers,
-        builder: (context, state) => const AdminUsersScreen(),
-      ),
-
-      /// Admin Campaigns screen
-      GoRoute(
-        path: AppRoutes.adminCampaigns,
-        builder: (context, state) => const AdminCampaignsScreen(),
-      ),
-
-      /// Admin Submissions screen
-      GoRoute(
-        path: AppRoutes.adminSubmissions,
-        builder: (context, state) => const AdminSubmissionsScreen(),
-      ),
-
-      /// Admin Deposits screen
-      GoRoute(
-        path: AppRoutes.adminDeposits,
-        builder: (context, state) => const AdminDepositsScreen(),
-      ),
-
-      /// Admin Withdrawals screen
-      GoRoute(
-        path: AppRoutes.adminWithdrawals,
-        builder: (context, state) => const AdminWithdrawalsScreen(),
-      ),
-
-      /// Admin Shop screen
-      GoRoute(
-        path: AppRoutes.adminShop,
-        builder: (context, state) => const AdminShopScreen(),
-      ),
-
-      /// Admin Disputes screen
-      GoRoute(
-        path: AppRoutes.adminDisputes,
-        builder: (context, state) => const AdminDisputesScreen(),
-      ),
-
-      /// Admin KYC screen
-      GoRoute(
-        path: AppRoutes.adminKyc,
-        builder: (context, state) => const AdminKycScreen(),
-      ),
-
-      /// Admin Wallets screen
-      GoRoute(
-        path: AppRoutes.adminWallets,
-        builder: (context, state) => const AdminWalletsScreen(),
-      ),
-
-      /// Admin Settings screen
-      GoRoute(
-        path: AppRoutes.adminSettings,
-        builder: (context, state) => const AdminSettingsScreen(),
-      ),
-
-      /// Admin Audit Logs screen
-      GoRoute(
-        path: AppRoutes.adminAuditLogs,
-        builder: (context, state) => const AdminAuditLogsScreen(),
-      ),
-
-      /// Admin Broadcast screen
-      GoRoute(
-        path: AppRoutes.adminBroadcast,
-        builder: (context, state) => const AdminBroadcastScreen(),
-      ),
-
-      /// Admin Rexo Program screen
-      GoRoute(
-        path: AppRoutes.adminRexoProgram,
-        builder: (context, state) => const AdminRexoProgramScreen(),
-      ),
 
       /// Two-Factor Authentication screen
       GoRoute(

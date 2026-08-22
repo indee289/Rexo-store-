@@ -219,7 +219,14 @@ class ShopScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     if (canAdd) {
-      context.push('/admin/shop');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Product management is available in the Admin app.',
+            style: GoogleFonts.poppins(fontSize: 13),
+          ),
+        ),
+      );
     } else {
       showDialog(
         context: context,

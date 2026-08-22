@@ -233,12 +233,7 @@ class ProfileScreen extends ConsumerWidget {
             title: 'Help & Support',
             onTap: () {},
           ),
-          if (profileState.isAdmin)
-            _buildMenuItem(
-              icon: Iconsax.security_user,
-              title: 'Admin Panel',
-              onTap: () => context.push('/admin'),
-            ),
+
           const SizedBox(height: 16),
           // Logout button
           Padding(
