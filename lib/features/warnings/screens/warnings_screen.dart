@@ -75,11 +75,11 @@ class WarningsScreen extends ConsumerWidget {
             warningsAsync.when(
               data: (warnings) {
                 if (warnings.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(context);
                 }
                 return Column(
                   children: warnings
-                      .map((w) => _buildWarningCard(w))
+                      .map((w) => _buildWarningCard(context, w))
                       .toList(),
                 );
               },
@@ -194,7 +194,7 @@ class WarningsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWarningCard(Map<String, dynamic> warning) {
+  Widget _buildWarningCard(BuildContext context, Map<String, dynamic> warning) {
     final reason = warning['reason'] ?? 'No reason provided';
     final severity = warning['severity'] ?? 'low';
     final createdAt = warning['created_at'] != null
@@ -286,7 +286,7 @@ class WarningsScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),

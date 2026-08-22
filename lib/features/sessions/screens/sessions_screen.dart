@@ -50,7 +50,7 @@ class SessionsScreen extends ConsumerWidget {
             sessionsAsync.when(
               data: (sessions) {
                 if (sessions.isEmpty) {
-                  return _buildEmptyState('No active sessions');
+                  return _buildEmptyState(context, 'No active sessions');
                 }
                 return Column(
                   children: sessions
@@ -75,11 +75,11 @@ class SessionsScreen extends ConsumerWidget {
             devicesAsync.when(
               data: (devices) {
                 if (devices.isEmpty) {
-                  return _buildEmptyState('No registered devices');
+                  return _buildEmptyState(context, 'No registered devices');
                 }
                 return Column(
                   children: devices
-                      .map((device) => _buildDeviceCard(device))
+                      .map((device) => _buildDeviceCard(context, device))
                       .toList(),
                 );
               },
@@ -211,7 +211,7 @@ class SessionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDeviceCard(Map<String, dynamic> device) {
+  Widget _buildDeviceCard(BuildContext context, Map<String, dynamic> device) {
     final deviceName = device['device_name'] ?? 'Unknown Device';
     final deviceType = device['device_type'] ?? 'unknown';
     final osVersion = device['os_version'] ?? '';
@@ -292,7 +292,7 @@ class SessionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(String message) {
+  Widget _buildEmptyState(BuildContext context, String message) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -303,7 +303,7 @@ class SessionsScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Iconsax.info_circle,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             size: 32,

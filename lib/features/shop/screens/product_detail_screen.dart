@@ -53,7 +53,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             children: [
               IconButton(
                 onPressed: () => context.push('/cart'),
-                icon: const Icon(
+                icon: Icon(
                   Iconsax.shopping_cart,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -94,8 +94,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       ),
       body: productAsync.when(
         data: (product) {
-          if (product == null) return _buildNotFound();
-          return _buildContent(product);
+          if (product == null) return _buildNotFound(context);
+          return _buildContent(context, product);
         },
         loading: () => _buildLoading(),
         error: (error, _) => _buildError(ErrorUtils.sanitize(error)),
@@ -103,7 +103,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildContent(Map<String, dynamic> product) {
+  Widget _buildContent(BuildContext context, Map<String, dynamic> product) {
     final title = product['title'] ?? 'Untitled Product';
     final description = product['description'] ?? '';
     final price = (product['price'] as num?)?.toDouble() ?? 0.0;
@@ -120,7 +120,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Image carousel
-                _buildImageCarousel(images),
+                _buildImageCarousel(context, images),
                 const SizedBox(height: 16),
 
                 Padding(
@@ -216,15 +216,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       // Quantity selector
                       Text('Quantity', style: AppTextStyles.h6),
                       const SizedBox(height: 8),
-                      _buildQuantitySelector(stock),
+                      _buildQuantitySelector(context, stock),
                       const SizedBox(height: 24),
 
                       // Seller section
-                      _buildSellerSection(),
+                      _buildSellerSection(context),
                       const SizedBox(height: 16),
 
                       // Reviews section
-                      _buildReviewsSection(product),
+                      _buildReviewsSection(context, product),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -235,18 +235,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ),
 
         // Bottom action buttons
-        _buildBottomActions(product, stock),
+        _buildBottomActions(context, product, stock),
       ],
     );
   }
 
-  Widget _buildImageCarousel(List<dynamic> images) {
+  Widget _buildImageCarousel(BuildContext context, List<dynamic> images) {
     if (images.isEmpty) {
       return Container(
         height: 280,
         width: double.infinity,
         color: Theme.of(context).dividerColor,
-        child: const Center(
+        child: Center(
           child: Icon(
             Iconsax.image,
             size: 64,
@@ -279,7 +279,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ),
                 errorWidget: (context, url, error) => Container(
                   color: Theme.of(context).dividerColor,
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Iconsax.image,
                       size: 48,
@@ -349,7 +349,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildQuantitySelector(int stock) {
+  Widget _buildQuantitySelector(BuildContext context, int stock) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).dividerColor),
@@ -386,7 +386,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildBottomActions(Map<String, dynamic> product, int stock) {
+  Widget _buildBottomActions(BuildContext context, Map<String, dynamic> product, int stock) {
     final isOutOfStock = stock <= 0;
 
     return Container(
@@ -481,7 +481,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildSellerSection() {
+  Widget _buildSellerSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -534,7 +534,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildReviewsSection(Map<String, dynamic> product) {
+  Widget _buildReviewsSection(BuildContext context, Map<String, dynamic> product) {
     final productId = product['id'] as String? ?? '';
 
     return GestureDetector(
@@ -561,7 +561,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Iconsax.arrow_right_3,
               size: 18,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -572,12 +572,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildNotFound() {
+  Widget _buildNotFound(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Iconsax.box_1,
             size: 64,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

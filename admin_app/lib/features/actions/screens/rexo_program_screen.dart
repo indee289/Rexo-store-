@@ -31,12 +31,12 @@ class RexoProgramScreen extends ConsumerWidget {
       body: applications.when(
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.award, size: 48, color: AppColors.warning),
-                  SizedBox(height: 12),
+                  const Icon(Iconsax.award, size: 48, color: AppColors.warning),
+                  const SizedBox(height: 12),
                   Text('No applications to review',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
@@ -79,7 +79,7 @@ class RexoProgramScreen extends ConsumerWidget {
                                 ),
                                 Text(
                                   app['status'] ?? 'pending',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
@@ -95,7 +95,7 @@ class RexoProgramScreen extends ConsumerWidget {
                           app['reason'],
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),

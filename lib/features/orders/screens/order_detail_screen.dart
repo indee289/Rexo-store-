@@ -72,26 +72,26 @@ class OrderDetailScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Order Info Card
-          _buildInfoCard(formattedDate, paymentMethod),
+          _buildInfoCard(context, formattedDate, paymentMethod),
           const SizedBox(height: 20),
 
           // Order Timeline
           Text('Order Status', style: AppTextStyles.h6),
           const SizedBox(height: 16),
-          _buildTimeline(status),
+          _buildTimeline(context, status),
           const SizedBox(height: 24),
 
           // Order Items
           Text('Items', style: AppTextStyles.h6),
           const SizedBox(height: 12),
-          _buildItemsList(items),
+          _buildItemsList(context, items),
           const SizedBox(height: 20),
 
           // Shipping Address
           if (shippingAddress != null) ...[
             Text('Shipping Address', style: AppTextStyles.h6),
             const SizedBox(height: 12),
-            _buildAddressCard(shippingAddress),
+            _buildAddressCard(context, shippingAddress),
             const SizedBox(height: 20),
           ],
 
@@ -103,7 +103,7 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoCard(String date, String paymentMethod) {
+  Widget _buildInfoCard(BuildContext context, String date, String paymentMethod) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -144,7 +144,7 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimeline(String currentStatus) {
+  Widget _buildTimeline(BuildContext context, String currentStatus) {
     final currentIndex = OrderStatus.getIndex(currentStatus);
 
     return Container(
@@ -167,6 +167,7 @@ class OrderDetailScreen extends ConsumerWidget {
           final isLast = index == OrderStatus.progression.length - 1;
 
           return _buildTimelineStep(
+            context,
             label: OrderStatus.labels[OrderStatus.progression[index]] ??
                 OrderStatus.progression[index],
             isCompleted: isCompleted,
@@ -178,7 +179,8 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimelineStep({
+  Widget _buildTimelineStep(
+    BuildContext context, {
     required String label,
     required bool isCompleted,
     required bool isCurrent,
@@ -248,7 +250,7 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildItemsList(List<Map<String, dynamic>> items) {
+  Widget _buildItemsList(BuildContext context, List<Map<String, dynamic>> items) {
     if (items.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -338,7 +340,7 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddressCard(Map<String, dynamic> address) {
+  Widget _buildAddressCard(BuildContext context, Map<String, dynamic> address) {
     final name = address['name'] as String? ?? '';
     final line1 = address['address_line_1'] as String? ?? '';
     final line2 = address['address_line_2'] as String? ?? '';

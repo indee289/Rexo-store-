@@ -116,7 +116,7 @@ class ServicesScreen extends ConsumerWidget {
                 }
                 return Column(
                   children: services.take(10).map((service) {
-                    return _buildServiceListingCard(service);
+                    return _buildServiceListingCard(context, service);
                   }).toList(),
                 );
               },
@@ -209,7 +209,7 @@ class ServicesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildServiceListingCard(Map<String, dynamic> service) {
+  Widget _buildServiceListingCard(BuildContext context, Map<String, dynamic> service) {
     final title = service['title'] as String? ?? 'Service';
     final description = service['description'] as String? ?? '';
     final price = (service['price'] as num?)?.toDouble() ?? 0.0;

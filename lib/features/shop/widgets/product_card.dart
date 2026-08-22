@@ -55,7 +55,7 @@ class ProductCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _buildImage(imageUrl),
+                    _buildImage(context, imageUrl),
                     // Stock indicator dot
                     Positioned(
                       top: 8,
@@ -67,7 +67,7 @@ class ProductCard extends StatelessWidget {
                       Positioned(
                         top: 8,
                         left: 8,
-                        child: _buildCategoryBadge(category),
+                        child: _buildCategoryBadge(context, category),
                       ),
                   ],
                 ),
@@ -119,14 +119,14 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(String? imageUrl) {
+  Widget _buildImage(BuildContext context, String? imageUrl) {
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: imageUrl,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           color: Theme.of(context).dividerColor,
-          child: const Center(
+          child: Center(
             child: Icon(
               Iconsax.image,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -136,7 +136,7 @@ class ProductCard extends StatelessWidget {
         ),
         errorWidget: (context, url, error) => Container(
           color: Theme.of(context).dividerColor,
-          child: const Center(
+          child: Center(
             child: Icon(
               Iconsax.image,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -149,7 +149,7 @@ class ProductCard extends StatelessWidget {
 
     return Container(
       color: Theme.of(context).dividerColor,
-      child: const Center(
+      child: Center(
         child: Icon(
           Iconsax.image,
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -180,7 +180,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryBadge(String category) {
+  Widget _buildCategoryBadge(BuildContext context, String category) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

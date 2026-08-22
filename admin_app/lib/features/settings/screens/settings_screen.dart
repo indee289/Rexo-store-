@@ -26,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Platform Settings section
-            const Text(
+            Text(
               'Platform Settings',
               style: TextStyle(
                 fontSize: 18,
@@ -77,7 +77,7 @@ class SettingsScreen extends ConsumerWidget {
                         icon: Iconsax.setting,
                         title: setting['key'] ?? '',
                         subtitle: 'Value: ${setting['value'] ?? 'N/A'}',
-                        trailing: const Icon(Iconsax.edit_2,
+                        trailing: Icon(Iconsax.edit_2,
                             size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                         onTap: () => _showEditSettingDialog(
                           context,
@@ -98,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Navigation section
-            const Text(
+            Text(
               'Administration',
               style: TextStyle(
                 fontSize: 18,
@@ -109,15 +109,15 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             PremiumCard(
               onTap: () => context.push('/settings/audit-logs'),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Iconsax.document_text, color: AppColors.primary),
-                  SizedBox(width: 12),
+                  const Icon(Iconsax.document_text, color: AppColors.primary),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Audit Logs',
                           style: TextStyle(
                             fontSize: 14,
@@ -234,7 +234,7 @@ class _SettingTile extends StatelessWidget {
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),

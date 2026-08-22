@@ -46,9 +46,9 @@ class PublicProfileScreen extends ConsumerWidget {
       body: profileAsync.when(
         data: (profile) {
           if (profile == null) {
-            return _buildNotFound();
+            return _buildNotFound(context);
           }
-          return _buildProfileContent(profile);
+          return _buildProfileContent(context, profile);
         },
         loading: () => const Padding(
           padding: EdgeInsets.all(16),
@@ -58,7 +58,7 @@ class PublicProfileScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Iconsax.warning_2,
                 size: 48,
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -78,12 +78,12 @@ class PublicProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotFound() {
+  Widget _buildNotFound(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Iconsax.user,
             size: 64,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -110,7 +110,7 @@ class PublicProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileContent(Map<String, dynamic> profile) {
+  Widget _buildProfileContent(BuildContext context, Map<String, dynamic> profile) {
     final name = profile['name'] ?? 'User';
     final avatarUrl = profile['avatar_url'] as String?;
     final bio = profile['bio'] ?? '';
@@ -176,7 +176,7 @@ class PublicProfileScreen extends ConsumerWidget {
           ],
           const SizedBox(height: 32),
           // Stats placeholder
-          _buildStatsSection(profile),
+          _buildStatsSection(context, profile),
         ],
       ),
     );
@@ -218,7 +218,7 @@ class PublicProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsSection(Map<String, dynamic> profile) {
+  Widget _buildStatsSection(BuildContext context, Map<String, dynamic> profile) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -229,17 +229,17 @@ class PublicProfileScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStat('Campaigns', profile['campaigns_count']?.toString() ?? '0'),
+          _buildStat(context, 'Campaigns', profile['campaigns_count']?.toString() ?? '0'),
           Container(width: 1, height: 32, color: Theme.of(context).dividerColor),
-          _buildStat('Rating', profile['rating']?.toString() ?? '-'),
+          _buildStat(context, 'Rating', profile['rating']?.toString() ?? '-'),
           Container(width: 1, height: 32, color: Theme.of(context).dividerColor),
-          _buildStat('Joined', _formatJoinDate(profile['created_at'])),
+          _buildStat(context, 'Joined', _formatJoinDate(profile['created_at'])),
         ],
       ),
     );
   }
 
-  Widget _buildStat(String label, String value) {
+  Widget _buildStat(BuildContext context, String label, String value) {
     return Column(
       children: [
         Text(

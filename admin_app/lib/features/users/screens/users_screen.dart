@@ -45,7 +45,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 user['email'] ?? '',
                 style: TextStyle(
                   fontSize: 14,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 16),

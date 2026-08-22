@@ -39,21 +39,21 @@ class SecurityLogsScreen extends ConsumerWidget {
             color: Theme.of(context).colorScheme.surface,
             child: Row(
               children: [
-                _buildFilterChip(
+                _buildFilterChip(context,
                   ref,
                   'All',
                   SecurityLogFilter.all,
                   activeFilter,
                 ),
                 const SizedBox(width: 8),
-                _buildFilterChip(
+                _buildFilterChip(context,
                   ref,
                   'Logins',
                   SecurityLogFilter.logins,
                   activeFilter,
                 ),
                 const SizedBox(width: 8),
-                _buildFilterChip(
+                _buildFilterChip(context,
                   ref,
                   'Suspicious',
                   SecurityLogFilter.suspicious,
@@ -68,12 +68,12 @@ class SecurityLogsScreen extends ConsumerWidget {
             child: logsAsync.when(
               data: (logs) {
                 if (logs.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(context);
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: logs.length,
-                  itemBuilder: (context, index) => _buildLogItem(logs[index]),
+                  itemBuilder: (context, index) => _buildLogItem(context, logs[index]),
                 );
               },
               loading: () => const Padding(
@@ -84,7 +84,7 @@ class SecurityLogsScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Iconsax.warning_2,
                       size: 48,
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -107,12 +107,10 @@ class SecurityLogsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChip(
-    WidgetRef ref,
+  Widget _buildFilterChip(BuildContext context, WidgetRef ref,
     String label,
     SecurityLogFilter filter,
-    SecurityLogFilter activeFilter,
-  ) {
+    SecurityLogFilter activeFilter,) {
     final isActive = filter == activeFilter;
 
     return GestureDetector(
@@ -140,7 +138,7 @@ class SecurityLogsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogItem(Map<String, dynamic> log) {
+  Widget _buildLogItem(BuildContext context, Map<String, dynamic> log) {
     final eventType = log['event_type'] ?? 'unknown';
     final ipAddress = log['ip_address'] ?? 'Unknown IP';
     final deviceInfo = log['device_info'] ?? '';
@@ -298,12 +296,12 @@ class SecurityLogsScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Iconsax.shield_tick,
             size: 48,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

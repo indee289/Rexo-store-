@@ -167,7 +167,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Iconsax.document_upload,
                             size: 48,
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -247,7 +247,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Iconsax.document,
                             size: 40,
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

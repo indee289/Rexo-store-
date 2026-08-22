@@ -131,7 +131,7 @@ class _ProductsTab extends ConsumerWidget {
     return products.when(
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Text('No products',
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
           );
@@ -206,7 +206,7 @@ class _OrdersTab extends ConsumerWidget {
     return orders.when(
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Text('No orders',
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
           );
@@ -234,7 +234,7 @@ class _OrdersTab extends ConsumerWidget {
                           ),
                           Text(
                             'Status: ${order['status'] ?? 'pending'}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),

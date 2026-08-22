@@ -22,7 +22,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
       body: wallets.when(
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('No wallets found',
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             );
@@ -63,7 +63,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                                 ),
                                 Text(
                                   'Status: ${wallet['status'] ?? 'active'}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),

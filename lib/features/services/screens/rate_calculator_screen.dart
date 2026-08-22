@@ -110,7 +110,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
               decoration: InputDecoration(
                 hintText: 'e.g., 50000',
                 hintStyle: AppTextStyles.bodySmall,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Iconsax.people,
                   size: 18,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -144,7 +144,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
               decoration: InputDecoration(
                 hintText: 'e.g., 3.5',
                 hintStyle: AppTextStyles.bodySmall,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Iconsax.chart_1,
                   size: 18,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

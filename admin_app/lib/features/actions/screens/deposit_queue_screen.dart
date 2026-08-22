@@ -22,12 +22,12 @@ class DepositQueueScreen extends ConsumerWidget {
       body: deposits.when(
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
-                  SizedBox(height: 12),
+                  const Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
+                  const SizedBox(height: 12),
                   Text('No pending deposits',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
@@ -68,7 +68,7 @@ class DepositQueueScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'User: ${deposit['user_id']?.toString().substring(0, 8) ?? 'Unknown'}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),

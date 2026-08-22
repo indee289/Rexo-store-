@@ -230,21 +230,21 @@ class SettingsScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          _buildThemeOption(
+          _buildThemeOption(context,
             ref: ref,
             label: 'Light',
             icon: Iconsax.sun_1,
             mode: ThemeMode.light,
             isSelected: settings.themeMode == ThemeMode.light,
           ),
-          _buildThemeOption(
+          _buildThemeOption(context,
             ref: ref,
             label: 'Dark',
             icon: Iconsax.moon,
             mode: ThemeMode.dark,
             isSelected: settings.themeMode == ThemeMode.dark,
           ),
-          _buildThemeOption(
+          _buildThemeOption(context,
             ref: ref,
             label: 'System',
             icon: Iconsax.mobile,
@@ -256,7 +256,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildThemeOption({
+  Widget _buildThemeOption(BuildContext context, {
     required WidgetRef ref,
     required String label,
     required IconData icon,

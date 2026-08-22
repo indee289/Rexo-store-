@@ -78,7 +78,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Iconsax.shopping_cart,
                 size: 64,
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -129,7 +129,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Apply Coupon section
-                    _buildCouponSection(totalAmount),
+                    _buildCouponSection(context, totalAmount),
                     const SizedBox(height: 16),
 
                     // Order items summary
@@ -147,11 +147,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     // Payment method
                     _buildSectionTitle('Payment Method'),
                     const SizedBox(height: 12),
-                    _buildPaymentSelection(),
+                    _buildPaymentSelection(context),
                     const SizedBox(height: 24),
 
                     // Order total
-                    _buildOrderTotal(totalAmount),
+                    _buildOrderTotal(context, totalAmount),
                   ],
                 ),
               ),
@@ -159,13 +159,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
 
           // Place order button
-          _buildPlaceOrderButton(cartItems, totalAmount),
+          _buildPlaceOrderButton(context, cartItems, totalAmount),
         ],
       ),
     );
   }
 
-  Widget _buildCouponSection(double totalAmount) {
+  Widget _buildCouponSection(BuildContext context, double totalAmount) {
     final couponState = ref.watch(couponNotifierProvider);
 
     return Container(
@@ -233,7 +233,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     onPressed: () {
                       ref.read(couponNotifierProvider.notifier).removeCoupon();
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
                       size: 18,
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -253,7 +253,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     decoration: InputDecoration(
                       hintText: 'Enter coupon code',
                       hintStyle: AppTextStyles.bodySmall,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.ticket_discount,
                         size: 18,
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -537,7 +537,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentSelection() {
+  Widget _buildPaymentSelection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -553,15 +553,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
       child: Column(
         children: [
-          _buildPaymentOption('UPI', Iconsax.mobile),
+          _buildPaymentOption(context, 'UPI', Iconsax.mobile),
           Divider(height: 1, color: Theme.of(context).dividerColor),
-          _buildPaymentOption('Wallet Balance', Iconsax.wallet_2),
+          _buildPaymentOption(context, 'Wallet Balance', Iconsax.wallet_2),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentOption(String method, IconData icon) {
+  Widget _buildPaymentOption(BuildContext context, String method, IconData icon) {
     final isSelected = _selectedPaymentMethod == method;
 
     return InkWell(
@@ -615,7 +615,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildOrderTotal(double totalAmount) {
+  Widget _buildOrderTotal(BuildContext context, double totalAmount) {
     final couponState = ref.watch(couponNotifierProvider);
     final discount = couponState.discountAmount;
     final finalTotal = totalAmount - discount;
@@ -675,7 +675,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPlaceOrderButton(List<CartItem> items, double totalAmount) {
+  Widget _buildPlaceOrderButton(BuildContext context, List<CartItem> items, double totalAmount) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

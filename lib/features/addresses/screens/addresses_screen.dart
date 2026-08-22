@@ -46,7 +46,7 @@ class AddressesScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Iconsax.location,
                     size: 64,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -85,7 +85,7 @@ class AddressesScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Iconsax.warning_2,
                 size: 48,
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

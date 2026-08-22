@@ -54,7 +54,7 @@ class DisputesScreen extends ConsumerWidget {
       body: disputesAsync.when(
         data: (disputes) {
           if (disputes.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(context);
           }
           return RefreshIndicator(
             color: AppColors.primary,
@@ -66,7 +66,7 @@ class DisputesScreen extends ConsumerWidget {
               itemCount: disputes.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return _buildDisputeCard(disputes[index]);
+                return _buildDisputeCard(context, disputes[index]);
               },
             ),
           );
@@ -77,7 +77,7 @@ class DisputesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDisputeCard(Map<String, dynamic> dispute) {
+  Widget _buildDisputeCard(BuildContext context, Map<String, dynamic> dispute) {
     final status = dispute['status'] as String? ?? 'open';
     final subject = dispute['subject'] as String? ?? 'No Subject';
     final createdAt = dispute['created_at'] as String?;
@@ -118,7 +118,7 @@ class DisputesScreen extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              _buildStatusBadge(status),
+              _buildStatusBadge(context, status),
             ],
           ),
           const SizedBox(height: 8),
@@ -131,7 +131,7 @@ class DisputesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(BuildContext context, String status) {
     Color badgeColor;
     switch (status.toLowerCase()) {
       case 'open':
@@ -166,7 +166,7 @@ class DisputesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

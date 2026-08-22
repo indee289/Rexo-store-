@@ -63,7 +63,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Iconsax.warning_2,
                 size: 48,
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

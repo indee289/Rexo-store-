@@ -387,7 +387,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Iconsax.calendar_1,
                         size: 20,
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

@@ -19,18 +19,18 @@ class ModerationScreen extends ConsumerWidget {
     return profileAsync.when(
       data: (profileState) {
         if (!profileState.isAdmin) {
-          return _buildAccessDenied();
+          return _buildAccessDenied(context);
         }
         return _buildAdminContent(context, ref);
       },
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => _buildAccessDenied(),
+      error: (_, __) => _buildAccessDenied(context),
     );
   }
 
-  Widget _buildAccessDenied() {
+  Widget _buildAccessDenied(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -53,7 +53,6 @@ class ModerationScreen extends ConsumerWidget {
             const Icon(
               Iconsax.lock,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -116,15 +115,15 @@ class ModerationScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            _buildQueueTab(ref),
-            _buildAILogsTab(ref),
+            _buildQueueTab(context, ref),
+            _buildAILogsTab(context, ref),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQueueTab(WidgetRef ref) {
+  Widget _buildQueueTab(BuildContext context, WidgetRef ref) {
     final queueAsync = ref.watch(moderationQueueProvider);
 
     return queueAsync.when(
@@ -163,7 +162,7 @@ class ModerationScreen extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: items.length,
-          itemBuilder: (context, index) => _buildQueueItem(ref, items[index]),
+          itemBuilder: (context, index) => _buildQueueItem(context, ref, items[index]),
         );
       },
       loading: () => const Padding(
@@ -182,7 +181,7 @@ class ModerationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQueueItem(WidgetRef ref, Map<String, dynamic> item) {
+  Widget _buildQueueItem(BuildContext context, WidgetRef ref, Map<String, dynamic> item) {
     final contentType = item['content_type'] ?? 'unknown';
     final reason = item['reason'] ?? 'No reason';
     final reportedBy = item['reported_by'] ?? 'Unknown';
@@ -299,7 +298,7 @@ class ModerationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAILogsTab(WidgetRef ref) {
+  Widget _buildAILogsTab(BuildContext context, WidgetRef ref) {
     final logsAsync = ref.watch(aiModerationLogsProvider);
 
     return logsAsync.when(
@@ -309,7 +308,7 @@ class ModerationScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Iconsax.chart_2,
                   size: 48,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -329,7 +328,7 @@ class ModerationScreen extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: logs.length,
-          itemBuilder: (context, index) => _buildAILogItem(logs[index]),
+          itemBuilder: (context, index) => _buildAILogItem(context, logs[index]),
         );
       },
       loading: () => const Padding(
@@ -348,7 +347,7 @@ class ModerationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAILogItem(Map<String, dynamic> log) {
+  Widget _buildAILogItem(BuildContext context, Map<String, dynamic> log) {
     final flaggedReason = log['flagged_reason'] ?? 'Unknown';
     final confidenceScore = (log['confidence_score'] as num?)?.toDouble() ?? 0.0;
     final actionTaken = log['action_taken'] ?? 'none';

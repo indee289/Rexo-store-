@@ -96,6 +96,7 @@ class _BrandCampaignsList extends ConsumerWidget {
       data: (campaigns) {
         if (campaigns.isEmpty) {
           return _buildEmptyState(
+            context: context,
             icon: Iconsax.volume_high,
             title: 'No campaigns yet',
             subtitle: 'Create your first campaign to find creators',
@@ -142,6 +143,7 @@ class _CreatorApplicationsList extends ConsumerWidget {
       data: (applications) {
         if (applications.isEmpty) {
           return _buildEmptyState(
+            context: context,
             icon: Iconsax.document,
             title: 'No applications yet',
             subtitle: 'Apply to campaigns to start collaborating with brands',
@@ -363,6 +365,7 @@ class _ApplicationCard extends StatelessWidget {
 }
 
 Widget _buildEmptyState({
+  required BuildContext context,
   required IconData icon,
   required String title,
   required String subtitle,

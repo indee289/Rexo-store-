@@ -29,12 +29,12 @@ class AuditLogsScreen extends ConsumerWidget {
       body: logs.when(
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Iconsax.document_text, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text('No audit logs',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
@@ -82,7 +82,7 @@ class AuditLogsScreen extends ConsumerWidget {
                             if (log['details'] != null)
                               Text(
                                 log['details'],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
@@ -92,7 +92,7 @@ class AuditLogsScreen extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(
                               createdAt,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                               ),

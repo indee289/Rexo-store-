@@ -73,10 +73,10 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.pink.withOpacity(0.2)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Iconsax.notification, color: Colors.pink, size: 24),
-                  SizedBox(width: 12),
+                  const Icon(Iconsax.notification, color: Colors.pink, size: 24),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +103,7 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Notification Title',
               style: TextStyle(
                 fontSize: 14,
@@ -119,7 +119,7 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Message',
               style: TextStyle(
                 fontSize: 14,

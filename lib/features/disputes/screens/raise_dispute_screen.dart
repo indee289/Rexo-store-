@@ -103,7 +103,7 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
                 decoration: InputDecoration(
                   hintText: 'Enter the ${_relatedType.toLowerCase()} ID',
                   hintStyle: AppTextStyles.bodySmall,
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Iconsax.hashtag,
                     size: 18,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -139,7 +139,7 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
                 decoration: InputDecoration(
                   hintText: 'Brief subject of your dispute',
                   hintStyle: AppTextStyles.bodySmall,
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Iconsax.document_text,
                     size: 18,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),

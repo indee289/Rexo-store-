@@ -80,7 +80,7 @@ class SubscriptionsScreen extends ConsumerWidget {
             plansAsync.when(
               data: (plans) {
                 if (plans.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(context);
                 }
                 return Column(
                   children: plans
@@ -383,7 +383,7 @@ class SubscriptionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),

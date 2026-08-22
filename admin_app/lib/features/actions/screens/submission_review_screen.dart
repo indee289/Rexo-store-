@@ -22,12 +22,12 @@ class SubmissionReviewScreen extends ConsumerWidget {
       body: submissions.when(
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
-                  SizedBox(height: 12),
+                  const Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
+                  const SizedBox(height: 12),
                   Text('All caught up!',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                   Text('No pending submissions',
@@ -60,7 +60,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
                         submission['content'] ?? 'No content provided',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),

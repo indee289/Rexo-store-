@@ -70,13 +70,13 @@ class _CouponsTab extends ConsumerWidget {
     return couponsAsync.when(
       data: (coupons) {
         if (coupons.isEmpty) {
-          return _buildEmpty();
+          return _buildEmpty(context);
         }
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: coupons.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => _buildCouponCard(coupons[index]),
+          itemBuilder: (context, index) => _buildCouponCard(context, coupons[index]),
         );
       },
       loading: () => const ShimmerLoading(),
@@ -99,7 +99,7 @@ class _CouponsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildCouponCard(Map<String, dynamic> coupon) {
+  Widget _buildCouponCard(BuildContext context, Map<String, dynamic> coupon) {
     final code = coupon['code'] as String? ?? '';
     final discountType = coupon['discount_type'] as String? ?? 'fixed';
     final discountValue = (coupon['discount_value'] as num?)?.toDouble() ?? 0;
@@ -190,7 +190,7 @@ class _CouponsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
