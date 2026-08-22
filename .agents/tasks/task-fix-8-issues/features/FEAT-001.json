@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix Issues #1, #2, #3: Deposit/Withdrawal approval must credit/debit wallet atomically, KYC status icon consistency, Campaign creation form redesign with new DB columns",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Fix admin_app/lib/features/admin/providers/admin_provider.dart: In approveDeposit(), after updating deposit status to 'approved', fetch the deposit record to get user_id and amount, then look up the wallet by user_id and increment available_balance atomically (fetch current balance, add amount, update). Similarly in approveWithdrawal(), after updating status to 'approved', fetch the withdrawal record, look up wallet by user_id, and deduct available_balance (with insufficient balance check).",
     "2. Fix KYC status icon in lib/features/kyc/screens/kyc_upload_screen.dart: In _buildDocumentCard(), the status switch uses 'verified' for approved status but the admin sets status to 'approved'. Add 'approved' case to match 'verified' behavior (tick_circle + success color). Keep 'verified' as well for backwards compatibility. Ensure: checkmark (tick_circle) for approved/verified, clock for pending, X (close_circle) for rejected.",
@@ -23,5 +23,5 @@
     "Read supabase/add_campaign_columns.sql and confirm ALTER TABLE statements exist"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 3 issues implemented successfully. Issue #1: approveDeposit/approveWithdrawal now fetch the record to get user_id/amount, then update wallets.available_balance accordingly (with insufficient balance check for withdrawals). Issue #2: Added 'approved' case alongside 'verified' in the KYC status switch for tick_circle icon. Issue #3: Campaign form completely rewritten with exactly 9 fields, platform stored lowercase for DB constraint compatibility. SQL migration created at supabase/add_campaign_columns.sql. Cannot verify via flutter build/analyze due to INTEGRATIONS_ONLY network mode - verified by code inspection only."
 }
