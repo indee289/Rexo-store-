@@ -25,6 +25,9 @@ import '../../features/campaigns/screens/apply_screen.dart';
 import '../../features/campaigns/screens/campaign_detail_screen.dart';
 import '../../features/campaigns/screens/campaigns_screen.dart';
 import '../../features/campaigns/screens/my_campaigns_screen.dart';
+import '../../features/coupons/screens/coupons_screen.dart';
+import '../../features/disputes/screens/disputes_screen.dart';
+import '../../features/disputes/screens/raise_dispute_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/kyc/screens/kyc_upload_screen.dart';
 import '../../features/legal/screens/privacy_policy_screen.dart';
@@ -33,12 +36,20 @@ import '../../features/linked_accounts/screens/linked_accounts_screen.dart';
 import '../../features/messages/screens/chat_screen.dart';
 import '../../features/messages/screens/messages_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
+import '../../features/orders/screens/order_detail_screen.dart';
+import '../../features/orders/screens/orders_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/reviews/screens/reviews_screen.dart';
+import '../../features/sellers/screens/seller_profile_screen.dart';
+import '../../features/services/screens/media_kit_screen.dart';
+import '../../features/services/screens/rate_calculator_screen.dart';
+import '../../features/services/screens/services_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shop/screens/cart_screen.dart';
 import '../../features/shop/screens/checkout_screen.dart';
 import '../../features/shop/screens/product_detail_screen.dart';
 import '../../features/shop/screens/shop_screen.dart';
+import '../../features/subscriptions/screens/subscriptions_screen.dart';
 import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/wallet/screens/withdraw_screen.dart';
@@ -87,6 +98,17 @@ class AppRoutes {
   static const String adminSettings = '/admin/settings';
   static const String adminAuditLogs = '/admin/audit-logs';
   static const String adminBroadcast = '/admin/broadcast';
+  static const String orders = '/orders';
+  static const String orderDetail = '/orders/:id';
+  static const String disputes = '/disputes';
+  static const String disputesRaise = '/disputes/raise';
+  static const String reviews = '/reviews/:targetId';
+  static const String coupons = '/coupons';
+  static const String sellerProfile = '/seller/:id';
+  static const String services = '/services';
+  static const String servicesRateCalculator = '/services/rate-calculator';
+  static const String servicesMediaKit = '/services/media-kit';
+  static const String subscriptions = '/subscriptions';
 }
 
 /// GoRouter provider
@@ -389,6 +411,86 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.adminBroadcast,
         builder: (context, state) => const AdminBroadcastScreen(),
+      ),
+
+      /// Orders screen
+      GoRoute(
+        path: AppRoutes.orders,
+        builder: (context, state) => const OrdersScreen(),
+      ),
+
+      /// Order Detail screen
+      GoRoute(
+        path: AppRoutes.orderDetail,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return OrderDetailScreen(orderId: id);
+        },
+      ),
+
+      /// Disputes screen
+      GoRoute(
+        path: AppRoutes.disputes,
+        builder: (context, state) => const DisputesScreen(),
+      ),
+
+      /// Raise Dispute screen
+      GoRoute(
+        path: AppRoutes.disputesRaise,
+        builder: (context, state) => const RaiseDisputeScreen(),
+      ),
+
+      /// Reviews screen
+      GoRoute(
+        path: AppRoutes.reviews,
+        builder: (context, state) {
+          final targetId = state.pathParameters['targetId']!;
+          final targetType =
+              state.uri.queryParameters['targetType'] ?? 'product';
+          return ReviewsScreen(
+            targetId: targetId,
+            targetType: targetType,
+          );
+        },
+      ),
+
+      /// Coupons screen
+      GoRoute(
+        path: AppRoutes.coupons,
+        builder: (context, state) => const CouponsScreen(),
+      ),
+
+      /// Seller Profile screen
+      GoRoute(
+        path: AppRoutes.sellerProfile,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return SellerProfileScreen(sellerId: id);
+        },
+      ),
+
+      /// Services screen
+      GoRoute(
+        path: AppRoutes.services,
+        builder: (context, state) => const ServicesScreen(),
+      ),
+
+      /// Rate Calculator screen
+      GoRoute(
+        path: AppRoutes.servicesRateCalculator,
+        builder: (context, state) => const RateCalculatorScreen(),
+      ),
+
+      /// Media Kit screen
+      GoRoute(
+        path: AppRoutes.servicesMediaKit,
+        builder: (context, state) => const MediaKitScreen(),
+      ),
+
+      /// Subscriptions screen
+      GoRoute(
+        path: AppRoutes.subscriptions,
+        builder: (context, state) => const SubscriptionsScreen(),
       ),
     ],
   );

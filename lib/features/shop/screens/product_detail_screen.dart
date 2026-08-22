@@ -7,6 +7,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../reviews/widgets/star_rating_widget.dart';
 import '../providers/shop_provider.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -215,6 +216,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       Text('Quantity', style: AppTextStyles.h6),
                       const SizedBox(height: 8),
                       _buildQuantitySelector(stock),
+                      const SizedBox(height: 24),
+
+                      // Seller section
+                      _buildSellerSection(),
+                      const SizedBox(height: 16),
+
+                      // Reviews section
+                      _buildReviewsSection(product),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -464,6 +473,97 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSellerSection() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Center(
+              child: Icon(
+                Iconsax.shop,
+                size: 20,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sold by',
+                  style: AppTextStyles.caption,
+                ),
+                Text(
+                  'Rexo Marketplace',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Iconsax.verify5,
+            size: 20,
+            color: Color(0xFF2196F3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewsSection(Map<String, dynamic> product) {
+    final productId = product['id'] as String? ?? '';
+
+    return GestureDetector(
+      onTap: () {
+        context.push('/reviews/$productId?targetType=product');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            const StarRatingCompact(rating: 4.0, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'See all reviews',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const Icon(
+              Iconsax.arrow_right_3,
+              size: 18,
+              color: AppColors.textHint,
             ),
           ],
         ),

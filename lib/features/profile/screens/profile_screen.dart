@@ -172,7 +172,22 @@ class ProfileScreen extends ConsumerWidget {
           _buildMenuItem(
             icon: Iconsax.bag_2,
             title: 'My Orders',
-            onTap: () {},
+            onTap: () => context.push('/orders'),
+          ),
+          _buildMenuItem(
+            icon: Iconsax.message_question,
+            title: 'Disputes',
+            onTap: () => context.push('/disputes'),
+          ),
+          _buildMenuItem(
+            icon: Iconsax.crown_1,
+            title: 'Subscriptions',
+            onTap: () => context.push('/subscriptions'),
+          ),
+          _buildMenuItem(
+            icon: Iconsax.briefcase,
+            title: 'Services',
+            onTap: () => context.push('/services'),
           ),
           _buildMenuItem(
             icon: Iconsax.shield_tick,

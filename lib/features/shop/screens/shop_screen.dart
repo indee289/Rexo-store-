@@ -7,23 +7,16 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../categories/widgets/category_filter_widget.dart';
 import '../providers/shop_provider.dart';
 import '../widgets/product_card.dart';
 
 class ShopScreen extends ConsumerWidget {
   const ShopScreen({super.key});
 
-  static const List<String> _categories = [
-    'All',
-    'Digital',
-    'Physical',
-    'Services',
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final products = ref.watch(productsProvider);
-    final selectedCategory = ref.watch(shopCategoryFilter);
     final cartCount = ref.watch(cartItemCountProvider);
 
     return Scaffold(
@@ -87,10 +80,10 @@ class ShopScreen extends ConsumerWidget {
         child: CustomScrollView(
           slivers: [
             // Category tabs
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                child: _buildCategoryTabs(ref, selectedCategory),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: CategoryFilterWidget(),
               ),
             ),
 
@@ -146,44 +139,6 @@ class ShopScreen extends ConsumerWidget {
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryTabs(WidgetRef ref, String selectedCategory) {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final isSelected = category == selectedCategory;
-
-          return GestureDetector(
-            onTap: () {
-              ref.read(shopCategoryFilter.notifier).state = category;
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                ),
-              ),
-              child: Text(
-                category,
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

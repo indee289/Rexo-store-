@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../coupons/providers/coupons_provider.dart';
 import '../providers/shop_provider.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _stateController = TextEditingController();
   final _pincodeController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _couponController = TextEditingController();
 
   String _selectedPaymentMethod = 'UPI';
   bool _isPlacingOrder = false;
@@ -37,6 +39,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _stateController.dispose();
     _pincodeController.dispose();
     _phoneController.dispose();
+    _couponController.dispose();
     super.dispose();
   }
 
@@ -125,6 +128,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Apply Coupon section
+                    _buildCouponSection(totalAmount),
+                    const SizedBox(height: 16),
+
                     // Order items summary
                     _buildOrderItemsSummary(cartItems),
                     const SizedBox(height: 24),
@@ -153,6 +160,180 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
           // Place order button
           _buildPlaceOrderButton(cartItems, totalAmount),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCouponSection(double totalAmount) {
+    final couponState = ref.watch(couponNotifierProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Apply Coupon',
+            style: AppTextStyles.labelLarge.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (couponState.appliedCoupon != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.success.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Iconsax.tick_circle,
+                    size: 18,
+                    color: AppColors.success,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Coupon applied: ${couponState.appliedCoupon!['code']}',
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'Discount: -\u20B9${couponState.discountAmount.toStringAsFixed(0)}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      ref.read(couponNotifierProvider.notifier).removeCoupon();
+                    },
+                    icon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: AppColors.textHint,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _couponController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter coupon code',
+                      hintStyle: AppTextStyles.bodySmall,
+                      prefixIcon: const Icon(
+                        Iconsax.ticket_discount,
+                        size: 18,
+                        color: AppColors.textHint,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.primary),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      isDense: true,
+                    ),
+                    style: AppTextStyles.bodyMedium,
+                    textCapitalization: TextCapitalization.characters,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: couponState.isApplying
+                        ? null
+                        : () {
+                            if (_couponController.text.trim().isNotEmpty) {
+                              ref
+                                  .read(couponNotifierProvider.notifier)
+                                  .applyCoupon(
+                                    _couponController.text.trim(),
+                                    totalAmount,
+                                  );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: couponState.isApplying
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Apply',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+            if (couponState.error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                couponState.error!,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -435,6 +616,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildOrderTotal(double totalAmount) {
+    final couponState = ref.watch(couponNotifierProvider);
+    final discount = couponState.discountAmount;
+    final finalTotal = totalAmount - discount;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -442,13 +627,48 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Text('Order Total', style: AppTextStyles.h6),
-          Text(
-            '\u20B9${totalAmount.toStringAsFixed(0)}',
-            style: AppTextStyles.h4.copyWith(color: AppColors.primary),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Subtotal', style: AppTextStyles.bodyMedium),
+              Text(
+                '\u20B9${totalAmount.toStringAsFixed(0)}',
+                style: AppTextStyles.bodyMedium,
+              ),
+            ],
+          ),
+          if (discount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Coupon Discount',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.success,
+                  ),
+                ),
+                Text(
+                  '-\u20B9${discount.toStringAsFixed(0)}',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(color: AppColors.divider, height: 16),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Order Total', style: AppTextStyles.h6),
+              Text(
+                '\u20B9${finalTotal.toStringAsFixed(0)}',
+                style: AppTextStyles.h4.copyWith(color: AppColors.primary),
+              ),
+            ],
           ),
         ],
       ),
