@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Implement Home/Discover screen and Profile screen with real Supabase data fetching, premium UI components, and full functionality.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create lib/features/home/screens/home_screen.dart - premium discover/home screen with: greeting header with user avatar, search bar, featured campaigns carousel (horizontal scroll with cards), category filter chips, trending creators section, recent campaigns grid. All data fetched from Supabase.",
     "Create lib/features/home/widgets/campaign_card.dart - premium campaign card widget with image, brand avatar, title, budget, deadline, platform icon, slots indicator. Rounded corners, subtle shadows, shimmer loading state.",
