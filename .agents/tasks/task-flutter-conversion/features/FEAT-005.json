@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Implement Wallet, Notifications, Messages, and remaining supporting screens. Final cleanup, commit, and push to origin Rexo-Kotlin.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create lib/features/wallet/screens/wallet_screen.dart - wallet overview: balance card (available + escrow), recent transactions list, action buttons (Deposit, Withdraw). Premium gradient balance card.",
     "Create lib/features/wallet/screens/deposit_screen.dart - deposit form: amount, payment method (UPI), transaction ref, upload proof screenshot. Submits to deposits table.",

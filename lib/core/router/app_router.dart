@@ -9,12 +9,19 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/campaigns/screens/apply_screen.dart';
 import '../../features/campaigns/screens/campaign_detail_screen.dart';
 import '../../features/campaigns/screens/campaigns_screen.dart';
+import '../../features/campaigns/screens/my_campaigns_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/messages/screens/chat_screen.dart';
+import '../../features/messages/screens/messages_screen.dart';
+import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/shop/screens/cart_screen.dart';
 import '../../features/shop/screens/checkout_screen.dart';
 import '../../features/shop/screens/product_detail_screen.dart';
 import '../../features/shop/screens/shop_screen.dart';
+import '../../features/wallet/screens/deposit_screen.dart';
+import '../../features/wallet/screens/wallet_screen.dart';
+import '../../features/wallet/screens/withdraw_screen.dart';
 import '../widgets/app_shell.dart';
 
 /// Route paths
@@ -33,6 +40,13 @@ class AppRoutes {
   static const String cart = '/cart';
   static const String checkout = '/checkout';
   static const String profile = '/profile';
+  static const String wallet = '/wallet';
+  static const String walletDeposit = '/wallet/deposit';
+  static const String walletWithdraw = '/wallet/withdraw';
+  static const String notifications = '/notifications';
+  static const String messages = '/messages';
+  static const String chat = '/messages/:userId';
+  static const String myCampaigns = '/my-campaigns';
 }
 
 /// GoRouter provider
@@ -167,6 +181,51 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.checkout,
         builder: (context, state) => const CheckoutScreen(),
+      ),
+
+      /// Wallet screen
+      GoRoute(
+        path: AppRoutes.wallet,
+        builder: (context, state) => const WalletScreen(),
+      ),
+
+      /// Wallet deposit screen
+      GoRoute(
+        path: AppRoutes.walletDeposit,
+        builder: (context, state) => const DepositScreen(),
+      ),
+
+      /// Wallet withdraw screen
+      GoRoute(
+        path: AppRoutes.walletWithdraw,
+        builder: (context, state) => const WithdrawScreen(),
+      ),
+
+      /// Notifications screen
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      /// Messages screen
+      GoRoute(
+        path: AppRoutes.messages,
+        builder: (context, state) => const MessagesScreen(),
+      ),
+
+      /// Chat screen
+      GoRoute(
+        path: AppRoutes.chat,
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return ChatScreen(otherUserId: userId);
+        },
+      ),
+
+      /// My Campaigns screen
+      GoRoute(
+        path: AppRoutes.myCampaigns,
+        builder: (context, state) => const MyCampaignsScreen(),
       ),
     ],
   );
