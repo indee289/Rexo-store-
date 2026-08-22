@@ -23,6 +23,11 @@ AS $$
 DECLARE
   v_new_balance NUMERIC;
 BEGIN
+  -- Admin role check: only admin users can call this function
+  IF NOT EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin') THEN
+    RAISE EXCEPTION 'Unauthorized: admin role required';
+  END IF;
+
   IF p_amount <= 0 THEN
     RAISE EXCEPTION 'Amount must be positive';
   END IF;
@@ -55,6 +60,11 @@ DECLARE
   v_current_balance NUMERIC;
   v_new_balance NUMERIC;
 BEGIN
+  -- Admin role check: only admin users can call this function
+  IF NOT EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin') THEN
+    RAISE EXCEPTION 'Unauthorized: admin role required';
+  END IF;
+
   IF p_amount <= 0 THEN
     RAISE EXCEPTION 'Amount must be positive';
   END IF;
@@ -83,7 +93,9 @@ BEGIN
 END;
 $$;
 
--- Grant execute permissions to authenticated users (admin role check should be
--- enforced at the application level or via a custom claims check within the function)
+-- Grant execute permissions to authenticated users.
+-- The admin role check is enforced INSIDE each function body (see above),
+-- so even though all authenticated users can call the function, non-admin
+-- users will receive an 'Unauthorized: admin role required' exception.
 GRANT EXECUTE ON FUNCTION increment_wallet_balance(UUID, NUMERIC) TO authenticated;
 GRANT EXECUTE ON FUNCTION decrement_wallet_balance(UUID, NUMERIC) TO authenticated;

@@ -59,32 +59,6 @@ final transactionsProvider =
   return combined;
 });
 
-/// Realtime stream provider for deposits so users see status changes
-/// (pending -> approved/rejected) made by admin in real-time.
-final depositsRealtimeProvider =
-    StreamProvider<List<Map<String, dynamic>>>((ref) {
-  final user = SupabaseService.currentUser;
-  if (user == null) return Stream.value([]);
-
-  return SupabaseService.client
-      .from('deposits')
-      .stream(primaryKey: ['id'])
-      .eq('user_id', user.id);
-});
-
-/// Realtime stream provider for withdrawals so users see status changes
-/// (pending -> approved/rejected) made by admin in real-time.
-final withdrawalsRealtimeProvider =
-    StreamProvider<List<Map<String, dynamic>>>((ref) {
-  final user = SupabaseService.currentUser;
-  if (user == null) return Stream.value([]);
-
-  return SupabaseService.client
-      .from('withdrawals')
-      .stream(primaryKey: ['id'])
-      .eq('user_id', user.id);
-});
-
 /// Wallet actions notifier for deposits and withdrawals
 class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
