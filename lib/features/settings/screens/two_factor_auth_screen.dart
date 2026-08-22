@@ -60,21 +60,13 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         setState(() => _isEnrolled = false);
       }
     } catch (e) {
-      // If MFA API is not available or throws, show graceful message
-      final errorStr = e.toString().toLowerCase();
-      if (errorStr.contains('mfa') ||
-          errorStr.contains('not supported') ||
-          errorStr.contains('unimplemented') ||
-          errorStr.contains('method not found') ||
-          errorStr.contains('404') ||
-          errorStr.contains('not enabled')) {
-        setState(() => _mfaNotSupported = true);
-      } else {
-        setState(() =>
-            _errorMessage = 'Unable to check 2FA status. Please try again later.');
-      }
+      // ANY error from MFA = treat as not supported
+      // This prevents auth state changes from crashing the app
+      setState(() => _mfaNotSupported = true);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -97,20 +89,11 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         _isEnrolling = false;
       });
     } catch (e) {
-      final errorStr = e.toString().toLowerCase();
-      if (errorStr.contains('mfa') ||
-          errorStr.contains('not supported') ||
-          errorStr.contains('not enabled')) {
-        setState(() {
-          _mfaNotSupported = true;
-          _isEnrolling = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Failed to start 2FA enrollment. Please try again.';
-          _isEnrolling = false;
-        });
-      }
+      // ANY error = MFA not supported, show coming soon
+      setState(() {
+        _mfaNotSupported = true;
+        _isEnrolling = false;
+      });
     }
   }
 

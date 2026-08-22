@@ -11,7 +11,7 @@ final _rexoProgramProvider =
   final response = await SupabaseService.client
       .from('rexo_program_applications')
       .select()
-      .order('created_at', ascending: false);
+      .order('applied_at', ascending: false);
   return List<Map<String, dynamic>>.from(response);
 });
 
