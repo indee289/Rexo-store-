@@ -24,6 +24,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/campaigns/screens/apply_screen.dart';
 import '../../features/campaigns/screens/campaign_detail_screen.dart';
 import '../../features/campaigns/screens/campaigns_screen.dart';
+import '../../features/campaigns/screens/create_campaign_screen.dart';
 import '../../features/campaigns/screens/my_campaigns_screen.dart';
 import '../../features/coupons/screens/coupons_screen.dart';
 import '../../features/disputes/screens/disputes_screen.dart';
@@ -83,6 +84,7 @@ class AppRoutes {
   static const String messages = '/messages';
   static const String chat = '/messages/:userId';
   static const String myCampaigns = '/my-campaigns';
+  static const String createCampaign = '/create-campaign';
   static const String settings = '/settings';
   static const String linkedAccounts = '/linked-accounts';
   static const String kyc = '/kyc';
@@ -303,6 +305,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.myCampaigns,
         builder: (context, state) => const MyCampaignsScreen(),
+      ),
+
+      /// Create Campaign screen
+      GoRoute(
+        path: AppRoutes.createCampaign,
+        builder: (context, state) => const CreateCampaignScreen(),
       ),
 
       /// Settings screen

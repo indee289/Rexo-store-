@@ -7,8 +7,19 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
 import '../widgets/campaign_list_card.dart';
+import 'create_campaign_screen.dart';
+
+/// Provider for current user's role (for FAB visibility)
+final _campaignsUserRoleProvider = FutureProvider<String?>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return null;
+
+  final profile = await SupabaseService.getUserProfile(user.id);
+  return profile?['role'] as String?;
+});
 
 class CampaignsScreen extends ConsumerStatefulWidget {
   const CampaignsScreen({super.key});
@@ -43,6 +54,13 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
   Widget build(BuildContext context) {
     final campaigns = ref.watch(campaignsListProvider);
     final selectedCategory = ref.watch(campaignFilterProvider);
+    final roleAsync = ref.watch(_campaignsUserRoleProvider);
+
+    // Determine if FAB should be shown (brand or admin only)
+    final showFab = roleAsync.whenOrNull(
+          data: (role) => role == 'brand' || role == 'admin',
+        ) ??
+        false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -72,6 +90,19 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
           ),
         ],
       ),
+      floatingActionButton: showFab
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreateCampaignScreen(),
+                  ),
+                );
+              },
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
