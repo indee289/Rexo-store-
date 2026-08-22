@@ -282,7 +282,7 @@ class WarningsScreen extends ConsumerWidget {
       case 'rejected':
         return AppColors.error;
       default:
-        return Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
+        return const Color(0xFF9E9E9E);
     }
   }
 

@@ -148,7 +148,7 @@ class SecurityLogsScreen extends ConsumerWidget {
             .format(DateTime.parse(log['created_at']))
         : 'Unknown';
 
-    final eventConfig = _getEventConfig(eventType);
+    final eventConfig = _getEventConfig(context, eventType);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -261,7 +261,7 @@ class SecurityLogsScreen extends ConsumerWidget {
     );
   }
 
-  _EventConfig _getEventConfig(String eventType) {
+  _EventConfig _getEventConfig(BuildContext context, String eventType) {
     switch (eventType) {
       case 'login':
         return _EventConfig(
