@@ -396,12 +396,12 @@ class SubscriptionsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No plans available',
+              'No plans available yet',
               style: AppTextStyles.h5.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
-              'Subscription plans will appear here soon',
+              'Check back soon!',
               style: AppTextStyles.bodySmall,
             ),
           ],

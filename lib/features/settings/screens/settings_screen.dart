@@ -275,12 +275,14 @@ class SettingsScreen extends ConsumerWidget {
       child: Row(
         children: [
           _buildLanguageOption(
+            context: context,
             ref: ref,
             label: 'English',
             code: 'en',
             isSelected: settings.language == 'en',
           ),
           _buildLanguageOption(
+            context: context,
             ref: ref,
             label: 'Hindi',
             code: 'hi',
@@ -292,6 +294,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildLanguageOption({
+    required BuildContext context,
     required WidgetRef ref,
     required String label,
     required String code,
@@ -299,7 +302,26 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => ref.read(settingsProvider.notifier).setLanguage(code),
+        onTap: () {
+          ref.read(settingsProvider.notifier).setLanguage(code);
+          final message = code == 'hi'
+              ? 'Hindi selected - Full Hindi language support coming soon'
+              : 'English selected';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                message,
+                style: GoogleFonts.poppins(fontSize: 13),
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -309,16 +331,33 @@ class SettingsScreen extends ConsumerWidget {
                 ? Border.all(color: AppColors.primary.withOpacity(0.3))
                 : null,
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color:
-                    isSelected ? AppColors.primary : AppColors.textSecondary,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
               ),
-            ),
+              if (code == 'hi')
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '(Coming soon)',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: isSelected
+                          ? AppColors.primary.withOpacity(0.7)
+                          : AppColors.textHint,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

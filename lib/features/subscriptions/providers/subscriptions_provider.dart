@@ -6,28 +6,38 @@ import '../../../services/supabase_service.dart';
 /// Provider for available subscription plans
 final subscriptionPlansProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final response = await SupabaseService.client
-      .from('subscription_plans')
-      .select()
-      .eq('is_active', true)
-      .order('price', ascending: true);
+  try {
+    final response = await SupabaseService.client
+        .from('subscription_plans')
+        .select()
+        .eq('is_active', true)
+        .order('price', ascending: true);
 
-  return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    // Return empty list on error (e.g., table doesn't exist or RLS issue)
+    return [];
+  }
 });
 
 /// Provider for user's active subscriptions
 final userSubscriptionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return [];
 
-  final response = await SupabaseService.client
-      .from('user_subscriptions')
-      .select()
-      .eq('user_id', user.id)
-      .order('created_at', ascending: false);
+    final response = await SupabaseService.client
+        .from('user_subscriptions')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
 
-  return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    // Return empty list on error
+    return [];
+  }
 });
 
 /// State for subscription actions

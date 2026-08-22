@@ -98,6 +98,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'phone': _phoneController.text.trim(),
       };
 
+      // Include avatar URL in update if it was uploaded
+      if (_currentAvatarUrl != null) {
+        fields['avatar_url'] = _currentAvatarUrl;
+      }
+
       final success = await notifier.updateProfile(fields);
 
       if (mounted) {

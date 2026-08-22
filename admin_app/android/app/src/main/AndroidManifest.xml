@@ -2,6 +2,7 @@
     package="com.rexo.admin">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="Rexo Admin"
