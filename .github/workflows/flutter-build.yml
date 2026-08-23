@@ -54,8 +54,23 @@ jobs:
           # (from the actual Firebase project), decode it over the placeholder so
           # the built APK talks to the correct project and FCM tokens are valid.
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
-            echo "Wrote real google-services.json from secret."
+            # Accept the secret as EITHER raw JSON or base64. Detect by the first
+            # non-whitespace char: real google-services.json starts with '{',
+            # base64 never does. This avoids the common "no matching client"
+            # failure caused by pasting raw JSON while the step base64-decodes it.
+            first_char=$(printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | head -c1)
+            if [ "$first_char" = "{" ]; then
+              printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+              echo "Wrote google-services.json (raw JSON secret)."
+            else
+              echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+              echo "Wrote google-services.json (base64 secret)."
+            fi
+            if grep -q '"package_name": "com.rexo.marketplace"' android/app/google-services.json; then
+              echo "Verified: google-services.json contains com.rexo.marketplace client."
+            else
+              echo "WARNING: google-services.json has NO com.rexo.marketplace client — build will fail."
+            fi
           else
             echo "GOOGLE_SERVICES_JSON secret not set — using placeholder; FCM/push will NOT work."
           fi
