@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../core/utils/error_utils.dart';
+import '../../../services/push_notification_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../device_fingerprint/providers/device_fingerprint_provider.dart';
 
@@ -55,6 +56,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.authenticated,
         user: currentUser,
       );
+      // Session restored on startup: register this device's FCM token so the
+      // user_devices row exists even without a fresh sign-in this launch.
+      _registerDeviceForPush();
     } else {
       state = const AuthState(status: AuthStatus.unauthenticated);
     }
@@ -70,6 +74,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
             status: AuthStatus.authenticated,
             user: session?.user,
           );
+          // A session is now active (login, signup, or restore) — make sure
+          // this device's FCM token is saved to user_devices.
+          _registerDeviceForPush();
           break;
         case supabase.AuthChangeEvent.signedOut:
           state = const AuthState(status: AuthStatus.unauthenticated);
@@ -131,6 +138,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _ref.read(deviceFingerprintProvider.notifier).recordDeviceFingerprint();
     } catch (_) {
       // Non-critical - don't block auth flow
+    }
+  }
+
+  /// Register this device's FCM token in `user_devices` for the now-active
+  /// user. Fire-and-forget: push registration must never block or break auth.
+  /// [PushNotificationService.onUserLogin] fetches the real FCM token and
+  /// upserts it against the authenticated user id (RLS restricts to own rows).
+  void _registerDeviceForPush() {
+    try {
+      PushNotificationService.onUserLogin();
+    } catch (_) {
+      // Non-critical - push notifications are optional.
     }
   }
 
@@ -202,6 +221,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Sign out
   Future<void> signOut() async {
     try {
+      // Remove this device's FCM token BEFORE clearing the session — the
+      // delete is RLS-guarded by auth.uid(), so it must run while still
+      // authenticated. Best-effort; never blocks sign-out.
+      await PushNotificationService.onUserLogout();
+
       await SupabaseService.signOut();
       state = const AuthState(status: AuthStatus.unauthenticated);
     } catch (e) {
