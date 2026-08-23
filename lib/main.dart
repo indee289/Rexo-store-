@@ -27,19 +27,24 @@ void main() async {
 
   await SupabaseService.initialize();
 
-  // Initialize push notifications after Supabase is ready
-  // Only attempt if Firebase initialized successfully
-  if (firebaseAvailable) {
-    try {
-      await PushNotificationService.initialize();
-    } catch (_) {
-      // Push notifications may not be available in all environments - skip silently
-    }
-  }
-
   runApp(
     const ProviderScope(
       child: RexoApp(),
     ),
   );
+
+  // Defer push notification setup until AFTER the first frame so it never
+  // blocks initial render. Firebase is already initialized above; this only
+  // wires up FCM listeners/permissions. Fire-and-forget + guarded so a failure
+  // can never crash startup. FCM token still registers on login via
+  // auth_provider's onUserLogin.
+  if (firebaseAvailable) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await PushNotificationService.initialize();
+      } catch (_) {
+        // Push notifications may not be available in all environments - skip silently
+      }
+    });
+  }
 }
