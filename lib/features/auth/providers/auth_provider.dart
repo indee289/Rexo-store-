@@ -9,7 +9,18 @@ import '../../../services/supabase_service.dart';
 import '../../device_fingerprint/providers/device_fingerprint_provider.dart';
 
 /// Auth state enum
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+///
+/// [mfaRequired] means the password step succeeded but the session is still at
+/// AAL1 while a verified second factor (TOTP) exists — the user must complete
+/// an MFA challenge before they are considered [authenticated].
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  mfaRequired,
+  unauthenticated,
+  error,
+}
 
 /// Auth state model
 class AuthState {
@@ -70,6 +81,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       switch (event) {
         case supabase.AuthChangeEvent.signedIn:
+          // If the sign-in flow flagged that a second factor is still
+          // required, don't override it here. The MFA challenge flow
+          // (completeMfa) owns the transition to authenticated once the TOTP
+          // code is verified — otherwise this event would clobber
+          // mfaRequired and silently bypass 2FA.
+          if (state.status == AuthStatus.mfaRequired) break;
           state = AuthState(
             status: AuthStatus.authenticated,
             user: session?.user,
@@ -82,6 +99,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
           state = const AuthState(status: AuthStatus.unauthenticated);
           break;
         case supabase.AuthChangeEvent.tokenRefreshed:
+          // Preserve a pending MFA challenge across background token refreshes
+          // (a refresh keeps the same assurance level, so it must not elevate
+          // the user to authenticated before the factor is verified).
+          if (state.status == AuthStatus.mfaRequired) break;
           state = AuthState(
             status: AuthStatus.authenticated,
             user: session?.user,
@@ -107,6 +128,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       if (response.user != null) {
+        // Password step succeeded (AAL1). Supabase does NOT block the login
+        // when a verified TOTP factor exists — it just stays at AAL1. Detect
+        // that here and require the second factor before treating the user as
+        // fully authenticated.
+        if (await _mfaChallengeRequired()) {
+          state = AuthState(
+            status: AuthStatus.mfaRequired,
+            user: response.user,
+          );
+          return;
+        }
+
         state = AuthState(
           status: AuthStatus.authenticated,
           user: response.user,
@@ -129,6 +162,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.unauthenticated,
         errorMessage: 'An unexpected error occurred. Please try again.',
       );
+    }
+  }
+
+  /// Whether the current session needs to step up to AAL2 (i.e. a verified
+  /// TOTP factor exists but hasn't been satisfied this session).
+  ///
+  /// Fails OPEN: if the assurance-level lookup throws for any reason we return
+  /// false so a transient error can never lock a legitimate user out.
+  Future<bool> _mfaChallengeRequired() async {
+    try {
+      final aal = await SupabaseService.client.auth.mfa
+          .getAuthenticatorAssuranceLevel();
+      return aal.currentLevel == supabase.AuthenticatorAssuranceLevels.aal1 &&
+          aal.nextLevel == supabase.AuthenticatorAssuranceLevels.aal2;
+    } catch (_) {
+      // Never lock the user out on an AAL lookup failure.
+      return false;
+    }
+  }
+
+  /// Called by the MFA challenge screen after a TOTP code has been verified
+  /// (the session is now elevated to AAL2). Re-reads the current user and
+  /// marks the account as fully authenticated.
+  void completeMfa() {
+    final user = SupabaseService.currentUser;
+    if (user != null) {
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: user,
+      );
+      // Now that the login is fully complete, run the post-login side effects
+      // that were deferred while the second factor was pending.
+      _recordDeviceFingerprint();
+      _registerDeviceForPush();
+    } else {
+      state = const AuthState(status: AuthStatus.unauthenticated);
     }
   }
 

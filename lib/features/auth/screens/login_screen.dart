@@ -40,6 +40,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
 
     final authState = ref.read(authProvider);
+    // Password OK but a verified second factor is required — go finish the
+    // MFA challenge (the router redirect also enforces this).
+    if (authState.status == AuthStatus.mfaRequired) {
+      context.go(AppRoutes.mfaChallenge);
+      return;
+    }
     // Surface ANY login failure. signIn reports bad credentials as
     // `unauthenticated` + errorMessage (not `error`), so gate on the message,
     // not the status, otherwise password errors were silently swallowed.

@@ -7,6 +7,7 @@ import '../../features/addresses/screens/addresses_screen.dart';
 import '../../features/admin/screens/admin_shell.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/mfa_challenge_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/campaigns/screens/apply_screen.dart';
@@ -58,6 +59,7 @@ class AppRoutes {
 
   static const String splash = '/splash';
   static const String login = '/login';
+  static const String mfaChallenge = '/mfa-challenge';
   static const String register = '/register';
   static const String home = '/home';
   static const String campaigns = '/campaigns';
@@ -150,12 +152,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOnAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register;
       final isOnSplash = state.matchedLocation == AppRoutes.splash;
+      final isOnMfaChallenge =
+          state.matchedLocation == AppRoutes.mfaChallenge;
 
       // Allow splash screen to handle its own navigation
       if (isOnSplash) return null;
 
       // Don't redirect while loading/initializing
       if (isLoading) return null;
+
+      // Password step done but a verified second factor is still pending:
+      // force the MFA challenge and never let this user reach a protected
+      // route (e.g. /home) until the factor is verified.
+      if (status == AuthStatus.mfaRequired) {
+        return isOnMfaChallenge ? null : AppRoutes.mfaChallenge;
+      }
+
+      // Once the challenge is satisfied (authenticated) send them home; if the
+      // session was dropped (unauthenticated) send them back to login. Either
+      // way, don't leave anyone stranded on the challenge screen.
+      if (isOnMfaChallenge) {
+        if (isAuthenticated) return AppRoutes.home;
+        if (!isAuthenticated) return AppRoutes.login;
+      }
 
       // If not authenticated and not on an auth route, redirect to login
       if (!isAuthenticated && !isOnAuthRoute) {
@@ -180,6 +199,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      /// MFA challenge screen (login-time TOTP second factor)
+      GoRoute(
+        path: AppRoutes.mfaChallenge,
+        builder: (context, state) => const MfaChallengeScreen(),
       ),
 
       /// Register screen
