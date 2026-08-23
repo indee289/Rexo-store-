@@ -1,6 +1,19 @@
 {
   "id": "FEAT-002",
   "title": "Fix profile edit reliability, improve error handling, reduce splash delay, add admin dark mode",
-  "status": "in_progress",
-  "description": "Fix profile edit error propagation, improve error messages for handle uniqueness, add fallback for empty trending creators, reduce splash delay, and add dark mode support to the admin app."
+  "status": "completed",
+  "description": "Fix profile edit error propagation, improve error messages for handle uniqueness, add fallback for empty trending creators, reduce splash delay, and add dark mode support to the admin app.",
+  "findings": {
+    "environment": "Flutter SDK is not installed in the sandbox and network access is restricted. Cannot run flutter analyze or flutter build apk. Changes verified by manual code review only.",
+    "changes_summary": [
+      "error_utils.dart: Added handle uniqueness detection (checks for 'handle' + 'unique'/'duplicate'/'already exists') before generic duplicate check",
+      "profile_provider.dart: Added _lastError field and lastError getter to ProfileNotifier; set on catch, cleared on new attempt",
+      "edit_profile_screen.dart: On updateProfile failure, reads notifier.lastError and displays via ErrorUtils.sanitize instead of generic message",
+      "home_provider.dart: trendingCreatorsProvider falls back to fetching from 'users' table where role='creator' if creator_profiles join is empty",
+      "splash_screen.dart: Reduced navigation delay from 1500ms to 800ms (matches animation duration)",
+      "admin_app/core/theme/app_theme.dart: Added full darkTheme getter with dark colors matching user app pattern",
+      "admin_app/features/settings/providers/settings_provider.dart: Created SettingsState, SettingsNotifier, settingsProvider (same pattern as user app)",
+      "admin_app/app.dart: Imported settings provider, added darkTheme and themeMode to MaterialApp.router"
+    ]
+  }
 }
