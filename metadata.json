@@ -1,6 +1,0 @@
-{
-  "name": "Rexo Influencer Marketplace",
-  "description": "Production-ready Influencer Marketplace Platform connecting Creators, Brands, and Admin with escrow payouts, campaign management, and verified analytics.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

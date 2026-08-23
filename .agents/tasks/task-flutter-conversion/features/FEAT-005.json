@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Implement Wallet, Notifications, Messages, and remaining supporting screens. Final cleanup, commit, and push to origin Rexo-Kotlin.",
+  "status": "completed",
+  "steps": [
+    "Create lib/features/wallet/screens/wallet_screen.dart - wallet overview: balance card (available + escrow), recent transactions list, action buttons (Deposit, Withdraw). Premium gradient balance card.",
+    "Create lib/features/wallet/screens/deposit_screen.dart - deposit form: amount, payment method (UPI), transaction ref, upload proof screenshot. Submits to deposits table.",
+    "Create lib/features/wallet/screens/withdraw_screen.dart - withdrawal form: amount, method (UPI/Bank), payout details JSON. Submits to withdrawals table.",
+    "Create lib/features/wallet/providers/wallet_provider.dart - providers for wallet balance, transactions, deposit, withdraw",
+    "Create lib/features/notifications/screens/notifications_screen.dart - notifications list from Supabase notifications table, mark as read, grouped by date, swipe to dismiss",
+    "Create lib/features/notifications/providers/notifications_provider.dart - providers for notifications list, mark read, delete",
+    "Create lib/features/messages/screens/messages_screen.dart - conversation list showing recent messages grouped by other user",
+    "Create lib/features/messages/screens/chat_screen.dart - individual chat with message bubbles, text input, send to Supabase messages table",
+    "Create lib/features/messages/providers/messages_provider.dart - providers for conversations, messages in a conversation, send message",
+    "Add wallet, notifications, and messages routes to lib/core/router/app_router.dart",
+    "Create lib/features/campaigns/screens/my_campaigns_screen.dart - for brands: list of their posted campaigns. For creators: list of their applications with status badges.",
+    "Ensure all routes are connected and navigation works end-to-end",
+    "Run final verification: check all dart files exist, check for obvious syntax errors (unclosed braces, missing semicolons)",
+    "Git add all new files, remove all deleted files, commit with message 'feat: complete Flutter conversion - Rexo Marketplace', push to origin Rexo-Kotlin"
+  ],
+  "acceptance_criteria": [
+    "Wallet screen displays balance from Supabase wallets table",
+    "Deposit and withdraw screens create records in respective Supabase tables",
+    "Notifications screen fetches from notifications table and supports mark-as-read",
+    "Messages screen supports real-time-like chat via Supabase",
+    "All routes are properly defined in app_router.dart",
+    "All changes are committed and pushed to origin Rexo-Kotlin branch",
+    "No Kotlin/Gradle files remain in the repository",
+    "The Flutter project structure is complete and coherent"
+  ],
+  "verification": [
+    "Run: git log --oneline -3 to confirm commit exists",
+    "Run: git diff --stat origin/Rexo-Kotlin to confirm push succeeded (should show nothing)",
+    "Run: find . -name '*.kt' to confirm no Kotlin files remain",
+    "Run: find lib -name '*.dart' | wc -l to confirm substantial number of dart files created (should be 30+)"
+  ],
+  "blocked_reason": null,
+  "findings": "All 10 new dart files created successfully. Router updated with 7 new routes (wallet, deposit, withdraw, notifications, messages, chat, my-campaigns). 6 .gitkeep files removed from directories that now have code. Push to origin Rexo-Kotlin succeeded. Total dart files: 48."
+}

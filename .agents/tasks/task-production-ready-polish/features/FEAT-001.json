@@ -1,0 +1,17 @@
+{
+  "id": "FEAT-001",
+  "title": "Fix dark mode across the entire User App",
+  "status": "completed",
+  "description": "Fix hardcoded light-mode colors in shimmer widgets, profile screens, bottom nav, and main.dart system UI overlay to be theme-aware for proper dark mode support.",
+  "findings": {
+    "environment": "Flutter SDK is not installed in the sandbox and network access is restricted (403 from storage.googleapis.com and pub.dev). Cannot run flutter analyze or flutter build apk. Changes verified by manual code review only.",
+    "changes_summary": [
+      "shimmer_loading.dart: All 7 shimmer widgets now use theme-aware colors based on Theme.of(context).brightness instead of hardcoded AppColors.border/divider",
+      "app_bottom_nav.dart: Added GoogleFonts.poppins import and applied to nav label TextStyle",
+      "profile_screen.dart: Camera badge border uses theme.colorScheme.surface instead of Colors.white",
+      "edit_profile_screen.dart: Camera badge border uses theme.colorScheme.surface instead of Colors.white",
+      "main.dart: Removed hardcoded statusBarIconBrightness and statusBarBrightness from SystemChrome, letting AppBarTheme handle adaptation",
+      "app_theme.dart: Added surfaceContainerHighest to both light and dark ColorScheme"
+    ]
+  }
+}

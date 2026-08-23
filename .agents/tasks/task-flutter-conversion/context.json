@@ -1,0 +1,22 @@
+{
+  "project_type": "Flutter mobile app (converting from Kotlin/Jetpack Compose)",
+  "language": "Dart/Flutter",
+  "build_system": "Flutter SDK with pub, CI via GitHub Actions. No local Flutter SDK available - all files created manually.",
+  "test_framework": "flutter_test (to be set up)",
+  "build_command": "Cannot build locally - no Flutter SDK. Validation via dart syntax checking only.",
+  "test_command": "Cannot run tests locally - no Flutter SDK. CI will handle.",
+  "verification_instructions": "1. Verify all .dart files have valid syntax (no unclosed braces, proper imports). 2. Verify pubspec.yaml is valid YAML with correct dependencies. 3. Verify CI workflow is correct for Flutter. 4. Verify SQL file is complete and valid.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No local setup possible. Flutter SDK not available. All project files must be written manually. CI (GitHub Actions) will handle flutter pub get and build.",
+  "environment_constraints": "INTEGRATIONS_ONLY network - no external downloads. Cannot install Flutter SDK, cannot run pub get, cannot pull Docker images. All files must be hand-written. Git push to origin is available.",
+  "contribution_requirements": "Push to Rexo-Kotlin branch. Remove old Kotlin files. Create complete Flutter project structure.",
+  "key_patterns": "Supabase for backend (URL and anon key from GitHub secrets: SUPABASE_URL, SUPABASE_ANON_KEY). Admin email: rexoagency.in@gmail.com. UI: premium white theme with orange-red accent. 4-tab bottom nav: Home, Campaigns, Shop, Profile.",
+  "relevant_files": [
+    "supabase/schema.sql (existing - to be replaced)",
+    ".github/workflows/android-build.yml (to be replaced with Flutter workflow)",
+    "app/ (Kotlin source - to be deleted)",
+    "build.gradle.kts, settings.gradle.kts, gradle.properties (to be deleted)",
+    "gradle/ (to be deleted)"
+  ],
+  "directory_structure": "Current: Kotlin Android project with app/, gradle/, supabase/. Target: Flutter project with lib/, android/, ios/, web/, supabase/, .github/workflows/"
+}

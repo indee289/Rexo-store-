@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-005",
+  "type": "fix",
+  "description": "Fix Two-Factor Authentication screen for dark mode support (same pattern as FEAT-001) and ensure the QR code display works correctly. The 2FA screen at lib/features/settings/screens/two_factor_auth_screen.dart already has full MFA implementation but uses hardcoded AppColors for backgrounds which breaks in dark mode.",
+  "status": "completed",
+  "steps": [
+    "In lib/features/settings/screens/two_factor_auth_screen.dart: Replace Scaffold backgroundColor: AppColors.background with Theme.of(context).scaffoldBackgroundColor",
+    "Replace AppBar backgroundColor: AppColors.surface with Theme.of(context).colorScheme.surface",
+    "Replace AppColors.textPrimary with Theme.of(context).colorScheme.onSurface for text widgets",
+    "Replace Container fillColor: Colors.white in the OTP TextFormField with Theme.of(context).colorScheme.surface",
+    "Replace the QR code container background Colors.white with Theme.of(context).colorScheme.surface",
+    "Replace secret key container color AppColors.surface with Theme.of(context).colorScheme.surfaceVariant or similar"
+  ],
+  "acceptance_criteria": [
+    "2FA screen responds to dark mode (dark background, light text)",
+    "QR code container and OTP input field use theme-aware colors",
+    "All existing 2FA functionality preserved (enroll, verify, unenroll)",
+    "No compile errors"
+  ],
+  "verification": [
+    "Verify the 2FA screen no longer uses hardcoded AppColors.background/surface for scaffolds and containers"
+  ],
+  "blocked_reason": null,
+  "findings": "Cannot run flutter analyze locally due to INTEGRATIONS_ONLY network mode. All changes are syntactically correct by manual review. Replaced AppColors.background, AppColors.surface, AppColors.textPrimary, AppColors.textSecondary, AppColors.textHint, AppColors.border, and Colors.white (for container/fill backgrounds) with Theme.of(context) equivalents. Used surfaceVariant (not surfaceContainerHighest) for the secret key container since Flutter 3.19 does not have surfaceContainerHighest. Kept AppColors.primary/success/warning/error as they are semantic accent colors shared across both themes. All MFA logic (enroll, verify, unenroll, challenge) is completely unchanged."
+}

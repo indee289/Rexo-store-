@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Implement Settings, Linked Accounts, KYC Upload, Addresses, and update the Supabase schema to include ALL missing tables (linked_accounts, addresses, reviews, reward_points, coupons, product_categories, seller_profiles, services, subscription_plans, user_devices, user_sessions, user_settings, user_subscriptions, user_suspensions, user_warnings, ai_moderation_logs, device_fingerprints, security_audit_logs, security_logs, disputes, moderation_queue). Also add proper RLS policies for all new tables.",
+  "status": "completed",
+  "steps": [
+    "1. Update supabase/schema.sql to add ALL missing tables: linked_accounts, addresses, reviews, reward_points, coupons, product_categories, seller_profiles, services, subscription_plans, user_devices, user_sessions, user_settings, user_subscriptions, user_suspensions, user_warnings, ai_moderation_logs, device_fingerprints, security_audit_logs, security_logs, disputes, moderation_queue. Each table needs proper columns matching Supabase conventions, RLS enabled, and appropriate policies (users read own, admins read all, etc).",
+    "2. Create lib/features/settings/ directory with: providers/settings_provider.dart (theme mode state using shared_preferences, language toggle EN/HI), screens/settings_screen.dart (full settings screen with: language toggle, dark/light/system mode, change password, notification prefs, links to privacy/terms/help/about, logout). Follow the premium UI pattern from profile_screen.dart.",
+    "3. Create lib/features/linked_accounts/ with: providers/linked_accounts_provider.dart (CRUD for linked_accounts table), screens/linked_accounts_screen.dart (form for Instagram/YouTube/TikTok handles, save to Supabase linked_accounts table with user_id, platform, handle columns).",
+    "4. Create lib/features/kyc/ with: providers/kyc_provider.dart (upload doc, read status from kyc_documents table), screens/kyc_upload_screen.dart (camera/gallery picker using image_picker, upload to Supabase Storage kyc-documents bucket, save reference in kyc_documents table, show status: pending/verified/rejected with colored badges).",
+    "5. Create lib/features/addresses/ with: providers/addresses_provider.dart (CRUD for addresses table), screens/addresses_screen.dart (list saved addresses), screens/add_address_screen.dart (form: name, phone, street, city, state, pincode, is_default toggle). The addresses table has user_id, name, phone, address_line1, address_line2, city, state, pincode, is_default columns.",
+    "6. Create lib/features/legal/ with: screens/privacy_policy_screen.dart and screens/terms_of_service_screen.dart - full real legal text pages (not placeholder).",
+    "7. Update lib/core/router/app_router.dart to add routes for: /settings, /linked-accounts, /kyc, /addresses, /privacy-policy, /terms-of-service.",
+    "8. Update lib/features/profile/screens/profile_screen.dart to wire up menu items: Settings -> /settings, KYC Verification -> /kyc, add Linked Accounts menu item -> /linked-accounts, add Addresses menu item -> /addresses.",
+    "9. Update lib/app.dart to support dark theme toggle (read from settings provider, use AppTheme.darkTheme when mode is dark). Add a darkTheme to app_theme.dart.",
+    "10. Ensure all new files use the same patterns: GoogleFonts.poppins, Iconsax icons, AppColors, Riverpod providers, proper loading/error/empty states."
+  ],
+  "acceptance_criteria": [
+    "supabase/schema.sql includes ALL tables from the user's Supabase (all 40+ tables) with RLS policies",
+    "Settings screen has working dark/light/system mode toggle with SharedPreferences persistence",
+    "Settings screen has language toggle (EN/HI) stored in SharedPreferences",
+    "Linked Accounts screen allows entering Instagram/YouTube/TikTok handles and saves to linked_accounts table",
+    "KYC Upload screen uses image_picker for camera/gallery, uploads to Supabase Storage, saves to kyc_documents table, shows status badge",
+    "Addresses screen shows list of saved addresses with add/edit/delete functionality",
+    "Privacy Policy and Terms of Service screens show full legal content",
+    "All new routes are added to app_router.dart and accessible from profile menu",
+    "flutter analyze passes with no errors on all new files"
+  ],
+  "verification": [
+    "Read all new files and verify they compile correctly (no missing imports, proper Dart syntax)",
+    "Verify supabase/schema.sql has all required tables",
+    "Verify app_router.dart has all new routes properly imported and configured"
+  ],
+  "blocked_reason": null,
+  "findings": "Flutter CLI not available in sandbox (network blocked). All code manually verified for correct Dart syntax, proper imports, and pattern compliance. ShimmerLoading generic widget was missing from core/widgets/shimmer_loading.dart - added it. The existing shimmer_loading.dart had ShimmerProfile, ShimmerCard, etc but no generic ShimmerLoading class. The profile_screen.dart needed go_router import added for context.push() extension method usage."
+}

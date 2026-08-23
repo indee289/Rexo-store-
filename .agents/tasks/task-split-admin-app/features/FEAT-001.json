@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Remove all admin functionality from the user app. Strip admin imports, routes, screens, and the Admin Panel menu item from the profile screen. The user app should have zero admin references after this.",
+  "status": "completed",
+  "steps": [
+    "Remove all admin-related imports from lib/core/router/app_router.dart (lines importing from ../../features/admin/screens/ and ../../features/rexo_program/screens/admin_rexo_program_screen.dart)",
+    "Remove all admin route path constants from AppRoutes class in app_router.dart (admin, adminUsers, adminCampaigns, adminSubmissions, adminDeposits, adminWithdrawals, adminShop, adminDisputes, adminKyc, adminWallets, adminSettings, adminAuditLogs, adminBroadcast, adminRexoProgram)",
+    "Remove all admin GoRoute entries from the routes list in app_router.dart (AdminDashboardScreen, AdminUsersScreen, AdminCampaignsScreen, AdminSubmissionsScreen, AdminDepositsScreen, AdminWithdrawalsScreen, AdminShopScreen, AdminDisputesScreen, AdminKycScreen, AdminWalletsScreen, AdminSettingsScreen, AdminAuditLogsScreen, AdminBroadcastScreen, AdminRexoProgramScreen)",
+    "In lib/features/profile/screens/profile_screen.dart, remove the conditional Admin Panel menu item: the if (profileState.isAdmin) _buildMenuItem block that pushes to '/admin'",
+    "Delete the entire lib/features/admin/ directory (screens/ and providers/ folders)",
+    "Delete lib/features/rexo_program/screens/admin_rexo_program_screen.dart"
+  ],
+  "acceptance_criteria": [
+    "lib/core/router/app_router.dart has no imports from features/admin/ or references to admin screens",
+    "lib/features/profile/screens/profile_screen.dart has no Admin Panel menu item",
+    "lib/features/admin/ directory does not exist",
+    "lib/features/rexo_program/screens/admin_rexo_program_screen.dart does not exist",
+    "No remaining Dart file in lib/ references any admin screen or admin route path"
+  ],
+  "verification": [
+    "Run: grep -r 'admin' lib/core/router/app_router.dart - should return no matches for admin screens/routes",
+    "Run: ls lib/features/admin/ - should fail (directory gone)",
+    "Run: grep -rn 'Admin Panel' lib/features/profile/ - should return no matches"
+  ],
+  "blocked_reason": null,
+  "findings": "Also found and fixed a reference to '/admin/shop' in lib/features/shop/screens/shop_screen.dart (_handleAddProduct method). Replaced with a SnackBar message. The rexo_program_provider.dart still has an adminRexoProgramProvider FutureProvider which is used internally for cache invalidation - left in place as it is a data provider, not a screen or route. Remaining 'admin' references in lib/ are all role-based checks (isAdmin, role == 'admin') and constants, not screen/route references."
+}

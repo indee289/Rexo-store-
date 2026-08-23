@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-004",
+  "type": "chore",
+  "description": "Final integration pass - ensure all new screens and routes compile correctly, NavGraph is complete with all routes, no unresolved imports, no broken references, and push to origin Rexo-Kotlin. Fix any compilation issues found.",
+  "status": "completed",
+  "steps": [
+    "Review NavGraph.kt for completeness - ensure ALL new routes are defined: product_detail/{productId}, cart, checkout, my_orders, order_detail/{orderId}, campaign_detail/{campaignId}, chat_list, chat_detail/{recipientId}, terms_of_service, help_support. Ensure all Screen sealed class objects exist and composable functions are properly imported.",
+    "Review all new/modified ViewModels ensure they use default constructors (no constructor parameters) or provide default values so viewModel() factory works. ShopViewModel and ChatViewModel previously had constructor params - ensure they now use the same pattern as CampaignViewModel (repository = Repository()) with defaults.",
+    "Review imports in all new files - ensure they reference only classes/objects that exist in the project: RexoColors, RexoTheme, RexoCustomShapes, SupabaseClient, existing model classes. Remove any references to non-existent classes.",
+    "Ensure GlassSurface and FloatingGlassCard usages in new shop screens pass correct parameters matching the existing component signatures.",
+    "Remove any usage of the ChatScreen's reference to GlassSurface (the chat input bar uses it) - verify the import resolves.",
+    "Verify AdminScreen no longer has inline ViewModel class (moved to separate file). Remove duplicate AdminViewModel if both exist.",
+    "Run a final check: ensure no Kotlin file has unresolved symbol references by verifying each import statement references a real file path in the project.",
+    "Git add all new and modified files, commit with message 'feat: Complete Phase 2 - Admin panel 13 modules, Shop e-commerce, Services tools, Chat, Campaign detail, Settings', and push to origin Rexo-Kotlin."
+  ],
+  "acceptance_criteria": [
+    "All Kotlin files have valid imports referencing existing project files",
+    "NavGraph.kt defines all routes for every screen in the app",
+    "All ViewModels can be instantiated via viewModel() (no unresolvable constructor params)",
+    "No duplicate class definitions across files",
+    "Code is committed and pushed to origin Rexo-Kotlin branch",
+    "CI build passes (verified by code inspection of potential issues)"
+  ],
+  "verification": [
+    "Verify git status shows clean working tree after push",
+    "Verify all imports in new files reference existing project classes",
+    "Verify NavGraph has complete route definitions"
+  ],
+  "blocked_reason": null,
+  "findings": "All files verified by thorough code inspection. No compilation issues found. Key verified items: (1) NavGraph has complete routes for all screens with proper imports. (2) All ViewModels use default constructors with repository = Repository() pattern. (3) ChatListScreen and ChatDetailScreen are both defined in ChatScreen.kt under chat package - imports resolve correctly. (4) AdminScreen has no inline ViewModel (moved to separate file). (5) GlassSurface component signature matches usage in all shop/chat screens. (6) TrustSafetyDashboard.kt is dead code but compiles fine - no conflicts. (7) Room database ShopDao is unaffected - ShopRepository now goes directly to Supabase without Room dependency. (8) All DTOs and data classes are defined in their respective files without conflicts. (9) Supabase library imports (postgrest.from, auth.auth) are consistent. (10) Pushed 6 commits to origin Rexo-Kotlin successfully."
+}

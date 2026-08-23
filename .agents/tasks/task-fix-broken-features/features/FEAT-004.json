@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-004",
+  "type": "fix",
+  "description": "Generate proper app icons from the Rexo logo (assets/logo.png, 512x512 RGBA) for both user and admin apps at all mipmap densities. The current icons are generic RGB orange squares. Replace with properly sized versions of the Rexo logo.",
+  "status": "completed",
+  "steps": [
+    "Use ImageMagick/convert (pre-installed on the system) to resize assets/logo.png to the proper Android mipmap sizes: mdpi=48x48, hdpi=72x72, xhdpi=96x96, xxhdpi=144x144, xxxhdpi=192x192.",
+    "Generate user app icons: convert assets/logo.png to each size and save to android/app/src/main/res/mipmap-mdpi/ic_launcher.png, mipmap-hdpi/ic_launcher.png, mipmap-xhdpi/ic_launcher.png, mipmap-xxhdpi/ic_launcher.png, mipmap-xxxhdpi/ic_launcher.png.",
+    "Generate admin app icons: same conversion, save to admin_app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png through mipmap-xxxhdpi/ic_launcher.png.",
+    "Verify all generated PNGs are valid using the file command."
+  ],
+  "acceptance_criteria": [
+    "User app has Rexo logo as ic_launcher.png at all 5 mipmap densities (48, 72, 96, 144, 192px)",
+    "Admin app has Rexo logo as ic_launcher.png at all 5 mipmap densities",
+    "All PNG files are valid and properly sized",
+    "Both AndroidManifest.xml files still reference @mipmap/ic_launcher"
+  ],
+  "verification": [
+    "Run file command on all generated PNGs to verify they are valid PNG files at correct sizes",
+    "Verify AndroidManifest.xml references are intact"
+  ],
+  "blocked_reason": null,
+  "findings": "ImageMagick/convert was not available on this system. Used PHP GD library (php with imagecreatefrompng/imagecopyresampled) to perform the resizing instead. All 10 icons generated successfully as RGBA PNGs at correct dimensions. No code changes needed - only binary PNG files replaced."
+}

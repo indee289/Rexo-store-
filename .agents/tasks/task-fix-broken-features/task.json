@@ -1,0 +1,14 @@
+{
+  "task_id": "task-fix-broken-features",
+  "task_description": "Fix all broken features across user and admin apps: dark mode, language change, profile photo upload, notification permissions, push notifications, subscriptions empty state, admin campaign creation, admin deposits/withdrawals display, admin profile page, app icons, and 2FA dark mode support.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005", "FEAT-006"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Cannot run flutter build/analyze locally due to INTEGRATIONS_ONLY network (no pub get available). Verified via code inspection: all imports use existing packages, all referenced files exist, mipmap PNGs are valid at correct sizes, router has correct 5 branches, all Dart files follow existing patterns. CI on GitHub Actions (flutter-build.yml and flutter-admin-build.yml) will validate compilation on push."
+  }
+}

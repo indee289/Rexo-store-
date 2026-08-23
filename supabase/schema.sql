@@ -1,282 +1,1546 @@
--- FULL SUPABASE PRODUCTION DATABASE SCHEMA FOR REXO / BRAND CREATOR MARKETPLACE
--- Tables: 16 Core Domain Tables with Relations, Indexes, Timestamps, and RLS Policies
+-- ============================================================
+-- Rexo Marketplace - Supabase Database Schema
+-- Complete schema with RLS policies, indexes, and storage
+-- ============================================================
 
--- 1. USERS TABLE
-CREATE TABLE IF NOT EXISTS public.users (
-    id VARCHAR(255) PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    handle VARCHAR(100) UNIQUE,
-    avatar TEXT,
-    role VARCHAR(50) NOT NULL DEFAULT 'creator' CHECK (role IN ('creator', 'brand', 'admin')),
-    admin_sub_role VARCHAR(50) CHECK (admin_sub_role IN ('super_admin', 'finance_admin', 'moderator', 'support_agent')),
+-- ============================================================
+-- DROP OLD TABLES
+-- ============================================================
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS kyc_documents CASCADE;
+DROP TABLE IF EXISTS subscriptions CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS deliverables CASCADE;
+DROP TABLE IF EXISTS campaign_applications CASCADE;
+DROP TABLE IF EXISTS campaigns CASCADE;
+DROP TABLE IF EXISTS withdrawals CASCADE;
+DROP TABLE IF EXISTS deposits CASCADE;
+DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS wallets CASCADE;
+DROP TABLE IF EXISTS brand_profiles CASCADE;
+DROP TABLE IF EXISTS creator_profiles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- Also drop new tables if they exist (for idempotent runs)
+DROP TABLE IF EXISTS platform_settings CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS submissions CASCADE;
+DROP TABLE IF EXISTS applications CASCADE;
+
+-- ============================================================
+-- CREATE TABLES
+-- ============================================================
+
+-- Users table
+CREATE TABLE users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL UNIQUE,
+    name TEXT DEFAULT '',
+    handle TEXT UNIQUE,
+    role TEXT NOT NULL DEFAULT 'creator' CHECK (role IN ('creator', 'brand', 'admin')),
+    admin_sub_role TEXT CHECK (admin_sub_role IN ('super_admin', 'finance_admin', 'support_admin')),
+    account_status TEXT NOT NULL DEFAULT 'active' CHECK (account_status IN ('active', 'suspended', 'banned', 'pending_verification')),
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    is_banned BOOLEAN NOT NULL DEFAULT FALSE,
-    subscription_tier VARCHAR(50) NOT NULL DEFAULT 'free' CHECK (subscription_tier IN ('free', 'creator_pro', 'brand_pro', 'enterprise')),
+    avatar_url TEXT,
     bio TEXT,
+    phone TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
+-- Wallets table
+CREATE TABLE wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    available_balance DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    escrow_balance DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    total_earnings DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    total_withdrawn DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    is_frozen BOOLEAN NOT NULL DEFAULT FALSE,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- 2. CREATOR PROFILES TABLE
-CREATE TABLE IF NOT EXISTS public.creator_profiles (
-    user_id VARCHAR(255) PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
-    category VARCHAR(100) DEFAULT 'Lifestyle',
+-- Creator profiles table
+CREATE TABLE creator_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    category TEXT,
     followers INTEGER DEFAULT 0,
-    engagement_rate NUMERIC(5,2) DEFAULT 0.00,
-    instagram_handle VARCHAR(100),
-    youtube_channel VARCHAR(255),
-    min_rate NUMERIC(12,2) DEFAULT 0.00,
-    rating NUMERIC(3,2) DEFAULT 5.00,
+    engagement_rate DECIMAL(5, 2) DEFAULT 0.00,
     completed_campaigns INTEGER DEFAULT 0,
-    portfolio JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 3. BRAND PROFILES TABLE
-CREATE TABLE IF NOT EXISTS public.brand_profiles (
-    user_id VARCHAR(255) PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
-    company_name VARCHAR(255) NOT NULL,
-    industry VARCHAR(100) DEFAULT 'Ecommerce',
-    website VARCHAR(255),
-    gst_number VARCHAR(50),
-    campaigns_posted INTEGER DEFAULT 0,
-    total_spent NUMERIC(12,2) DEFAULT 0.00,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 4. WALLETS TABLE
-CREATE TABLE IF NOT EXISTS public.wallets (
-    user_id VARCHAR(255) PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
-    available_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00 CHECK (available_balance >= 0),
-    escrow_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00 CHECK (escrow_balance >= 0),
-    total_earnings NUMERIC(12,2) NOT NULL DEFAULT 0.00,
-    total_withdrawn NUMERIC(12,2) NOT NULL DEFAULT 0.00,
-    currency VARCHAR(10) NOT NULL DEFAULT 'INR',
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 5. TRANSACTIONS TABLE
-CREATE TABLE IF NOT EXISTS public.transactions (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    amount NUMERIC(12,2) NOT NULL,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('deposit', 'withdrawal', 'escrow_hold', 'escrow_release', 'shop_purchase', 'subscription')),
-    status VARCHAR(50) NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
-    reference_id VARCHAR(255),
-    notes TEXT,
+    rating DECIMAL(3, 2) DEFAULT 0.00,
+    instagram_handle TEXT,
+    youtube_channel TEXT,
+    tiktok_handle TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON public.transactions(user_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_type ON public.transactions(type);
-
--- 6. DEPOSITS TABLE (MANUAL DEPOSIT WORKFLOW)
-CREATE TABLE IF NOT EXISTS public.deposits (
-    id VARCHAR(255) PRIMARY KEY,
-    brand_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    brand_name VARCHAR(255) NOT NULL,
-    amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
-    payment_method VARCHAR(50) NOT NULL DEFAULT 'upi_manual',
-    transaction_ref VARCHAR(255) NOT NULL,
-    proof_screenshot_url TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-    admin_notes TEXT,
-    processed_at TIMESTAMPTZ,
+-- Brand profiles table
+CREATE TABLE brand_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    company_name TEXT,
+    website TEXT,
+    industry TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_deposits_brand_id ON public.deposits(brand_id);
-CREATE INDEX IF NOT EXISTS idx_deposits_status ON public.deposits(status);
-
--- 7. WITHDRAWALS TABLE (MANUAL WITHDRAWAL WORKFLOW)
-CREATE TABLE IF NOT EXISTS public.withdrawals (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    user_name VARCHAR(255) NOT NULL,
-    user_role VARCHAR(50) NOT NULL DEFAULT 'creator',
-    amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
-    payout_method VARCHAR(50) NOT NULL DEFAULT 'upi',
-    payout_details JSONB NOT NULL DEFAULT '{}'::jsonb,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-    transaction_ref VARCHAR(255),
-    admin_notes TEXT,
-    processed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON public.withdrawals(user_id);
-CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON public.withdrawals(status);
-
--- 8. CAMPAIGNS TABLE
-CREATE TABLE IF NOT EXISTS public.campaigns (
-    id VARCHAR(255) PRIMARY KEY,
-    brand_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    brand_name VARCHAR(255) NOT NULL,
-    brand_avatar TEXT,
-    title VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    budget NUMERIC(12,2) NOT NULL CHECK (budget > 0),
-    payout_per_creator NUMERIC(12,2) NOT NULL CHECK (payout_per_creator > 0),
-    deadline VARCHAR(100) NOT NULL,
-    deliverable_type VARCHAR(100) NOT NULL,
-    slots INTEGER NOT NULL DEFAULT 1,
+-- Campaigns table
+CREATE TABLE campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    brand_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    budget DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    per_creator_payout DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    cover_image_url TEXT,
+    platform TEXT CHECK (platform IN ('instagram', 'youtube', 'tiktok', 'twitter', 'multiple')),
+    category TEXT,
+    total_slots INTEGER NOT NULL DEFAULT 1,
     filled_slots INTEGER NOT NULL DEFAULT 0,
-    description TEXT NOT NULL,
-    requirements JSONB NOT NULL DEFAULT '[]'::jsonb,
-    image TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('draft', 'active', 'paused', 'completed', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'completed', 'cancelled')),
+    escrow_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    deadline TIMESTAMPTZ,
+    guidelines TEXT,
+    min_followers INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_campaigns_brand_id ON public.campaigns(brand_id);
-CREATE INDEX IF NOT EXISTS idx_campaigns_status ON public.campaigns(status);
-
--- 9. CAMPAIGN APPLICATIONS TABLE
-CREATE TABLE IF NOT EXISTS public.campaign_applications (
-    id VARCHAR(255) PRIMARY KEY,
-    campaign_id VARCHAR(255) NOT NULL REFERENCES public.campaigns(id) ON DELETE CASCADE,
-    campaign_title VARCHAR(255) NOT NULL,
-    brand_name VARCHAR(255) NOT NULL,
-    creator_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    creator_name VARCHAR(255) NOT NULL,
-    creator_handle VARCHAR(100) NOT NULL,
-    creator_avatar TEXT,
-    fee_requested NUMERIC(12,2) NOT NULL CHECK (fee_requested > 0),
+-- Applications table
+CREATE TABLE applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     pitch TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted', 'approved', 'rejected', 'paid')),
+    portfolio_url TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'withdrawn')),
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(campaign_id, creator_id)
+);
+
+-- Submissions table
+CREATE TABLE submissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     deliverable_url TEXT,
-    rejection_reason TEXT,
-    payout_remarks TEXT,
-    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_applications_campaign_id ON public.campaign_applications(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_applications_creator_id ON public.campaign_applications(creator_id);
-CREATE INDEX IF NOT EXISTS idx_applications_status ON public.campaign_applications(status);
-
--- 10. DELIVERABLES TABLE
-CREATE TABLE IF NOT EXISTS public.deliverables (
-    id VARCHAR(255) PRIMARY KEY,
-    application_id VARCHAR(255) NOT NULL REFERENCES public.campaign_applications(id) ON DELETE CASCADE,
-    campaign_id VARCHAR(255) NOT NULL REFERENCES public.campaigns(id) ON DELETE CASCADE,
-    creator_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    content_type VARCHAR(50) NOT NULL CHECK (content_type IN ('instagram_reel', 'instagram_story', 'youtube_video', 'custom_post')),
-    post_url TEXT NOT NULL,
-    caption TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'under_review' CHECK (status IN ('under_review', 'approved', 'rejected_revision')),
-    admin_feedback TEXT,
-    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    reviewed_at TIMESTAMPTZ
-);
-
--- 11. NOTIFICATIONS TABLE
-CREATE TABLE IF NOT EXISTS public.notifications (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    body TEXT NOT NULL,
-    type VARCHAR(100) NOT NULL,
-    payload JSONB DEFAULT '{}'::jsonb,
-    is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    delivery_status VARCHAR(50) NOT NULL DEFAULT 'delivered',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'revision_requested')),
+    admin_notes TEXT,
+    paid_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(is_read);
+-- Deposits table
+CREATE TABLE deposits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount DECIMAL(12, 2) NOT NULL,
+    payment_method TEXT,
+    transaction_ref TEXT,
+    proof_url TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at TIMESTAMPTZ
+);
 
--- 12. PRODUCTS TABLE (DIGITAL, PHYSICAL, & SERVICES)
-CREATE TABLE IF NOT EXISTS public.products (
-    id VARCHAR(255) PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    price NUMERIC(12,2) NOT NULL CHECK (price >= 0),
-    category VARCHAR(100) NOT NULL,
-    product_type VARCHAR(50) NOT NULL CHECK (product_type IN ('digital', 'physical', 'service')),
-    is_free BOOLEAN NOT NULL DEFAULT FALSE,
-    cover_image TEXT NOT NULL,
-    download_file TEXT,
-    stock INTEGER DEFAULT 100,
-    status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'out_of_stock', 'archived')),
+-- Withdrawals table
+CREATE TABLE withdrawals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount DECIMAL(12, 2) NOT NULL,
+    method TEXT,
+    payout_details JSONB,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'rejected')),
+    transaction_ref TEXT,
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at TIMESTAMPTZ
+);
+
+-- Products table
+CREATE TABLE products (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    original_price DECIMAL(10, 2),
+    stock INTEGER NOT NULL DEFAULT 0,
+    category TEXT,
+    image_url TEXT,
+    images JSONB DEFAULT '[]'::jsonb,
+    seller_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_products_type ON public.products(product_type);
-
--- 13. ORDERS TABLE (DIGITAL, PHYSICAL WITH ADDRESS, & SERVICES)
-CREATE TABLE IF NOT EXISTS public.orders (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    user_name VARCHAR(255) NOT NULL,
-    product_id VARCHAR(255) NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
-    product_title VARCHAR(255) NOT NULL,
-    product_type VARCHAR(50) NOT NULL CHECK (product_type IN ('digital', 'physical', 'service')),
-    price NUMERIC(12,2) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'completed', 'cancelled')),
+-- Orders table
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    total_amount DECIMAL(12, 2) NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')),
     shipping_address JSONB,
-    digital_download_url TEXT,
-    tracking_number VARCHAR(100),
-    service_notes TEXT,
+    payment_method TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+-- Order items table
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    price DECIMAL(10, 2) NOT NULL
+);
 
--- 14. SUBSCRIPTIONS TABLE
-CREATE TABLE IF NOT EXISTS public.subscriptions (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    plan_name VARCHAR(50) NOT NULL CHECK (plan_name IN ('free', 'creator_pro', 'brand_pro', 'enterprise')),
-    price NUMERIC(12,2) NOT NULL DEFAULT 0.00,
-    status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
-    start_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    expiry_date TIMESTAMPTZ NOT NULL,
+-- Notifications table
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT,
+    type TEXT,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
+-- Audit logs table
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action_type TEXT NOT NULL,
+    target_id UUID,
+    target_type TEXT,
+    reason TEXT,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- 15. KYC DOCUMENTS TABLE
-CREATE TABLE IF NOT EXISTS public.kyc_documents (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    user_name VARCHAR(255) NOT NULL,
-    document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('aadhaar', 'pan', 'gst', 'bank_passbook')),
-    document_number VARCHAR(100) NOT NULL,
+-- Messages table
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- KYC Documents table
+CREATE TABLE kyc_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    document_type TEXT NOT NULL,
     document_url TEXT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
-    rejection_reason TEXT,
-    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     verified_at TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_kyc_user_id ON public.kyc_documents(user_id);
-
--- 16. AUDIT LOGS TABLE
-CREATE TABLE IF NOT EXISTS public.audit_logs (
-    id VARCHAR(255) PRIMARY KEY,
-    admin_id VARCHAR(255) NOT NULL,
-    admin_name VARCHAR(255) NOT NULL,
-    admin_role VARCHAR(50) NOT NULL,
-    action VARCHAR(255) NOT NULL,
-    target_type VARCHAR(100) NOT NULL,
-    target_id VARCHAR(255) NOT NULL,
-    target_name VARCHAR(255),
-    reason TEXT,
-    ip_address VARCHAR(50) DEFAULT '127.0.0.1',
-    device VARCHAR(255) DEFAULT 'Admin Console',
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Platform settings table
+CREATE TABLE platform_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key TEXT NOT NULL UNIQUE,
+    value TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by UUID REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_audit_admin_id ON public.audit_logs(admin_id);
-CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON public.audit_logs(timestamp DESC);
+-- ============================================================
+-- ENABLE ROW LEVEL SECURITY
+-- ============================================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE creator_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE deposits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE withdrawals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kyc_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- ROW LEVEL SECURITY POLICIES
+-- ============================================================
+
+-- Users policies
+-- IMPORTANT: Policies on the users table must NEVER subquery the users table itself.
+-- Doing so causes infinite recursion (PostgreSQL error 42P17).
+-- Instead, use auth.uid() checks or auth.jwt() claims for role-based access.
+
+-- Any authenticated user can read profiles (needed for cross-user joins)
+CREATE POLICY "Authenticated users can read all profiles" ON users
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Users can update their own data
+CREATE POLICY "Users can update own data" ON users
+    FOR UPDATE USING (auth.uid() = id);
+
+-- Admins can update any user - use JWT claim to avoid recursion
+CREATE POLICY "Admins can update any user" ON users
+    FOR UPDATE USING (
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+        OR auth.uid() = id
+    );
+
+-- Allow insert for authenticated users (own row only)
+CREATE POLICY "Allow insert for authenticated users" ON users
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Allow delete for service role only (admin operations via server-side)
+CREATE POLICY "Service role can delete users" ON users
+    FOR DELETE USING (auth.role() = 'service_role');
+
+-- Wallets policies
+CREATE POLICY "Users can read own wallet" ON wallets
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can read all wallets" ON wallets
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Admins can update wallets" ON wallets
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Creator profiles policies
+CREATE POLICY "Anyone can read creator profiles" ON creator_profiles
+    FOR SELECT USING (TRUE);
+
+CREATE POLICY "Creators can update own profile" ON creator_profiles
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Creators can insert own profile" ON creator_profiles
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Brand profiles policies
+CREATE POLICY "Anyone can read brand profiles" ON brand_profiles
+    FOR SELECT USING (TRUE);
+
+CREATE POLICY "Brands can update own profile" ON brand_profiles
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Brands can insert own profile" ON brand_profiles
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Campaigns policies
+CREATE POLICY "Anyone can read active campaigns" ON campaigns
+    FOR SELECT USING (status = 'active' OR brand_id = auth.uid() OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Brands can create campaigns" ON campaigns
+    FOR INSERT WITH CHECK (auth.uid() = brand_id);
+
+CREATE POLICY "Brands can update own campaigns" ON campaigns
+    FOR UPDATE USING (auth.uid() = brand_id OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Applications policies
+CREATE POLICY "Creators can read own applications" ON applications
+    FOR SELECT USING (auth.uid() = creator_id);
+
+CREATE POLICY "Brands can read applications for their campaigns" ON applications
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM campaigns WHERE id = campaign_id AND brand_id = auth.uid())
+    );
+
+CREATE POLICY "Admins can read all applications" ON applications
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Creators can create applications" ON applications
+    FOR INSERT WITH CHECK (auth.uid() = creator_id);
+
+CREATE POLICY "Creators can update own applications" ON applications
+    FOR UPDATE USING (auth.uid() = creator_id);
+
+CREATE POLICY "Admins can update any application" ON applications
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Submissions policies
+CREATE POLICY "Creators can read own submissions" ON submissions
+    FOR SELECT USING (auth.uid() = creator_id);
+
+CREATE POLICY "Admins can read all submissions" ON submissions
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Creators can create submissions" ON submissions
+    FOR INSERT WITH CHECK (auth.uid() = creator_id);
+
+CREATE POLICY "Admins can update submissions" ON submissions
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Deposits policies
+CREATE POLICY "Users can read own deposits" ON deposits
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can read all deposits" ON deposits
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Users can create deposits" ON deposits
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can update deposits" ON deposits
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Withdrawals policies
+CREATE POLICY "Users can read own withdrawals" ON withdrawals
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can read all withdrawals" ON withdrawals
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Users can create withdrawals" ON withdrawals
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can update withdrawals" ON withdrawals
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Products policies
+CREATE POLICY "Anyone can read active products" ON products
+    FOR SELECT USING (is_active = TRUE OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Authorized users can create products" ON products
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+        OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'brand')
+        OR EXISTS (
+            SELECT 1 FROM rexo_program_applications
+            WHERE creator_id = auth.uid() AND status = 'approved'
+        )
+    );
+
+CREATE POLICY "Admins can update products" ON products
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Orders policies
+CREATE POLICY "Users can read own orders" ON orders
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can read all orders" ON orders
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Users can create orders" ON orders
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can update orders" ON orders
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Users can delete own orders" ON orders
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Order items policies
+CREATE POLICY "Users can read own order items" ON order_items
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM orders WHERE id = order_id AND user_id = auth.uid())
+    );
+
+CREATE POLICY "Admins can read all order items" ON order_items
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Users can create order items" ON order_items
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM orders WHERE id = order_id AND user_id = auth.uid())
+    );
+
+-- Notifications policies
+CREATE POLICY "Users can read own notifications" ON notifications
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications" ON notifications
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "System can create notifications" ON notifications
+    FOR INSERT WITH CHECK (TRUE);
+
+CREATE POLICY "Users can delete own notifications" ON notifications
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Audit logs policies
+CREATE POLICY "Admins can read audit logs" ON audit_logs
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Admins can create audit logs" ON audit_logs
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Messages policies
+CREATE POLICY "Users can read own messages" ON messages
+    FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+CREATE POLICY "Users can send messages" ON messages
+    FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Users can update own messages" ON messages
+    FOR UPDATE USING (auth.uid() = receiver_id);
+
+-- KYC documents policies
+CREATE POLICY "Users can read own KYC documents" ON kyc_documents
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can read all KYC documents" ON kyc_documents
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Users can upload KYC documents" ON kyc_documents
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can update KYC documents" ON kyc_documents
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Platform settings policies
+CREATE POLICY "Anyone can read platform settings" ON platform_settings
+    FOR SELECT USING (TRUE);
+
+CREATE POLICY "Admins can manage platform settings" ON platform_settings
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- INDEXES
+-- ============================================================
+
+-- Users indexes
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_handle ON users(handle);
+CREATE INDEX idx_users_account_status ON users(account_status);
+
+-- Wallets indexes
+CREATE INDEX idx_wallets_user_id ON wallets(user_id);
+
+-- Creator profiles indexes
+CREATE INDEX idx_creator_profiles_user_id ON creator_profiles(user_id);
+CREATE INDEX idx_creator_profiles_category ON creator_profiles(category);
+
+-- Brand profiles indexes
+CREATE INDEX idx_brand_profiles_user_id ON brand_profiles(user_id);
+
+-- Campaigns indexes
+CREATE INDEX idx_campaigns_brand_id ON campaigns(brand_id);
+CREATE INDEX idx_campaigns_status ON campaigns(status);
+CREATE INDEX idx_campaigns_category ON campaigns(category);
+CREATE INDEX idx_campaigns_platform ON campaigns(platform);
+CREATE INDEX idx_campaigns_deadline ON campaigns(deadline);
+
+-- Applications indexes
+CREATE INDEX idx_applications_campaign_id ON applications(campaign_id);
+CREATE INDEX idx_applications_creator_id ON applications(creator_id);
+CREATE INDEX idx_applications_status ON applications(status);
+
+-- Submissions indexes
+CREATE INDEX idx_submissions_application_id ON submissions(application_id);
+CREATE INDEX idx_submissions_campaign_id ON submissions(campaign_id);
+CREATE INDEX idx_submissions_creator_id ON submissions(creator_id);
+CREATE INDEX idx_submissions_status ON submissions(status);
+
+-- Deposits indexes
+CREATE INDEX idx_deposits_user_id ON deposits(user_id);
+CREATE INDEX idx_deposits_status ON deposits(status);
+
+-- Withdrawals indexes
+CREATE INDEX idx_withdrawals_user_id ON withdrawals(user_id);
+CREATE INDEX idx_withdrawals_status ON withdrawals(status);
+
+-- Products indexes
+CREATE INDEX idx_products_category ON products(category);
+CREATE INDEX idx_products_is_active ON products(is_active);
+
+-- Orders indexes
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_status ON orders(status);
+
+-- Order items indexes
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);
+
+-- Notifications indexes
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at);
+
+-- Audit logs indexes
+CREATE INDEX idx_audit_logs_admin_id ON audit_logs(admin_id);
+CREATE INDEX idx_audit_logs_action_type ON audit_logs(action_type);
+CREATE INDEX idx_audit_logs_target_id ON audit_logs(target_id);
+
+-- Messages indexes
+CREATE INDEX idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX idx_messages_receiver_id ON messages(receiver_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+
+-- KYC documents indexes
+CREATE INDEX idx_kyc_documents_user_id ON kyc_documents(user_id);
+CREATE INDEX idx_kyc_documents_status ON kyc_documents(status);
+
+-- ============================================================
+-- STORAGE BUCKETS
+-- ============================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+    ('avatars', 'avatars', TRUE),
+    ('kyc-documents', 'kyc-documents', FALSE),
+    ('campaign-assets', 'campaign-assets', TRUE),
+    ('product-images', 'product-images', TRUE),
+    ('deposit-proofs', 'deposit-proofs', FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- STORAGE OBJECTS RLS POLICIES
+-- ============================================================
+
+-- Avatars (public bucket) policies
+CREATE POLICY "Users can upload avatars" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Anyone can view avatars" ON storage.objects
+    FOR SELECT USING (bucket_id = 'avatars');
+
+CREATE POLICY "Users can update own avatars" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own avatars" ON storage.objects
+    FOR DELETE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- KYC Documents (private bucket) policies
+CREATE POLICY "Users can upload kyc documents" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view own kyc documents" ON storage.objects
+    FOR SELECT USING (bucket_id = 'kyc-documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')));
+
+CREATE POLICY "Users can update own kyc documents" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own kyc documents" ON storage.objects
+    FOR DELETE USING (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Campaign Assets (public bucket) policies
+CREATE POLICY "Users can upload campaign assets" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'campaign-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Anyone can view campaign assets" ON storage.objects
+    FOR SELECT USING (bucket_id = 'campaign-assets');
+
+CREATE POLICY "Users can update own campaign assets" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'campaign-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own campaign assets" ON storage.objects
+    FOR DELETE USING (bucket_id = 'campaign-assets' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Product Images (public bucket) policies
+CREATE POLICY "Users can upload product images" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'product-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Anyone can view product images" ON storage.objects
+    FOR SELECT USING (bucket_id = 'product-images');
+
+CREATE POLICY "Users can update own product images" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'product-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own product images" ON storage.objects
+    FOR DELETE USING (bucket_id = 'product-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Deposit Proofs (private bucket) policies
+CREATE POLICY "Users can upload deposit proofs" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view own deposit proofs" ON storage.objects
+    FOR SELECT USING (bucket_id = 'deposit-proofs' AND (auth.uid()::text = (storage.foldername(name))[1] OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')));
+
+CREATE POLICY "Users can update own deposit proofs" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete own deposit proofs" ON storage.objects
+    FOR DELETE USING (bucket_id = 'deposit-proofs' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================================
+-- TRIGGER: Auto-create user profile when auth.users signup
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.users (id, email, name, role, account_status)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'creator'),
+        'active'
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_auth_user();
+
+-- ============================================================
+-- TRIGGER: Auto-create wallet when user is created
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.handle_new_user_wallet()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.wallets (user_id)
+    VALUES (NEW.id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_user_created_create_wallet
+    AFTER INSERT ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user_wallet();
+
+-- ============================================================
+-- TRIGGER: Prevent withdrawals exceeding available balance
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.check_withdrawal_balance()
+RETURNS TRIGGER AS $$
+DECLARE
+    current_balance DECIMAL(12, 2);
+BEGIN
+    SELECT available_balance INTO current_balance
+    FROM public.wallets
+    WHERE user_id = NEW.user_id;
+
+    IF current_balance IS NULL THEN
+        RAISE EXCEPTION 'No wallet found for user %', NEW.user_id;
+    END IF;
+
+    IF NEW.amount > current_balance THEN
+        RAISE EXCEPTION 'Insufficient balance: requested %, available %', NEW.amount, current_balance;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_withdrawal_check_balance
+    BEFORE INSERT ON public.withdrawals
+    FOR EACH ROW
+    EXECUTE FUNCTION public.check_withdrawal_balance();
+
+-- ============================================================
+-- TRIGGER: Check and decrement stock on order item insert
+-- ============================================================
+CREATE OR REPLACE FUNCTION check_and_decrement_stock()
+RETURNS TRIGGER AS $$
+DECLARE
+  current_stock INTEGER;
+BEGIN
+  SELECT stock INTO current_stock FROM products WHERE id = NEW.product_id FOR UPDATE;
+  IF current_stock IS NULL THEN
+    RAISE EXCEPTION 'Product not found';
+  END IF;
+  IF current_stock < NEW.quantity THEN
+    RAISE EXCEPTION 'Insufficient stock. Available: %, Requested: %', current_stock, NEW.quantity;
+  END IF;
+  UPDATE products SET stock = stock - NEW.quantity WHERE id = NEW.product_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_order_item_check_stock
+  BEFORE INSERT ON order_items
+  FOR EACH ROW
+  EXECUTE FUNCTION check_and_decrement_stock();
+
+-- ============================================================
+-- TABLE: linked_accounts
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.linked_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL,
+    handle TEXT NOT NULL,
+    verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.linked_accounts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own linked accounts"
+    ON public.linked_accounts FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own linked accounts"
+    ON public.linked_accounts FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own linked accounts"
+    ON public.linked_accounts FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own linked accounts"
+    ON public.linked_accounts FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all linked accounts"
+    ON public.linked_accounts FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: addresses
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.addresses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT,
+    address_line1 TEXT NOT NULL,
+    address_line2 TEXT,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    pincode TEXT NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own addresses"
+    ON public.addresses FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own addresses"
+    ON public.addresses FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own addresses"
+    ON public.addresses FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own addresses"
+    ON public.addresses FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all addresses"
+    ON public.addresses FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: reviews
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    target_id UUID,
+    target_type TEXT,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own reviews"
+    ON public.reviews FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own reviews"
+    ON public.reviews FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own reviews"
+    ON public.reviews FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own reviews"
+    ON public.reviews FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all reviews"
+    ON public.reviews FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: reward_points
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.reward_points (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    points INTEGER DEFAULT 0,
+    last_earned_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.reward_points ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own reward points"
+    ON public.reward_points FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own reward points"
+    ON public.reward_points FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all reward points"
+    ON public.reward_points FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: coupons
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.coupons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT UNIQUE NOT NULL,
+    discount_type TEXT NOT NULL,
+    discount_value DECIMAL NOT NULL,
+    min_order DECIMAL,
+    max_uses INTEGER,
+    used_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read active coupons"
+    ON public.coupons FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins can manage all coupons"
+    ON public.coupons FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: product_categories
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.product_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    parent_id UUID REFERENCES public.product_categories(id) ON DELETE SET NULL,
+    icon_url TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.product_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read product categories"
+    ON public.product_categories FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins can manage all product categories"
+    ON public.product_categories FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: seller_profiles
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.seller_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    store_name TEXT,
+    description TEXT,
+    logo_url TEXT,
+    rating DECIMAL DEFAULT 0,
+    total_sales INTEGER DEFAULT 0,
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.seller_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own seller profile"
+    ON public.seller_profiles FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own seller profile"
+    ON public.seller_profiles FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own seller profile"
+    ON public.seller_profiles FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all seller profiles"
+    ON public.seller_profiles FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: services
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.services (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    service_type TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    price DECIMAL NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own services"
+    ON public.services FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own services"
+    ON public.services FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own services"
+    ON public.services FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own services"
+    ON public.services FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all services"
+    ON public.services FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: subscription_plans
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.subscription_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    price DECIMAL NOT NULL,
+    features JSONB,
+    duration_days INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read subscription plans"
+    ON public.subscription_plans FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins can manage all subscription plans"
+    ON public.subscription_plans FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_subscriptions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    plan_id UUID NOT NULL REFERENCES public.subscription_plans(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'active',
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own subscriptions"
+    ON public.user_subscriptions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscriptions"
+    ON public.user_subscriptions FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all subscriptions"
+    ON public.user_subscriptions FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_devices
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_devices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    device_name TEXT,
+    device_type TEXT,
+    os_version TEXT,
+    app_version TEXT,
+    fcm_token TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_devices ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own devices"
+    ON public.user_devices FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own devices"
+    ON public.user_devices FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own devices"
+    ON public.user_devices FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own devices"
+    ON public.user_devices FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all devices"
+    ON public.user_devices FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_sessions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    device_id UUID,
+    ip_address TEXT,
+    user_agent TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_active_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own sessions"
+    ON public.user_sessions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own sessions"
+    ON public.user_sessions FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own sessions"
+    ON public.user_sessions FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all sessions"
+    ON public.user_sessions FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_settings
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+    theme TEXT DEFAULT 'system',
+    language TEXT DEFAULT 'en',
+    notifications_enabled BOOLEAN DEFAULT TRUE,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own settings"
+    ON public.user_settings FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own settings"
+    ON public.user_settings FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own settings"
+    ON public.user_settings FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all settings"
+    ON public.user_settings FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_suspensions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_suspensions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    reason TEXT,
+    suspended_by UUID REFERENCES public.users(id),
+    starts_at TIMESTAMPTZ DEFAULT NOW(),
+    ends_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE,
+    appeal_text TEXT,
+    appeal_status TEXT DEFAULT 'none',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_suspensions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own suspensions"
+    ON public.user_suspensions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all suspensions"
+    ON public.user_suspensions FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: user_warnings
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.user_warnings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    reason TEXT,
+    severity TEXT DEFAULT 'low',
+    issued_by UUID REFERENCES public.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_warnings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own warnings"
+    ON public.user_warnings FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all warnings"
+    ON public.user_warnings FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: ai_moderation_logs
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.ai_moderation_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content_id UUID,
+    content_type TEXT,
+    flagged_reason TEXT,
+    confidence_score DECIMAL,
+    action_taken TEXT,
+    reviewed_by UUID REFERENCES public.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.ai_moderation_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage ai moderation logs"
+    ON public.ai_moderation_logs FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: device_fingerprints
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.device_fingerprints (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    fingerprint_hash TEXT UNIQUE,
+    device_info JSONB,
+    ip_address TEXT,
+    is_trusted BOOLEAN DEFAULT FALSE,
+    first_seen_at TIMESTAMPTZ DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.device_fingerprints ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own device fingerprints"
+    ON public.device_fingerprints FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own device fingerprints"
+    ON public.device_fingerprints FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own device fingerprints"
+    ON public.device_fingerprints FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all device fingerprints"
+    ON public.device_fingerprints FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: security_audit_logs
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.security_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    event_type TEXT NOT NULL,
+    ip_address TEXT,
+    device_info TEXT,
+    severity TEXT DEFAULT 'info',
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.security_audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage security audit logs"
+    ON public.security_audit_logs FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: security_logs
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.security_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    ip_address TEXT,
+    device_info TEXT,
+    location TEXT,
+    is_suspicious BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.security_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own security logs"
+    ON public.security_logs FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all security logs"
+    ON public.security_logs FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: disputes
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.disputes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    order_id UUID,
+    campaign_id UUID,
+    subject TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'open',
+    resolution TEXT,
+    admin_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.disputes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own disputes"
+    ON public.disputes FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own disputes"
+    ON public.disputes FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own disputes"
+    ON public.disputes FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all disputes"
+    ON public.disputes FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- TABLE: moderation_queue
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.moderation_queue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content_id UUID,
+    content_type TEXT,
+    reported_by UUID REFERENCES public.users(id),
+    reason TEXT,
+    status TEXT DEFAULT 'pending',
+    reviewed_by UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.moderation_queue ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can insert moderation reports"
+    ON public.moderation_queue FOR INSERT
+    WITH CHECK (auth.uid() = reported_by);
+
+CREATE POLICY "Users can read own moderation reports"
+    ON public.moderation_queue FOR SELECT
+    USING (auth.uid() = reported_by);
+
+CREATE POLICY "Admins can manage all moderation queue"
+    ON public.moderation_queue FOR ALL
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- INDEXES for new tables
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_linked_accounts_user_id ON public.linked_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON public.reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_target ON public.reviews(target_id, target_type);
+CREATE INDEX IF NOT EXISTS idx_reward_points_user_id ON public.reward_points(user_id);
+CREATE INDEX IF NOT EXISTS idx_seller_profiles_user_id ON public.seller_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_services_user_id ON public.services(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON public.user_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_devices_user_id ON public.user_devices(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON public.user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_suspensions_user_id ON public.user_suspensions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_warnings_user_id ON public.user_warnings(user_id);
+CREATE INDEX IF NOT EXISTS idx_device_fingerprints_user_id ON public.device_fingerprints(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_user_id ON public.security_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_logs_user_id ON public.security_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_disputes_user_id ON public.disputes(user_id);
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_status ON public.moderation_queue(status);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
+CREATE INDEX IF NOT EXISTS idx_product_categories_parent ON public.product_categories(parent_id);
+
+-- ============================================================
+-- TABLE: rexo_program_applications
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.rexo_program_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    creator_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ,
+    reviewed_by UUID REFERENCES public.users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE public.rexo_program_applications ENABLE ROW LEVEL SECURITY;
+
+-- Creator can view own applications
+CREATE POLICY "Creators can read own rexo applications"
+    ON public.rexo_program_applications FOR SELECT
+    USING (auth.uid() = creator_id);
+
+-- Creator can insert own application
+CREATE POLICY "Creators can apply for rexo program"
+    ON public.rexo_program_applications FOR INSERT
+    WITH CHECK (auth.uid() = creator_id);
+
+-- Admins can view all applications
+CREATE POLICY "Admins can read all rexo applications"
+    ON public.rexo_program_applications FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Admins can update (approve/reject) any application
+CREATE POLICY "Admins can update rexo applications"
+    ON public.rexo_program_applications FOR UPDATE
+    USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE INDEX IF NOT EXISTS idx_rexo_program_creator_id ON public.rexo_program_applications(creator_id);
+CREATE INDEX IF NOT EXISTS idx_rexo_program_status ON public.rexo_program_applications(status);
+
+-- ============================================================
+-- SEED: Admin user
+-- ============================================================
+-- The admin user must first sign up through the app via Supabase Auth.
+-- After the admin user has signed up and authenticated, run the following
+-- SQL to promote their account to admin (replace <auth-user-uuid> with the
+-- actual UUID from auth.users after signup):
+--
+-- INSERT INTO public.users (id, email, name, role, admin_sub_role, is_verified, account_status)
+-- VALUES (
+--     '<auth-user-uuid>',
+--     'rexoagency.in@gmail.com',
+--     'Rexo Admin',
+--     'admin',
+--     'super_admin',
+--     TRUE,
+--     'active'
+-- );
+--
+-- Alternatively, if the user already exists from signup, update their role:
+--
+-- UPDATE public.users
+-- SET role = 'admin', admin_sub_role = 'super_admin', is_verified = TRUE
+-- WHERE email = 'rexoagency.in@gmail.com';

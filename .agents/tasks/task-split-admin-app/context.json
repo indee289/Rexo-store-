@@ -1,0 +1,41 @@
+{
+  "project_type": "Flutter mobile app (influencer marketing platform)",
+  "language": "Dart",
+  "build_system": "Flutter 3.19.0, Gradle for Android",
+  "test_framework": "flutter_test (minimal usage)",
+  "build_command": "flutter build apk --release --dart-define=SUPABASE_URL=https://placeholder.supabase.co --dart-define=SUPABASE_ANON_KEY=placeholder",
+  "test_command": "flutter analyze",
+  "verification_instructions": "1. Run flutter analyze in root for user app. 2. Run flutter analyze in admin_app/ for admin app. 3. CI workflows should be syntactically valid YAML.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "Network blocks external downloads. CI handles pub get. All files must be created manually. No pub get needed locally.",
+  "environment_constraints": "INTEGRATIONS_ONLY network - cannot run pub get, flutter build, or download packages. All files must be created manually. CI handles builds. Validation is limited to static analysis of file structure and dart syntax correctness.",
+  "contribution_requirements": "Push to branch Rexo-Kotlin. Both apps must build via CI.",
+  "key_patterns": {
+    "state_management": "flutter_riverpod with StateNotifier and FutureProvider patterns",
+    "routing": "go_router with StatefulShellRoute for bottom nav",
+    "ui_style": "White background, orange-red primary (#FF5722), Poppins font, Iconsax icons, PremiumCard widgets",
+    "supabase_setup": "SupabaseService static class, dart-define for URL/key, AppConstants reads from String.fromEnvironment",
+    "admin_check": "Profile role field == 'admin' checked via ProfileState.isAdmin",
+    "admin_provider": "admin_provider.dart has all Supabase queries and CRUD operations for admin",
+    "bottom_nav": "AppBottomNav widget with floating pill-style nav, AppShell wraps StatefulNavigationShell"
+  },
+  "relevant_files": [
+    "lib/core/router/app_router.dart",
+    "lib/features/profile/screens/profile_screen.dart",
+    "lib/features/admin/screens/",
+    "lib/features/admin/providers/admin_provider.dart",
+    "lib/features/rexo_program/screens/admin_rexo_program_screen.dart",
+    "lib/core/constants/app_constants.dart",
+    "lib/core/theme/app_colors.dart",
+    "lib/core/theme/app_theme.dart",
+    "lib/core/widgets/app_bottom_nav.dart",
+    "lib/core/widgets/app_shell.dart",
+    "lib/services/supabase_service.dart",
+    "lib/main.dart",
+    "lib/app.dart",
+    "pubspec.yaml",
+    ".github/workflows/flutter-build.yml",
+    "android/app/build.gradle"
+  ],
+  "directory_structure": "Root is a Flutter project: lib/ (main user app), lib/features/ (feature modules), lib/core/ (theme, router, widgets, constants), lib/services/ (supabase_service), android/, .github/workflows/. Admin code currently at lib/features/admin/ with screens/ and providers/. Rexo program admin screen at lib/features/rexo_program/screens/admin_rexo_program_screen.dart."
+}

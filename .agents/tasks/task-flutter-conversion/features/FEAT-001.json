@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Create complete Supabase SQL schema file that drops all old tables and creates new ones with RLS policies, indexes, and storage buckets. Then remove all Kotlin/Gradle project files and set up Flutter project scaffolding (pubspec.yaml, analysis_options.yaml, directory structure, CI workflow).",
+  "status": "completed",
+  "steps": [
+    "Create supabase/schema_v2.sql with: (a) DROP TABLE statements for all 16 existing tables (users, creator_profiles, brand_profiles, wallets, transactions, deposits, withdrawals, campaigns, campaign_applications, deliverables, notifications, products, orders, subscriptions, kyc_documents, audit_logs), (b) CREATE TABLE statements for all new tables per the user's blueprint (users, wallets, creator_profiles, brand_profiles, campaigns, applications, submissions, deposits, withdrawals, products, orders, order_items, notifications, audit_logs, messages, kyc_documents, platform_settings), (c) RLS policies enabling authenticated access per role, (d) proper indexes on foreign keys and frequently queried columns, (e) storage bucket creation for avatars, kyc-documents, campaign-assets, product-images, deposit-proofs",
+    "Delete all Kotlin/Gradle files: rm -rf app/ gradle/ build.gradle.kts settings.gradle.kts gradle.properties gradlew gradlew.bat create_wrapper.sh scripts/ and all markdown docs (ARCHITECTURE.md, BUILD_INSTRUCTIONS.md, BUILD_STATUS.md, CI_CD_COMPLETE.md, FEATURES.md, FINAL_FIX_SUMMARY.md, GITHUB_SECRETS.md, IMPLEMENTATION_COMPLETE.md, PERMANENT_FIX_EXPLAINED.md, PHASE_1_2_COMPLETE.md, PHASE_3_5_COMPLETE.md, WORKFLOW_SIMPLIFIED.md)",
+    "Delete old supabase/schema.sql and supabase/functions/ and supabase/migrations/, keep supabase/ dir with only the new schema_v2.sql (rename to schema.sql)",
+    "Create pubspec.yaml with dependencies: flutter, supabase_flutter, go_router, flutter_riverpod, riverpod_annotation, google_fonts, cached_network_image, shimmer, flutter_animate, iconsax_flutter, intl, image_picker, url_launcher, flutter_svg, shared_preferences. Dev deps: flutter_test, flutter_lints, riverpod_generator, build_runner, custom_lint_rules",
+    "Create analysis_options.yaml with recommended lints",
+    "Create lib/ directory structure: lib/main.dart, lib/app.dart, lib/core/ (theme/, constants/, utils/, widgets/), lib/features/ (auth/, home/, campaigns/, shop/, profile/), lib/services/ (supabase_service.dart, storage_service.dart)",
+    "Create .github/workflows/flutter-build.yml replacing android-build.yml: checkout, setup Flutter, flutter pub get, flutter analyze, flutter build apk, upload artifact. Use secrets.SUPABASE_URL and secrets.SUPABASE_ANON_KEY",
+    "Create a new README.md for the Flutter project",
+    "Delete .github/workflows/android-build.yml and .github/workflows/build-apk.yml.disabled and .github/workflows/README.md"
+  ],
+  "acceptance_criteria": [
+    "supabase/schema.sql contains DROP TABLE IF EXISTS CASCADE for all old tables",
+    "supabase/schema.sql contains CREATE TABLE for all 17 new tables with proper types, constraints, and foreign keys",
+    "supabase/schema.sql contains ALTER TABLE ... ENABLE ROW LEVEL SECURITY for every table",
+    "supabase/schema.sql contains CREATE POLICY statements for each table",
+    "supabase/schema.sql contains CREATE INDEX statements for performance-critical columns",
+    "supabase/schema.sql contains INSERT INTO storage.buckets for required buckets",
+    "All Kotlin/Gradle files are deleted from the repository",
+    "pubspec.yaml is valid YAML with all required dependencies",
+    ".github/workflows/flutter-build.yml is a valid GitHub Actions workflow for Flutter",
+    "lib/ directory structure exists with placeholder files"
+  ],
+  "verification": [
+    "Verify supabase/schema.sql has DROP, CREATE TABLE, RLS, POLICY, and INDEX statements",
+    "Verify no .kt, .gradle, .kts files remain",
+    "Verify pubspec.yaml parses as valid YAML",
+    "Verify .github/workflows/flutter-build.yml exists and references flutter"
+  ],
+  "blocked_reason": null,
+  "findings": "All Kotlin/Gradle files removed. Schema.sql created with 17 tables, 17 RLS enables, 59 policies, 41 indexes, 5 storage buckets, wallet trigger, and admin seed. Flutter project scaffolding created with pubspec.yaml, analysis_options.yaml, lib/ directory structure, CI workflow, and README. A .gradle cache directory was also cleaned up. The .env.example and supabase/.env.example files were left in place as they may be useful for the new project. Cannot verify with flutter commands due to INTEGRATIONS_ONLY network mode - CI will validate."
+}

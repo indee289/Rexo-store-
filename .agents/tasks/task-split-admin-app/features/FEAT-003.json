@@ -1,0 +1,22 @@
+{
+  "id": "FEAT-003",
+  "type": "chore",
+  "description": "Create CI workflow for admin app and ensure existing CI still builds the user app correctly.",
+  "status": "completed",
+  "steps": [
+    "Create .github/workflows/flutter-admin-build.yml - same structure as flutter-build.yml but: name 'Flutter Admin Build', working-directory admin_app/ for pub get/analyze/build steps, output artifact named 'Rexo-Admin-release' with path admin_app/build/app/outputs/flutter-apk/app-release.apk, same dart-define secrets (SUPABASE_URL, SUPABASE_ANON_KEY), triggers on push to Rexo-Kotlin and main branches plus workflow_dispatch",
+    "Verify .github/workflows/flutter-build.yml still correctly builds from root directory (no changes needed if it already works from root, just confirm)"
+  ],
+  "acceptance_criteria": [
+    ".github/workflows/flutter-admin-build.yml exists with proper structure",
+    "Admin workflow uses 'working-directory: admin_app/' or 'cd admin_app' for flutter commands",
+    "Admin workflow outputs Rexo-Admin-release.apk artifact",
+    "Existing flutter-build.yml is unchanged and still builds root app"
+  ],
+  "verification": [
+    "Run: cat .github/workflows/flutter-admin-build.yml - should show valid YAML with admin_app directory",
+    "Run: cat .github/workflows/flutter-build.yml - should be unchanged from original"
+  ],
+  "blocked_reason": null,
+  "findings": "Created flutter-admin-build.yml with defaults.run.working-directory for admin_app/. Existing flutter-build.yml was not modified. Note: upload-artifact path uses absolute path from repo root (admin_app/build/...) since upload-artifact does not respect working-directory defaults."
+}

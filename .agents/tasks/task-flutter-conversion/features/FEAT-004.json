@@ -1,0 +1,38 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Implement Campaigns screen (browse, detail, apply) and Shop screen (product listing, detail, order) with full Supabase integration.",
+  "status": "completed",
+  "steps": [
+    "Create lib/features/campaigns/screens/campaigns_screen.dart - list/grid of campaigns with filtering (by category, platform, status), search, sort options. Each campaign shown as a premium card.",
+    "Create lib/features/campaigns/screens/campaign_detail_screen.dart - full campaign detail: hero image, brand info, title, description, budget, per-creator payout, deadline, platform, requirements list, slots progress bar, Apply button (for creators), applicants list (for brand owners/admins)",
+    "Create lib/features/campaigns/screens/apply_screen.dart - application form: pitch text field, portfolio URL, fee requested. Submits to applications table in Supabase.",
+    "Create lib/features/campaigns/providers/campaigns_provider.dart - providers for campaign list (with filters), campaign detail, apply to campaign, my applications",
+    "Create lib/features/campaigns/widgets/campaign_list_card.dart - list-style campaign card (different from home page card - more detailed, shows full description preview)",
+    "Create lib/features/campaigns/widgets/slots_indicator.dart - visual slots filled/total indicator with progress bar",
+    "Create lib/features/shop/screens/shop_screen.dart - product grid with category tabs (Digital, Physical, Services), search, price filters. Premium product cards with image, title, price, original price strikethrough.",
+    "Create lib/features/shop/screens/product_detail_screen.dart - product detail: image carousel, title, price, description, stock indicator, Buy Now button, Add to Cart",
+    "Create lib/features/shop/screens/cart_screen.dart - shopping cart with quantity controls, total calculation, checkout button",
+    "Create lib/features/shop/screens/checkout_screen.dart - checkout flow: address form (for physical), payment method selection, order summary, place order (inserts into orders and order_items tables)",
+    "Create lib/features/shop/providers/shop_provider.dart - providers for products list, product detail, cart state, place order",
+    "Create lib/features/shop/widgets/product_card.dart - premium product card with image, title, price badge, category tag"
+  ],
+  "acceptance_criteria": [
+    "Campaigns screen loads campaigns from Supabase with working filters",
+    "Campaign detail screen shows all campaign fields from the database",
+    "Apply screen submits application to Supabase applications table",
+    "Shop screen displays products from Supabase products table",
+    "Product detail shows full product info with buy action",
+    "Checkout creates order and order_items records in Supabase",
+    "All screens use premium theme consistently",
+    "Loading states and error handling are present on all screens"
+  ],
+  "verification": [
+    "Read campaigns_provider.dart and verify Supabase queries reference correct table/column names from schema",
+    "Read shop_provider.dart and verify order creation inserts into both orders and order_items",
+    "Verify campaign_detail_screen.dart has Apply button that navigates to apply_screen",
+    "Verify all screens handle loading and error states"
+  ],
+  "blocked_reason": null,
+  "findings": "All files created successfully. Cannot run Flutter build/test (no SDK). Verified brace matching on all files. Router uses GoRoute outside the shell for sub-routes (campaign detail, apply, product detail, cart, checkout) so they push on top of bottom nav. Shop provider uses uuid package for generating order IDs. CampaignDetailScreen uses bottomNavigationBar property for the Apply button bar."
+}
