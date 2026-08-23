@@ -147,9 +147,10 @@ final campaignApplicantsProvider =
   return List<Map<String, dynamic>>.from(response);
 });
 
-/// Current user's own profile (used to prefill the Apply form). Returns null
-/// when signed out or the profile row is missing.
-final currentUserProfileProvider =
+/// Current user's own profile row (used to prefill the Apply form). Named
+/// distinctly from the profile feature's provider to avoid any import clash.
+/// Returns null when signed out or the profile row is missing.
+final applyPrefillProfileProvider =
     FutureProvider<Map<String, dynamic>?>((ref) async {
   final user = SupabaseService.currentUser;
   if (user == null) return null;

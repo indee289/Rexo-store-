@@ -74,10 +74,10 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     final campaignAsync = ref.watch(campaignDetailProvider(widget.campaignId));
 
     // Prefill from the current user's profile when it loads.
-    ref.listen(currentUserProfileProvider, (_, next) {
+    ref.listen(applyPrefillProfileProvider, (_, next) {
       next.whenData(_maybePrefill);
     });
-    _maybePrefill(ref.watch(currentUserProfileProvider).valueOrNull);
+    _maybePrefill(ref.watch(applyPrefillProfileProvider).valueOrNull);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
