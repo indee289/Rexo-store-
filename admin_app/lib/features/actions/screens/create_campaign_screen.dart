@@ -25,7 +25,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
   String _selectedCategory = 'Logo';
   String _selectedPlatform = 'Instagram';
-  String _selectedGender = 'All';
+  String _selectedGender = 'all';
   String _selectedPageProfileCategory = 'Comedy';
   String? _coverImageUrl;
   bool _isSubmitting = false;
@@ -46,9 +46,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   ];
 
   static const List<String> _genders = [
-    'All',
-    'Male',
-    'Female',
+    'all',
+    'male',
+    'female',
   ];
 
   static const List<String> _pageProfileCategories = [
