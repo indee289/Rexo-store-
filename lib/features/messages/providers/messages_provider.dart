@@ -16,13 +16,15 @@ final conversationsProvider =
       .from('messages')
       .select('*, receiver:users!receiver_id(id, name, avatar_url)')
       .eq('sender_id', user.id)
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(200);
 
   final receivedMessages = await SupabaseService.client
       .from('messages')
       .select('*, sender:users!sender_id(id, name, avatar_url)')
       .eq('receiver_id', user.id)
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(200);
 
   // Build conversations map: other_user_id -> latest message info
   final Map<String, Map<String, dynamic>> conversationsMap = {};
@@ -30,7 +32,8 @@ final conversationsProvider =
   for (final msg in List<Map<String, dynamic>>.from(sentMessages)) {
     final otherUser = msg['receiver'] as Map<String, dynamic>?;
     if (otherUser == null) continue;
-    final otherUserId = otherUser['id'] as String;
+    final otherUserId = otherUser['id'] as String?;
+    if (otherUserId == null) continue;
 
     if (!conversationsMap.containsKey(otherUserId)) {
       conversationsMap[otherUserId] = {
@@ -47,7 +50,8 @@ final conversationsProvider =
   for (final msg in List<Map<String, dynamic>>.from(receivedMessages)) {
     final otherUser = msg['sender'] as Map<String, dynamic>?;
     if (otherUser == null) continue;
-    final otherUserId = otherUser['id'] as String;
+    final otherUserId = otherUser['id'] as String?;
+    if (otherUserId == null) continue;
 
     if (!conversationsMap.containsKey(otherUserId)) {
       conversationsMap[otherUserId] = {
@@ -61,8 +65,12 @@ final conversationsProvider =
     } else {
       // Check if this message is more recent
       final existing = conversationsMap[otherUserId]!;
-      final existingDate = DateTime.parse(existing['last_message_at'] as String);
-      final msgDate = DateTime.parse(msg['created_at'] as String);
+      final existingDate =
+          DateTime.tryParse((existing['last_message_at'] ?? '').toString()) ??
+              DateTime(1970);
+      final msgDate =
+          DateTime.tryParse((msg['created_at'] ?? '').toString()) ??
+              DateTime(1970);
       if (msgDate.isAfter(existingDate)) {
         conversationsMap[otherUserId] = {
           'other_user_id': otherUserId,
@@ -82,8 +90,12 @@ final conversationsProvider =
   // Convert to list and sort by last_message_at desc
   final conversations = conversationsMap.values.toList();
   conversations.sort((a, b) {
-    final aDate = DateTime.parse(a['last_message_at'] as String);
-    final bDate = DateTime.parse(b['last_message_at'] as String);
+    final aDate =
+        DateTime.tryParse((a['last_message_at'] ?? '').toString()) ??
+            DateTime(1970);
+    final bDate =
+        DateTime.tryParse((b['last_message_at'] ?? '').toString()) ??
+            DateTime(1970);
     return bDate.compareTo(aDate);
   });
 
@@ -95,7 +107,7 @@ final conversationsProvider =
 /// Excludes the current user and returns up to 20 matches. An empty/whitespace
 /// query returns an empty list so the UI can show a hint instead of everyone.
 final userSearchProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>(
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, query) async {
   final q = query.trim();
   if (q.isEmpty) return [];
@@ -117,26 +129,28 @@ final userSearchProvider =
 
 /// Provider for chat messages between current user and another user
 final chatMessagesProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>(
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, otherUserId) async {
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
-  // Fetch messages sent by current user to other user
+  // Fetch the most recent 100 messages sent by current user to other user
   final sent = await SupabaseService.client
       .from('messages')
       .select()
       .eq('sender_id', user.id)
       .eq('receiver_id', otherUserId)
-      .order('created_at', ascending: true);
+      .order('created_at', ascending: false)
+      .limit(100);
 
-  // Fetch messages received from other user
+  // Fetch the most recent 100 messages received from other user
   final received = await SupabaseService.client
       .from('messages')
       .select()
       .eq('sender_id', otherUserId)
       .eq('receiver_id', user.id)
-      .order('created_at', ascending: true);
+      .order('created_at', ascending: false)
+      .limit(100);
 
   // Combine and sort by created_at ascending
   final List<Map<String, dynamic>> allMessages = [
@@ -145,8 +159,10 @@ final chatMessagesProvider =
   ];
 
   allMessages.sort((a, b) {
-    final aDate = DateTime.parse(a['created_at'] as String);
-    final bDate = DateTime.parse(b['created_at'] as String);
+    final aDate =
+        DateTime.tryParse((a['created_at'] ?? '').toString()) ?? DateTime(1970);
+    final bDate =
+        DateTime.tryParse((b['created_at'] ?? '').toString()) ?? DateTime(1970);
     return aDate.compareTo(bDate);
   });
 
@@ -165,7 +181,7 @@ final chatMessagesProvider =
 /// Subscribes to the messages table via Supabase Realtime for live updates.
 /// This enables real-time message delivery without polling.
 final chatMessagesStreamProvider =
-    StreamProvider.family<List<Map<String, dynamic>>, String>(
+    StreamProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, otherUserId) {
   final user = SupabaseService.currentUser;
   if (user == null) {
@@ -182,14 +198,16 @@ final chatMessagesStreamProvider =
           .select()
           .eq('sender_id', user.id)
           .eq('receiver_id', otherUserId)
-          .order('created_at', ascending: true);
+          .order('created_at', ascending: false)
+          .limit(100);
 
       final received = await SupabaseService.client
           .from('messages')
           .select()
           .eq('sender_id', otherUserId)
           .eq('receiver_id', user.id)
-          .order('created_at', ascending: true);
+          .order('created_at', ascending: false)
+          .limit(100);
 
       final List<Map<String, dynamic>> allMessages = [
         ...List<Map<String, dynamic>>.from(sent),
@@ -197,8 +215,10 @@ final chatMessagesStreamProvider =
       ];
 
       allMessages.sort((a, b) {
-        final aDate = DateTime.parse(a['created_at'] as String);
-        final bDate = DateTime.parse(b['created_at'] as String);
+        final aDate = DateTime.tryParse((a['created_at'] ?? '').toString()) ??
+            DateTime(1970);
+        final bDate = DateTime.tryParse((b['created_at'] ?? '').toString()) ??
+            DateTime(1970);
         return aDate.compareTo(bDate);
       });
 
