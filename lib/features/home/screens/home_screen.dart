@@ -159,7 +159,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: theme.dividerColor.withOpacity(0.5),
+          // Brightness-aware track: subtle dark fill in dark mode instead of
+          // the washed-out light-gray that theme.dividerColor produced.
+          color: theme.brightness == Brightness.dark
+              ? Colors.white.withOpacity(0.08)
+              : theme.dividerColor.withOpacity(0.5),
           borderRadius: BorderRadius.circular(22),
         ),
         child: Row(
