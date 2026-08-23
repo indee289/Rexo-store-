@@ -1,9 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
-import '../../../core/constants/app_constants.dart';
 import '../../../services/supabase_service.dart';
 
 // ============================================================
@@ -552,145 +548,37 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Send broadcast notification to ALL users.
-  /// Inserts one notification row per user (fixes the old bug where only
-  /// one row without user_id was inserted, violating NOT NULL constraint).
-  /// Also attempts to send FCM push notifications via HTTP v1 API.
+  /// Send an admin broadcast to ALL users.
+  ///
+  /// Delegates to the `send-broadcast` Supabase Edge Function, which is the
+  /// authoritative path: it inserts one in-app notification row per user AND
+  /// delivers a real FCM push (HTTP v1) to their devices, using the
+  /// service-account key server-side. The client intentionally does NOT insert
+  /// notification rows here — that would duplicate what the function inserts.
+  ///
+  /// The old client-side FCM code (`_getFirebaseAccessToken`/`_sendFcmBroadcast`)
+  /// was removed: it built an UNSIGNED JWT assertion that Google always
+  /// rejected, and shipping the RSA private key in the app is insecure.
+  ///
+  /// Best-effort: a failed invocation surfaces a sanitized error via [state]
+  /// but never crashes the app.
   Future<void> sendBroadcast(String title, String message) async {
     state = const AsyncValue.loading();
     try {
-      // 1. Fetch all user IDs
-      final usersResponse =
-          await SupabaseService.client.from('users').select('id');
-      final users = List<Map<String, dynamic>>.from(usersResponse);
+      final response = await SupabaseService.client.functions.invoke(
+        'send-broadcast',
+        body: {'title': title, 'message': message},
+      );
 
-      if (users.isEmpty) {
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      // 2. Insert one notification row per user (column is 'body', not 'message')
-      final notifications = users.map((user) => {
-            'user_id': user['id'],
-            'title': title,
-            'body': message,
-            'type': 'broadcast',
-            'is_read': false,
-            'created_at': DateTime.now().toIso8601String(),
-          }).toList();
-
-      await SupabaseService.client.from('notifications').insert(notifications);
-
-      // 3. Attempt FCM push notification delivery via HTTP v1 API
-      //    This sends to each user's registered device(s).
-      try {
-        await _sendFcmBroadcast(title, message, users);
-      } catch (_) {
-        // FCM delivery is best-effort; in-app notifications are already saved
+      // Treat non-2xx responses from the Edge Function as failures.
+      final status = response.status;
+      if (status < 200 || status >= 300) {
+        throw Exception('Broadcast failed (status $status)');
       }
 
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-    }
-  }
-
-  /// Send FCM push notifications to all users' devices via Firebase HTTP v1 API.
-  Future<void> _sendFcmBroadcast(
-    String title,
-    String body,
-    List<Map<String, dynamic>> users,
-  ) async {
-    if (AppConstants.fcmProjectId.isEmpty ||
-        AppConstants.fcmPrivateKey.isEmpty) {
-      return;
-    }
-
-    // Get all FCM tokens for target users
-    final userIds = users.map((u) => u['id'] as String).toList();
-    final devicesResponse = await SupabaseService.client
-        .from('user_devices')
-        .select('fcm_token')
-        .inFilter('user_id', userIds);
-
-    final devices = List<Map<String, dynamic>>.from(devicesResponse);
-    if (devices.isEmpty) return;
-
-    // Get OAuth2 access token for FCM
-    final accessToken = await _getFirebaseAccessToken();
-    if (accessToken == null) return;
-
-    final fcmUrl =
-        'https://fcm.googleapis.com/v1/projects/${AppConstants.fcmProjectId}/messages:send';
-
-    // Send to each device token
-    for (final device in devices) {
-      final token = device['fcm_token'] as String?;
-      if (token == null || token.isEmpty) continue;
-
-      try {
-        await http.post(
-          Uri.parse(fcmUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $accessToken',
-          },
-          body: jsonEncode({
-            'message': {
-              'token': token,
-              'notification': {
-                'title': title,
-                'body': body,
-              },
-            },
-          }),
-        );
-      } catch (_) {
-        // Individual send failure should not block others
-      }
-    }
-  }
-
-  /// Get a short-lived OAuth2 access token using the service account JWT.
-  /// This implements the Google OAuth2 service account flow for FCM HTTP v1.
-  Future<String?> _getFirebaseAccessToken() async {
-    try {
-      // Use Supabase Edge Function as a proxy to get FCM token,
-      // or implement JWT-based OAuth2 token exchange.
-      // For now, try direct token exchange with Google OAuth2.
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final header = base64Url.encode(utf8.encode(jsonEncode({
-        'alg': 'RS256',
-        'typ': 'JWT',
-      })));
-      final payload = base64Url.encode(utf8.encode(jsonEncode({
-        'iss': AppConstants.fcmClientEmail,
-        'scope': 'https://www.googleapis.com/auth/firebase.messaging',
-        'aud': 'https://oauth2.googleapis.com/token',
-        'exp': now + 3600,
-        'iat': now,
-      })));
-
-      // Note: Full RS256 signing requires the private key.
-      // In production, this would use a proper JWT library or Edge Function.
-      // For this implementation, we attempt the token exchange and gracefully
-      // handle failures since push notifications are best-effort.
-      final response = await http.post(
-        Uri.parse('https://oauth2.googleapis.com/token'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          'assertion': '$header.$payload',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['access_token'] as String?;
-      }
-      return null;
-    } catch (_) {
-      return null;
     }
   }
 

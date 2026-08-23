@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../providers/admin_provider.dart';
 
 class PushBroadcastScreen extends ConsumerStatefulWidget {
@@ -40,18 +41,32 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
           _messageController.text,
         );
 
+    if (!mounted) return;
     setState(() => _isSending = false);
 
-    if (mounted) {
-      _titleController.clear();
-      _messageController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Broadcast sent successfully'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
+    // Reflect the real result of the Edge Function call.
+    final actionState = ref.read(adminActionsProvider);
+    actionState.when(
+      data: (_) {
+        _titleController.clear();
+        _messageController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Broadcast sent successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      },
+      loading: () {},
+      error: (error, _) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorUtils.sanitize(error)),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      },
+    );
   }
 
   @override
