@@ -605,7 +605,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   ///
   /// Best-effort: a failed invocation surfaces a sanitized error via [state]
   /// but never crashes the app.
-  Future<void> sendBroadcast(String title, String message) async {
+  /// Sends a broadcast via the send-broadcast Edge Function and returns the
+  /// function's result ({ok, inserted, pushed, failed, pushError}) so the UI
+  /// can show exactly how many in-app rows were inserted vs FCM pushes
+  /// delivered — invaluable for diagnosing "in-app works but push doesn't".
+  Future<Map<String, dynamic>?> sendBroadcast(
+      String title, String message) async {
     state = const AsyncValue.loading();
     try {
       final response = await SupabaseService.client.functions.invoke(
@@ -613,15 +618,22 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
         body: {'title': title, 'message': message},
       );
 
+      final data = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : null;
+
       // Treat non-2xx responses from the Edge Function as failures.
       final status = response.status;
       if (status < 200 || status >= 300) {
-        throw Exception('Broadcast failed (status $status)');
+        final err = data?['error']?.toString() ?? 'status $status';
+        throw Exception('Broadcast failed: $err');
       }
 
       state = const AsyncValue.data(null);
+      return data;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      return null;
     }
   }
 

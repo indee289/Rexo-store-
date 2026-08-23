@@ -36,7 +36,7 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
 
     setState(() => _isSending = true);
 
-    await ref.read(adminActionsProvider.notifier).sendBroadcast(
+    final result = await ref.read(adminActionsProvider.notifier).sendBroadcast(
           _titleController.text,
           _messageController.text,
         );
@@ -44,16 +44,25 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
     if (!mounted) return;
     setState(() => _isSending = false);
 
-    // Reflect the real result of the Edge Function call.
     final actionState = ref.read(adminActionsProvider);
     actionState.when(
       data: (_) {
         _titleController.clear();
         _messageController.clear();
+        // Surface the real delivery breakdown so it's clear whether FCM push
+        // actually went out (vs only the in-app rows being inserted).
+        final inserted = result?['inserted'] ?? 0;
+        final pushed = result?['pushed'] ?? 0;
+        final failed = result?['failed'] ?? 0;
+        final pushError = result?['pushError'];
+        final summary = pushError != null && pushError.toString().isNotEmpty
+            ? 'In-app: $inserted • Push failed: $pushError'
+            : 'In-app: $inserted • Pushed: $pushed • Failed: $failed';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Broadcast sent successfully'),
+          SnackBar(
+            content: Text('Broadcast sent. $summary'),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 6),
           ),
         );
       },
@@ -63,6 +72,7 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
           SnackBar(
             content: Text(ErrorUtils.sanitize(error)),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 6),
           ),
         );
       },
