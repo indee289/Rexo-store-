@@ -55,6 +55,29 @@ const List<Map<String, dynamic>> _defaultPlans = [
   },
 ];
 
+/// De-duplicate a list of row maps by a unique key, preserving order and
+/// keeping the FIRST occurrence of each key. Rows without a usable key are
+/// kept as-is (they can't collide meaningfully).
+List<Map<String, dynamic>> _dedupById(
+  List<Map<String, dynamic>> rows, {
+  String key = 'id',
+}) {
+  final seen = <String>{};
+  final result = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final value = row[key];
+    if (value == null) {
+      result.add(row);
+      continue;
+    }
+    final id = value.toString();
+    if (seen.add(id)) {
+      result.add(row);
+    }
+  }
+  return result;
+}
+
 /// Provider for available subscription plans
 final subscriptionPlansProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -69,14 +92,16 @@ final subscriptionPlansProvider =
 
     // Return hardcoded default plans when DB returns empty
     if (plans.isEmpty) {
-      return _defaultPlans;
+      return _dedupById(_defaultPlans);
     }
 
-    return plans;
+    // De-duplicate by unique 'id' so a plan never renders twice even if the
+    // DB contains duplicate rows.
+    return _dedupById(plans);
   } catch (e) {
     debugPrint('Subscriptions error: $e');
     // Return default plans on error (e.g., table doesn't exist or RLS issue)
-    return _defaultPlans;
+    return _dedupById(_defaultPlans);
   }
 });
 
@@ -93,7 +118,14 @@ final userSubscriptionsProvider =
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
 
-    return List<Map<String, dynamic>>.from(response);
+    final subs = List<Map<String, dynamic>>.from(response);
+
+    // De-duplicate defensively: first by row 'id', then collapse duplicate
+    // rows for the same 'plan_id'. Rows are ordered newest-first, so keeping
+    // the first occurrence keeps the most recent subscription per plan and
+    // prevents the same active plan card from rendering twice.
+    final byId = _dedupById(subs);
+    return _dedupById(byId, key: 'plan_id');
   } catch (e) {
     debugPrint('Subscriptions error: $e');
     // Return empty list on error
