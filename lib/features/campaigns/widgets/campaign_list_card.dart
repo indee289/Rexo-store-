@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -6,10 +5,17 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/campaign_cover_header.dart';
+import '../../../core/widgets/overlay_badge.dart';
 import '../../../core/widgets/premium_card.dart';
 import 'slots_indicator.dart';
 
-/// Detailed campaign card for the campaigns list screen
+/// Detailed campaign card for the campaigns list screen.
+///
+/// Shares its container ([PremiumCard]), cover header
+/// ([CampaignCoverHeader]) and badges ([OverlayBadge]) with the Home campaign
+/// card so an identical campaign looks identical across both screens, in light
+/// and dark themes.
 class CampaignListCard extends StatelessWidget {
   final Map<String, dynamic> campaign;
 
@@ -41,10 +47,10 @@ class CampaignListCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cover image header (real image when available, gradient fallback)
-          _buildCoverHeader(coverImageUrl),
+          // Shared cover header (real image + scrim, gradient fallback).
+          CampaignCoverHeader(coverImageUrl: coverImageUrl),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -72,7 +78,12 @@ class CampaignListCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _buildPlatformBadge(platform),
+              // Platform badge (on-surface variant — sits on the card body).
+              if (platform.isNotEmpty)
+                OverlayBadge.onSurface(
+                  icon: _getPlatformIcon(platform),
+                  label: platform,
+                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -108,7 +119,7 @@ class CampaignListCard extends StatelessWidget {
                 subtitle: 'Per Creator',
               ),
               const Spacer(),
-              if (category.isNotEmpty) _buildCategoryChip(context, category),
+              if (category.isNotEmpty) OverlayBadge.onSurface(label: category),
             ],
           ),
           const SizedBox(height: 12),
@@ -147,79 +158,21 @@ class CampaignListCard extends StatelessWidget {
     );
   }
 
-  /// Cover header shown at the top of the card. Uses [CachedNetworkImage] when
-  /// a cover_image_url is present; otherwise renders the brand gradient as a
-  /// fallback (mirrors lib/features/home/widgets/campaign_card.dart).
-  Widget _buildCoverHeader(String coverImageUrl) {
-    const radius = BorderRadius.vertical(top: Radius.circular(16));
-    final hasCover = coverImageUrl.isNotEmpty;
-
-    final gradient = Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: const Center(
-        child: Icon(Iconsax.gallery, color: Colors.white54, size: 32),
-      ),
-    );
-
-    return ClipRRect(
-      borderRadius: radius,
-      child: SizedBox(
-        height: 120,
-        width: double.infinity,
-        child: hasCover
-            ? CachedNetworkImage(
-                imageUrl: coverImageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => gradient,
-                errorWidget: (context, url, error) => gradient,
-              )
-            : gradient,
-      ),
-    );
+  IconData _getPlatformIcon(String platform) {
+    switch (platform.toLowerCase()) {
+      case 'instagram':
+        return Iconsax.camera;
+      case 'youtube':
+        return Iconsax.video;
+      case 'tiktok':
+        return Iconsax.music;
+      default:
+        return Iconsax.global;
+    }
   }
 
-  Widget _buildPlatformBadge(String platform) {
-    if (platform.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        platform,
-        style: AppTextStyles.caption.copyWith(
-          color: AppColors.primary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(BuildContext context, String category) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        category,
-        style: AppTextStyles.caption.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
+  /// Budget / payout figure. The value uses solid [AppColors.primary] so the
+  /// price/value emphasis matches the product card everywhere.
   Widget _buildInfoChip({
     required IconData icon,
     required String label,
@@ -236,7 +189,8 @@ class CampaignListCard extends StatelessWidget {
             Text(
               label,
               style: AppTextStyles.labelLarge.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
               ),
             ),
             Text(

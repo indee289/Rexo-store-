@@ -5,8 +5,14 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/overlay_badge.dart';
+import '../../../core/widgets/premium_card.dart';
 
-/// Product card for grid display in the shop
+/// Product card for grid display in the shop.
+///
+/// Routes its container through [PremiumCard] and reuses the shared
+/// [OverlayBadge] so its surface, border, shadow and badges match the campaign
+/// cards in both light and dark themes.
 class ProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
 
@@ -27,94 +33,77 @@ class ProductCard extends StatelessWidget {
         ? images[0] as String
         : null;
 
-    return GestureDetector(
+    return PremiumCard(
       onTap: () {
         context.push('/shop/${product['id']}');
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product image
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildImage(context, imageUrl),
+                // Stock indicator dot
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _buildStockDot(stock),
                 ),
-                child: Stack(
-                  fit: StackFit.expand,
+                // Category badge (on-media variant — sits on the image).
+                if (category.isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: OverlayBadge.onMedia(label: category),
+                  ),
+              ],
+            ),
+          ),
+
+          // Product info
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
                   children: [
-                    _buildImage(context, imageUrl),
-                    // Stock indicator dot
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: _buildStockDot(stock),
-                    ),
-                    // Category badge
-                    if (category.isNotEmpty)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: _buildCategoryBadge(context, category),
+                    Text(
+                      '\u20B9${price.toStringAsFixed(0)}',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                    if (originalPrice != null && originalPrice > price) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '\u20B9${originalPrice.toStringAsFixed(0)}',
+                        style: AppTextStyles.caption.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ),
+              ],
             ),
-
-            // Product info
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '\u20B9${price.toStringAsFixed(0)}',
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (originalPrice != null && originalPrice > price) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          '\u20B9${originalPrice.toStringAsFixed(0)}',
-                          style: AppTextStyles.caption.copyWith(
-                            decoration: TextDecoration.lineThrough,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -176,23 +165,6 @@ class ProductCard extends StatelessWidget {
         color: dotColor,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 1.5),
-      ),
-    );
-  }
-
-  Widget _buildCategoryBadge(BuildContext context, String category) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        category,
-        style: AppTextStyles.caption.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.w500,
-        ),
       ),
     );
   }
