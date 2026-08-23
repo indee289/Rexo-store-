@@ -305,9 +305,30 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       String submissionId, double amount) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('submissions').update(
-          {'status': 'paid', 'payout_amount': amount}).eq('id', submissionId);
+      // Fetch the creator so we can credit their wallet.
+      final submission = await SupabaseService.client
+          .from('submissions')
+          .select('creator_id')
+          .eq('id', submissionId)
+          .single();
+      final creatorId = submission['creator_id'] as String;
+
+      // Mark the submission paid. NOTE: 'paid' is NOT a valid status (the
+      // CHECK allows pending/approved/rejected/revision_requested), and there
+      // is no payout_amount column — the schema records payment via paid_at.
+      await SupabaseService.client.from('submissions').update({
+        'status': 'approved',
+        'paid_at': DateTime.now().toIso8601String(),
+      }).eq('id', submissionId);
+
+      // Actually pay the creator via the atomic wallet RPC.
+      await SupabaseService.client.rpc('credit_wallet', params: {
+        'p_user_id': creatorId,
+        'p_amount': amount,
+      });
+
       ref.invalidate(adminSubmissionsProvider);
+      ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -545,9 +566,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> freezeWallet(String walletId) async {
     state = const AsyncValue.loading();
     try {
+      // The wallets table uses an `is_frozen` boolean — there is no `status`
+      // column, so the previous {'status':'frozen'} update always errored.
       await SupabaseService.client
           .from('wallets')
-          .update({'status': 'frozen'}).eq('id', walletId);
+          .update({'is_frozen': true}).eq('id', walletId);
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {

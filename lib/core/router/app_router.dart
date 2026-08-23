@@ -111,14 +111,39 @@ class AppRoutes {
   static const String adminDashboard = '/admin';
 }
 
+/// Lightweight [Listenable] used as GoRouter's `refreshListenable`. It is
+/// bumped whenever the auth state changes so the router re-runs `redirect`
+/// WITHOUT being recreated (which would reset navigation to /splash).
+class _AuthRefreshNotifier extends ChangeNotifier {
+  void bump() => notifyListeners();
+}
+
 /// GoRouter provider
+///
+/// IMPORTANT: the GoRouter instance is created ONCE. We must NOT `ref.watch`
+/// authProvider here — doing so rebuilt the whole router on every auth change,
+/// which reset navigation back to `initialLocation` (/splash), causing the
+/// splash screen to flash and the page to "reload" on login. Instead we drive
+/// redirect re-evaluation through a `refreshListenable` bumped on auth changes,
+/// and read the current auth state inside `redirect` via `ref.read`.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refresh = _AuthRefreshNotifier();
+  final sub = ref.listen<AuthState>(
+    authProvider,
+    (_, __) => refresh.bump(),
+    fireImmediately: false,
+  );
+  ref.onDispose(() {
+    sub.close();
+    refresh.dispose();
+  });
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: refresh,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final status = authState.status;
       final isAuthenticated = status == AuthStatus.authenticated;
       final isLoading = status == AuthStatus.loading || status == AuthStatus.initial;

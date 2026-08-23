@@ -80,11 +80,24 @@ class SubscriptionsScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             plansAsync.when(
               data: (plans) {
-                if (plans.isEmpty) {
+                // Hide plans the user is already actively subscribed to so a
+                // tier never appears both under "Current Subscription" and
+                // "Available Plans" (a source of perceived duplicates). This
+                // is on top of the id+name de-dup in subscriptionPlansProvider.
+                final activePlanIds = (userSubsAsync.value ?? [])
+                    .where((s) => s['status'] == 'active')
+                    .map((s) => s['plan_id']?.toString())
+                    .whereType<String>()
+                    .toSet();
+                final available = plans
+                    .where((p) => !activePlanIds.contains(p['id']?.toString()))
+                    .toList();
+
+                if (available.isEmpty) {
                   return _buildEmptyState(context);
                 }
                 return Column(
-                  children: plans
+                  children: available
                       .map((plan) => _buildPlanCard(
                             context,
                             ref,

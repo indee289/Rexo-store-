@@ -40,7 +40,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
 
     final authState = ref.read(authProvider);
-    if (authState.status == AuthStatus.error && authState.errorMessage != null) {
+    // Surface ANY login failure. signIn reports bad credentials as
+    // `unauthenticated` + errorMessage (not `error`), so gate on the message,
+    // not the status, otherwise password errors were silently swallowed.
+    if (!authState.isAuthenticated && authState.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authState.errorMessage!),
