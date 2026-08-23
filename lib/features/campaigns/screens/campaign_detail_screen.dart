@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,6 +56,8 @@ class CampaignDetailScreen extends ConsumerWidget {
     ThemeData theme,
   ) {
     final title = campaign['title'] ?? 'Untitled Campaign';
+    final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
+    final hasCover = coverImageUrl.isNotEmpty;
     final description = campaign['description'] ?? '';
     final budget = campaign['budget'];
     final perCreatorPayout = campaign['per_creator_payout'];
@@ -82,8 +85,18 @@ class CampaignDetailScreen extends ConsumerWidget {
           ),
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.primaryGradient,
+              decoration: BoxDecoration(
+                gradient: hasCover ? null : AppColors.primaryGradient,
+                image: hasCover
+                    ? DecorationImage(
+                        image: CachedNetworkImageProvider(coverImageUrl),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.35),
+                          BlendMode.darken,
+                        ),
+                      )
+                    : null,
               ),
               padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
               child: Column(

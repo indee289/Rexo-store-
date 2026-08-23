@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,6 +30,8 @@ class CampaignCard extends StatelessWidget {
     final totalSlots = campaign['total_slots'] ?? 0;
     final filledSlots = campaign['filled_slots'] ?? 0;
     final deadline = campaign['deadline'];
+    final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
+    final hasCover = coverImageUrl.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
@@ -52,25 +55,52 @@ class CampaignCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header gradient
+            // Header: real cover image when available, gradient fallback otherwise
             Container(
               height: isCompact ? 100 : 140,
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.8),
-                    AppColors.primaryDark,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: hasCover
+                    ? null
+                    : LinearGradient(
+                        colors: [
+                          AppColors.primary.withOpacity(0.8),
+                          AppColors.primaryDark,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                image: hasCover
+                    ? DecorationImage(
+                        image: CachedNetworkImageProvider(coverImageUrl),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
               ),
               child: Stack(
                 children: [
+                  // Dark scrim over the cover image so the badges stay legible
+                  if (hasCover)
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.25),
+                              Colors.black.withOpacity(0.05),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   // Platform badge
                   if (platform.isNotEmpty)
                     Positioned(
