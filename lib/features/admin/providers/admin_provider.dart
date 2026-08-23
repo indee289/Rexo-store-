@@ -586,8 +586,8 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client.from('audit_logs').insert({
-        'action': action,
-        'details': details,
+        'action_type': action,
+        'reason': details,
         'admin_id': SupabaseService.currentUser?.id,
         'created_at': DateTime.now().toIso8601String(),
       });
