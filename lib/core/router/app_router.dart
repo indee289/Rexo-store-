@@ -38,6 +38,7 @@ import '../../features/services/screens/media_kit_screen.dart';
 import '../../features/services/screens/rate_calculator_screen.dart';
 import '../../features/services/screens/services_screen.dart';
 import '../../features/sessions/screens/sessions_screen.dart';
+import '../../features/settings/screens/help_support_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shop/screens/cart_screen.dart';
 import '../../features/shop/screens/checkout_screen.dart';
@@ -82,6 +83,7 @@ class AppRoutes {
   static const String addAddress = '/add-address';
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
+  static const String helpSupport = '/help-support';
 
   static const String orders = '/orders';
   static const String orderDetail = '/orders/:id';
@@ -346,6 +348,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.termsOfService,
         builder: (context, state) => const TermsOfServiceScreen(),
+      ),
+
+      /// Help & Support screen
+      GoRoute(
+        path: AppRoutes.helpSupport,
+        builder: (context, state) => const HelpSupportScreen(),
       ),
 
 

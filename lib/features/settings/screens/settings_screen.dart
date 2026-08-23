@@ -154,14 +154,14 @@ class SettingsScreen extends ConsumerWidget {
               context: context,
               icon: Iconsax.message_question,
               title: 'Help & Support',
-              onTap: () {},
+              onTap: () => context.push('/help-support'),
             ),
             _buildMenuItem(
               context: context,
               icon: Iconsax.info_circle,
               title: 'About',
               subtitle: 'Version 1.0.0',
-              onTap: () {},
+              onTap: () => _showAbout(context),
             ),
             const SizedBox(height: 24),
 
@@ -368,6 +368,42 @@ class SettingsScreen extends ConsumerWidget {
         activeColor: AppColors.primary,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    );
+  }
+
+  void _showAbout(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Rexo',
+      applicationVersion: '1.0.0',
+      applicationIcon: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.asset(
+          'assets/logo.png',
+          width: 48,
+          height: 48,
+          errorBuilder: (_, __, ___) => const Icon(
+            Iconsax.crown_1,
+            color: AppColors.primary,
+            size: 40,
+          ),
+        ),
+      ),
+      children: [
+        Text(
+          'Rexo — a premium influencer marketing platform connecting brands and '
+          'creators for campaigns, collaborations and payouts.',
+          style: GoogleFonts.poppins(fontSize: 13, height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '© 2024 Rexo. All rights reserved.',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ],
     );
   }
 
