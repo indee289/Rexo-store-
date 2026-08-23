@@ -91,6 +91,28 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
   );
 });
 
+/// Number of users following the current user (their followers).
+final currentUserFollowersCountProvider = FutureProvider<int>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return 0;
+  final response = await SupabaseService.client
+      .from('follows')
+      .select('id')
+      .eq('following_id', user.id);
+  return (response as List).length;
+});
+
+/// Number of users the current user is following.
+final currentUserFollowingCountProvider = FutureProvider<int>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return 0;
+  final response = await SupabaseService.client
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id);
+  return (response as List).length;
+});
+
 /// Profile notifier for updating profile data
 class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
   ProfileNotifier() : super(const AsyncValue.data(null));

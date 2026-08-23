@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +8,6 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
-import '../../../core/widgets/stat_chip.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../providers/profile_provider.dart';
 import 'edit_profile_screen.dart';
@@ -36,9 +36,10 @@ class ProfileScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Settings',
             onPressed: () => context.push('/settings'),
             icon: Icon(
-              Iconsax.setting_2,
+              Iconsax.menu_1,
               color: theme.colorScheme.onSurface,
             ),
           ),
@@ -97,6 +98,7 @@ class ProfileScreen extends ConsumerWidget {
     final handle = profile['handle'] ?? '';
     final role = profile['role'] ?? 'creator';
     final avatarUrl = profile['avatar_url'];
+    final bio = (profile['bio'] ?? '').toString();
     final isVerified = (profile['is_verified'] == true);
 
     return SingleChildScrollView(
@@ -106,24 +108,27 @@ class ProfileScreen extends ConsumerWidget {
           // Avatar
           _buildAvatarSection(context, avatarUrl, name),
           const SizedBox(height: 16),
-          // Name + verified badge
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  name,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
+          // Name + verified badge (badge sits right after the username)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
-              ),
-              if (isVerified) const VerifiedBadge(size: 20),
-            ],
+                if (isVerified) const VerifiedBadge(size: 20),
+              ],
+            ),
           ),
           // Handle
           if (handle.isNotEmpty) ...[
@@ -139,24 +144,33 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           // Role badge
           _buildRoleBadge(role),
-          const SizedBox(height: 24),
-          // Stats row
-          _buildStatsRow(context, profileState),
-          const SizedBox(height: 24),
+          // Bio
+          if (bio.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                bio,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  height: 1.5,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          // Followers / Following stats (only these two — no post/campaign count)
+          _buildFollowStats(context, ref),
+          const SizedBox(height: 20),
+          // Edit Profile + Share Profile buttons
+          _buildProfileButtons(context, handle),
+          const SizedBox(height: 16),
           Divider(color: Theme.of(context).dividerColor, height: 1),
           const SizedBox(height: 8),
-          // Quick action menu items - only 4 items
-          _buildMenuItem(
-            icon: Iconsax.edit,
-            title: 'Edit Profile',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const EditProfileScreen(),
-                ),
-              );
-            },
-          ),
+          // Quick action menu items
           _buildMenuItem(
             icon: Iconsax.wallet_1,
             title: 'Wallet',
@@ -174,6 +188,151 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 40),
         ],
+      ),
+    );
+  }
+
+  /// Instagram-style stats row: only Followers and Following.
+  Widget _buildFollowStats(BuildContext context, WidgetRef ref) {
+    final followersAsync = ref.watch(currentUserFollowersCountProvider);
+    final followingAsync = ref.watch(currentUserFollowingCountProvider);
+
+    String fmt(AsyncValue<int> v) => v.when(
+          data: (c) => _formatCount(c),
+          loading: () => '—',
+          error: (_, __) => '0',
+        );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 48),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildFollowStatItem(context, 'Followers', fmt(followersAsync)),
+          Container(
+            width: 1,
+            height: 36,
+            color: Theme.of(context).dividerColor,
+          ),
+          _buildFollowStatItem(context, 'Following', fmt(followingAsync)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFollowStatItem(
+      BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatCount(int count) {
+    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return count.toString();
+  }
+
+  /// Edit Profile + Share Profile buttons (side by side, Instagram style).
+  Widget _buildProfileButtons(BuildContext context, String handle) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const EditProfileScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Iconsax.edit, size: 18),
+              label: Text(
+                'Edit Profile',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurface,
+                side: BorderSide(color: theme.dividerColor),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _shareProfile(context, handle),
+              icon: const Icon(Iconsax.share, size: 18),
+              label: Text(
+                'Share Profile',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurface,
+                side: BorderSide(color: theme.dividerColor),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Copies the public profile link to the clipboard so it can be shared.
+  void _shareProfile(BuildContext context, String handle) {
+    if (handle.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Set a username first to share your profile'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    final link = 'https://rexo.app/profile/$handle';
+    Clipboard.setData(ClipboardData(text: link));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Profile link copied: $link'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
@@ -245,88 +404,6 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildStatsRow(BuildContext context, ProfileState profileState) {
-    if (profileState.isCreator) {
-      final completedCampaigns =
-          profileState.roleProfile?['completed_campaigns']?.toString() ?? '0';
-      final totalEarnings =
-          profileState.wallet?['total_earnings']?.toString() ?? '0';
-      final rating =
-          profileState.roleProfile?['rating']?.toString() ?? '0.0';
-
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            StatChip(
-              icon: Iconsax.briefcase,
-              value: completedCampaigns,
-              label: 'Campaigns',
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Theme.of(context).dividerColor,
-            ),
-            StatChip(
-              icon: Iconsax.wallet_1,
-              value: '\u20B9$totalEarnings',
-              label: 'Earnings',
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Theme.of(context).dividerColor,
-            ),
-            StatChip(
-              icon: Iconsax.star_1,
-              value: rating,
-              label: 'Rating',
-              iconColor: AppColors.warning,
-            ),
-          ],
-        ),
-      );
-    } else if (profileState.isBrand) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            const StatChip(
-              icon: Iconsax.briefcase,
-              value: '-',
-              label: 'Posted',
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Theme.of(context).dividerColor,
-            ),
-            StatChip(
-              icon: Iconsax.wallet_1,
-              value: '\u20B9${profileState.wallet?['total_earnings']?.toString() ?? '0'}',
-              label: 'Total Spent',
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Theme.of(context).dividerColor,
-            ),
-            const StatChip(
-              icon: Iconsax.chart_2,
-              value: '-',
-              label: 'Active',
-            ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
   }
 
   Widget _buildMenuItem({
