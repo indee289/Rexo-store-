@@ -88,6 +88,7 @@ jobs:
           FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
           FCM_PRIVATE_KEY_BASE64: ${{ secrets.FCM_PRIVATE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
         run: |
           # Base64 encode FCM_PRIVATE_KEY to safely pass through dart-define
           # (PEM keys contain newlines that break shell command lines)
@@ -108,7 +109,8 @@ jobs:
             --dart-define=FCM_PROJECT_ID="$FCM_PROJECT_ID" \
             --dart-define=FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL" \
             --dart-define=FCM_PRIVATE_KEY="$FCM_KEY_ENCODED" \
-            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
+            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL_APP_ID"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../core/utils/error_utils.dart';
+import '../../../services/onesignal_service.dart';
 import '../../../services/push_notification_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../device_fingerprint/providers/device_fingerprint_provider.dart';
@@ -220,6 +221,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {
       // Non-critical - push notifications are optional.
     }
+
+    // Associate this device's OneSignal subscription with the app user so
+    // pushes can be targeted by external id. Fire-and-forget + guarded.
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId != null) {
+        OneSignalService.onUserLogin(userId);
+      }
+    } catch (_) {
+      // Non-critical - OneSignal targeting is optional.
+    }
   }
 
   /// Sign up with email, password, name, role, and username handle
@@ -294,6 +306,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // delete is RLS-guarded by auth.uid(), so it must run while still
       // authenticated. Best-effort; never blocks sign-out.
       await PushNotificationService.onUserLogout();
+
+      // Disassociate the user from this device's OneSignal subscription so the
+      // next user isn't targeted with the previous external id. Best-effort.
+      await OneSignalService.onUserLogout();
 
       await SupabaseService.signOut();
       state = const AuthState(status: AuthStatus.unauthenticated);

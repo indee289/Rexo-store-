@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'services/onesignal_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/supabase_service.dart';
 
@@ -47,4 +48,17 @@ void main() async {
       }
     });
   }
+
+  // Initialize OneSignal (cross-platform push + in-app messaging) after the
+  // first frame as well. It does not depend on Firebase — OneSignal manages its
+  // own delivery credentials from the dashboard — so it runs regardless of
+  // [firebaseAvailable]. Fire-and-forget + guarded so it can never crash
+  // startup. The OneSignal external id is set on login via auth_provider.
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      await OneSignalService.initialize();
+    } catch (_) {
+      // OneSignal may not be available in all environments - skip silently
+    }
+  });
 }
