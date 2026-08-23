@@ -154,11 +154,25 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const fcmProjectId = Deno.env.get("FCM_PROJECT_ID") ?? "";
   const fcmClientEmail = Deno.env.get("FCM_CLIENT_EMAIL") ?? "";
-  // Secrets store the PEM with literal "\n"; restore real newlines.
-  const fcmPrivateKey = (Deno.env.get("FCM_PRIVATE_KEY") ?? "").replace(
-    /\\n/g,
-    "\n",
-  );
+  // Prefer FCM_PRIVATE_KEY_B64: a single-line base64 of the raw PEM set by the
+  // deploy workflow. This is immune to the newline/escaping/truncation issues
+  // that corrupt a multi-line PEM secret passed through the CLI (which caused
+  // the "incorrect length for APPLICATION [15]" DER error). Fall back to the
+  // raw FCM_PRIVATE_KEY secret (with literal "\n" restored) if B64 is absent.
+  const fcmPrivateKey = (() => {
+    const b64 = (Deno.env.get("FCM_PRIVATE_KEY_B64") ?? "").replace(
+      /[^A-Za-z0-9+/=]/g,
+      "",
+    );
+    if (b64) {
+      try {
+        return atob(b64);
+      } catch (_) {
+        // fall through to the raw secret
+      }
+    }
+    return (Deno.env.get("FCM_PRIVATE_KEY") ?? "").replace(/\\n/g, "\n");
+  })();
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: "Server misconfigured" }, 500);

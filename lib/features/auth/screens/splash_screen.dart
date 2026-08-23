@@ -114,22 +114,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.2),
-            radius: 1.2,
-            colors: [
-              Color(0xFFFF7A45),
-              Color(0xFFFF5722),
-              Color(0xFFE64A19),
-            ],
-            stops: [0.0, 0.55, 1.0],
+      body: SizedBox.expand(
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.2),
+              radius: 1.2,
+              colors: [
+                Color(0xFFFF7A45),
+                Color(0xFFFF5722),
+                Color(0xFFE64A19),
+              ],
+              stops: [0.0, 0.55, 1.0],
+            ),
           ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
             // Single, centered brand mark.
             FadeTransition(
               opacity: _logoFade,
@@ -196,12 +197,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               ),
             ),
 
-            // Subtle loading dots near the bottom.
-            Positioned(
-              bottom: screenHeight * 0.08,
-              child: const _PulsingDots(),
-            ),
-          ],
+              // Subtle loading dots near the bottom.
+              Positioned(
+                bottom: screenHeight * 0.08,
+                child: const _PulsingDots(),
+              ),
+            ],
+          ),
         ),
       ),
     );

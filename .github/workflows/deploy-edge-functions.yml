@@ -36,10 +36,15 @@ jobs:
           FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
           FCM_PRIVATE_KEY: ${{ secrets.FCM_PRIVATE_KEY }}
         run: |
+          # Also set a single-line base64 of the private key. A multi-line PEM
+          # passed through the CLI can get truncated/mangled (causing the DER
+          # "incorrect length" error); the function prefers the base64 form.
+          FCM_PRIVATE_KEY_B64=$(printf '%s' "$FCM_PRIVATE_KEY" | base64 -w 0)
           supabase secrets set \
             FCM_PROJECT_ID="$FCM_PROJECT_ID" \
             FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL" \
             FCM_PRIVATE_KEY="$FCM_PRIVATE_KEY" \
+            FCM_PRIVATE_KEY_B64="$FCM_PRIVATE_KEY_B64" \
             --project-ref "$PROJECT_REF"
 
       - name: Deploy send-broadcast function
