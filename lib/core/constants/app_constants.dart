@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class AppConstants {
   AppConstants._();
 
@@ -47,10 +49,23 @@ class AppConstants {
     defaultValue: '',
   );
 
-  static const String fcmPrivateKey = String.fromEnvironment(
+  /// FCM private key is passed as base64-encoded via dart-define to avoid
+  /// issues with newlines in PEM keys breaking the command line.
+  static const String _fcmPrivateKeyEncoded = String.fromEnvironment(
     'FCM_PRIVATE_KEY',
     defaultValue: '',
   );
+
+  /// Decoded FCM private key (base64 decoded at runtime).
+  static String get fcmPrivateKey {
+    if (_fcmPrivateKeyEncoded.isEmpty) return '';
+    try {
+      return utf8.decode(base64Decode(_fcmPrivateKeyEncoded));
+    } catch (_) {
+      // If decoding fails, return as-is (may already be plaintext in dev)
+      return _fcmPrivateKeyEncoded;
+    }
+  }
 
   /// Gemini AI API Key
   static const String geminiApiKey = String.fromEnvironment(
