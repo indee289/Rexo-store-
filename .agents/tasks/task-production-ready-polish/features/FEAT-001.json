@@ -1,0 +1,6 @@
+{
+  "id": "FEAT-001",
+  "title": "Fix dark mode across the entire User App",
+  "status": "in_progress",
+  "description": "Fix hardcoded light-mode colors in shimmer widgets, profile screens, bottom nav, and main.dart system UI overlay to be theme-aware for proper dark mode support."
+}

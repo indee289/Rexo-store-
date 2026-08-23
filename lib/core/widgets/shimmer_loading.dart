@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../theme/app_colors.dart';
-
 /// Generic shimmer loading placeholder for list screens
 class ShimmerLoading extends StatelessWidget {
   final double? height;
@@ -11,9 +9,14 @@ class ShimmerLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: SizedBox(
@@ -27,7 +30,7 @@ class ShimmerLoading extends StatelessWidget {
                   height: 80,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: childColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -55,14 +58,19 @@ class ShimmerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: childColor,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
@@ -81,14 +89,19 @@ class ShimmerCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Container(
         width: size,
         height: size,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: childColor,
           shape: BoxShape.circle,
         ),
       ),
@@ -109,14 +122,19 @@ class ShimmerLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: childColor,
           borderRadius: BorderRadius.circular(4),
         ),
       ),
@@ -130,14 +148,19 @@ class ShimmerCampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Container(
         width: 280,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: childColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -145,9 +168,10 @@ class ShimmerCampaignCard extends StatelessWidget {
           children: [
             Container(
               height: 140,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              decoration: BoxDecoration(
+                color: childColor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
               ),
             ),
             Padding(
@@ -158,13 +182,13 @@ class ShimmerCampaignCard extends StatelessWidget {
                   Container(
                     height: 16,
                     width: 180,
-                    color: Colors.white,
+                    color: childColor,
                   ),
                   const SizedBox(height: 8),
                   Container(
                     height: 12,
                     width: 120,
-                    color: Colors.white,
+                    color: childColor,
                   ),
                 ],
               ),
@@ -182,15 +206,20 @@ class ShimmerCreatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Container(
         width: 160,
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: childColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -199,8 +228,8 @@ class ShimmerCreatorCard extends StatelessWidget {
             Container(
               width: 56,
               height: 56,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: childColor,
                 shape: BoxShape.circle,
               ),
             ),
@@ -208,13 +237,13 @@ class ShimmerCreatorCard extends StatelessWidget {
             Container(
               height: 14,
               width: 80,
-              color: Colors.white,
+              color: childColor,
             ),
             const SizedBox(height: 4),
             Container(
               height: 10,
               width: 60,
-              color: Colors.white,
+              color: childColor,
             ),
           ],
         ),
@@ -229,9 +258,14 @@ class ShimmerProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
+    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.border,
-      highlightColor: AppColors.divider,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -239,23 +273,27 @@ class ShimmerProfile extends StatelessWidget {
             Container(
               width: 100,
               height: 100,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: childColor,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(height: 16),
-            Container(height: 20, width: 150, color: Colors.white),
+            Container(height: 20, width: 150, color: childColor),
             const SizedBox(height: 8),
-            Container(height: 14, width: 100, color: Colors.white),
+            Container(height: 14, width: 100, color: childColor),
             const SizedBox(height: 24),
-            Container(height: 60, width: double.infinity, color: Colors.white),
+            Container(
+                height: 60, width: double.infinity, color: childColor),
             const SizedBox(height: 16),
-            Container(height: 48, width: double.infinity, color: Colors.white),
+            Container(
+                height: 48, width: double.infinity, color: childColor),
             const SizedBox(height: 12),
-            Container(height: 48, width: double.infinity, color: Colors.white),
+            Container(
+                height: 48, width: double.infinity, color: childColor),
             const SizedBox(height: 12),
-            Container(height: 48, width: double.infinity, color: Colors.white),
+            Container(
+                height: 48, width: double.infinity, color: childColor),
           ],
         ),
       ),

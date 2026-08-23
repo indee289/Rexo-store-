@@ -10,11 +10,9 @@ import 'services/supabase_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set status bar to transparent with dark icons
+  // Set status bar to transparent - icon brightness adapts via theme's AppBarTheme
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    statusBarBrightness: Brightness.light,
   ));
 
   // Initialize Firebase for push notifications

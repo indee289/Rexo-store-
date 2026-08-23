@@ -167,6 +167,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildAvatarSection(BuildContext context, String? avatarUrl, String name) {
+    final theme = Theme.of(context);
     return Stack(
       children: [
         AvatarWidget(
@@ -185,7 +186,7 @@ class ProfileScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(color: theme.colorScheme.surface, width: 2),
             ),
             child: const Icon(
               Iconsax.camera,

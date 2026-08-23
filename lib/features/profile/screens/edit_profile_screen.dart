@@ -239,7 +239,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: theme.colorScheme.surface, width: 2),
                         ),
                         child: const Icon(
                           Iconsax.camera,

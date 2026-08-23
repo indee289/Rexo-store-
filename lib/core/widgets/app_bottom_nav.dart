@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../theme/app_colors.dart';
@@ -134,7 +135,7 @@ class _NavItem extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 child: Text(
                   label,
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: AppColors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
