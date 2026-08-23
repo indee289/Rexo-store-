@@ -19,14 +19,14 @@ final productsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false);
+  final response = await query.order('created_at', ascending: false).limit(50);
 
   return List<Map<String, dynamic>>.from(response);
 });
 
 /// Provider for single product detail
 final productDetailProvider =
-    FutureProvider.family<Map<String, dynamic>?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, id) async {
   final response = await SupabaseService.client
       .from('products')
       .select()

@@ -53,7 +53,7 @@ final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
 });
 
 /// Provider for campaigns filtered by category
-final filteredCampaignsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, category) async {
+final filteredCampaignsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, category) async {
   var query = SupabaseService.client
       .from('campaigns')
       .select()

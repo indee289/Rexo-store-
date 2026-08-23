@@ -26,14 +26,14 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
     query = query.ilike('title', '%$searchTerm%');
   }
 
-  final response = await query.order('created_at', ascending: false);
+  final response = await query.order('created_at', ascending: false).limit(50);
 
   return List<Map<String, dynamic>>.from(response);
 });
 
 /// Provider for single campaign detail with brand info
 final campaignDetailProvider =
-    FutureProvider.family<Map<String, dynamic>?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, id) async {
   final response = await SupabaseService.client
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
@@ -135,7 +135,7 @@ final campaignActionsProvider =
 /// see who applied. RLS ("Brands can read applications for their campaigns")
 /// restricts this to the campaign owner (and admins). Ordered newest-first.
 final campaignApplicantsProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>(
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, campaignId) async {
   final response = await SupabaseService.client
       .from('applications')

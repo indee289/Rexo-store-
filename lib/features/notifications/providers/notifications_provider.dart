@@ -23,6 +23,7 @@ final notificationsProvider =
       .stream(primaryKey: ['id'])
       .eq('user_id', user.id)
       .order('created_at', ascending: false)
+      .limit(100)
       .map((rows) => List<Map<String, dynamic>>.from(rows));
 });
 
