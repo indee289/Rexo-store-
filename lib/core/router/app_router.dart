@@ -53,6 +53,11 @@ import '../../features/warnings/screens/warnings_screen.dart';
 import '../../features/settings/screens/two_factor_auth_screen.dart';
 import '../widgets/app_shell.dart';
 
+/// Global navigator key for the root [GoRouter]. Lets non-widget code (e.g. the
+/// OneSignal push-subscription observer) present dialogs over the current route.
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 /// Route paths
 class AppRoutes {
   AppRoutes._();
@@ -141,6 +146,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     refreshListenable: refresh,

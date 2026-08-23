@@ -28,7 +28,9 @@ dependencies:
   firebase_messaging: ^14.7.0
   flutter_local_notifications: ^17.2.3
   qr_flutter: ^4.1.0
-  onesignal_flutter: ^5.5.1
+  # Pinned to an exact version per OneSignal integration guidance (no widened
+  # ranges). 5.6.8 is the latest published stable and is verified by CI.
+  onesignal_flutter: 5.6.8
 
 dev_dependencies:
   flutter_test:

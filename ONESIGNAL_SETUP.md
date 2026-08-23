@@ -5,8 +5,9 @@ cross-platform push notifications and in-app messaging, alongside the existing
 Firebase Cloud Messaging (FCM) stack.
 
 - **App ID:** `cf5dccaf-cd4e-4fbc-ae21-009a5d2a1d7b`
-- **SDK:** `onesignal_flutter: ^5.5.1`
-- **Service:** `lib/services/onesignal_service.dart`
+- **SDK:** `onesignal_flutter: 5.6.8` (pinned exact — latest published stable, no widened range)
+- **Service:** `lib/services/onesignal_service.dart` (centralized wrapper — all OneSignal SDK calls route through it)
+- **Verification dialog:** `lib/services/onesignal_verification.dart`
 
 The App ID is a **public client identifier** (not a secret). A working default
 is baked into `OneSignalService._appId`, and it can be overridden at build time:
@@ -23,11 +24,18 @@ is used so the build still works.
 
 - Initializes OneSignal after the first frame (`main.dart`) — guarded so it can
   never crash startup, and independent of Firebase.
-- Requests notification permission on init.
+- **Push Subscription Verification Dialog:** once the device receives a real
+  server-assigned push subscription id, a one-time dialog ("Your OneSignal SDK
+  integration is complete!") is shown over the current route via the root
+  navigator key. Its **"Got it"** button is the **only** place OneSignal push
+  permission is requested — permission is never requested at launch.
 - Associates the OneSignal subscription with the Supabase user id via
   `OneSignal.login(userId)` on sign-in / session restore, and `OneSignal.logout()`
   on sign-out (`auth_provider.dart`). This lets the backend target users by
   **External ID** (their Supabase user id).
+
+> The centralized `OneSignalService` also exposes `addEmail` / `addSms` /
+> `addTag` / `setLogLevel` so all OneSignal SDK usage stays in one place.
 
 ## Android — dashboard config required (no code changes needed)
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'services/onesignal_service.dart';
+import 'services/onesignal_verification.dart';
 import 'services/push_notification_service.dart';
 import 'services/supabase_service.dart';
 
@@ -57,6 +58,10 @@ void main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     try {
       await OneSignalService.initialize();
+      // Wire up the push-subscription verification dialog. It shows once the
+      // device registers and requests push permission on the user's tap — the
+      // only place OneSignal permission is requested (never at launch).
+      setupOneSignalVerification();
     } catch (_) {
       // OneSignal may not be available in all environments - skip silently
     }
