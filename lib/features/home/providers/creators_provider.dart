@@ -8,7 +8,7 @@ final creatorProfileProvider =
         (ref, creatorUserId) async {
   final response = await SupabaseService.client
       .from('creator_profiles')
-      .select('*, users!inner(id, name, avatar_url, handle, email)')
+      .select('*, users!inner(id, name, avatar_url, handle, email, is_verified)')
       .eq('user_id', creatorUserId)
       .maybeSingle();
 

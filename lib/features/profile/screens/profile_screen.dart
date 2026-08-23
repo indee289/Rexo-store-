@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/stat_chip.dart';
+import '../../../core/widgets/verified_badge.dart';
 import '../providers/profile_provider.dart';
 import 'edit_profile_screen.dart';
 
@@ -96,6 +97,7 @@ class ProfileScreen extends ConsumerWidget {
     final handle = profile['handle'] ?? '';
     final role = profile['role'] ?? 'creator';
     final avatarUrl = profile['avatar_url'];
+    final isVerified = (profile['is_verified'] == true);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -104,14 +106,24 @@ class ProfileScreen extends ConsumerWidget {
           // Avatar
           _buildAvatarSection(context, avatarUrl, name),
           const SizedBox(height: 16),
-          // Name
-          Text(
-            name,
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+          // Name + verified badge
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              if (isVerified) const VerifiedBadge(size: 20),
+            ],
           ),
           // Handle
           if (handle.isNotEmpty) ...[

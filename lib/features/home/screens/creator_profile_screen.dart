@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/widgets/verified_badge.dart';
 import '../providers/creators_provider.dart';
 
 /// Creator profile screen showing stats, Follow button, and Message button.
@@ -58,6 +59,7 @@ class CreatorProfileScreen extends ConsumerWidget {
           final name = userData?['name'] ?? 'Creator';
           final avatarUrl = userData?['avatar_url'];
           final handle = userData?['handle'] ?? '';
+          final isVerified = (userData?['is_verified'] == true);
           final category = creator['category'] ?? '';
           final bio = creator['bio'] ?? '';
           final rating = creator['rating'] ?? 0.0;
@@ -77,14 +79,24 @@ class CreatorProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Name
-                Text(
-                  name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                // Name + verified badge
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    if (isVerified) const VerifiedBadge(size: 20),
+                  ],
                 ),
 
                 // Handle

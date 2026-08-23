@@ -5,6 +5,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/verified_badge.dart';
 import '../../../services/supabase_service.dart';
 
 /// Provider to fetch a public profile by handle
@@ -116,6 +117,7 @@ class PublicProfileScreen extends ConsumerWidget {
     final bio = profile['bio'] ?? '';
     final role = profile['role'] ?? 'creator';
     final userHandle = profile['handle'] ?? handle;
+    final isVerified = (profile['is_verified'] == true);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -140,14 +142,24 @@ class PublicProfileScreen extends ConsumerWidget {
                 : null,
           ),
           const SizedBox(height: 16),
-          // Name
-          Text(
-            name,
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+          // Name + verified badge
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              if (isVerified) const VerifiedBadge(size: 20),
+            ],
           ),
           const SizedBox(height: 4),
           // Handle

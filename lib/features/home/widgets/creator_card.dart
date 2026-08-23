@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/widgets/verified_badge.dart';
 
 /// A compact horizontal card for displaying trending creators.
 class CreatorCard extends StatelessWidget {
@@ -22,6 +23,7 @@ class CreatorCard extends StatelessWidget {
     final userData = creator['users'] as Map<String, dynamic>?;
     final name = userData?['name'] ?? 'Creator';
     final avatarUrl = userData?['avatar_url'];
+    final isVerified = (userData?['is_verified'] == true);
     final category = creator['category'] ?? '';
     final followers = creator['followers'] ?? 0;
     final rating = creator['rating'] ?? 0.0;
@@ -54,16 +56,25 @@ class CreatorCard extends StatelessWidget {
               showBorder: true,
             ),
             const SizedBox(height: 8),
-            Text(
-              name,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (isVerified) const VerifiedBadge(size: 13),
+              ],
             ),
             if (category.isNotEmpty) ...[
               const SizedBox(height: 2),

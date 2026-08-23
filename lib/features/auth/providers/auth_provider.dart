@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 import '../../device_fingerprint/providers/device_fingerprint_provider.dart';
 
@@ -133,16 +134,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Sign up with email, password, name, and role
+  /// Sign up with email, password, name, role, and username handle
   Future<void> signUp({
     required String email,
     required String password,
     required String fullName,
     required String role,
+    required String handle,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
+    final normalizedHandle = handle.trim().toLowerCase();
+
     try {
+      // Check username availability up-front so we can surface a clear
+      // error before creating the auth user.
+      final available =
+          await SupabaseService.isHandleAvailable(normalizedHandle);
+      if (!available) {
+        state = const AuthState(
+          status: AuthStatus.error,
+          errorMessage: 'This username is already taken.',
+        );
+        return;
+      }
+
       final response = await SupabaseService.signUp(
         email: email,
         password: password,
@@ -155,6 +171,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           email: email,
           fullName: fullName,
           role: role,
+          handle: normalizedHandle,
         );
 
         state = AuthState(
@@ -173,9 +190,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         errorMessage: e.message,
       );
     } catch (e) {
+      // Gracefully handle the DB unique-constraint violation on handle
+      // (in case of a race between the availability check and insert).
       state = AuthState(
         status: AuthStatus.error,
-        errorMessage: 'An unexpected error occurred. Please try again.',
+        errorMessage: ErrorUtils.sanitize(e),
       );
     }
   }

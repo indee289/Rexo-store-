@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +19,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -28,10 +30,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  /// Normalize a raw username input: strip a leading '@', trim, lowercase.
+  String _normalizeHandle(String value) {
+    var handle = value.trim();
+    if (handle.startsWith('@')) {
+      handle = handle.substring(1);
+    }
+    return handle.trim().toLowerCase();
   }
 
   Future<void> _handleSignUp() async {
@@ -42,6 +54,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           password: _passwordController.text,
           fullName: _nameController.text.trim(),
           role: _selectedRole,
+          handle: _normalizeHandle(_usernameController.text),
         );
 
     if (!mounted) return;
@@ -141,6 +154,50 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     }
                     if (value.trim().length < 2) {
                       return 'Name must be at least 2 characters';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Username (handle) field
+                TextFormField(
+                  controller: _usernameController,
+                  textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.text,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  inputFormatters: [
+                    // Keep input to the allowed handle charset (plus a leading
+                    // '@' which we strip on submit) and force lowercase.
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_@]')),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      return newValue.copyWith(text: newValue.text.toLowerCase());
+                    }),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    hintText: 'e.g. jane_doe',
+                    prefixIcon: Icon(
+                      Iconsax.user_tag,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                      size: 20,
+                    ),
+                  ),
+                  validator: (value) {
+                    final handle = _normalizeHandle(value ?? '');
+                    if (handle.isEmpty) {
+                      return 'Please choose a username';
+                    }
+                    if (handle.length < 3 || handle.length > 20) {
+                      return 'Username must be 3-20 characters';
+                    }
+                    if (!RegExp(r'^[a-z]').hasMatch(handle)) {
+                      return 'Username must start with a letter';
+                    }
+                    if (!RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(handle)) {
+                      return 'Only lowercase letters, numbers and underscore';
                     }
                     return null;
                   },

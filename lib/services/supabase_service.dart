@@ -59,17 +59,33 @@ class SupabaseService {
     return response;
   }
 
+  /// Check whether a given [handle] (username) is already taken.
+  ///
+  /// Returns true if the handle is available (no existing row), false if a
+  /// user already owns it. The comparison uses the exact stored value, so
+  /// callers should pass an already-normalized (lowercased) handle.
+  static Future<bool> isHandleAvailable(String handle) async {
+    final existing = await client
+        .from('users')
+        .select('id')
+        .eq('handle', handle)
+        .maybeSingle();
+    return existing == null;
+  }
+
   /// Create user profile in 'users' table after signup
   static Future<void> createUserProfile({
     required String userId,
     required String email,
     required String fullName,
     required String role,
+    required String handle,
   }) async {
     await client.from('users').insert({
       'id': userId,
       'email': email,
       'name': fullName,
+      'handle': handle,
       'role': role,
       'created_at': DateTime.now().toIso8601String(),
     });

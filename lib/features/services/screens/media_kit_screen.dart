@@ -7,6 +7,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/verified_badge.dart';
 import '../../profile/providers/profile_provider.dart';
 
 class MediaKitScreen extends ConsumerWidget {
@@ -69,6 +70,7 @@ class MediaKitScreen extends ConsumerWidget {
     final roleProfile = profileState.roleProfile;
     final name = profile?['name'] as String? ?? 'Creator';
     final handle = profile?['handle'] as String? ?? '';
+    final isVerified = (profile?['is_verified'] == true);
     final completedCampaigns =
         roleProfile?['completed_campaigns'] as int? ?? 0;
     final rating = (roleProfile?['rating'] as num?)?.toDouble() ?? 0.0;
@@ -122,13 +124,24 @@ class MediaKitScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      if (isVerified)
+                        const VerifiedBadge(size: 20, color: Colors.white),
+                    ],
                   ),
                   if (handle.isNotEmpty) ...[
                     const SizedBox(height: 4),
