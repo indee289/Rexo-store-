@@ -269,6 +269,22 @@ Deno.serve(async (req: Request) => {
                 message: {
                   token,
                   notification: { title, body: message },
+                  // Android: deliver as a high-priority heads-up notification
+                  // with sound, on the app's high-importance channel, so it
+                  // shows in the status bar / lock screen (not just in-app).
+                  android: {
+                    priority: "high",
+                    notification: {
+                      channel_id: "rexo_high_importance",
+                      sound: "default",
+                      default_sound: true,
+                      notification_priority: "PRIORITY_HIGH",
+                    },
+                  },
+                  // iOS: play the default sound.
+                  apns: {
+                    payload: { aps: { sound: "default" } },
+                  },
                 },
               }),
             });

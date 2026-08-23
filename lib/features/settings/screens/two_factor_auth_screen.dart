@@ -117,8 +117,14 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
     });
 
     try {
+      // Supabase requires an `issuer` for TOTP factors (and a unique
+      // friendlyName per user). Without `issuer` enroll fails with
+      // "expected an issuer for totp factor type". The timestamped
+      // friendlyName avoids "factor already exists" on retry.
       final response = await SupabaseService.client.auth.mfa.enroll(
         factorType: FactorType.totp,
+        issuer: 'Rexo',
+        friendlyName: 'Rexo ${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (!mounted) return;
