@@ -6,7 +6,10 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/verified_badge.dart';
 import '../providers/messages_provider.dart';
 
 class MessagesScreen extends ConsumerWidget {
@@ -24,6 +27,12 @@ class MessagesScreen extends ConsumerWidget {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => _openNewChatSearch(context),
+        tooltip: 'New chat',
+        child: const Icon(Iconsax.message_text, color: Colors.white),
       ),
       body: conversationsAsync.when(
         data: (conversations) {
@@ -63,6 +72,18 @@ class MessagesScreen extends ConsumerWidget {
               Text('Failed to load messages', style: AppTextStyles.bodyMedium),
         ),
       ),
+    );
+  }
+
+  void _openNewChatSearch(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _NewChatSheet(),
     );
   }
 
@@ -183,5 +204,209 @@ class _ConversationTile extends StatelessWidget {
     } else {
       return DateFormat('dd/MM').format(dateTime);
     }
+  }
+}
+
+
+/// A WhatsApp-style "new chat" search sheet. Lets the user search public users
+/// by handle or name and tap a result to open the existing ChatScreen.
+class _NewChatSheet extends ConsumerStatefulWidget {
+  const _NewChatSheet();
+
+  @override
+  ConsumerState<_NewChatSheet> createState() => _NewChatSheetState();
+}
+
+class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
+  final _controller = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final resultsAsync = ref.watch(userSearchProvider(_query));
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: theme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Row(
+                  children: [
+                    Text('New Chat', style: AppTextStyles.h6),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(Iconsax.close_circle,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) => setState(() => _query = value),
+                  style: AppTextStyles.bodyMedium,
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or @handle',
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                    prefixIcon: Icon(
+                      Iconsax.search_normal,
+                      size: 20,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                    suffixIcon: _query.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.close,
+                                size: 20,
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.4)),
+                            onPressed: () {
+                              _controller.clear();
+                              setState(() => _query = '');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: theme.scaffoldBackgroundColor,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: theme.dividerColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: theme.dividerColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: _query.trim().isEmpty
+                    ? _hint(theme, 'Search for people to start a conversation')
+                    : resultsAsync.when(
+                        data: (users) {
+                          if (users.isEmpty) {
+                            return _hint(theme, 'No users found');
+                          }
+                          return ListView.separated(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            itemCount: users.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              indent: 76,
+                              color: theme.dividerColor,
+                            ),
+                            itemBuilder: (context, index) {
+                              return _UserResultTile(user: users[index]);
+                            },
+                          );
+                        },
+                        loading: () => const Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.primary),
+                        ),
+                        error: (e, _) => _hint(theme, ErrorUtils.sanitize(e)),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _hint(ThemeData theme, String text) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserResultTile extends StatelessWidget {
+  final Map<String, dynamic> user;
+
+  const _UserResultTile({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final id = user['id'] as String;
+    final name = (user['name'] ?? 'User').toString();
+    final handle = (user['handle'] ?? '').toString();
+    final avatarUrl = user['avatar_url'] as String?;
+    final isVerified = user['is_verified'] == true;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: AvatarWidget(url: avatarUrl, name: name, size: 46),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              name,
+              style: AppTextStyles.labelLarge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isVerified) const VerifiedBadge(size: 14),
+        ],
+      ),
+      subtitle: handle.isNotEmpty
+          ? Text(
+              '@$handle',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            )
+          : null,
+      onTap: () {
+        Navigator.of(context).pop();
+        context.push('/messages/$id');
+      },
+    );
   }
 }

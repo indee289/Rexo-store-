@@ -90,6 +90,31 @@ final conversationsProvider =
   return conversations;
 });
 
+/// Search public users by handle or name to start a new chat (WhatsApp-style).
+///
+/// Excludes the current user and returns up to 20 matches. An empty/whitespace
+/// query returns an empty list so the UI can show a hint instead of everyone.
+final userSearchProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>(
+        (ref, query) async {
+  final q = query.trim();
+  if (q.isEmpty) return [];
+
+  final currentUser = SupabaseService.currentUser;
+
+  var request = SupabaseService.client
+      .from('users')
+      .select('id, name, handle, avatar_url, is_verified')
+      .or('handle.ilike.%$q%,name.ilike.%$q%');
+
+  if (currentUser != null) {
+    request = request.neq('id', currentUser.id);
+  }
+
+  final response = await request.limit(20);
+  return List<Map<String, dynamic>>.from(response);
+});
+
 /// Provider for chat messages between current user and another user
 final chatMessagesProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>(
