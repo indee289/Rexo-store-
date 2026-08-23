@@ -58,6 +58,14 @@ class ErrorUtils {
       return 'The requested data was not found.';
     }
 
+    // Handle/username uniqueness errors
+    if (message.contains('handle') &&
+        (message.contains('unique') ||
+            message.contains('duplicate') ||
+            message.contains('already exists'))) {
+      return 'This handle is already taken. Please choose a different one.';
+    }
+
     // Duplicate/conflict
     if (message.contains('duplicate') ||
         message.contains('already exists') ||

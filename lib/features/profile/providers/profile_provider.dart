@@ -95,15 +95,24 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
 class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
   ProfileNotifier() : super(const AsyncValue.data(null));
 
+  /// Stores the last error encountered during an update operation.
+  /// The UI can read this to display a specific error message.
+  Object? _lastError;
+  Object? get lastError => _lastError;
+
   /// Update user profile fields.
   ///
   /// Only valid users table columns are sent to Supabase to prevent
   /// "column not found" errors.
+  ///
+  /// Returns true on success, false on failure. On failure, [lastError]
+  /// contains the original error object for use with ErrorUtils.sanitize.
   Future<bool> updateProfile(Map<String, dynamic> fields) async {
     final user = SupabaseService.currentUser;
     if (user == null) return false;
 
     state = const AsyncValue.loading();
+    _lastError = null;
 
     try {
       // Only allow valid users table columns to be sent
@@ -132,6 +141,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
+      _lastError = e;
       state = AsyncValue.error(e, st);
       return false;
     }

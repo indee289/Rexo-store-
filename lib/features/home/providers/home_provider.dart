@@ -25,7 +25,20 @@ final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
       .order('followers', ascending: false)
       .limit(10);
 
-  return List<Map<String, dynamic>>.from(response);
+  final results = List<Map<String, dynamic>>.from(response);
+
+  // Fallback: if no creator_profiles exist, fetch users with role='creator'
+  if (results.isEmpty) {
+    final fallback = await SupabaseService.client
+        .from('users')
+        .select()
+        .eq('role', 'creator')
+        .order('created_at', ascending: false)
+        .limit(10);
+    return List<Map<String, dynamic>>.from(fallback);
+  }
+
+  return results;
 });
 
 /// Provider for campaigns filtered by category

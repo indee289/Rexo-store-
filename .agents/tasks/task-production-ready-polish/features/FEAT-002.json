@@ -1,0 +1,6 @@
+{
+  "id": "FEAT-002",
+  "title": "Fix profile edit reliability, improve error handling, reduce splash delay, add admin dark mode",
+  "status": "in_progress",
+  "description": "Fix profile edit error propagation, improve error messages for handle uniqueness, add fallback for empty trending creators, reduce splash delay, and add dark mode support to the admin app."
+}

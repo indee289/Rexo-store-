@@ -125,10 +125,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           );
           Navigator.of(context).pop();
         } else {
+          // Read the actual error from the notifier for a specific message
+          final errorMessage = notifier.lastError != null
+              ? ErrorUtils.sanitize(notifier.lastError)
+              : 'Failed to update profile';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Failed to update profile',
+                errorMessage,
                 style: GoogleFonts.poppins(fontSize: 13),
               ),
               backgroundColor: AppColors.error,
