@@ -30,6 +30,15 @@ jobs:
         run: flutter analyze
         continue-on-error: true
 
+      - name: Decode keystore
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+          echo "storeFile=release-keystore.jks" > android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+
       - name: Build APK
         run: |
           flutter build apk --release \
@@ -38,7 +47,11 @@ jobs:
             --dart-define=R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }} \
             --dart-define=R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }} \
             --dart-define=R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }} \
-            --dart-define=R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+            --dart-define=R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }} \
+            --dart-define=FCM_PROJECT_ID=${{ secrets.FCM_PROJECT_ID }} \
+            --dart-define=FCM_CLIENT_EMAIL=${{ secrets.FCM_CLIENT_EMAIL }} \
+            --dart-define=FCM_PRIVATE_KEY=${{ secrets.FCM_PRIVATE_KEY }} \
+            --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

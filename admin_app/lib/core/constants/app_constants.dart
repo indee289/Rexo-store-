@@ -36,6 +36,28 @@ class AppConstants {
     defaultValue: '',
   );
 
+  /// Firebase Cloud Messaging configuration (server-side credentials)
+  static const String fcmProjectId = String.fromEnvironment(
+    'FCM_PROJECT_ID',
+    defaultValue: '',
+  );
+
+  static const String fcmClientEmail = String.fromEnvironment(
+    'FCM_CLIENT_EMAIL',
+    defaultValue: '',
+  );
+
+  static const String fcmPrivateKey = String.fromEnvironment(
+    'FCM_PRIVATE_KEY',
+    defaultValue: '',
+  );
+
+  /// Gemini AI API Key
+  static const String geminiApiKey = String.fromEnvironment(
+    'GEMINI_API_KEY',
+    defaultValue: '',
+  );
+
   /// Admin email
   static const String adminEmail = 'rexoagency.in@gmail.com';
 
