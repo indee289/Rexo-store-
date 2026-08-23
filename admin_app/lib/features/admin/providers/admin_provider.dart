@@ -135,6 +135,36 @@ final adminProductsProvider =
   return List<Map<String, dynamic>>.from(response);
 });
 
+/// Product categories loaded from the DB (`product_categories`). This keeps the
+/// Add Product category dropdown in sync with the storefront category filter.
+/// Falls back to a sensible default list if the table is empty or unreachable.
+final adminCategoriesProvider = FutureProvider<List<String>>((ref) async {
+  const fallback = <String>[
+    'Electronics',
+    'Fashion',
+    'Beauty',
+    'Home & Kitchen',
+    'Sports',
+    'Books',
+    'Toys',
+    'Digital Goods',
+    'Other',
+  ];
+  try {
+    final response = await SupabaseService.client
+        .from('product_categories')
+        .select('name')
+        .order('sort_order', ascending: true);
+    final names = List<Map<String, dynamic>>.from(response)
+        .map((row) => (row['name'] as String?)?.trim() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
+    return names.isEmpty ? fallback : names;
+  } catch (_) {
+    return fallback;
+  }
+});
+
 final adminPlatformSettingsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final client = SupabaseService.client;
@@ -472,14 +502,22 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> createProduct(Map<String, dynamic> data) async {
+  /// Insert a product into Supabase.
+  ///
+  /// Returns `true` only when the row was actually persisted (the insert
+  /// completed without throwing). Returns `false` on any error, and stores the
+  /// error in [state] so callers can surface a sanitized message. This lets the
+  /// Add Product screen show success ONLY after the real DB write succeeds.
+  Future<bool> createProduct(Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client.from('products').insert(data);
       ref.invalidate(adminProductsProvider);
       state = const AsyncValue.data(null);
+      return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      return false;
     }
   }
 
@@ -498,7 +536,10 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> deleteProduct(String productId) async {
+  /// Hard-delete a product. The admin DELETE RLS policy in
+  /// supabase/fix_admin_rls.sql (is_admin()) authorizes this. Returns `true`
+  /// when the delete completed without error.
+  Future<bool> deleteProduct(String productId) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
@@ -507,8 +548,10 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .eq('id', productId);
       ref.invalidate(adminProductsProvider);
       state = const AsyncValue.data(null);
+      return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      return false;
     }
   }
 
