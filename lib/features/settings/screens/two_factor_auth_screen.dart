@@ -93,8 +93,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
 
       setState(() {
         _factorId = response.id;
-        _qrCodeUrl = response.totp.qrCode;
-        _secret = response.totp.secret;
+        _qrCodeUrl = response.totp?.qrCode;
+        _secret = response.totp?.secret;
         _isEnrolling = false;
       });
     } catch (e) {
