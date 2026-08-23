@@ -110,9 +110,21 @@ class R2StorageService {
       );
     }
 
-    // Return the public URL
-    // R2 public bucket URL format: https://pub-{hash}.r2.dev/{path}
-    // Or use the endpoint URL directly for public access
+    // Return the PUBLIC URL when a public base is configured.
+    //
+    // The S3 API endpoint ($_endpoint/$_bucketName/$path) requires an
+    // authenticated (SigV4-signed) request, so it is NOT viewable by an
+    // <img>/CachedNetworkImage widget — that is why uploaded covers, product
+    // images and avatars never rendered. When R2_PUBLIC_URL is set (the
+    // bucket's public r2.dev URL or a custom domain), build the browsable URL
+    // from it. Otherwise fall back to the private endpoint URL (dev only).
+    final publicBase = AppConstants.r2PublicUrl.trim();
+    if (publicBase.isNotEmpty) {
+      final normalizedBase = publicBase.endsWith('/')
+          ? publicBase.substring(0, publicBase.length - 1)
+          : publicBase;
+      return '$normalizedBase/$path';
+    }
     return '$_endpoint/$_bucketName/$path';
   }
 

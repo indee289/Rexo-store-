@@ -38,6 +38,16 @@ class AppConstants {
     defaultValue: '',
   );
 
+  /// Public base URL for the R2 bucket (e.g. https://pub-xxxx.r2.dev or a
+  /// custom domain). The S3 API endpoint returned by uploads is NOT publicly
+  /// viewable without auth, so uploaded images (covers, products, avatars) do
+  /// not render. When this is set, [R2StorageService] builds the object's
+  /// public URL from it instead of the private S3 endpoint.
+  static const String r2PublicUrl = String.fromEnvironment(
+    'R2_PUBLIC_URL',
+    defaultValue: '',
+  );
+
   /// Firebase Cloud Messaging configuration (server-side credentials)
   static const String fcmProjectId = String.fromEnvironment(
     'FCM_PROJECT_ID',

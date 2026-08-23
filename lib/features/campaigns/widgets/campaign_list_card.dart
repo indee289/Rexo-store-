@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -30,15 +31,23 @@ class CampaignListCard extends StatelessWidget {
     final totalSlots = campaign['total_slots'] ?? 0;
     final brandInfo = campaign['users'] as Map<String, dynamic>?;
     final brandName = brandInfo?['name'] ?? 'Unknown Brand';
+    final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
 
     return PremiumCard(
       onTap: () {
         context.push('/campaigns/${campaign['id']}');
       },
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Cover image header (real image when available, gradient fallback)
+          _buildCoverHeader(coverImageUrl),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           // Title and brand
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +139,47 @@ class CampaignListCard extends StatelessWidget {
             filledSlots: filledSlots is int ? filledSlots : 0,
             totalSlots: totalSlots is int ? totalSlots : 0,
           ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  /// Cover header shown at the top of the card. Uses [CachedNetworkImage] when
+  /// a cover_image_url is present; otherwise renders the brand gradient as a
+  /// fallback (mirrors lib/features/home/widgets/campaign_card.dart).
+  Widget _buildCoverHeader(String coverImageUrl) {
+    const radius = BorderRadius.vertical(top: Radius.circular(16));
+    final hasCover = coverImageUrl.isNotEmpty;
+
+    final gradient = Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(Iconsax.gallery, color: Colors.white54, size: 32),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: SizedBox(
+        height: 120,
+        width: double.infinity,
+        child: hasCover
+            ? CachedNetworkImage(
+                imageUrl: coverImageUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => gradient,
+                errorWidget: (context, url, error) => gradient,
+              )
+            : gradient,
       ),
     );
   }
