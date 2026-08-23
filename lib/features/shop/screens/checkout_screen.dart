@@ -133,14 +133,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     const SizedBox(height: 16),
 
                     // Order items summary
-                    _buildOrderItemsSummary(cartItems),
+                    _buildOrderItemsSummary(context, cartItems),
                     const SizedBox(height: 24),
 
                     // Shipping address (only for physical products)
                     if (_hasPhysicalProducts) ...[
                       _buildSectionTitle('Shipping Address'),
                       const SizedBox(height: 12),
-                      _buildShippingForm(),
+                      _buildShippingForm(context),
                       const SizedBox(height: 24),
                     ],
 
@@ -171,7 +171,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -343,11 +343,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Text(title, style: AppTextStyles.h6);
   }
 
-  Widget _buildOrderItemsSummary(List<CartItem> items) {
+  Widget _buildOrderItemsSummary(BuildContext context, List<CartItem> items) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -398,11 +398,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildShippingForm() {
+  Widget _buildShippingForm(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -541,7 +541,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
