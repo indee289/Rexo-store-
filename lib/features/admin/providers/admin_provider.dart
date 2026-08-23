@@ -255,6 +255,26 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Hard-delete a campaign. Authorized by the admin DELETE RLS policy in
+  /// supabase/add_campaign_delete_rls.sql (is_admin()). Returns `true` when the
+  /// delete completed without error, mirroring [deleteProduct]/[createProduct].
+  Future<bool> deleteCampaign(String campaignId) async {
+    state = const AsyncValue.loading();
+    try {
+      await SupabaseService.client
+          .from('campaigns')
+          .delete()
+          .eq('id', campaignId);
+      ref.invalidate(adminCampaignsProvider);
+      ref.invalidate(adminStatsProvider);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
   Future<void> approveSubmission(String submissionId) async {
     state = const AsyncValue.loading();
     try {

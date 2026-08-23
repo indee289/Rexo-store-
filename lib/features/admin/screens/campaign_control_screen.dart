@@ -26,6 +26,67 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
     );
   }
 
+  Future<void> _confirmDeleteCampaign(
+    BuildContext context,
+    String campaignId,
+    String title,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Delete Campaign'),
+        content: Text(
+          'Are you sure you want to permanently delete "$title"? '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final success = await ref
+        .read(adminActionsProvider.notifier)
+        .deleteCampaign(campaignId);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Campaign deleted'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      final actionState = ref.read(adminActionsProvider);
+      final errorMsg = actionState.hasError
+          ? ErrorUtils.sanitize(actionState.error)
+          : 'Failed to delete campaign. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final campaigns = ref.watch(adminCampaignsProvider);
@@ -71,6 +132,23 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                             ),
                           ),
                           _StatusBadge(status: campaign['status'] ?? 'unknown'),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            tooltip: 'Delete campaign',
+                            icon: const Icon(Iconsax.trash,
+                                size: 18, color: AppColors.error),
+                            onPressed: () => _confirmDeleteCampaign(
+                              context,
+                              campaign['id'] as String,
+                              campaign['title']?.toString() ?? 'this campaign',
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
