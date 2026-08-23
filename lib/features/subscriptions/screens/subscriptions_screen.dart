@@ -10,6 +10,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/subscriptions_provider.dart';
+import 'subscription_payment_screen.dart';
 
 class SubscriptionsScreen extends ConsumerWidget {
   const SubscriptionsScreen({super.key});
@@ -339,24 +340,21 @@ class SubscriptionsScreen extends ConsumerWidget {
             child: ElevatedButton(
               onPressed: isProcessing
                   ? null
-                  : () async {
-                      final success = await ref
-                          .read(subscriptionNotifierProvider.notifier)
-                          .subscribe(planId, durationDays);
-
-                      if (success && context.mounted) {
-                        ref.invalidate(userSubscriptionsProvider);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Subscribed successfully!'),
-                            backgroundColor: AppColors.success,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                  : () {
+                      // Open the manual payment flow. The subscription is NOT
+                      // activated here — the user submits a payment proof that
+                      // an admin must approve before it becomes active.
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SubscriptionPaymentScreen(
+                            planId: planId,
+                            planName: name,
+                            amount: price,
+                            durationDays: durationDays,
                           ),
-                        );
-                      }
+                        ),
+                      );
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

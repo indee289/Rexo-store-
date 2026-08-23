@@ -11,6 +11,7 @@ import 'push_broadcast_screen.dart';
 import 'rexo_program_screen.dart';
 import 'shop_admin_screen.dart';
 import 'submission_review_screen.dart';
+import 'subscription_requests_screen.dart';
 import 'wallets_escrow_screen.dart';
 import 'withdrawal_queue_screen.dart';
 
@@ -79,6 +80,17 @@ class ActionsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                     builder: (context) => const DepositQueueScreen()),
+              ),
+            ),
+            _ActionTile(
+              icon: Iconsax.crown_1,
+              title: 'Subscription Requests',
+              subtitle: 'Approve or reject subscription payments',
+              color: Colors.deepOrange,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const SubscriptionRequestsScreen()),
               ),
             ),
             _ActionTile(

@@ -77,6 +77,19 @@ final adminDepositsProvider =
   return List<Map<String, dynamic>>.from(response);
 });
 
+/// Pending subscription payments awaiting admin review. Joins the user's name
+/// and email for display. Falls back to the raw row if the join is unavailable.
+final adminSubscriptionPaymentsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final client = SupabaseService.client;
+  final response = await client
+      .from('subscription_payments')
+      .select('*, users(name, email)')
+      .eq('status', 'pending')
+      .order('created_at', ascending: false);
+  return List<Map<String, dynamic>>.from(response);
+});
+
 final adminWithdrawalsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final client = SupabaseService.client;
@@ -326,6 +339,69 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .update({'status': 'rejected'}).eq('id', depositId);
       ref.invalidate(adminDepositsProvider);
       ref.invalidate(adminStatsProvider);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Approve a pending subscription payment.
+  ///
+  /// Marks the payment 'approved' (with processed_at) and then activates the
+  /// subscription by inserting a row into user_subscriptions (status 'active',
+  /// starts_at now, ends_at now + duration_days) — mirroring the shape of the
+  /// old client-side subscribe() insert. This is the ONLY place a subscription
+  /// becomes active.
+  Future<void> approveSubscriptionPayment(String paymentId) async {
+    state = const AsyncValue.loading();
+    try {
+      // Fetch the payment details needed to activate the subscription.
+      final payment = await SupabaseService.client
+          .from('subscription_payments')
+          .select('user_id, plan_id, duration_days')
+          .eq('id', paymentId)
+          .single();
+
+      final userId = payment['user_id'] as String;
+      final planId = payment['plan_id'] as String;
+      final durationDays = (payment['duration_days'] as num?)?.toInt() ?? 30;
+
+      final now = DateTime.now();
+      final endsAt = now.add(Duration(days: durationDays));
+
+      // 1) Mark payment approved.
+      await SupabaseService.client.from('subscription_payments').update({
+        'status': 'approved',
+        'processed_at': now.toIso8601String(),
+      }).eq('id', paymentId);
+
+      // 2) Activate the subscription.
+      await SupabaseService.client.from('user_subscriptions').insert({
+        'user_id': userId,
+        'plan_id': planId,
+        'status': 'active',
+        'starts_at': now.toIso8601String(),
+        'ends_at': endsAt.toIso8601String(),
+        'created_at': now.toIso8601String(),
+      });
+
+      ref.invalidate(adminSubscriptionPaymentsProvider);
+      ref.invalidate(adminStatsProvider);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Reject a pending subscription payment. Does NOT activate any subscription.
+  Future<void> rejectSubscriptionPayment(String paymentId) async {
+    state = const AsyncValue.loading();
+    try {
+      await SupabaseService.client.from('subscription_payments').update({
+        'status': 'rejected',
+        'processed_at': DateTime.now().toIso8601String(),
+      }).eq('id', paymentId);
+      ref.invalidate(adminSubscriptionPaymentsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

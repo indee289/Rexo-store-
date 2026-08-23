@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../services/supabase_service.dart';
 
@@ -127,11 +126,52 @@ class SubscriptionActionState {
   }
 }
 
-/// StateNotifier for subscription actions (subscribe/cancel)
+/// Provider for the user's own submitted subscription payments (any status).
+/// Lets the Subscriptions screen show a "pending admin approval" state after
+/// the user submits a manual payment.
+final userSubscriptionPaymentsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return [];
+
+    final response = await SupabaseService.client
+        .from('subscription_payments')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    debugPrint('Subscription payments error: $e');
+    return [];
+  }
+});
+
+/// StateNotifier for subscription actions.
+///
+/// IMPORTANT: subscribing no longer instantly activates a subscription.
+/// [submitSubscriptionPayment] records a manual payment (mirroring the wallet
+/// deposit flow) with status 'pending'. A subscription only becomes 'active'
+/// after an admin approves the payment proof (see
+/// AdminActionsNotifier.approveSubscriptionPayment).
 class SubscriptionNotifier extends StateNotifier<SubscriptionActionState> {
   SubscriptionNotifier() : super(const SubscriptionActionState());
 
-  Future<bool> subscribe(String planId, int durationDays) async {
+  /// Submit a manual subscription payment for admin review.
+  ///
+  /// Inserts a row into `subscription_payments` with status 'pending'. Does NOT
+  /// touch `user_subscriptions` — activation happens on admin approval.
+  /// Returns true only when the row was actually persisted.
+  Future<bool> submitSubscriptionPayment({
+    required String planId,
+    required int durationDays,
+    required double amount,
+    required String paymentMethod,
+    required String transactionRef,
+    String? planName,
+    String? proofUrl,
+  }) async {
     state = state.copyWith(isProcessing: true, error: null, success: false);
 
     try {
@@ -144,18 +184,17 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionActionState> {
         return false;
       }
 
-      const uuid = Uuid();
-      final now = DateTime.now();
-      final endsAt = now.add(Duration(days: durationDays));
-
-      await SupabaseService.client.from('user_subscriptions').insert({
-        'id': uuid.v4(),
+      await SupabaseService.client.from('subscription_payments').insert({
         'user_id': user.id,
         'plan_id': planId,
-        'status': 'active',
-        'starts_at': now.toIso8601String(),
-        'ends_at': endsAt.toIso8601String(),
-        'created_at': now.toIso8601String(),
+        'plan_name': planName,
+        'amount': amount,
+        'duration_days': durationDays,
+        'payment_method': paymentMethod,
+        'transaction_ref': transactionRef,
+        'proof_url': proofUrl,
+        'status': 'pending',
+        'created_at': DateTime.now().toIso8601String(),
       });
 
       state = state.copyWith(isProcessing: false, success: true);
