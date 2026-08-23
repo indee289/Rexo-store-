@@ -72,11 +72,17 @@ function strToBase64Url(str: string): string {
 }
 
 // Convert a PEM PKCS8 private key into an ArrayBuffer of DER bytes.
+//
+// ROBUST: after removing the BEGIN/END markers we strip EVERY character that is
+// not valid base64 (A-Z a-z 0-9 + / =). This removes real newlines, spaces AND
+// any stray literal "\n" / backslashes that survive secret-escaping — those
+// stray chars were corrupting the DER and caused the FCM push to fail with
+// "incorrect length for APPLICATION [15]" when importing the key.
 function pemToArrayBuffer(pem: string): ArrayBuffer {
   const cleaned = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s+/g, "");
+    .replace(/-----BEGIN [^-]+-----/g, "")
+    .replace(/-----END [^-]+-----/g, "")
+    .replace(/[^A-Za-z0-9+/=]/g, "");
   const binary = atob(cleaned);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
