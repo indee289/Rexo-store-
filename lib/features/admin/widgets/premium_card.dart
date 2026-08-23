@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-
 /// Admin-styled premium card (ported from the standalone admin app).
 ///
 /// This is intentionally separate from the storefront `core/widgets/premium_card.dart`
@@ -25,12 +23,13 @@ class PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(color: theme.dividerColor, width: 0.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),

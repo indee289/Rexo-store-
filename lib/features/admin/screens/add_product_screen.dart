@@ -499,7 +499,9 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
               size: 14,
               color: _imageUrls.length >= AddProductScreen.minImages
                   ? AppColors.success
-                  : (_showImageError ? AppColors.error : AppColors.textSecondary),
+                  : (_showImageError
+                      ? AppColors.error
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
             const SizedBox(width: 6),
             Text(

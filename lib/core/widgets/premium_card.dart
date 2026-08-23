@@ -20,7 +20,7 @@ class PremiumCard extends StatelessWidget {
     final cardContent = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
