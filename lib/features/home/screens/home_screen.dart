@@ -484,6 +484,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.invalidate(featuredCampaignsProvider);
                 ref.invalidate(trendingCreatorsProvider);
                 ref.invalidate(recentCampaignsProvider);
+                ref.invalidate(homeUserProfileProvider);
               },
               icon: const Icon(Iconsax.refresh, size: 18),
               label: Text(

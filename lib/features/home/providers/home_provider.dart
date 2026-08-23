@@ -28,6 +28,7 @@ final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
   final results = List<Map<String, dynamic>>.from(response);
 
   // Fallback: if no creator_profiles exist, fetch users with role='creator'
+  // and normalize shape to match the primary query's nested structure
   if (results.isEmpty) {
     final fallback = await SupabaseService.client
         .from('users')
@@ -35,7 +36,16 @@ final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
         .eq('role', 'creator')
         .order('created_at', ascending: false)
         .limit(10);
-    return List<Map<String, dynamic>>.from(fallback);
+    final fallbackRows = List<Map<String, dynamic>>.from(fallback);
+    return fallbackRows.map((row) => <String, dynamic>{
+      'users': {
+        'name': row['name'],
+        'avatar_url': row['avatar_url'],
+        'handle': row['handle'],
+      },
+      'followers': 0,
+      'user_id': row['id'],
+    }).toList();
   }
 
   return results;
