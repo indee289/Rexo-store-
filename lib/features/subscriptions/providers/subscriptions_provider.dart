@@ -78,6 +78,26 @@ List<Map<String, dynamic>> _dedupById(
   return result;
 }
 
+/// De-duplicate plan rows by a normalized (lowercased, trimmed) 'name',
+/// keeping the FIRST occurrence and preserving order. This collapses duplicate
+/// tiers that share a name but were stored with different ids.
+List<Map<String, dynamic>> _dedupByName(List<Map<String, dynamic>> rows) {
+  final seen = <String>{};
+  final result = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final rawName = row['name'];
+    if (rawName == null) {
+      result.add(row);
+      continue;
+    }
+    final name = rawName.toString().trim().toLowerCase();
+    if (name.isEmpty || seen.add(name)) {
+      result.add(row);
+    }
+  }
+  return result;
+}
+
 /// Provider for available subscription plans
 final subscriptionPlansProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -92,16 +112,20 @@ final subscriptionPlansProvider =
 
     // Return hardcoded default plans when DB returns empty
     if (plans.isEmpty) {
-      return _dedupById(_defaultPlans);
+      return _dedupByName(_dedupById(_defaultPlans));
     }
 
-    // De-duplicate by unique 'id' so a plan never renders twice even if the
-    // DB contains duplicate rows.
-    return _dedupById(plans);
+    // De-duplicate first by unique 'id', then collapse same-tier rows by
+    // normalized 'name'. The DB can contain duplicate plans that share a name
+    // but have DIFFERENT ids (e.g. seeded more than once with new UUIDs), so
+    // an id-only de-dup is not enough — a tier like "Free"/"Pro" would still
+    // render twice. Rows are ordered by price asc, so the first occurrence of
+    // each name is kept.
+    return _dedupByName(_dedupById(plans));
   } catch (e) {
     debugPrint('Subscriptions error: $e');
     // Return default plans on error (e.g., table doesn't exist or RLS issue)
-    return _dedupById(_defaultPlans);
+    return _dedupByName(_dedupById(_defaultPlans));
   }
 });
 
