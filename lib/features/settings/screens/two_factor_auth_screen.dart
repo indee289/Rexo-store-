@@ -74,6 +74,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
       final factors = await SupabaseService.client.auth.mfa.listFactors();
       final totpFactors = factors.totp;
 
+      if (!mounted) return;
+
       if (totpFactors.isNotEmpty) {
         // Check for verified factors
         final verifiedFactors = totpFactors
@@ -92,11 +94,19 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         setState(() => _isMfaEnabled = false);
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to check MFA status: ${e.toString()}';
-      });
+      // Never rethrow: keep the screen self-contained so an MFA lookup
+      // failure shows inline error UI instead of bubbling to the router
+      // (which would otherwise bounce the user away from this screen).
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to check MFA status: ${e.toString()}';
+        });
+      }
     } finally {
-      setState(() => _isLoading = false);
+      // Always leave loading state so the screen never spins forever.
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -111,6 +121,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         factorType: FactorType.totp,
       );
 
+      if (!mounted) return;
+
       setState(() {
         _factorId = response.id;
         _qrCodeUrl = response.totp?.qrCode;
@@ -119,6 +131,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         _isEnrolling = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isEnrolling = false;
         _errorMessage = 'Failed to enroll MFA: ${e.toString()}';
@@ -151,6 +164,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         code: code,
       );
 
+      if (!mounted) return;
+
       setState(() {
         _isMfaEnabled = true;
         _enrolledFactorId = _factorId;
@@ -173,6 +188,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isVerifying = false;
         _errorMessage = 'Verification failed: ${e.toString()}';
@@ -220,6 +236,8 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         _enrolledFactorId!,
       );
 
+      if (!mounted) return;
+
       setState(() {
         _isMfaEnabled = false;
         _enrolledFactorId = null;
@@ -235,6 +253,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isUnenrolling = false;
         _errorMessage = 'Failed to disable 2FA: ${e.toString()}';
