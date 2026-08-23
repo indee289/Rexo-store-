@@ -231,7 +231,7 @@ class CampaignCard extends StatelessWidget {
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.05, end: 0);
+    ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.02, end: 0);
   }
 
   IconData _getPlatformIcon(String platform) {

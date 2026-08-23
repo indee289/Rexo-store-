@@ -6,6 +6,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../providers/campaigns_provider.dart';
 
 class ApplyScreen extends ConsumerStatefulWidget {
@@ -293,9 +294,13 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
         ),
       );
     } else {
+      final actionState = ref.read(campaignActionsProvider);
+      final errorMsg = actionState.hasError
+          ? ErrorUtils.sanitize(actionState.error)
+          : 'Failed to submit application. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to submit application. Please try again.'),
+          content: Text(errorMsg),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(

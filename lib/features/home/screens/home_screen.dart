@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -397,37 +398,123 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Icon(
-              Iconsax.document,
-              size: 48,
-              color: theme.colorScheme.onSurface.withOpacity(0.3),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Iconsax.document,
+                size: 36,
+                color: theme.colorScheme.onSurface.withOpacity(0.3),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               message,
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Pull to refresh or check back later',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
               ),
             ),
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 400.ms).scale(
+          begin: const Offset(0.95, 0.95),
+          end: const Offset(1, 1),
+          duration: 400.ms,
+          curve: Curves.easeOut,
+        );
   }
 
   Widget _buildErrorState(String message) {
+    final theme = Theme.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Text(
-          message,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: AppColors.error,
-          ),
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Iconsax.warning_2,
+                size: 36,
+                color: AppColors.error.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Please try again',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () {
+                ref.invalidate(featuredCampaignsProvider);
+                ref.invalidate(trendingCreatorsProvider);
+                ref.invalidate(recentCampaignsProvider);
+              },
+              icon: const Icon(Iconsax.refresh, size: 18),
+              label: Text(
+                'Retry',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: AppColors.primary.withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 400.ms).scale(
+          begin: const Offset(0.95, 0.95),
+          end: const Offset(1, 1),
+          duration: 400.ms,
+          curve: Curves.easeOut,
+        );
   }
 }

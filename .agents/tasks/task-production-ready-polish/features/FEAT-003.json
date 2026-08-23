@@ -1,0 +1,6 @@
+{
+  "id": "FEAT-003",
+  "title": "UI polish to premium quality - improve empty/loading/error states, add subtle animations, ensure consistent spacing, verify error handling patterns",
+  "status": "in_progress",
+  "description": "Polish UI to premium quality: enhance empty/error states with animations, add retry buttons, fix search bar text style, add nav border, reduce jarring animations, verify error handling uses ErrorUtils.sanitize."
+}

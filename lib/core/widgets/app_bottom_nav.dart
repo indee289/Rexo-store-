@@ -24,6 +24,12 @@ class AppBottomNav extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
+        border: theme.brightness == Brightness.light
+            ? Border.all(
+                color: theme.dividerColor.withOpacity(0.3),
+                width: 0.5,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),

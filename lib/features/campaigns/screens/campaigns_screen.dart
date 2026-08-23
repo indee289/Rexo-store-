@@ -198,6 +198,10 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
         onChanged: (value) {
           ref.read(campaignSearchProvider.notifier).state = value;
         },
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          color: theme.colorScheme.onSurface,
+        ),
         decoration: InputDecoration(
           hintText: 'Search campaigns...',
           hintStyle: AppTextStyles.bodyMedium.copyWith(
