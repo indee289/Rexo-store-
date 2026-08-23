@@ -1,0 +1,46 @@
+name: Deploy Supabase Edge Functions
+
+# Deploys the send-broadcast Edge Function and sets its runtime FCM secrets.
+# Triggered manually (workflow_dispatch) or when the function code changes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [Rexo-Kotlin]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Supabase personal access token used by the CLI to authenticate.
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      # Public project ref (the subdomain of the Supabase URL) — not a secret.
+      PROJECT_REF: npzomevhjdxbgbuojwoo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Provide the function's runtime secrets (service-account for FCM). These
+      # are referenced individually via env — the environment is never dumped.
+      - name: Set Edge Function secrets
+        env:
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
+          FCM_PRIVATE_KEY: ${{ secrets.FCM_PRIVATE_KEY }}
+        run: |
+          supabase secrets set \
+            FCM_PROJECT_ID="$FCM_PROJECT_ID" \
+            FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL" \
+            FCM_PRIVATE_KEY="$FCM_PRIVATE_KEY" \
+            --project-ref "$PROJECT_REF"
+
+      - name: Deploy send-broadcast function
+        run: supabase functions deploy send-broadcast --project-ref "$PROJECT_REF"
