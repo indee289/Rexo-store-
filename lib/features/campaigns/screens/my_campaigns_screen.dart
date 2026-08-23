@@ -8,6 +8,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
+import 'campaign_applicants_screen.dart';
 
 /// Provider for user's own campaigns (brand role)
 final myCampaignsListProvider =
@@ -212,61 +213,89 @@ class _BrandCampaignCard extends StatelessWidget {
         statusColor = Colors.grey;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTextStyles.labelLarge,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: AppTextStyles.caption.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CampaignApplicantsScreen(
+              campaignId: campaign['id'] as String,
+              campaignTitle: title,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTextStyles.labelLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Icon(Iconsax.people, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-              const SizedBox(width: 4),
-              Text(
-                '$filledSlots / $totalSlots slots filled',
-                style: AppTextStyles.bodySmall,
-              ),
-              const Spacer(),
-              Icon(Iconsax.calendar, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-              const SizedBox(width: 4),
-              Text(dateStr, style: AppTextStyles.bodySmall),
-            ],
-          ),
-        ],
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    status.toUpperCase(),
+                    style: AppTextStyles.caption.copyWith(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Iconsax.people, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                const SizedBox(width: 4),
+                Text(
+                  '$filledSlots applicant${filledSlots == 1 ? '' : 's'} · $totalSlots slots',
+                  style: AppTextStyles.bodySmall,
+                ),
+                const Spacer(),
+                Icon(Iconsax.calendar, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                const SizedBox(width: 4),
+                Text(dateStr, style: AppTextStyles.bodySmall),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Text(
+                  'View applicants',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Iconsax.arrow_right_3,
+                    size: 14, color: AppColors.primary),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

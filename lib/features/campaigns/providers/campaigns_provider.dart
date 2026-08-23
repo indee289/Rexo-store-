@@ -63,18 +63,32 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   CampaignActionsNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  /// Apply to a campaign
+  /// Apply to a campaign.
+  ///
+  /// The extra creator-profile fields (name, location, category, city, state,
+  /// contact number, Instagram link, followers) are persisted on the
+  /// applications row (see supabase/add_application_fields.sql) so the campaign
+  /// poster can review a full applicant profile from their dashboard.
   Future<bool> applyToCampaign({
     required String campaignId,
     required String pitch,
     required String portfolioUrl,
+    String? applicantName,
+    String? location,
+    String? category,
+    String? city,
+    String? state,
+    String? contactNumber,
+    String? instagramUrl,
+    int? followersCount,
   }) async {
-    state = const AsyncValue.loading();
+    this.state = const AsyncValue.loading();
 
     try {
       final user = SupabaseService.currentUser;
       if (user == null) {
-        state = AsyncValue.error('User not authenticated', StackTrace.current);
+        this.state =
+            AsyncValue.error('User not authenticated', StackTrace.current);
         return false;
       }
 
@@ -83,19 +97,27 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'creator_id': user.id,
         'pitch': pitch,
         'portfolio_url': portfolioUrl,
+        'applicant_name': applicantName,
+        'location': location,
+        'category': category,
+        'city': city,
+        'state': state,
+        'contact_number': contactNumber,
+        'instagram_url': instagramUrl,
+        'followers_count': followersCount,
         'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
 
-      state = const AsyncValue.data(null);
+      this.state = const AsyncValue.data(null);
 
       // Invalidate applications provider to refresh
       ref.invalidate(myApplicationsProvider);
 
       return true;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      this.state = AsyncValue.error(e, st);
       return false;
     }
   }
@@ -105,6 +127,33 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
 final campaignActionsProvider =
     StateNotifierProvider<CampaignActionsNotifier, AsyncValue<void>>((ref) {
   return CampaignActionsNotifier(ref);
+});
+
+/// Applicants for a given campaign, for the brand (campaign poster) dashboard.
+///
+/// Joins each application with the creator's public user row so the poster can
+/// see who applied. RLS ("Brands can read applications for their campaigns")
+/// restricts this to the campaign owner (and admins). Ordered newest-first.
+final campaignApplicantsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>(
+        (ref, campaignId) async {
+  final response = await SupabaseService.client
+      .from('applications')
+      .select(
+          '*, creator:users!creator_id(id, name, handle, avatar_url, is_verified)')
+      .eq('campaign_id', campaignId)
+      .order('created_at', ascending: false);
+
+  return List<Map<String, dynamic>>.from(response);
+});
+
+/// Current user's own profile (used to prefill the Apply form). Returns null
+/// when signed out or the profile row is missing.
+final currentUserProfileProvider =
+    FutureProvider<Map<String, dynamic>?>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return null;
+  return SupabaseService.getUserProfile(user.id);
 });
 
 /// Check if user has already applied to a specific campaign
