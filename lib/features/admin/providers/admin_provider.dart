@@ -37,7 +37,7 @@ final adminUsersProvider =
   if (search.isNotEmpty) {
     query = query.or('name.ilike.%$search%,email.ilike.%$search%');
   }
-  final response = await query.order('created_at', ascending: false);
+  final response = await query.order('created_at', ascending: false).limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -47,7 +47,8 @@ final adminCampaignsProvider =
   final response = await client
       .from('campaigns')
       .select()
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -58,7 +59,8 @@ final adminSubmissionsProvider =
       .from('submissions')
       .select()
       .eq('status', 'pending')
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -69,7 +71,8 @@ final adminDepositsProvider =
       .from('deposits')
       .select()
       .eq('status', 'pending')
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -82,7 +85,8 @@ final adminSubscriptionPaymentsProvider =
       .from('subscription_payments')
       .select('*, users(name, email)')
       .eq('status', 'pending')
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -93,7 +97,8 @@ final adminWithdrawalsProvider =
       .from('withdrawals')
       .select()
       .eq('status', 'pending')
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -103,7 +108,8 @@ final adminDisputesProvider =
   final response = await client
       .from('disputes')
       .select()
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -114,14 +120,15 @@ final adminKycProvider =
       .from('kyc_documents')
       .select()
       .eq('status', 'pending')
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
 final adminWalletsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final client = SupabaseService.client;
-  final response = await client.from('wallets').select();
+  final response = await client.from('wallets').select().limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -142,7 +149,8 @@ final adminOrdersProvider =
   final response = await client
       .from('orders')
       .select()
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -152,7 +160,8 @@ final adminProductsProvider =
   final response = await client
       .from('products')
       .select()
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -310,7 +319,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('submissions')
           .select('creator_id')
           .eq('id', submissionId)
-          .single();
+          .maybeSingle();
+      if (submission == null) {
+        state = AsyncValue.error(
+            'Submission not found', StackTrace.current);
+        return;
+      }
       final creatorId = submission['creator_id'] as String;
 
       // Mark the submission paid. NOTE: 'paid' is NOT a valid status (the
@@ -343,7 +357,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('deposits')
           .select('user_id, amount')
           .eq('id', depositId)
-          .single();
+          .maybeSingle();
+
+      if (deposit == null) {
+        state = AsyncValue.error('Deposit not found', StackTrace.current);
+        return;
+      }
 
       final userId = deposit['user_id'] as String;
       final amount = (deposit['amount'] as num).toDouble();
@@ -397,7 +416,13 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('subscription_payments')
           .select('user_id, plan_id, duration_days')
           .eq('id', paymentId)
-          .single();
+          .maybeSingle();
+
+      if (payment == null) {
+        state = AsyncValue.error(
+            'Subscription payment not found', StackTrace.current);
+        return;
+      }
 
       final userId = payment['user_id'] as String;
       final planId = payment['plan_id'] as String;
@@ -453,7 +478,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('withdrawals')
           .select('user_id, amount')
           .eq('id', withdrawalId)
-          .single();
+          .maybeSingle();
+
+      if (withdrawal == null) {
+        state = AsyncValue.error('Withdrawal not found', StackTrace.current);
+        return;
+      }
 
       final userId = withdrawal['user_id'] as String;
       final amount = (withdrawal['amount'] as num).toDouble();
@@ -529,7 +559,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('wallets')
           .select('available_balance')
           .eq('id', walletId)
-          .single();
+          .maybeSingle();
+      if (wallet == null) {
+        state = AsyncValue.error('Wallet not found', StackTrace.current);
+        return;
+      }
       final currentBalance = (wallet['available_balance'] as num).toDouble();
       await SupabaseService.client.from('wallets').update(
           {'available_balance': currentBalance + amount}).eq('id', walletId);
@@ -549,7 +583,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('wallets')
           .select('available_balance')
           .eq('id', walletId)
-          .single();
+          .maybeSingle();
+      if (wallet == null) {
+        state = AsyncValue.error('Wallet not found', StackTrace.current);
+        return;
+      }
       final currentBalance = (wallet['available_balance'] as num).toDouble();
       if (currentBalance - amount < 0) {
         throw Exception('Insufficient balance for this debit.');
