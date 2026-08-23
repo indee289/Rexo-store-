@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/addresses/screens/add_address_screen.dart';
 import '../../features/addresses/screens/addresses_screen.dart';
+import '../../features/admin/screens/admin_shell.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
@@ -102,6 +103,10 @@ class AppRoutes {
   static const String creatorProfile = '/creators/:id';
 
   static const String twoFactorAuth = '/two-factor-auth';
+
+  /// Admin Center (merged admin app). Only reachable by admins — gated at the
+  /// entry point (Profile menu) and guarded again inside [AdminShell].
+  static const String adminDashboard = '/admin';
 }
 
 /// GoRouter provider
@@ -449,6 +454,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.moderation,
         builder: (context, state) => const ModerationScreen(),
+      ),
+
+      /// Admin Center (merged admin app) — full-screen, outside the storefront
+      /// bottom-nav shell. [AdminShell] hosts Dashboard/Users/Actions/Settings/
+      /// Profile and guards against non-admins (redirects to /home). The entry
+      /// point in the Profile menu is only shown when isAdminProvider is true.
+      GoRoute(
+        path: AppRoutes.adminDashboard,
+        builder: (context, state) => const AdminShell(),
       ),
 
       /// Public Profile screen (deep link)

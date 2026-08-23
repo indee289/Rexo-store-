@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
+import '../../admin/providers/is_admin_provider.dart';
 import '../providers/profile_provider.dart';
 import 'edit_profile_screen.dart';
 
@@ -93,6 +94,10 @@ class ProfileScreen extends ConsumerWidget {
     if (profile == null) {
       return const Center(child: Text('No profile data'));
     }
+
+    // Admin Center entry is shown ONLY to admins (role == 'admin' or the
+    // hardcoded admin email). Gated via isAdminProvider.
+    final isAdmin = ref.watch(isAdminProvider);
 
     final name = profile['name'] ?? 'User';
     final handle = profile['handle'] ?? '';
@@ -186,6 +191,13 @@ class ProfileScreen extends ConsumerWidget {
             title: 'Subscriptions',
             onTap: () => context.push('/subscriptions'),
           ),
+          // Admin Center — visible only to admins.
+          if (isAdmin)
+            _buildMenuItem(
+              icon: Iconsax.shield_tick,
+              title: 'Admin Center',
+              onTap: () => context.push('/admin'),
+            ),
           const SizedBox(height: 40),
         ],
       ),

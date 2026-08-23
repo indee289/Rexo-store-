@@ -26,14 +26,49 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     });
   }
 
-  void _checkAuthAndNavigate() {
+  Future<void> _checkAuthAndNavigate() async {
     if (!mounted) return;
 
-    if (SupabaseService.isAuthenticated) {
-      context.go(AppRoutes.home);
-    } else {
+    if (!SupabaseService.isAuthenticated) {
       context.go(AppRoutes.login);
+      return;
     }
+
+    // Block banned/suspended accounts. If an admin changed this user's
+    // account_status while they were away, sign them out on next launch so
+    // the admin action is reflected. A failed status read must NOT block a
+    // legitimate launch, so errors fall through to the normal home redirect.
+    String? status;
+    try {
+      final user = SupabaseService.currentUser;
+      if (user != null) {
+        final profile = await SupabaseService.getUserProfile(user.id);
+        status = (profile?['account_status'] as String?)?.toLowerCase();
+      }
+    } catch (_) {
+      // ignore — proceed to home below
+    }
+
+    if (!mounted) return;
+
+    if (status == 'banned' || status == 'suspended') {
+      await SupabaseService.signOut();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            status == 'banned'
+                ? 'Your account has been banned. Please contact support.'
+                : 'Your account has been suspended. Please contact support.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      context.go(AppRoutes.login);
+      return;
+    }
+
+    context.go(AppRoutes.home);
   }
 
   @override
