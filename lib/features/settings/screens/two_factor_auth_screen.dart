@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -24,6 +25,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
   bool _isUnenrolling = false;
 
   String? _qrCodeUrl;
+  String? _otpAuthUri;
   String? _secret;
   String? _factorId;
   String? _challengeId;
@@ -42,6 +44,24 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
   void dispose() {
     _otpController.dispose();
     super.dispose();
+  }
+
+  /// The string encoded into the scannable QR image.
+  ///
+  /// Supabase returns `totp.uri` as a proper `otpauth://` URI which is exactly
+  /// what authenticator apps expect. If it is missing we synthesise a standard
+  /// otpauth URI from the shared secret so enrollment still works. We never
+  /// feed Supabase's `totp.qrCode` (a raw SVG string) into an image loader —
+  /// doing so crashed the screen because Image.network throws synchronously on
+  /// a non-URL string, and errorBuilder only catches async load failures.
+  String? get _qrData {
+    if (_otpAuthUri != null && _otpAuthUri!.isNotEmpty) return _otpAuthUri;
+    if (_secret != null && _secret!.isNotEmpty) {
+      final account = SupabaseService.currentUser?.email ?? 'account';
+      return 'otpauth://totp/Rexo:$account'
+          '?secret=$_secret&issuer=Rexo&algorithm=SHA1&digits=6&period=30';
+    }
+    return null;
   }
 
   Future<void> _checkMfaStatus() async {
@@ -94,6 +114,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
       setState(() {
         _factorId = response.id;
         _qrCodeUrl = response.totp?.qrCode;
+        _otpAuthUri = response.totp?.uri;
         _secret = response.totp?.secret;
         _isEnrolling = false;
       });
@@ -134,6 +155,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         _isMfaEnabled = true;
         _enrolledFactorId = _factorId;
         _qrCodeUrl = null;
+        _otpAuthUri = null;
         _secret = null;
         _factorId = null;
         _challengeId = null;
@@ -477,26 +499,36 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: theme.dividerColor),
             ),
-            child: _qrCodeUrl != null
-                ? Image.network(
-                    _qrCodeUrl!,
-                    width: 200,
-                    height: 200,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 200,
-                      height: 200,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'QR Code\n(Use secret key below)',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                      ),
+            child: _qrData != null
+                ? QrImageView(
+                    data: _qrData!,
+                    version: QrVersions.auto,
+                    size: 200,
+                    backgroundColor: Colors.white,
+                    // Keep QR modules black on the white card so any
+                    // authenticator app can scan it in both themes.
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: Colors.black,
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: Colors.black,
                     ),
                   )
-                : const SizedBox(width: 200, height: 200),
+                : Container(
+                    width: 200,
+                    height: 200,
+                    alignment: Alignment.center,
+                    child: Text(
+                      'QR unavailable\nUse the manual key below',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
           ),
         ),
 
@@ -637,6 +669,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
             onPressed: () {
               setState(() {
                 _qrCodeUrl = null;
+                _otpAuthUri = null;
                 _secret = null;
                 _factorId = null;
                 _errorMessage = null;
