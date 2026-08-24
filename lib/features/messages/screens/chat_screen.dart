@@ -8,7 +8,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/premium_sheet.dart';
 import '../../../core/widgets/premium_text_field.dart';
 import '../../../services/supabase_service.dart';
@@ -93,31 +95,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        titleSpacing: AppSpacing.sm,
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: theme.dividerColor,
-              backgroundImage: otherUserAvatar != null
-                  ? NetworkImage(otherUserAvatar!)
-                  : null,
-              child: otherUserAvatar == null
-                  ? Text(
-                      otherUserName.isNotEmpty
-                          ? otherUserName[0].toUpperCase()
-                          : '?',
-                      style: AppTextStyles.labelLarge
-                          .copyWith(color: AppColors.primary),
-                    )
-                  : null,
+            PremiumIconButton(
+              icon: Iconsax.arrow_left,
+              tooltip: 'Back',
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
-            const SizedBox(width: 10),
-            Text(otherUserName, style: AppTextStyles.h6),
+            const SizedBox(width: AppSpacing.xs),
+            _HeaderAvatar(
+              imageUrl: otherUserAvatar,
+              name: otherUserName,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    otherUserName,
+                    style: AppTextStyles.labelLarge
+                        .copyWith(fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    'Online',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.success),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -189,9 +208,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
 
-          // Message input
+          // Message input — rounded pill field + blue circular send button.
           Container(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               border: Border(
@@ -201,40 +225,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: SafeArea(
               top: false,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: theme.dividerColor),
+                        color: theme.brightness == Brightness.dark
+                            ? AppColors.darkSurfaceAlt
+                            : AppColors.surfaceAlt,
+                        borderRadius: AppRadius.pillAll,
                       ),
                       child: TextField(
                         controller: _messageController,
                         textCapitalization: TextCapitalization.sentences,
                         maxLines: 4,
                         minLines: 1,
+                        style: AppTextStyles.bodyMedium,
                         decoration: InputDecoration(
-                          hintText: 'Type a message...',
-                          hintStyle: AppTextStyles.bodyMedium
-                              .copyWith(color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                          hintText: 'Message',
+                          hintStyle: AppTextStyles.bodyMedium.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.md,
                           ),
                         ),
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Container(
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(22),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       icon: Icon(
@@ -648,6 +676,49 @@ class _ActionRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// Small chat-header avatar with a subtle green presence dot in the
+/// bottom-right corner, matching the reference's "online" affordance.
+///
+/// The dot is decorative (the app has no presence backend) and uses the
+/// [AppColors.success] token with a surface-colored rim so it reads cleanly.
+class _HeaderAvatar extends StatelessWidget {
+  final String? imageUrl;
+  final String name;
+
+  const _HeaderAvatar({required this.imageUrl, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
+    const size = PremiumAvatar.sizeSm;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          PremiumAvatar(imageUrl: imageUrl, name: name, size: size),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: AppColors.success,
+                shape: BoxShape.circle,
+                border: Border.all(color: surface, width: 2),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

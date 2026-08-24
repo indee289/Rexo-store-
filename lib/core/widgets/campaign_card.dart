@@ -11,10 +11,10 @@ import 'premium_card.dart';
 
 /// Layout variants for the shared [CampaignCard].
 ///
-/// - [horizontal]: fixed-width (280px) card for the Home carousel; taller
-///   120px cover.
+/// - [horizontal]: fixed-width (240px) card for the Home carousel; taller
+///   104px cover.
 /// - [compact]: full-width list card for the Campaigns tab and Home vertical
-///   list; short 96px cover and a total footprint of ≤ 210px.
+///   list; short 84px cover and a compact total footprint of ~150-165px.
 enum CampaignCardLayout { horizontal, compact }
 
 /// The single shared, compact campaign card used by both the Home screen and
@@ -26,8 +26,8 @@ enum CampaignCardLayout { horizontal, compact }
 /// [CampaignCoverHeader] cover — in a deliberately small footprint.
 ///
 /// Sizing (see design "Compact campaign card sizing spec"):
-/// - [CampaignCardLayout.horizontal]: width 280, cover height 120.
-/// - [CampaignCardLayout.compact]: full width, cover height 96, total ≤ 210px.
+/// - [CampaignCardLayout.horizontal]: width 240, cover height 104.
+/// - [CampaignCardLayout.compact]: full width, cover height 84, total ~150-165px.
 ///
 /// The giant centered budget number from the old cards is removed; budget is
 /// shown inline as a compact value pill so price emphasis is preserved without
@@ -52,7 +52,7 @@ class CampaignCard extends StatelessWidget {
 
   bool get _isHorizontal => layout == CampaignCardLayout.horizontal;
 
-  double get _coverHeight => _isHorizontal ? 120 : 96;
+  double get _coverHeight => _isHorizontal ? 104 : 84;
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +100,7 @@ class CampaignCard extends StatelessWidget {
           ),
           // Compact content row.
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -108,14 +108,14 @@ class CampaignCard extends StatelessWidget {
                 // Title (single line to keep the card short).
                 Text(
                   title,
-                  style: AppTextStyles.labelLarge.copyWith(
+                  style: AppTextStyles.labelMedium.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (brandName.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   // Brand name shown subtly.
                   Text(
                     brandName,
@@ -126,7 +126,7 @@ class CampaignCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xs),
                 // Budget value pill + compact slot progress.
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -148,7 +148,7 @@ class CampaignCard extends StatelessWidget {
     );
 
     if (_isHorizontal) {
-      return SizedBox(width: 280, child: card);
+      return SizedBox(width: 240, child: card);
     }
     return card;
   }
@@ -210,8 +210,8 @@ class _ValuePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
+        horizontal: AppSpacing.xs + 2,
+        vertical: 2,
       ),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.10),
@@ -220,11 +220,11 @@ class _ValuePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.primary),
+          Icon(icon, size: 12, color: AppColors.primary),
           const SizedBox(width: AppSpacing.xs),
           Text(
             value,
-            style: AppTextStyles.labelMedium.copyWith(
+            style: AppTextStyles.labelSmall.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.primary,
             ),
@@ -250,7 +250,7 @@ class _SlotsMini extends StatelessWidget {
         total > 0 ? (filled / total).clamp(0.0, 1.0).toDouble() : 0.0;
 
     return SizedBox(
-      width: 84,
+      width: 76,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
@@ -265,10 +265,10 @@ class _SlotsMini extends StatelessWidget {
               minHeight: 4,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           Text(
             '$filled/$total slots',
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.labelSmall.copyWith(
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),

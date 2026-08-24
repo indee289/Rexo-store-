@@ -11,7 +11,6 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/campaign_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
-import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_chip.dart';
 import '../../../core/widgets/section_header.dart';
@@ -54,15 +53,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildGreetingHeader(),
-                    const SizedBox(height: AppSpacing.lg),
                     _buildEmailVerificationBanner(),
                     _buildSearchBar(),
                     const SizedBox(height: AppSpacing.lg),
                     const CategoryChips(),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.lg),
                     _buildFeaturedCarousel(),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.lg),
                     _buildToggleTabs(),
                     const SizedBox(height: AppSpacing.md),
                     if (_selectedTabIndex == 0) _buildCampaignsContent(),
@@ -107,63 +104,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         const SizedBox(width: AppSpacing.xs),
       ],
     );
-  }
-
-  /// Personalised greeting header with the user's avatar and name.
-  Widget _buildGreetingHeader() {
-    final theme = Theme.of(context);
-    final profileAsync = ref.watch(homeUserProfileProvider);
-
-    final profile = profileAsync.asData?.value;
-    final name = (profile?['name'] ?? '').toString();
-    final avatarUrl = (profile?['avatar_url'] ?? '').toString();
-    final displayName = name.isNotEmpty ? name.split(' ').first : 'there';
-
-    return Padding(
-      padding: AppSpacing.screenPadding,
-      child: Row(
-        children: [
-          PremiumAvatar(
-            imageUrl: avatarUrl.isEmpty ? null : avatarUrl,
-            name: name.isEmpty ? null : name,
-            size: PremiumAvatar.sizeMd,
-            showRing: true,
-            onTap: () => context.push(AppRoutes.profile),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _greeting(),
-                  style: AppTextStyles.caption.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Hi, $displayName 👋',
-                  style: AppTextStyles.h5.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ).staggeredEntrance(0);
-  }
-
-  String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
   }
 
   Widget _buildSearchBar() {
@@ -218,7 +158,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               return const SizedBox.shrink();
             }
             return SizedBox(
-              height: 218,
+              height: 176,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: AppSpacing.screenPadding,
@@ -237,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             );
           },
           loading: () => SizedBox(
-            height: 218,
+            height: 176,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: AppSpacing.screenPadding,

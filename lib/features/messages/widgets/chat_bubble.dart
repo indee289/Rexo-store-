@@ -69,7 +69,7 @@ class ChatBubble extends StatelessWidget {
             bottom: showTail ? AppSpacing.sm : AppSpacing.xs,
           ),
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
+            maxWidth: MediaQuery.of(context).size.width * 0.78,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
@@ -93,9 +93,13 @@ class ChatBubble extends StatelessWidget {
 
   /// Grouped-tail radius: the corner nearest the sender is tightened to a
   /// small tail radius only on the last bubble in a same-sender group.
+  ///
+  /// Uses an airy ~18px base rounding (a hair above [AppRadius.lg]) so bubbles
+  /// read as the soft, iOS-style pills in the reference, with a gently softened
+  /// [AppRadius.sm] tail corner rather than a sharp point.
   BorderRadius _bubbleRadius() {
-    const double r = AppRadius.lg;
-    const double tail = AppSpacing.xs; // 4px tail corner
+    const double r = (AppRadius.lg + AppRadius.xl) / 2 - 2; // ~18
+    const double tail = AppRadius.sm; // softened tail corner
     final double tailRadius = showTail ? tail : r;
     return BorderRadius.only(
       topLeft: const Radius.circular(r),

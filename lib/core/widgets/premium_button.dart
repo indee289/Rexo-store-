@@ -79,7 +79,7 @@ class _PremiumButtonState extends State<PremiumButton> {
   bool _pressed = false;
 
   /// Fixed premium button height (comfortable 44+ tap target).
-  static const double _height = 52;
+  static const double _height = 46;
 
   bool get _enabled => widget.onPressed != null && !widget.loading;
 
@@ -113,7 +113,7 @@ class _PremiumButtonState extends State<PremiumButton> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: 18, color: style.foreground),
+                Icon(widget.icon, size: 16, color: style.foreground),
                 const SizedBox(width: AppSpacing.sm),
               ],
               Flexible(
@@ -133,7 +133,7 @@ class _PremiumButtonState extends State<PremiumButton> {
       height: _height,
       width: widget.expand ? double.infinity : null,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         color: style.fill,
         gradient: style.gradient,

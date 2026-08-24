@@ -18,7 +18,7 @@ class PremiumCard extends StatelessWidget {
     required this.child,
     this.padding,
     this.onTap,
-    this.borderRadius = 16,
+    this.borderRadius = 14,
   });
 
   @override
@@ -42,9 +42,9 @@ class PremiumCard extends StatelessWidget {
           BoxShadow(
             // Stronger shadow in dark mode so the card lifts off the near-black
             // background; soft shadow in light mode.
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.03),
             offset: const Offset(0, 2),
-            blurRadius: 8,
+            blurRadius: isDark ? 8 : 6,
           ),
         ],
       ),

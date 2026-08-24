@@ -19,23 +19,56 @@ import '../providers/messages_provider.dart';
 
 /// Premium iOS-style messaging inbox (Screen Inventory #8).
 ///
-/// Renders each conversation with a [PremiumAvatar], the counterpart name, a
-/// message preview, a timestamp, and an unread indicator (Requirements 13.1,
-/// 13.2). Tapping a row navigates to the Chat screen for that user
+/// Matches the reference messaging UI: a left-aligned bold "Messages" title, a
+/// frosted search field directly beneath it, and airy conversation rows built
+/// from [PremiumAvatar] (with a subtle green presence dot), the counterpart
+/// name, a message preview, a timestamp, and an unread indicator (Requirements
+/// 13.1, 13.2). Tapping a row navigates to the Chat screen for that user
 /// (Requirement 13.3). Loading uses shimmer skeletons that match the final row
 /// layout; the empty state uses the shared [EmptyState] primitive.
-class MessagesScreen extends ConsumerWidget {
+///
+/// The search field filters the loaded conversations client-side by the
+/// counterpart's name (a simple case-insensitive contains on
+/// `other_user_name`) so the inbox reads like the reference without needing a
+/// new backend query.
+class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MessagesScreen> createState() => _MessagesScreenState();
+}
+
+class _MessagesScreenState extends ConsumerState<MessagesScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  /// Case-insensitive contains filter on the counterpart name.
+  List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> items) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return items;
+    return items
+        .where((c) =>
+            (c['other_user_name'] as String? ?? '').toLowerCase().contains(q))
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text('Messages', style: AppTextStyles.h5),
+        centerTitle: false,
+        titleSpacing: AppSpacing.lg,
+        title: Text('Messages', style: AppTextStyles.h4),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0.5,
@@ -53,48 +86,79 @@ class MessagesScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: conversationsAsync.when(
-        data: (conversations) {
-          if (conversations.isEmpty) {
-            return const EmptyState(
-              icon: Iconsax.message,
-              title: 'No messages yet',
-              subtitle: 'Start a conversation with brands or creators',
-            );
-          }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async {
-              ref.invalidate(conversationsProvider);
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              itemCount: conversations.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                thickness: 0.5,
-                indent: 84,
-                endIndent: AppSpacing.lg,
-                color: theme.dividerColor,
-              ),
-              itemBuilder: (context, index) {
-                final conversation = conversations[index];
-                return _ConversationTile(conversation: conversation)
-                    .staggeredEntrance(index);
-              },
+      body: Column(
+        children: [
+          // Search field directly under the title (reference layout).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.sm,
             ),
-          );
-        },
-        loading: () => ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          itemCount: 8,
-          itemBuilder: (_, __) => const ShimmerConversationRow(),
-        ),
-        error: (e, _) => EmptyState(
-          icon: Iconsax.warning_2,
-          title: 'Failed to load messages',
-          subtitle: ErrorUtils.sanitize(e),
-        ),
+            child: PremiumTextField.search(
+              controller: _searchController,
+              hint: 'Search',
+              onChanged: (value) => setState(() => _query = value),
+            ),
+          ),
+          Expanded(
+            child: conversationsAsync.when(
+              data: (conversations) {
+                if (conversations.isEmpty) {
+                  return const EmptyState(
+                    icon: Iconsax.message,
+                    title: 'No messages yet',
+                    subtitle: 'Start a conversation with brands or creators',
+                  );
+                }
+
+                final filtered = _filter(conversations);
+                if (filtered.isEmpty) {
+                  return const EmptyState(
+                    icon: Iconsax.search_normal,
+                    title: 'No matches',
+                    subtitle: 'Try a different name',
+                  );
+                }
+
+                return RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: () async {
+                    ref.invalidate(conversationsProvider);
+                  },
+                  child: ListView.separated(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 84,
+                      endIndent: AppSpacing.lg,
+                      color: theme.dividerColor,
+                    ),
+                    itemBuilder: (context, index) {
+                      final conversation = filtered[index];
+                      return _ConversationTile(conversation: conversation)
+                          .staggeredEntrance(index);
+                    },
+                  ),
+                );
+              },
+              loading: () => ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                itemCount: 8,
+                itemBuilder: (_, __) => const ShimmerConversationRow(),
+              ),
+              error: (e, _) => EmptyState(
+                icon: Iconsax.warning_2,
+                title: 'Failed to load messages',
+                subtitle: ErrorUtils.sanitize(e),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -104,6 +168,61 @@ class MessagesScreen extends ConsumerWidget {
       context: context,
       title: 'New Chat',
       child: const _NewChatSheet(),
+    );
+  }
+}
+
+/// A circular [PremiumAvatar] with a subtle green presence dot overlaid in the
+/// bottom-right corner, matching the reference's "online" affordance.
+///
+/// The dot is purely decorative (the app has no presence backend); it uses the
+/// [AppColors.success] token and a surface-colored rim so it reads cleanly on
+/// any avatar.
+class _PresenceAvatar extends StatelessWidget {
+  final String? imageUrl;
+  final String name;
+  final double size;
+  final bool isVerified;
+
+  const _PresenceAvatar({
+    required this.imageUrl,
+    required this.name,
+    required this.size,
+    this.isVerified = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final dotSize = (size * 0.28).clamp(10.0, 16.0);
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          PremiumAvatar(
+            imageUrl: imageUrl,
+            name: name,
+            size: size,
+            isVerified: isVerified,
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: dotSize,
+              height: dotSize,
+              decoration: BoxDecoration(
+                color: AppColors.success,
+                shape: BoxShape.circle,
+                border: Border.all(color: surface, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -132,7 +251,7 @@ class _ConversationTile extends StatelessWidget {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      leading: PremiumAvatar(
+      leading: _PresenceAvatar(
         imageUrl: avatarUrl,
         name: name,
         size: 52,
@@ -143,7 +262,7 @@ class _ConversationTile extends StatelessWidget {
             child: Text(
               name,
               style: AppTextStyles.labelLarge.copyWith(
-                fontWeight: isUnread ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: isUnread ? FontWeight.w700 : FontWeight.w600,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

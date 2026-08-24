@@ -4,36 +4,36 @@ class AppColors {
   AppColors._();
 
   /// Primary palette
-  static const Color primary = Color(0xFFFF5722);
-  static const Color primaryLight = Color(0xFFFF8A65);
-  static const Color primaryDark = Color(0xFFE64A19);
+  static const Color primary = Color(0xFF2F80ED);
+  static const Color primaryLight = Color(0xFF6FB1F7);
+  static const Color primaryDark = Color(0xFF1B5FC4);
 
   /// Secondary
-  static const Color secondary = Color(0xFF1A1A2E);
+  static const Color secondary = Color(0xFF1B2A4A);
 
   /// Backgrounds
-  static const Color background = Color(0xFFFAFAFA);
+  static const Color background = Color(0xFFF4F8FE);
   static const Color surface = Colors.white;
   static const Color card = Colors.white;
 
   /// Alternate surface (input fills, chips, message-in bubble).
   /// Semantic surface token added for the premium redesign.
-  static const Color surfaceAlt = Color(0xFFF3F4F6);
-  static const Color darkSurfaceAlt = Color(0xFF2C2C2C);
+  static const Color surfaceAlt = Color(0xFFEDF2F9);
+  static const Color darkSurfaceAlt = Color(0xFF232A36);
 
   /// Status colors
-  static const Color success = Color(0xFF4CAF50);
-  static const Color warning = Color(0xFFFFC107);
-  static const Color error = Color(0xFFE53935);
+  static const Color success = Color(0xFF34C759);
+  static const Color warning = Color(0xFFFFB020);
+  static const Color error = Color(0xFFE5484D);
 
   /// Text colors
-  static const Color textPrimary = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textHint = Color(0xFF9CA3AF);
+  static const Color textPrimary = Color(0xFF14203A);
+  static const Color textSecondary = Color(0xFF6B7A90);
+  static const Color textHint = Color(0xFF9AA7B8);
 
   /// Borders and dividers
-  static const Color border = Color(0xFFE5E7EB);
-  static const Color divider = Color(0xFFF3F4F6);
+  static const Color border = Color(0xFFE3EAF3);
+  static const Color divider = Color(0xFFEDF2F9);
 
   /// Role accent colors.
   ///
@@ -41,11 +41,11 @@ class AppColors {
   /// `public_profile_screen.dart`) into the token system so `RoleBadge` and
   /// any role tag reference tokens instead of raw `Color(0xFF...)` values.
   static const Color roleCreator = primary;
-  static const Color roleBrand = Color(0xFF2196F3);
-  static const Color roleAdmin = Color(0xFF9C27B0);
+  static const Color roleBrand = Color(0xFF2F80ED);
+  static const Color roleAdmin = Color(0xFF7A5CFF);
 
-  /// Verified-checkmark accent (Twitter/X style blue).
-  static const Color verified = Color(0xFF1DA1F2);
+  /// Verified-checkmark accent (matches brand blue).
+  static const Color verified = primary;
 
   /// Social-platform brand accents.
   ///
