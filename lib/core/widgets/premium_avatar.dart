@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
+import '../../services/r2_storage_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_text_styles.dart';
@@ -136,10 +137,12 @@ class _PremiumAvatarState extends State<PremiumAvatar> {
 
   Widget _buildImage(BuildContext context) {
     final size = widget.size;
-    final url = widget.imageUrl;
+    // Normalize stored URLs (private R2 S3 endpoint -> public URL) so both new
+    // and previously-persisted avatars render.
+    final url = R2StorageService.publicUrlFor(widget.imageUrl);
     final dimension = size.round();
 
-    final Widget content = (url != null && url.isNotEmpty)
+    final Widget content = url.isNotEmpty
         ? CachedNetworkImage(
             imageUrl: url,
             width: size,

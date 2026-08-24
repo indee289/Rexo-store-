@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
+import '../../services/r2_storage_service.dart';
+
 /// Token-driven caching image loader (Layer 2 loading infrastructure).
 ///
 /// A thin, reusable wrapper around [CachedNetworkImage] that fulfils the
@@ -52,10 +54,12 @@ class CachedImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = imageUrl;
+    // Normalize stored URLs (private R2 S3 endpoint -> public URL) so both new
+    // and previously-persisted images render.
+    final url = R2StorageService.publicUrlFor(imageUrl);
 
     Widget result;
-    if (url == null || url.isEmpty) {
+    if (url.isEmpty) {
       result = _fallback(context);
     } else {
       final cacheDims = _cacheDimensions(context);

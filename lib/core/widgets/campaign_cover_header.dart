@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
+import '../../services/r2_storage_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 
@@ -36,7 +37,10 @@ class CampaignCoverHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasCover = coverImageUrl.isNotEmpty;
+    // Normalize the stored URL so both new uploads and images already
+    // persisted with the private R2 S3 endpoint resolve to the public URL.
+    final url = R2StorageService.publicUrlFor(coverImageUrl);
+    final hasCover = url.isNotEmpty;
 
     final fallback = Container(
       decoration: const BoxDecoration(gradient: gradient),
@@ -62,7 +66,7 @@ class CampaignCoverHeader extends StatelessWidget {
           // Cover image or gradient fallback.
           if (hasCover)
             CachedNetworkImage(
-              imageUrl: coverImageUrl,
+              imageUrl: url,
               fit: BoxFit.cover,
               // Decode at display size (performance / memory).
               memCacheHeight: memCacheHeight,

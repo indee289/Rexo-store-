@@ -13,7 +13,6 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_chip.dart';
-import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/home_provider.dart';
@@ -54,11 +53,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildEmailVerificationBanner(),
-                    _buildSearchBar(),
-                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.sm),
                     const CategoryChips(),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildFeaturedCarousel(),
                     const SizedBox(height: AppSpacing.lg),
                     _buildToggleTabs(),
                     const SizedBox(height: AppSpacing.md),
@@ -102,91 +98,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         const SizedBox(width: AppSpacing.xs),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar() {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: AppSpacing.screenPadding,
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: AppRadius.pillAll,
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Iconsax.search_normal,
-              size: 20,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              'Search campaigns...',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).staggeredEntrance(1);
-  }
-
-  /// Horizontal featured-campaign carousel using the shared [CampaignCard] in
-  /// its [CampaignCardLayout.horizontal] layout.
-  Widget _buildFeaturedCarousel() {
-    final campaignsAsync = ref.watch(featuredCampaignsProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: AppSpacing.screenPadding,
-          child: const SectionHeader(title: 'Featured Campaigns'),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        campaignsAsync.when(
-          data: (campaigns) {
-            if (campaigns.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return SizedBox(
-              height: 176,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: AppSpacing.screenPadding,
-                itemCount: campaigns.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: AppSpacing.md),
-                itemBuilder: (context, index) {
-                  final campaign = campaigns[index];
-                  return CampaignCard(
-                    campaign: campaign,
-                    layout: CampaignCardLayout.horizontal,
-                    onTap: () => _openCampaign(campaign),
-                  ).staggeredEntrance(index);
-                },
-              ),
-            );
-          },
-          loading: () => SizedBox(
-            height: 176,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: AppSpacing.screenPadding,
-              itemCount: 3,
-              itemBuilder: (context, index) => const ShimmerCampaignCard(),
-            ),
-          ),
-          error: (_, __) => _buildErrorState('Failed to load campaigns'),
-        ),
       ],
     );
   }
