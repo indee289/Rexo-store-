@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../categories/widgets/category_filter_widget.dart';
 import '../../rexo_program/providers/rexo_program_provider.dart';
@@ -24,62 +29,15 @@ class ShopScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Shop',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
+      appBar: PremiumAppBar(
+        title: 'Shop',
         actions: [
-          IconButton(
+          PremiumIconButton(
+            icon: Iconsax.add_circle,
             onPressed: () => _handleAddProduct(context, ref),
-            icon: Icon(
-              Iconsax.add_circle,
-              color: theme.colorScheme.onSurface,
-            ),
           ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: () => context.push('/cart'),
-                icon: Icon(
-                  Iconsax.shopping_cart,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              if (cartCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
-                    ),
-                    child: Text(
-                      '$cartCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          _CartAction(count: cartCount),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: RefreshIndicator(
@@ -92,7 +50,12 @@ class ShopScreen extends ConsumerWidget {
             // Category tabs
             const SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: CategoryFilterWidget(),
               ),
             ),
@@ -103,38 +66,45 @@ class ShopScreen extends ConsumerWidget {
                 if (data.isEmpty) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _buildEmptyState(theme),
+                    child: EmptyState(
+                      icon: Iconsax.shop,
+                      title: 'No products available',
+                      subtitle: 'Check back later for new arrivals',
+                    ),
                   );
                 }
                 return SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
                       childAspectRatio: 0.7,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => ProductCard(product: data[index]),
+                      (context, index) => ProductCard(product: data[index])
+                          .staggeredEntrance(index),
                       childCount: data.length,
                     ),
                   ),
                 );
               },
               loading: () => SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 sliver: SliverGrid(
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                    mainAxisSpacing: AppSpacing.md,
+                    crossAxisSpacing: AppSpacing.md,
                     childAspectRatio: 0.7,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => const ShimmerCard(height: 220),
+                    _shimmerBuilder,
                     childCount: 6,
                   ),
                 ),
@@ -153,35 +123,13 @@ class ShopScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.shop,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No products available',
-            style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Check back later for new arrivals',
-            style: AppTextStyles.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
+  static Widget _shimmerBuilder(BuildContext context, int index) =>
+      const ShimmerCard(height: 220);
 
   Widget _buildErrorState(WidgetRef ref, String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -190,24 +138,23 @@ class ShopScreen extends ConsumerWidget {
               size: 64,
               color: AppColors.error.withOpacity(0.7),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'Failed to load products',
               style: AppTextStyles.h5,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               error,
               style: AppTextStyles.bodySmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
+            const SizedBox(height: AppSpacing.lg),
+            PremiumButton(
+              label: 'Retry',
+              expand: false,
+              icon: Iconsax.refresh,
               onPressed: () => ref.invalidate(productsProvider),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Retry'),
             ),
           ],
         ),
@@ -221,36 +168,69 @@ class ShopScreen extends ConsumerWidget {
 
     if (canAdd) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Product management is available in the Admin app.',
-            style: GoogleFonts.poppins(fontSize: 13),
-          ),
+        const SnackBar(
+          content: Text('Product management is available in the Admin app.'),
         ),
       );
     } else {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(
-            'Cannot Add Products',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-          ),
+          title: Text('Cannot Add Products', style: AppTextStyles.h6),
           content: Text(
             'You need to be approved for the Rexo Program to sell products. Go to your Profile page and apply for the Rexo Program.',
-            style: GoogleFonts.poppins(fontSize: 14),
+            style: AppTextStyles.bodyMedium,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 'OK',
-                style: GoogleFonts.poppins(color: AppColors.primary),
+                style: AppTextStyles.labelLarge
+                    .copyWith(color: AppColors.primary),
               ),
             ),
           ],
         ),
       );
     }
+  }
+}
+
+/// Cart action button with an unread-style count badge.
+class _CartAction extends StatelessWidget {
+  final int count;
+
+  const _CartAction({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        PremiumIconButton(
+          icon: Iconsax.shopping_cart,
+          onPressed: () => context.push('/cart'),
+        ),
+        if (count > 0)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                '$count',
+                style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }

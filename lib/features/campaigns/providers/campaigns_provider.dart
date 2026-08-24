@@ -50,11 +50,55 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
 
   final response = await SupabaseService.client
       .from('applications')
-      .select('*, campaigns(id, title, status)')
+      .select('*, campaigns(id, title, status, cover_image_url)')
       .eq('creator_id', user.id)
       .order('created_at', ascending: false);
 
   return List<Map<String, dynamic>>.from(response);
+});
+
+/// Provider for the current user's applied campaigns (drives the Campaigns tab).
+///
+/// Returns the campaigns the current user has applied to, newest application
+/// first. Each entry is the full campaign row (including `cover_image_url` and
+/// the joined `users` brand row via `users!brand_id`) augmented with two
+/// application fields:
+///
+/// - `application_status`: the application's `status` (pending/approved/rejected)
+/// - `applied_at`: the application's `created_at` timestamp
+///
+/// Returns an empty list when signed out. Rows whose joined campaign is null
+/// (e.g. the campaign was deleted) are skipped so the UI never renders a card
+/// without a campaign.
+final appliedCampaignsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return [];
+
+  final response = await SupabaseService.client
+      .from('applications')
+      .select(
+          'status, created_at, campaigns(*, users!brand_id(id, name, avatar_url))')
+      .eq('creator_id', user.id)
+      .order('created_at', ascending: false);
+
+  final rows = List<Map<String, dynamic>>.from(response);
+
+  final result = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    // Skip applications whose campaign was deleted (join yields null).
+    final campaign = row['campaigns'] as Map<String, dynamic>?;
+    if (campaign == null) continue;
+
+    // Flatten: the campaign object augmented with the application fields.
+    result.add({
+      ...campaign,
+      'application_status': row['status'],
+      'applied_at': row['created_at'],
+    });
+  }
+
+  return result;
 });
 
 /// Campaign actions notifier for applying to campaigns

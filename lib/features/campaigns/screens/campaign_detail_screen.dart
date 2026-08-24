@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,9 +5,16 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/widgets/campaign_cover_header.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 import '../widgets/slots_indicator.dart';
@@ -32,12 +38,13 @@ class CampaignDetailScreen extends ConsumerWidget {
       body: campaignAsync.when(
         data: (campaign) {
           if (campaign == null) {
-            return _buildNotFound(context, theme);
+            return _buildNotFound(context);
           }
           return _buildContent(context, ref, campaign, hasApplied, theme);
         },
         loading: () => _buildLoading(),
-        error: (error, _) => _buildError(context, ref, ErrorUtils.sanitize(error), theme),
+        error: (error, _) =>
+            _buildError(context, ref, ErrorUtils.sanitize(error)),
       ),
       bottomNavigationBar: campaignAsync.whenOrNull(
         data: (campaign) {
@@ -55,81 +62,100 @@ class CampaignDetailScreen extends ConsumerWidget {
     AsyncValue<bool> hasApplied,
     ThemeData theme,
   ) {
-    final title = campaign['title'] ?? 'Untitled Campaign';
+    final title = (campaign['title'] ?? 'Untitled Campaign').toString();
     final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
-    final hasCover = coverImageUrl.isNotEmpty;
-    final description = campaign['description'] ?? '';
+    final description = (campaign['description'] ?? '').toString();
     final budget = campaign['budget'];
     final perCreatorPayout = campaign['per_creator_payout'];
-    final platform = campaign['platform'] ?? '';
-    final category = campaign['category'] ?? '';
-    final deadline = campaign['deadline'];
-    final guidelines = campaign['guidelines'] ?? '';
+    final platform = (campaign['platform'] ?? '').toString();
+    final category = (campaign['category'] ?? '').toString();
+    final deadline = campaign['deadline'] as String?;
+    final guidelines = (campaign['guidelines'] ?? '').toString();
     final minFollowers = campaign['min_followers'];
     final filledSlots = campaign['filled_slots'] ?? 0;
     final totalSlots = campaign['total_slots'] ?? 0;
     final brandInfo = campaign['users'] as Map<String, dynamic>?;
-    final brandName = brandInfo?['name'] ?? 'Unknown Brand';
+    final brandName = (brandInfo?['name'] ?? 'Unknown Brand').toString();
     final brandAvatar = brandInfo?['avatar_url'] as String?;
 
     return CustomScrollView(
       slivers: [
-        // Hero section
+        // Hero section — cover render site #3 (the ONLY detail cover),
+        // rendered through the shared CampaignCoverHeader so it caches,
+        // shows a placeholder, and falls back to the brand gradient exactly
+        // like the home card and the campaign list card.
         SliverAppBar(
-          expandedHeight: 180,
+          expandedHeight: 210,
           pinned: true,
           backgroundColor: AppColors.primary,
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+          leadingWidth: 60,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
+            child: PremiumIconButton(
+              icon: Iconsax.arrow_left,
+              background: true,
+              color: Colors.white,
+              tooltip: 'Back',
+              onPressed: () => context.pop(),
+            ),
           ),
           flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              decoration: BoxDecoration(
-                gradient: hasCover ? null : AppColors.primaryGradient,
-                image: hasCover
-                    ? DecorationImage(
-                        image: CachedNetworkImageProvider(coverImageUrl),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.35),
-                          BlendMode.darken,
-                        ),
-                      )
-                    : null,
-              ),
-              padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.h3.copyWith(color: Colors.white),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  if (platform.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        platform,
-                        style: AppTextStyles.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+            background: CampaignCoverHeader(
+              coverImageUrl: coverImageUrl,
+              height: 210,
+              overlay: [
+                // Bottom-up scrim so the title/platform stay legible over
+                // any cover image.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.6),
+                        Colors.transparent,
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+                Positioned(
+                  left: AppSpacing.xl,
+                  right: AppSpacing.xl,
+                  bottom: AppSpacing.xl,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.h3.copyWith(color: Colors.white),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (platform.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: AppRadius.allMd,
+                          ),
+                          child: Text(
+                            platform,
+                            style: AppTextStyles.caption.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -137,41 +163,45 @@ class CampaignDetailScreen extends ConsumerWidget {
         // Body content
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Application-status banner (shown once the user has applied).
+                if (hasApplied.valueOrNull == true) ...[
+                  _buildAppliedBanner(),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+
                 // Brand info row
                 _buildBrandRow(brandName, brandAvatar, theme),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Stats row
                 _buildStatsRow(budget, perCreatorPayout, deadline, theme),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.sm),
 
                 // Description
                 if (description.isNotEmpty) ...[
-                  _buildSectionTitle('Description'),
-                  const SizedBox(height: 8),
+                  const SectionHeader(title: 'Description'),
                   Text(
                     description,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
 
                 // Guidelines
                 if (guidelines.isNotEmpty) ...[
-                  _buildSectionTitle('Requirements & Guidelines'),
-                  const SizedBox(height: 8),
+                  const SectionHeader(title: 'Requirements & Guidelines'),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.allMd,
                       border: Border.all(color: theme.dividerColor),
                     ),
                     child: Text(
@@ -181,37 +211,39 @@ class CampaignDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
 
                 // Platform and Category badges
-                Row(
-                  children: [
-                    if (platform.isNotEmpty) _buildBadge(platform, AppColors.primary),
-                    if (platform.isNotEmpty && category.isNotEmpty)
-                      const SizedBox(width: 8),
-                    if (category.isNotEmpty)
-                      _buildBadge(category, AppColors.secondary),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                if (platform.isNotEmpty || category.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      if (platform.isNotEmpty)
+                        _buildBadge(platform, AppColors.primary),
+                      if (platform.isNotEmpty && category.isNotEmpty)
+                        const SizedBox(width: AppSpacing.sm),
+                      if (category.isNotEmpty)
+                        _buildBadge(category, AppColors.secondary),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
 
                 // Slots progress
-                _buildSectionTitle('Slots'),
-                const SizedBox(height: 8),
+                const SectionHeader(title: 'Slots'),
                 SlotsIndicator(
                   filledSlots: filledSlots is int ? filledSlots : 0,
                   totalSlots: totalSlots is int ? totalSlots : 0,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Min followers
                 if (minFollowers != null && minFollowers > 0) ...[
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.warning.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.allSm,
                     ),
                     child: Row(
                       children: [
@@ -220,7 +252,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                           size: 18,
                           color: AppColors.warning,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           'Minimum ${NumberFormat.compact().format(minFollowers)} followers required',
                           style: AppTextStyles.bodySmall.copyWith(
@@ -231,10 +263,10 @@ class CampaignDetailScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
 
-                // Bottom padding for button
+                // Bottom padding for the sticky CTA bar.
                 const SizedBox(height: 80),
               ],
             ),
@@ -244,22 +276,63 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
+  /// Banner shown at the top of the body once the signed-in user has applied
+  /// to this campaign (driven by [hasAppliedProvider]).
+  Widget _buildAppliedBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.1),
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Iconsax.tick_circle, size: 20, color: AppColors.success),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "You've applied to this campaign",
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Track the status in your applications.",
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBrandRow(String brandName, String? brandAvatar, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
-          AvatarWidget(
-            url: brandAvatar,
+          PremiumAvatar(
+            imageUrl: brandAvatar,
             name: brandName,
             size: 44,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,10 +344,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  'Brand',
-                  style: AppTextStyles.caption,
-                ),
+                Text('Brand', style: AppTextStyles.caption),
               ],
             ),
           ),
@@ -288,7 +358,8 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(dynamic budget, dynamic perCreatorPayout, String? deadline, ThemeData theme) {
+  Widget _buildStatsRow(
+      dynamic budget, dynamic perCreatorPayout, String? deadline, ThemeData theme) {
     return Row(
       children: [
         Expanded(
@@ -301,7 +372,7 @@ class CampaignDetailScreen extends ConsumerWidget {
             theme,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: _buildStatCard(
             'Per Creator',
@@ -312,7 +383,7 @@ class CampaignDetailScreen extends ConsumerWidget {
             theme,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: _buildStatCard(
             'Deadline',
@@ -325,18 +396,19 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, ThemeData theme) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
         children: [
           Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             value,
             style: AppTextStyles.labelLarge.copyWith(
@@ -355,19 +427,15 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: AppTextStyles.h6,
-    );
-  }
-
   Widget _buildBadge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.pillAll,
       ),
       child: Text(
         text,
@@ -379,28 +447,31 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotFound(BuildContext context, ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildNotFound(BuildContext context) {
+    return SafeArea(
+      child: Stack(
         children: [
-          Icon(
-            Iconsax.document,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Campaign not found',
-            style: AppTextStyles.h5,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+          Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: PremiumIconButton(
+                icon: Iconsax.arrow_left,
+                tooltip: 'Back',
+                onPressed: () => context.pop(),
+              ),
             ),
-            child: const Text('Go Back'),
+          ),
+          EmptyState(
+            icon: Iconsax.document,
+            title: 'Campaign not found',
+            subtitle: 'This campaign may have been removed or is unavailable.',
+            cta: PremiumButton(
+              label: 'Go Back',
+              icon: Iconsax.arrow_left,
+              expand: false,
+              onPressed: () => context.pop(),
+            ),
           ),
         ],
       ),
@@ -410,18 +481,18 @@ class CampaignDetailScreen extends ConsumerWidget {
   Widget _buildLoading() {
     return const SafeArea(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ShimmerCard(height: 180),
-            SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             ShimmerLine(width: 200, height: 20),
-            SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             ShimmerLine(height: 14),
-            SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             ShimmerLine(width: 150, height: 14),
-            SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
             ShimmerCard(height: 100),
           ],
         ),
@@ -429,41 +500,34 @@ class CampaignDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 64,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load campaign',
-              style: AppTextStyles.h5,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref.invalidate(campaignDetailProvider(campaignId));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
+    return SafeArea(
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: PremiumIconButton(
+                icon: Iconsax.arrow_left,
+                tooltip: 'Back',
+                onPressed: () => context.pop(),
               ),
-              child: const Text('Retry'),
             ),
-          ],
-        ),
+          ),
+          EmptyState(
+            icon: Iconsax.warning_2,
+            title: 'Failed to load campaign',
+            subtitle: error,
+            cta: PremiumButton(
+              label: 'Retry',
+              icon: Iconsax.refresh,
+              variant: PremiumButtonVariant.tonal,
+              expand: false,
+              onPressed: () => ref.invalidate(campaignDetailProvider(campaignId)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -478,7 +542,7 @@ class CampaignDetailScreen extends ConsumerWidget {
   }
 }
 
-/// Bottom bar for campaign detail that shows Apply button
+/// Sticky bottom bar for campaign detail that shows the premium Apply CTA.
 class CampaignDetailBottomBar extends ConsumerWidget {
   final String campaignId;
 
@@ -493,7 +557,7 @@ class CampaignDetailBottomBar extends ConsumerWidget {
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         boxShadow: [
@@ -505,71 +569,35 @@ class CampaignDetailBottomBar extends ConsumerWidget {
         ],
       ),
       child: SafeArea(
+        top: false,
         child: hasApplied.when(
           data: (applied) {
             if (applied) {
-              return SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.dividerColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    'Already Applied',
-                    style: AppTextStyles.button.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ),
+              return const PremiumButton(
+                label: 'Already Applied',
+                icon: Iconsax.tick_circle,
+                variant: PremiumButtonVariant.tonal,
+                onPressed: null,
               );
             }
-            return SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  context.push('/campaigns/$campaignId/apply');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Apply Now',
-                  style: AppTextStyles.button,
-                ),
-              ),
+            return PremiumButton(
+              label: 'Apply Now',
+              icon: Iconsax.send_2,
+              gradient: true,
+              onPressed: () => context.push('/campaigns/$campaignId/apply'),
             );
           },
-          loading: () => const SizedBox(
-            height: 52,
-            child: Center(child: CircularProgressIndicator()),
+          loading: () => const PremiumButton(
+            label: 'Apply Now',
+            gradient: true,
+            loading: true,
+            onPressed: null,
           ),
-          error: (_, __) => SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: () {
-                context.push('/campaigns/$campaignId/apply');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Apply Now',
-                style: AppTextStyles.button,
-              ),
-            ),
+          error: (_, __) => PremiumButton(
+            label: 'Apply Now',
+            icon: Iconsax.send_2,
+            gradient: true,
+            onPressed: () => context.push('/campaigns/$campaignId/apply'),
           ),
         ),
       ),

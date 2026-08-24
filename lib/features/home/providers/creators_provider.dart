@@ -1,8 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../services/supabase_service.dart';
+import '../models/creator_view.dart';
 
-/// Provider that fetches a single creator profile by user_id
+/// Provider that fetches a single creator profile by user_id.
+///
+/// Returns the raw `creator_profiles` row (joined with the `users` row) or
+/// `null` when no creator-profile row exists. Retained for backward
+/// compatibility with existing consumers; prefer [creatorViewProvider] for the
+/// resilient, normalized [CreatorView] that also falls back to the `users` row.
 final creatorProfileProvider =
     FutureProvider.family<Map<String, dynamic>?, String>(
         (ref, creatorUserId) async {
@@ -13,6 +19,59 @@ final creatorProfileProvider =
       .maybeSingle();
 
   return response;
+});
+
+/// Resiliently resolves a creator by `user_id` into a normalized [CreatorView].
+///
+/// Resolution order (see design "Algorithmic Pseudocode > Resilient creator
+/// resolution"):
+///   1. Query `creator_profiles` (joined with `users`) by `user_id`. If a row
+///      exists, return [CreatorView.fromCreatorProfileRow].
+///   2. Otherwise query `users` by `id`. If a row exists, return
+///      [CreatorView.fromUserRow] (with empty category/bio-default, zero
+///      rating, zero completed campaigns).
+///   3. Otherwise return `null` — the user id is genuinely unknown.
+///
+/// This fixes the "creator not found" bug where a creator exists only as a
+/// `users` row (the Top Creators fallback path) with no `creator_profiles` row.
+Future<CreatorView?> resolveCreator(String creatorUserId) async {
+  assert(creatorUserId.isNotEmpty, 'creatorUserId must be non-empty');
+
+  // Primary: creator_profiles joined with users.
+  final profileRow = await SupabaseService.client
+      .from('creator_profiles')
+      .select(
+          '*, users!inner(id, name, avatar_url, handle, is_verified, bio)')
+      .eq('user_id', creatorUserId)
+      .maybeSingle();
+
+  if (profileRow != null) {
+    return CreatorView.fromCreatorProfileRow(profileRow);
+  }
+
+  // Fallback: plain users row (fixes "creator not found").
+  final userRow = await SupabaseService.client
+      .from('users')
+      .select('id, name, avatar_url, handle, is_verified, bio')
+      .eq('id', creatorUserId)
+      .maybeSingle();
+
+  if (userRow != null) {
+    return CreatorView.fromUserRow(userRow);
+  }
+
+  // Genuinely unknown user.
+  return null;
+}
+
+/// Provider that resolves a normalized [CreatorView] for a creator `user_id`,
+/// falling back to the `users` row when no `creator_profiles` row exists.
+///
+/// Returns `null` only when no `users` row exists for the id, in which case the
+/// creator profile screen shows a "creator unavailable" empty state.
+final creatorViewProvider =
+    FutureProvider.family<CreatorView?, String>((ref, creatorUserId) async {
+  return resolveCreator(creatorUserId);
 });
 
 /// Provider that checks if the current user follows a given creator

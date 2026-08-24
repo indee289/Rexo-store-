@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/role_badge.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../admin/providers/is_admin_provider.dart';
@@ -24,17 +28,12 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Profile', style: AppTextStyles.h5),
         centerTitle: false,
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         actions: [
           IconButton(
             tooltip: 'Settings',
@@ -47,7 +46,8 @@ class ProfileScreen extends ConsumerWidget {
         ],
       ),
       body: profileAsync.when(
-        data: (profileState) => _buildProfileContent(context, ref, profileState),
+        data: (profileState) =>
+            _buildProfileContent(context, ref, profileState),
         loading: () => const ShimmerProfile(),
         error: (error, _) => Center(
           child: Column(
@@ -58,22 +58,19 @@ class ProfileScreen extends ConsumerWidget {
                 size: 48,
                 color: theme.colorScheme.onSurface.withOpacity(0.4),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 'Failed to load profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextButton(
                 onPressed: () => ref.invalidate(currentUserProfileProvider),
                 child: Text(
                   'Retry',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.labelLarge.copyWith(
                     color: AppColors.primary,
                   ),
                 ),
@@ -107,15 +104,15 @@ class ProfileScreen extends ConsumerWidget {
     final isVerified = (profile['is_verified'] == true);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
           // Avatar
           _buildAvatarSection(context, avatarUrl, name),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           // Name + verified badge (badge sits right after the username)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -124,8 +121,7 @@ class ProfileScreen extends ConsumerWidget {
                   child: Text(
                     name,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
+                    style: AppTextStyles.h4.copyWith(
                       fontWeight: FontWeight.w700,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -140,41 +136,38 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 2),
             Text(
               '@$handle',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],
-          const SizedBox(height: 8),
-          // Role badge
-          _buildRoleBadge(role),
+          const SizedBox(height: AppSpacing.sm),
+          // Role badge (token-driven)
+          RoleBadge.fromString(role),
           // Bio
           if (bio.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
               child: Text(
                 bio,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  height: 1.5,
+                style: AppTextStyles.bodySmall.copyWith(
                   color:
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           // Followers / Following stats (only these two — no post/campaign count)
           _buildFollowStats(context, ref),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           // Edit Profile + Share Profile buttons
           _buildProfileButtons(context, handle),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Divider(color: Theme.of(context).dividerColor, height: 1),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           // Quick action menu items
           _buildMenuItem(
             icon: Iconsax.wallet_1,
@@ -220,40 +213,15 @@ class ProfileScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildFollowStatItem(context, 'Followers', fmt(followersAsync)),
+          StatPill(label: 'Followers', value: fmt(followersAsync)),
           Container(
             width: 1,
             height: 36,
             color: Theme.of(context).dividerColor,
           ),
-          _buildFollowStatItem(context, 'Following', fmt(followingAsync)),
+          StatPill(label: 'Following', value: fmt(followingAsync)),
         ],
       ),
-    );
-  }
-
-  Widget _buildFollowStatItem(
-      BuildContext context, String label, String value) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-      ],
     );
   }
 
@@ -265,13 +233,15 @@ class ProfileScreen extends ConsumerWidget {
 
   /// Edit Profile + Share Profile buttons (side by side, Instagram style).
   Widget _buildProfileButtons(BuildContext context, String handle) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton.icon(
+            child: PremiumButton(
+              label: 'Edit Profile',
+              variant: PremiumButtonVariant.outline,
+              icon: Iconsax.edit,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -279,44 +249,15 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 );
               },
-              icon: const Icon(Iconsax.edit, size: 18),
-              label: Text(
-                'Edit Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurface,
-                side: BorderSide(color: theme.dividerColor),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: OutlinedButton.icon(
+            child: PremiumButton(
+              label: 'Share Profile',
+              variant: PremiumButtonVariant.outline,
+              icon: Iconsax.share,
               onPressed: () => _shareProfile(context, handle),
-              icon: const Icon(Iconsax.share, size: 18),
-              label: Text(
-                'Share Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurface,
-                side: BorderSide(color: theme.dividerColor),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
             ),
           ),
         ],
@@ -343,22 +284,23 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.allMd,
         ),
       ),
     );
   }
 
-  Widget _buildAvatarSection(BuildContext context, String? avatarUrl, String name) {
+  Widget _buildAvatarSection(
+      BuildContext context, String? avatarUrl, String name) {
     final theme = Theme.of(context);
     return Stack(
       children: [
-        AvatarWidget(
-          url: avatarUrl,
+        PremiumAvatar(
+          imageUrl: avatarUrl,
           name: name,
           size: 100,
-          showBorder: true,
-          borderColor: AppColors.primary,
+          showRing: true,
+          ringColor: AppColors.primary,
         ),
         Positioned(
           bottom: 0,
@@ -382,42 +324,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRoleBadge(String role) {
-    Color badgeColor;
-    String label;
-
-    switch (role) {
-      case 'brand':
-        badgeColor = const Color(0xFF2196F3);
-        label = 'Brand';
-        break;
-      case 'admin':
-        badgeColor = const Color(0xFF9C27B0);
-        label = 'Admin';
-        break;
-      default:
-        badgeColor = AppColors.primary;
-        label = 'Creator';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: badgeColor,
-        ),
-      ),
-    );
-  }
-
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
@@ -427,12 +333,11 @@ class ProfileScreen extends ConsumerWidget {
       builder: (context) {
         final theme = Theme.of(context);
         return ListTile(
-          leading: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
+          leading: Icon(icon,
+              color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
           title: Text(
             title,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            style: AppTextStyles.labelLarge.copyWith(
               color: theme.colorScheme.onSurface,
             ),
           ),
@@ -442,7 +347,7 @@ class ProfileScreen extends ConsumerWidget {
             color: theme.colorScheme.onSurface.withOpacity(0.5),
           ),
           onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         );
       },
     );

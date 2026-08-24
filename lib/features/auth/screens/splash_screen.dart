@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../services/supabase_service.dart';
 
 /// Clean brand splash shown once on cold start.
@@ -117,13 +119,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       body: SizedBox.expand(
         child: DecoratedBox(
           decoration: const BoxDecoration(
+            // Brand gradient backdrop sourced from the color tokens.
             gradient: RadialGradient(
               center: Alignment(0, -0.2),
               radius: 1.2,
               colors: [
-                Color(0xFFFF7A45),
-                Color(0xFFFF5722),
-                Color(0xFFE64A19),
+                AppColors.primaryLight,
+                AppColors.primary,
+                AppColors.primaryDark,
               ],
               stops: [0.0, 0.55, 1.0],
             ),
@@ -144,7 +147,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       height: 104,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: AppRadius.allXl,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.15),
@@ -161,7 +164,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => Text(
                             'R',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.h1.copyWith(
                               color: AppColors.primary,
                               fontSize: 48,
                               fontWeight: FontWeight.w800,
@@ -170,24 +173,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       'Rexo',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.h2.copyWith(
                         color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.xs),
                     FadeTransition(
                       opacity: _taglineFade,
                       child: Text(
                         'Connect. Create. Earn.',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: Colors.white.withOpacity(0.9),
-                          fontSize: 13,
                           letterSpacing: 0.2,
                         ),
                       ),

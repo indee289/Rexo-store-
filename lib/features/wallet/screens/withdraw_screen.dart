@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../providers/wallet_provider.dart';
 
 class WithdrawScreen extends ConsumerStatefulWidget {
@@ -71,8 +77,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             content: const Text('Withdrawal request submitted successfully!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
           ),
         );
         context.pop();
@@ -105,14 +110,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Withdraw Funds', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: PremiumAppBar(
+        title: 'Withdraw Funds',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl - 4),
         child: Form(
           key: _formKey,
           child: Column(
@@ -121,19 +125,19 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               // Available balance display
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.allMd,
                   border: Border.all(
                     color: AppColors.success.withOpacity(0.2),
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.account_balance_wallet_outlined,
+                    const Icon(Iconsax.wallet_2,
                         color: AppColors.success, size: 24),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -150,37 +154,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
 
               // Amount
               Text('Amount', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
-              TextFormField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _amountController,
+                hint: '0.00',
+                prefixText: '\u20b9 ',
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
-                decoration: InputDecoration(
-                  prefixText: '\u20b9 ',
-                  prefixStyle: AppTextStyles.h5,
-                  hintText: '0.00',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter an amount';
@@ -196,11 +183,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl - 4),
 
               // Method dropdown
               Text('Withdrawal Method', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
                 value: _method,
                 items: const [
@@ -213,49 +200,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     setState(() => _method = value);
                   }
                 },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                ),
+                decoration: const InputDecoration(),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl - 4),
 
               // Payout details based on method
               if (_method == 'UPI') ...[
                 Text('UPI ID', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 8),
-                TextFormField(
+                const SizedBox(height: AppSpacing.sm),
+                PremiumTextField(
                   controller: _upiIdController,
-                  decoration: InputDecoration(
-                    hintText: 'yourname@upi',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
+                  hint: 'yourname@upi',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'UPI ID is required';
@@ -265,27 +221,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 ),
               ] else ...[
                 Text('Account Number', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 8),
-                TextFormField(
+                const SizedBox(height: AppSpacing.sm),
+                PremiumTextField(
                   controller: _accountNumberController,
+                  hint: 'Enter account number',
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Enter account number',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Account number is required';
@@ -293,29 +233,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Text('IFSC Code', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 8),
-                TextFormField(
+                const SizedBox(height: AppSpacing.sm),
+                PremiumTextField(
                   controller: _ifscController,
+                  hint: 'e.g. SBIN0001234',
                   textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. SBIN0001234',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'IFSC code is required';
@@ -323,29 +247,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Text('Account Holder Name', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 8),
-                TextFormField(
+                const SizedBox(height: AppSpacing.sm),
+                PremiumTextField(
                   controller: _accountHolderController,
+                  hint: 'Enter account holder name',
                   textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    hintText: 'Enter account holder name',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Account holder name is required';
@@ -355,33 +263,14 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 ),
               ],
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Submit button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text('Submit Withdrawal', style: AppTextStyles.button),
-                ),
+              PremiumButton(
+                label: 'Submit Withdrawal',
+                gradient: true,
+                loading: _isSubmitting,
+                onPressed: _isSubmitting ? null : _submit,
               ),
             ],
           ),

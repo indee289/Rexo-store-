@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_chip.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/security_provider.dart';
 
@@ -19,46 +23,30 @@ class SecurityLogsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Security Logs',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Security Logs', style: AppTextStyles.h5),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        iconTheme:
+            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: Column(
         children: [
           // Filter chips
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             color: Theme.of(context).colorScheme.surface,
             child: Row(
               children: [
-                _buildFilterChip(context,
-                  ref,
-                  'All',
-                  SecurityLogFilter.all,
-                  activeFilter,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(context,
-                  ref,
-                  'Logins',
-                  SecurityLogFilter.logins,
-                  activeFilter,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(context,
-                  ref,
-                  'Suspicious',
-                  SecurityLogFilter.suspicious,
-                  activeFilter,
-                ),
+                _buildFilterChip(
+                    ref, 'All', SecurityLogFilter.all, activeFilter),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip(
+                    ref, 'Logins', SecurityLogFilter.logins, activeFilter),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip(ref, 'Suspicious',
+                    SecurityLogFilter.suspicious, activeFilter),
               ],
             ),
           ),
@@ -68,37 +56,22 @@ class SecurityLogsScreen extends ConsumerWidget {
             child: logsAsync.when(
               data: (logs) {
                 if (logs.isEmpty) {
-                  return _buildEmptyState(context);
+                  return _buildEmptyState();
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   itemCount: logs.length,
-                  itemBuilder: (context, index) => _buildLogItem(context, logs[index]),
+                  itemBuilder: (context, index) =>
+                      _buildLogItem(context, logs[index]),
                 );
               },
               loading: () => const Padding(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.lg),
                 child: ShimmerLoading(height: 360),
               ),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Iconsax.warning_2,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Failed to load security logs',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
+              error: (error, _) => const EmptyState(
+                icon: Iconsax.warning_2,
+                title: 'Failed to load security logs',
               ),
             ),
           ),
@@ -107,34 +80,18 @@ class SecurityLogsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, WidgetRef ref,
+  Widget _buildFilterChip(
+    WidgetRef ref,
     String label,
     SecurityLogFilter filter,
-    SecurityLogFilter activeFilter,) {
-    final isActive = filter == activeFilter;
-
-    return GestureDetector(
+    SecurityLogFilter activeFilter,
+  ) {
+    return PremiumChip(
+      label: label,
+      selected: filter == activeFilter,
       onTap: () {
         ref.read(securityLogFilterProvider.notifier).state = filter;
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive ? AppColors.primary : Theme.of(context).dividerColor,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: isActive ? Colors.white : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-      ),
     );
   }
 
@@ -151,11 +108,11 @@ class SecurityLogsScreen extends ConsumerWidget {
     final eventConfig = _getEventConfig(context, eventType);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(
           color: isSuspicious
               ? AppColors.error.withOpacity(0.3)
@@ -170,7 +127,7 @@ class SecurityLogsScreen extends ConsumerWidget {
             height: 36,
             decoration: BoxDecoration(
               color: eventConfig.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.allSm,
             ),
             child: Icon(
               eventConfig.icon,
@@ -178,7 +135,7 @@ class SecurityLogsScreen extends ConsumerWidget {
               size: 18,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,9 +145,7 @@ class SecurityLogsScreen extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         eventConfig.label,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        style: AppTextStyles.labelLarge.copyWith(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
@@ -198,12 +153,12 @@ class SecurityLogsScreen extends ConsumerWidget {
                     if (isSuspicious)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: AppSpacing.xs + 2,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.error.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppRadius.allSm,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -216,8 +171,7 @@ class SecurityLogsScreen extends ConsumerWidget {
                             const SizedBox(width: 2),
                             Text(
                               'Suspicious',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
+                              style: AppTextStyles.labelSmall.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.error,
                               ),
@@ -227,20 +181,24 @@ class SecurityLogsScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'IP: $ipAddress',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
                   ),
                 ),
                 if (deviceInfo.toString().isNotEmpty)
                   Text(
                     deviceInfo.toString(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                    style: AppTextStyles.caption.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.4),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -248,9 +206,11 @@ class SecurityLogsScreen extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   createdAt,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  style: AppTextStyles.caption.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
                   ),
                 ),
               ],
@@ -282,9 +242,9 @@ class SecurityLogsScreen extends ConsumerWidget {
           label: 'Failed Login',
         );
       case 'password_change':
-        return _EventConfig(
+        return const _EventConfig(
           icon: Iconsax.lock,
-          color: const Color(0xFF2196F3),
+          color: AppColors.roleBrand,
           label: 'Password Changed',
         );
       default:
@@ -296,34 +256,11 @@ class SecurityLogsScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.shield_tick,
-            size: 48,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No security events',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your security log is clear',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildEmptyState() {
+    return const EmptyState(
+      icon: Iconsax.shield_tick,
+      title: 'No security events',
+      subtitle: 'Your security log is clear',
     );
   }
 }

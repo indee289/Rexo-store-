@@ -1,7 +1,106 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-/// Generic shimmer loading placeholder for list screens
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+
+/// Shimmer skeleton toolkit (Layer 2 loading infrastructure).
+///
+/// All colors and radii here are sourced from the [Theme_System] tokens
+/// ([AppColors], [AppRadius], [AppSpacing]) so skeletons stay consistent with
+/// the premium look in both light and dark themes — no raw `Color(0xFF...)`
+/// literals or ad-hoc magic numbers.
+///
+/// Skeletons are intended to match the final content layout ("skeleton before
+/// spinner") so the switch from loading → resolved content is a subtle
+/// cross-fade rather than a jarring layout jump. See [SkeletonSwitcher] /
+/// [AsyncSkeleton] for the cross-fade helpers.
+
+/// Resolves the token-driven shimmer palette for the current theme brightness.
+///
+/// * [base] / [highlight] drive the animated shimmer gradient.
+/// * [block] is the opaque colour used for the skeleton shapes themselves; it
+///   follows the theme surface so blocks read as "empty" content placeholders.
+class _ShimmerPalette {
+  final Color base;
+  final Color highlight;
+  final Color block;
+
+  const _ShimmerPalette({
+    required this.base,
+    required this.highlight,
+    required this.block,
+  });
+
+  factory _ShimmerPalette.of(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return _ShimmerPalette(
+      base: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
+      highlight:
+          isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+      // Theme-driven surface keeps the placeholder blocks matched to the real
+      // card/background colour in both themes.
+      block: theme.colorScheme.surface,
+    );
+  }
+}
+
+/// A single opaque skeleton block. Reused internally by every skeleton so the
+/// shape colour + radius always come from tokens.
+class _Block extends StatelessWidget {
+  final double? width;
+  final double? height;
+  final BorderRadius borderRadius;
+  final BoxShape shape;
+
+  const _Block({
+    this.width,
+    this.height,
+    this.borderRadius = AppRadius.allSm,
+    this.shape = BoxShape.rectangle,
+  });
+
+  const _Block.circle({required double size})
+      : width = size,
+        height = size,
+        borderRadius = AppRadius.allSm,
+        shape = BoxShape.circle;
+
+  @override
+  Widget build(BuildContext context) {
+    final block = _ShimmerPalette.of(context).block;
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: block,
+        shape: shape,
+        borderRadius: shape == BoxShape.rectangle ? borderRadius : null,
+      ),
+    );
+  }
+}
+
+/// Wraps [child] in the token-driven shimmer animation for the current theme.
+class _ShimmerScope extends StatelessWidget {
+  final Widget child;
+
+  const _ShimmerScope({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _ShimmerPalette.of(context);
+    return Shimmer.fromColors(
+      baseColor: palette.base,
+      highlightColor: palette.highlight,
+      child: child,
+    );
+  }
+}
+
+/// Generic shimmer loading placeholder for list screens.
 class ShimmerLoading extends StatelessWidget {
   final double? height;
 
@@ -9,30 +108,20 @@ class ShimmerLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
+    return _ShimmerScope(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: SizedBox(
           height: height,
           child: Column(
             children: List.generate(
               4,
-              (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Container(
+              (index) => const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.lg),
+                child: _Block(
                   height: 80,
                   width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: childColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  borderRadius: AppRadius.allMd,
                 ),
               ),
             ),
@@ -43,7 +132,7 @@ class ShimmerLoading extends StatelessWidget {
   }
 }
 
-/// Rectangular shimmer placeholder for cards
+/// Rectangular shimmer placeholder for cards.
 class ShimmerCard extends StatelessWidget {
   final double width;
   final double height;
@@ -53,32 +142,22 @@ class ShimmerCard extends StatelessWidget {
     super.key,
     this.width = double.infinity,
     this.height = 200,
-    this.borderRadius = 16,
+    this.borderRadius = AppRadius.lg,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
-      child: Container(
+    return _ShimmerScope(
+      child: _Block(
         width: width,
         height: height,
-        decoration: BoxDecoration(
-          color: childColor,
-          borderRadius: BorderRadius.circular(borderRadius),
-        ),
+        borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
   }
 }
 
-/// Circular shimmer placeholder for avatars
+/// Circular shimmer placeholder for avatars.
 class ShimmerCircle extends StatelessWidget {
   final double size;
 
@@ -89,27 +168,13 @@ class ShimmerCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: childColor,
-          shape: BoxShape.circle,
-        ),
-      ),
+    return _ShimmerScope(
+      child: _Block.circle(size: size),
     );
   }
 }
 
-/// Horizontal line shimmer for text placeholders
+/// Horizontal line shimmer for text placeholders.
 class ShimmerLine extends StatelessWidget {
   final double width;
   final double height;
@@ -122,129 +187,138 @@ class ShimmerLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
-      child: Container(
+    return _ShimmerScope(
+      child: _Block(
         width: width,
         height: height,
-        decoration: BoxDecoration(
-          color: childColor,
-          borderRadius: BorderRadius.circular(4),
-        ),
+        borderRadius: AppRadius.allSm,
       ),
     );
   }
 }
 
-/// Shimmer loading placeholder for a campaign card
+/// Shimmer loading placeholder for a campaign card (horizontal carousel).
+///
+/// Matches the horizontal home [CampaignCard] footprint (280px wide,
+/// 140px cover).
 class ShimmerCampaignCard extends StatelessWidget {
   const ShimmerCampaignCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
-      child: Container(
+    return _ShimmerScope(
+      child: _CampaignSkeletonBody(
         width: 280,
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          color: childColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 140,
-              decoration: BoxDecoration(
-                color: childColor,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 16,
-                    width: 180,
-                    color: childColor,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 12,
-                    width: 120,
-                    color: childColor,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        coverHeight: 140,
+        margin: const EdgeInsets.only(right: AppSpacing.lg),
       ),
     );
   }
 }
 
-/// Shimmer loading placeholder for a creator card
+/// Shimmer loading placeholder matching the **compact** [CampaignCard]
+/// (full-width list layout, 96px cover, total height ≤ 210px).
+///
+/// Mirrors the compact card's structure — cover, title line, metadata line and
+/// slot-progress bar — so the cross-fade to real content does not shift layout.
+class ShimmerCampaignCardCompact extends StatelessWidget {
+  const ShimmerCampaignCardCompact({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ShimmerScope(
+      child: _CampaignSkeletonBody(
+        width: double.infinity,
+        coverHeight: 96,
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      ),
+    );
+  }
+}
+
+/// Shared body for the campaign-card skeletons. Keeps the horizontal and
+/// compact variants pixel-consistent with the real cards.
+class _CampaignSkeletonBody extends StatelessWidget {
+  final double width;
+  final double coverHeight;
+  final EdgeInsets margin;
+
+  const _CampaignSkeletonBody({
+    required this.width,
+    required this.coverHeight,
+    required this.margin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final block = _ShimmerPalette.of(context).block;
+    return Container(
+      width: width,
+      margin: margin,
+      decoration: BoxDecoration(
+        color: block,
+        borderRadius: AppRadius.allLg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Cover placeholder with matching top-rounded corners.
+          Container(
+            height: coverHeight,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: block,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                // Title line.
+                _Block(height: 16, width: 180),
+                SizedBox(height: AppSpacing.sm),
+                // Metadata / deadline line.
+                _Block(height: 12, width: 120),
+                SizedBox(height: AppSpacing.sm),
+                // Slot-progress bar.
+                _Block(height: 4, width: double.infinity),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shimmer loading placeholder for a creator card.
 class ShimmerCreatorCard extends StatelessWidget {
   const ShimmerCreatorCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
+    final block = _ShimmerPalette.of(context).block;
+    return _ShimmerScope(
       child: Container(
         width: 160,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(right: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: childColor,
-          borderRadius: BorderRadius.circular(12),
+          color: block,
+          borderRadius: AppRadius.allMd,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: childColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 14,
-              width: 80,
-              color: childColor,
-            ),
-            const SizedBox(height: 4),
-            Container(
-              height: 10,
-              width: 60,
-              color: childColor,
-            ),
+          children: const [
+            _Block.circle(size: 56),
+            SizedBox(height: AppSpacing.sm),
+            _Block(height: 14, width: 80),
+            SizedBox(height: AppSpacing.xs),
+            _Block(height: 10, width: 60),
           ],
         ),
       ),
@@ -252,48 +326,90 @@ class ShimmerCreatorCard extends StatelessWidget {
   }
 }
 
-/// Shimmer loading placeholder for profile screen
+/// Shimmer loading placeholder for a conversation / inbox row.
+///
+/// Matches the messaging inbox conversation tile: a circular avatar, a name
+/// line and preview line stacked in the middle, and a short timestamp block on
+/// the trailing edge.
+class ShimmerConversationRow extends StatelessWidget {
+  const ShimmerConversationRow({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ShimmerScope(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            // Avatar.
+            _Block.circle(size: 52),
+            SizedBox(width: AppSpacing.md),
+            // Name + preview lines.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Block(height: 14, width: 140),
+                  SizedBox(height: AppSpacing.sm),
+                  _Block(height: 12, width: double.infinity),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            // Timestamp.
+            _Block(height: 10, width: 32),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shimmer loading placeholder for a profile screen.
 class ShimmerProfile extends StatelessWidget {
   const ShimmerProfile({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF3F4F6);
-    final childColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
+    return _ShimmerScope(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: childColor,
-                shape: BoxShape.circle,
-              ),
+          children: const [
+            _Block.circle(size: 100),
+            SizedBox(height: AppSpacing.lg),
+            _Block(height: 20, width: 150),
+            SizedBox(height: AppSpacing.sm),
+            _Block(height: 14, width: 100),
+            SizedBox(height: AppSpacing.xl),
+            _Block(
+              height: 60,
+              width: double.infinity,
+              borderRadius: AppRadius.allMd,
             ),
-            const SizedBox(height: 16),
-            Container(height: 20, width: 150, color: childColor),
-            const SizedBox(height: 8),
-            Container(height: 14, width: 100, color: childColor),
-            const SizedBox(height: 24),
-            Container(
-                height: 60, width: double.infinity, color: childColor),
-            const SizedBox(height: 16),
-            Container(
-                height: 48, width: double.infinity, color: childColor),
-            const SizedBox(height: 12),
-            Container(
-                height: 48, width: double.infinity, color: childColor),
-            const SizedBox(height: 12),
-            Container(
-                height: 48, width: double.infinity, color: childColor),
+            SizedBox(height: AppSpacing.lg),
+            _Block(
+              height: 48,
+              width: double.infinity,
+              borderRadius: AppRadius.allMd,
+            ),
+            SizedBox(height: AppSpacing.md),
+            _Block(
+              height: 48,
+              width: double.infinity,
+              borderRadius: AppRadius.allMd,
+            ),
+            SizedBox(height: AppSpacing.md),
+            _Block(
+              height: 48,
+              width: double.infinity,
+              borderRadius: AppRadius.allMd,
+            ),
           ],
         ),
       ),

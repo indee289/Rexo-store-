@@ -9,8 +9,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/wallet_provider.dart';
@@ -99,8 +104,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
             content: const Text('Deposit request submitted successfully!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
           ),
         );
         context.pop();
@@ -126,14 +130,13 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Deposit Funds', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: PremiumAppBar(
+        title: 'Deposit Funds',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl - 4),
         child: Form(
           key: _formKey,
           child: Column(
@@ -141,33 +144,16 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
             children: [
               // Amount field
               Text('Amount', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
-              TextFormField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _amountController,
+                hint: '0.00',
+                prefixText: '\u20b9 ',
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
-                decoration: InputDecoration(
-                  prefixText: '\u20b9 ',
-                  prefixStyle: AppTextStyles.h5,
-                  hintText: '0.00',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter an amount';
@@ -180,11 +166,11 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl - 4),
 
               // Payment method dropdown
               Text('Payment Method', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
                 items: _paymentMethods
@@ -195,48 +181,17 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                     setState(() => _paymentMethod = value);
                   }
                 },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                ),
+                decoration: const InputDecoration(),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl - 4),
 
               // Transaction reference
               Text('Transaction Reference', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
-              TextFormField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _transactionRefController,
-                decoration: InputDecoration(
-                  hintText: 'Enter transaction ID or reference',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                ),
+                hint: 'Enter transaction ID or reference',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Transaction reference is required';
@@ -245,11 +200,12 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl - 4),
 
               // Upload proof
-              Text('Payment Proof (optional)', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
+              Text('Payment Proof (optional)',
+                  style: AppTextStyles.labelLarge),
+              const SizedBox(height: AppSpacing.sm),
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
@@ -257,15 +213,12 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.dividerColor,
-                      style: BorderStyle.solid,
-                    ),
+                    borderRadius: AppRadius.allMd,
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: _proofFile != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadius.allMd,
                           child: Image.file(
                             File(_proofFile!.path),
                             fit: BoxFit.cover,
@@ -277,9 +230,10 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                             Icon(
                               Iconsax.image,
                               size: 32,
-                              color: theme.colorScheme.onSurface.withOpacity(0.4),
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.4),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               'Tap to upload screenshot',
                               style: AppTextStyles.bodySmall,
@@ -289,33 +243,14 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Submit button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text('Submit Deposit', style: AppTextStyles.button),
-                ),
+              PremiumButton(
+                label: 'Submit Deposit',
+                gradient: true,
+                loading: _isSubmitting,
+                onPressed: _isSubmitting ? null : _submit,
               ),
             ],
           ),

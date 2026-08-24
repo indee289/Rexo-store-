@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/section_header.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../profile/screens/edit_profile_screen.dart';
@@ -16,39 +20,26 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Settings',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
-        ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: PremiumAppBar(
+        title: 'Settings',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Appearance section
-            _buildSectionHeader(context, 'Appearance'),
+            _buildSectionHeader('Appearance'),
             _buildThemeSelector(context, ref, settings),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Account section
-            _buildSectionHeader(context, 'Account'),
+            _buildSectionHeader('Account'),
             _buildMenuItem(
               context: context,
               icon: Iconsax.edit,
@@ -83,10 +74,10 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Apply to sell on the marketplace',
               onTap: () => _showRexoProgramInfo(context),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Security section
-            _buildSectionHeader(context, 'Security'),
+            _buildSectionHeader('Security'),
             _buildMenuItem(
               context: context,
               icon: Iconsax.mobile,
@@ -108,10 +99,10 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Send password reset email',
               onTap: () => _handleChangePassword(context),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Notifications section
-            _buildSectionHeader(context, 'Notifications'),
+            _buildSectionHeader('Notifications'),
             _buildSwitchTile(
               context: context,
               icon: Iconsax.notification,
@@ -119,7 +110,9 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Receive push notifications',
               value: settings.notificationsEnabled,
               onChanged: (value) {
-                ref.read(settingsProvider.notifier).setNotificationsEnabled(value);
+                ref
+                    .read(settingsProvider.notifier)
+                    .setNotificationsEnabled(value);
               },
             ),
             _buildSwitchTile(
@@ -134,10 +127,10 @@ class SettingsScreen extends ConsumerWidget {
                     .setEmailNotificationsEnabled(value);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Legal section
-            _buildSectionHeader(context, 'Legal'),
+            _buildSectionHeader('Legal'),
             _buildMenuItem(
               context: context,
               icon: Iconsax.shield_tick,
@@ -163,11 +156,11 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Version 1.0.0',
               onTap: () => _showAbout(context),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
             // Logout button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -175,8 +168,7 @@ class SettingsScreen extends ConsumerWidget {
                   icon: const Icon(Iconsax.logout, color: AppColors.error),
                   label: Text(
                     'Logout',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
+                    style: AppTextStyles.labelLarge.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.error,
                     ),
@@ -184,10 +176,11 @@ class SettingsScreen extends ConsumerWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: const BorderSide(color: AppColors.error),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.allMd,
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
                   ),
                 ),
               ),
@@ -199,18 +192,10 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          letterSpacing: 0.5,
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: SectionHeader(title: title),
     );
   }
 
@@ -221,30 +206,33 @@ class SettingsScreen extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
-          _buildThemeOption(context,
+          _buildThemeOption(
+            context,
             ref: ref,
             label: 'Light',
             icon: Iconsax.sun_1,
             mode: ThemeMode.light,
             isSelected: settings.themeMode == ThemeMode.light,
           ),
-          _buildThemeOption(context,
+          _buildThemeOption(
+            context,
             ref: ref,
             label: 'Dark',
             icon: Iconsax.moon,
             mode: ThemeMode.dark,
             isSelected: settings.themeMode == ThemeMode.dark,
           ),
-          _buildThemeOption(context,
+          _buildThemeOption(
+            context,
             ref: ref,
             label: 'System',
             icon: Iconsax.mobile,
@@ -256,7 +244,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildThemeOption(BuildContext context, {
+  Widget _buildThemeOption(
+    BuildContext context, {
     required WidgetRef ref,
     required String label,
     required IconData icon,
@@ -267,10 +256,10 @@ class SettingsScreen extends ConsumerWidget {
       child: GestureDetector(
         onTap: () => ref.read(settingsProvider.notifier).setThemeMode(mode),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.allSm,
             border: isSelected
                 ? Border.all(color: AppColors.primary.withOpacity(0.3))
                 : null,
@@ -280,16 +269,22 @@ class SettingsScreen extends ConsumerWidget {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: isSelected
+                    ? AppColors.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 label,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color:
-                      isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                style: AppTextStyles.labelMedium.copyWith(
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected
+                      ? AppColors.primary
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
                 ),
               ),
             ],
@@ -308,20 +303,18 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
+      leading: Icon(icon,
+          color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
       title: Text(
         title,
-        style: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+        style: AppTextStyles.labelLarge.copyWith(
           color: theme.colorScheme.onSurface,
         ),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
             )
@@ -332,7 +325,7 @@ class SettingsScreen extends ConsumerWidget {
         color: theme.colorScheme.onSurface.withOpacity(0.5),
       ),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
     );
   }
 
@@ -346,19 +339,17 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
+      leading: Icon(icon,
+          color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
       title: Text(
         title,
-        style: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+        style: AppTextStyles.labelLarge.copyWith(
           color: theme.colorScheme.onSurface,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
+        style: AppTextStyles.bodySmall.copyWith(
           color: theme.colorScheme.onSurface.withOpacity(0.5),
         ),
       ),
@@ -367,7 +358,7 @@ class SettingsScreen extends ConsumerWidget {
         onChanged: onChanged,
         activeColor: AppColors.primary,
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
     );
   }
 
@@ -377,7 +368,7 @@ class SettingsScreen extends ConsumerWidget {
       applicationName: 'Rexo',
       applicationVersion: '1.0.0',
       applicationIcon: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.allSm,
         child: Image.asset(
           'assets/logo.png',
           width: 48,
@@ -393,13 +384,12 @@ class SettingsScreen extends ConsumerWidget {
         Text(
           'Rexo — a premium influencer marketing platform connecting brands and '
           'creators for campaigns, collaborations and payouts.',
-          style: GoogleFonts.poppins(fontSize: 13, height: 1.4),
+          style: AppTextStyles.bodySmall.copyWith(height: 1.4),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         Text(
           '© 2024 Rexo. All rights reserved.',
-          style: GoogleFonts.poppins(
-            fontSize: 12,
+          style: AppTextStyles.caption.copyWith(
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
@@ -411,21 +401,19 @@ class SettingsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(
-          'Rexo Program',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
+        title: Text('Rexo Program', style: AppTextStyles.h6),
         content: Text(
           'The Rexo Program allows creators to sell products on the marketplace. '
           'Contact support to apply or check your eligibility.',
-          style: GoogleFonts.poppins(fontSize: 14),
+          style: AppTextStyles.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'OK',
-              style: GoogleFonts.poppins(color: AppColors.primary),
+              style:
+                  AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
             ),
           ),
         ],
@@ -442,10 +430,7 @@ class SettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Password reset email sent to ${user.email}',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
+            content: Text('Password reset email sent to ${user.email}'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -453,11 +438,8 @@ class SettingsScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to send reset email. Try again.',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
+          const SnackBar(
+            content: Text('Failed to send reset email. Try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -469,27 +451,22 @@ class SettingsScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Logout',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
+        title: Text('Logout', style: AppTextStyles.h6),
         content: Text(
           'Are you sure you want to logout?',
-          style: GoogleFonts.poppins(fontSize: 14),
+          style: AppTextStyles.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(),
-            ),
+            child: Text('Cancel', style: AppTextStyles.labelLarge),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Logout',
-              style: GoogleFonts.poppins(color: AppColors.error),
+              style:
+                  AppTextStyles.labelLarge.copyWith(color: AppColors.error),
             ),
           ),
         ],

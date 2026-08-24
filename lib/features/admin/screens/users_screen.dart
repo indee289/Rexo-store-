@@ -309,7 +309,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       case 'influencer':
         return AppColors.success;
       case 'brand':
-        return Colors.purple;
+        return AppColors.accentPurple;
       default:
         return AppColors.warning;
     }

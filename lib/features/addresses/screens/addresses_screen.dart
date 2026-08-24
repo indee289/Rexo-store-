@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/addresses_provider.dart';
 
@@ -18,20 +22,17 @@ class AddressesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'My Addresses',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('My Addresses', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -42,76 +43,27 @@ class AddressesScreen extends ConsumerWidget {
       body: addressesAsync.when(
         data: (addresses) {
           if (addresses.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Iconsax.location,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No addresses saved',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add your first address to get started',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                  ),
-                ],
-              ),
+            return const EmptyState(
+              icon: Iconsax.location,
+              title: 'No addresses saved',
+              subtitle: 'Add your first address to get started',
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             itemCount: addresses.length,
             itemBuilder: (context, index) =>
                 _buildAddressCard(context, ref, addresses[index]),
           );
         },
         loading: () => const ShimmerLoading(),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Iconsax.warning_2,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Failed to load addresses',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => ref.invalidate(addressesProvider),
-                child: Text(
-                  'Retry',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        error: (error, _) => EmptyState(
+          icon: Iconsax.warning_2,
+          title: 'Failed to load addresses',
+          ctaLabel: 'Retry',
+          ctaIcon: Iconsax.refresh,
+          onCta: () => ref.invalidate(addressesProvider),
         ),
       ),
     );
@@ -139,13 +91,15 @@ class AddressesScreen extends ConsumerWidget {
     ].join(', ');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(
-          color: isDefault ? AppColors.primary.withOpacity(0.3) : Theme.of(context).dividerColor,
+          color: isDefault
+              ? AppColors.primary.withOpacity(0.3)
+              : Theme.of(context).dividerColor,
         ),
       ),
       child: Column(
@@ -156,8 +110,7 @@ class AddressesScreen extends ConsumerWidget {
               Expanded(
                 child: Text(
                   name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -165,70 +118,59 @@ class AddressesScreen extends ConsumerWidget {
               ),
               if (isDefault)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.allSm,
                   ),
                   child: Text(
                     'Default',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+                    style: AppTextStyles.labelSmall.copyWith(
                       color: AppColors.primary,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           if (phone.isNotEmpty)
             Text(
               phone,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             fullAddress,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              height: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton.icon(
                 onPressed: () => context.push('/add-address', extra: address),
                 icon: const Icon(Iconsax.edit_2, size: 16),
-                label: Text(
-                  'Edit',
-                  style: GoogleFonts.poppins(fontSize: 12),
-                ),
+                label: Text('Edit', style: AppTextStyles.labelMedium),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               TextButton.icon(
                 onPressed: () => _confirmDelete(context, ref, addressId),
                 icon: const Icon(Iconsax.trash, size: 16),
-                label: Text(
-                  'Delete',
-                  style: GoogleFonts.poppins(fontSize: 12),
-                ),
+                label: Text('Delete', style: AppTextStyles.labelMedium),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 ),
               ),
             ],
@@ -246,24 +188,21 @@ class AddressesScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Delete Address',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
+        title: Text('Delete Address', style: AppTextStyles.h6),
         content: Text(
           'Are you sure you want to delete this address?',
-          style: GoogleFonts.poppins(fontSize: 14),
+          style: AppTextStyles.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.poppins()),
+            child: Text('Cancel', style: AppTextStyles.labelLarge),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(color: AppColors.error),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -271,7 +210,9 @@ class AddressesScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      await ref.read(addressesActionsProvider.notifier).deleteAddress(addressId);
+      await ref
+          .read(addressesActionsProvider.notifier)
+          .deleteAddress(addressId);
     }
   }
 }

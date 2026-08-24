@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 
 /// Shared cover header for campaign cards.
 ///
@@ -27,11 +28,11 @@ class CampaignCoverHeader extends StatelessWidget {
   });
 
   /// Unified brand gradient used for the fallback (and behind transparent PNGs).
-  static const LinearGradient gradient = LinearGradient(
-    colors: [AppColors.primaryLight, AppColors.primaryDark],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  ///
+  /// Sourced from the shared [AppColors.primaryGradient] token so the fallback
+  /// matches every other brand-gradient surface (send button, follow button,
+  /// CTA fills) instead of drifting with a locally-declared gradient.
+  static const LinearGradient gradient = AppColors.primaryGradient;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +45,14 @@ class CampaignCoverHeader extends StatelessWidget {
       ),
     );
 
+    // Decode the cover at its on-screen size to cut decode memory: the header
+    // is full-bleed (screen width) and a known [height]. Cache dimensions are
+    // in raw device pixels, so scale by the device pixel ratio.
+    final media = MediaQuery.of(context);
+    final dpr = media.devicePixelRatio;
+    final memCacheHeight = (height * dpr).round();
+    final memCacheWidth = (media.size.width * dpr).round();
+
     return SizedBox(
       height: height,
       width: double.infinity,
@@ -55,6 +64,13 @@ class CampaignCoverHeader extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: coverImageUrl,
               fit: BoxFit.cover,
+              // Decode at display size (performance / memory).
+              memCacheHeight: memCacheHeight,
+              memCacheWidth: memCacheWidth,
+              // Subtle fade-in when the image resolves; quick placeholder fade.
+              fadeInDuration: AppMotion.base,
+              fadeOutDuration: AppMotion.fast,
+              placeholderFadeInDuration: AppMotion.fast,
               placeholder: (context, url) => fallback,
               errorWidget: (context, url, error) => fallback,
             )

@@ -15,7 +15,9 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      extendBody: false,
+      // Content extends under the translucent dock so the frosted-glass blur
+      // reveals the content scrolling behind it (iOS-style floating dock).
+      extendBody: true,
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {

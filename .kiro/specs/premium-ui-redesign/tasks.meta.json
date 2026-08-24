@@ -1,0 +1,618 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add spacing, radius, elevation, and motion tokens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071622
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565082861
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565306494
+      }
+    ],
+    "1.2 Apply consistent theme + app bar styling in ThemeData": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071625
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565317130
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565599158
+      }
+    ],
+    "2.1 Implement PremiumButton with variants, states, and press-scale": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071629
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565318578
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565600108
+      }
+    ],
+    "2.3 Implement PremiumChip, PremiumIconButton, and PremiumTextField": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071631
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565319489
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565601506
+      }
+    ],
+    "2.4 Implement PremiumSheet helper": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071634
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565320926
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565602458
+      }
+    ],
+    "2.5 Implement PremiumAvatar, SectionHeader, EmptyState, and RoleBadge/StatPill": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071637
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565321758
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565603618
+      }
+    ],
+    "2.6 Standardize on Iconsax icons across the primitive layer": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071640
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566118927
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566324545
+      }
+    ],
+    "3.1 Implement shimmer skeletons and skeleton→content cross-fade": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071642
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565776666
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566106872
+      }
+    ],
+    "3.2 Implement staggered list entrance and shared-axis route transitions": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071645
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565777612
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566108276
+      }
+    ],
+    "4. Checkpoint - foundation ready": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071650
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566337600
+      }
+    ],
+    "5.1 Ensure CampaignCoverHeader uses the caching image loader with gradient fallback": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071653
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565779006
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566109724
+      }
+    ],
+    "5.2 Implement the single shared compact CampaignCard": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071655
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566391449
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566771697
+      }
+    ],
+    "5.4 Standardize campaign queries to include cover_image_url and render 3 cover sites": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071658
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566791722
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567068493
+      }
+    ],
+    "6.1 Implement appliedCampaignsProvider and ApplicationStatus mapping": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071660
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566392398
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566773102
+      }
+    ],
+    "6.2 Rebuild the Campaigns tab UI as applied-only": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071662
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566793119
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567069940
+      }
+    ],
+    "7.1 Add messages soft-state columns and RLS policies (Supabase migration)": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071665
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565083939
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565307573
+      }
+    ],
+    "8.1 Implement MessageView parsing and visibleMessages": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071668
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565644330
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565765925
+      }
+    ],
+    "8.3 Implement editMessage, unsendMessage, and deleteForMe provider actions": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071671
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565779979
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566111127
+      }
+    ],
+    "9.1 Build the premium Inbox": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071674
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566393798
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566774052
+      }
+    ],
+    "9.2 Build ChatBubble and grouped/date-separated message list": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071676
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566394751
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566775002
+      }
+    ],
+    "9.3 Wire long-press message actions sheet and realtime resilience": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071679
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566794073
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567070892
+      }
+    ],
+    "10. Checkpoint - messaging complete": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071681
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566338276
+      }
+    ],
+    "11.1 Implement CreatorView and resolveCreator with users fallback": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071684
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565781086
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566111960
+      }
+    ],
+    "12.1 Build CreatorProfileHeader and Creator_Profile_Screen": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071687
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566395851
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566776245
+      }
+    ],
+    "12.2 Implement copy-profile-link and message actions": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071690
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566795470
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567072290
+      }
+    ],
+    "12.3 Implement optimistic follow/unfollow toggle": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071693
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566796355
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567073138
+      }
+    ],
+    "13.1 Apply tokens and primitives to Home and auth screens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071695
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567088316
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787568747250
+      }
+    ],
+    "13.2 Apply tokens and primitives to campaign detail/apply/create screens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071697
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567089754
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787568748647
+      }
+    ],
+    "13.3 Apply tokens and primitives to shop, wallet, notifications, and settings screens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071700
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567090706
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787568749595
+      }
+    ],
+    "13.4 Apply tokens and primitives to remaining secondary screens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071703
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567091827
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787568750610
+      }
+    ],
+    "14.1 Fix FCM private-key decoding in the push service": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071706
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566119826
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566325409
+      }
+    ],
+    "15. Final checkpoint - ensure all tests pass": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565071710
+      },
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787568766437
+      }
+    ],
+    "7. Message soft-state backend migration": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565307578
+      }
+    ],
+    "1. Extend the design token system (Theme_System)": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787565599161
+      }
+    ],
+    "3. Add loading and motion infrastructure": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566108279
+      }
+    ],
+    "8. Messaging data layer (soft-state model + actions)": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566111130
+      }
+    ],
+    "11. Resilient creator resolution": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566111963
+      }
+    ],
+    "2. Build the premium component library primitives (Component_Library)": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566324548
+      }
+    ],
+    "14. Push-notification FCM key fix (backend/config — separate from UI)": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787566325417
+      }
+    ],
+    "5. Compact campaign card and cover-image fix": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567068497
+      }
+    ],
+    "6. Applied-only Campaigns tab": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567069943
+      }
+    ],
+    "9. Premium Inbox and Chat screens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567070899
+      }
+    ],
+    "12. Instagram-style creator profile and follow": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787567073147
+      }
+    ],
+    "13. Roll out the design system across remaining screens": [
+      {
+        "executionId": "9baf17aa-159d-46cc-bd73-d91f396a3982",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787568750618
+      }
+    ]
+  }
+}

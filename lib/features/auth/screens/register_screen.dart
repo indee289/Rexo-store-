@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_motion.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -60,15 +65,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!mounted) return;
 
     final authState = ref.read(authProvider);
-    if (authState.status == AuthStatus.error && authState.errorMessage != null) {
+    if (authState.status == AuthStatus.error &&
+        authState.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authState.errorMessage!),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
         ),
       );
     } else if (authState.isAuthenticated) {
@@ -85,13 +89,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Back button
                 GestureDetector(
@@ -101,7 +105,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.allMd,
                       border: Border.all(color: theme.dividerColor),
                     ),
                     child: Icon(
@@ -112,42 +116,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Create Account heading
                 Text(
                   'Create Account',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
+                  style: AppTextStyles.h2.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Join Rexo and start your journey',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Full name field
-                TextFormField(
+                PremiumTextField(
                   controller: _nameController,
+                  label: 'Full Name',
+                  hint: 'Enter your full name',
+                  prefixIcon: Iconsax.user,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    hintText: 'Enter your full name',
-                    prefixIcon: Icon(
-                      Iconsax.user,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      size: 20,
-                    ),
-                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your name';
@@ -159,32 +154,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Username (handle) field
-                TextFormField(
+                PremiumTextField(
                   controller: _usernameController,
+                  label: 'Username',
+                  hint: 'e.g. jane_doe',
+                  prefixIcon: Iconsax.user_tag,
                   textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.text,
-                  autocorrect: false,
-                  enableSuggestions: false,
                   inputFormatters: [
                     // Keep input to the allowed handle charset (plus a leading
                     // '@' which we strip on submit) and force lowercase.
                     FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_@]')),
                     TextInputFormatter.withFunction((oldValue, newValue) {
-                      return newValue.copyWith(text: newValue.text.toLowerCase());
+                      return newValue.copyWith(
+                          text: newValue.text.toLowerCase());
                     }),
                   ],
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    hintText: 'e.g. jane_doe',
-                    prefixIcon: Icon(
-                      Iconsax.user_tag,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      size: 20,
-                    ),
-                  ),
                   validator: (value) {
                     final handle = _normalizeHandle(value ?? '');
                     if (handle.isEmpty) {
@@ -203,22 +191,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Email field
-                TextFormField(
+                PremiumTextField(
                   controller: _emailController,
+                  label: 'Email',
+                  hint: 'Enter your email',
+                  prefixIcon: Iconsax.sms,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Enter your email',
-                    prefixIcon: Icon(
-                      Iconsax.sms,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      size: 20,
-                    ),
-                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email';
@@ -230,32 +212,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Password field
-                TextFormField(
+                PremiumTextField(
                   controller: _passwordController,
+                  label: 'Password',
+                  hint: 'Create a password',
+                  prefixIcon: Iconsax.lock,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Create a password',
-                    prefixIcon: Icon(
-                      Iconsax.lock,
+                  suffix: IconButton(
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
                       color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                      icon: Icon(
-                        _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
-                        size: 20,
-                      ),
                     ),
                   ),
                   validator: (value) {
@@ -275,34 +248,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Confirm password field
-                TextFormField(
+                PremiumTextField(
                   controller: _confirmPasswordController,
+                  label: 'Confirm Password',
+                  hint: 'Re-enter your password',
+                  prefixIcon: Iconsax.lock,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    hintText: 'Re-enter your password',
-                    prefixIcon: Icon(
-                      Iconsax.lock,
+                  suffix: IconButton(
+                    onPressed: () => setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword),
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Iconsax.eye_slash
+                          : Iconsax.eye,
                       color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Iconsax.eye_slash
-                            : Iconsax.eye,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
-                        size: 20,
-                      ),
                     ),
                   ),
                   validator: (value) {
@@ -316,18 +280,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Role selection
                 Text(
                   'I am a',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.labelLarge.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Expanded(
@@ -336,54 +298,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         icon: Iconsax.video_play,
                         description: 'Content creator or influencer',
                         isSelected: _selectedRole == 'creator',
-                        onTap: () {
-                          setState(() => _selectedRole = 'creator');
-                        },
+                        onTap: () =>
+                            setState(() => _selectedRole = 'creator'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: _RoleCard(
                         title: 'Brand',
                         icon: Iconsax.building,
                         description: 'Business or brand',
                         isSelected: _selectedRole == 'brand',
-                        onTap: () {
-                          setState(() => _selectedRole = 'brand');
-                        },
+                        onTap: () => setState(() => _selectedRole = 'brand'),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Sign Up button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _handleSignUp,
-                    child: authState.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Sign Up',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
+                PremiumButton(
+                  label: 'Sign Up',
+                  gradient: true,
+                  loading: authState.isLoading,
+                  onPressed: authState.isLoading ? null : _handleSignUp,
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Login link
                 Center(
@@ -392,8 +334,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     children: [
                       Text(
                         'Already have an account? ',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
@@ -401,8 +342,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         onTap: () => context.go(AppRoutes.login),
                         child: Text(
                           'Sign In',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
+                          style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
                           ),
@@ -412,7 +352,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ),
@@ -422,7 +362,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-/// Role selection card widget
+/// Role selection card widget (token-driven).
 class _RoleCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -445,13 +385,13 @@ class _RoleCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        duration: AppMotion.base,
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withOpacity(0.05)
               : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.allMd,
           border: Border.all(
             color: isSelected ? AppColors.primary : theme.dividerColor,
             width: isSelected ? 1.5 : 1,
@@ -461,24 +401,26 @@ class _RoleCard extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : theme.colorScheme.onSurface.withOpacity(0.4),
+              color: isSelected
+                  ? AppColors.primary
+                  : theme.colorScheme.onSurface.withOpacity(0.4),
               size: 28,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               title,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
+              style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.primary : theme.colorScheme.onSurface,
+                color: isSelected
+                    ? AppColors.primary
+                    : theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               description,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
+              style: AppTextStyles.caption.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),

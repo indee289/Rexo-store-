@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/avatar_widget.dart';
-import '../../../core/widgets/verified_badge.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_card.dart';
 
-/// A compact horizontal card for displaying trending creators.
+/// A compact card for displaying a trending creator.
+///
+/// Token-driven and built from the shared [PremiumCard] + [PremiumAvatar]
+/// primitives so it matches the premium look in both light and dark themes
+/// (no inline `GoogleFonts` or raw color literals). Fills the width of its
+/// parent so the Home grid controls sizing.
 class CreatorCard extends StatelessWidget {
   final Map<String, dynamic> creator;
   final VoidCallback? onTap;
@@ -21,110 +27,82 @@ class CreatorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final userData = creator['users'] as Map<String, dynamic>?;
-    final name = userData?['name'] ?? 'Creator';
-    final avatarUrl = userData?['avatar_url'];
+    final name = (userData?['name'] ?? 'Creator').toString();
+    final avatarUrl = (userData?['avatar_url'] ?? '').toString();
     final isVerified = (userData?['is_verified'] == true);
-    final category = creator['category'] ?? '';
+    final category = (creator['category'] ?? '').toString();
     final followers = creator['followers'] ?? 0;
     final rating = creator['rating'] ?? 0.0;
 
-    return GestureDetector(
+    return PremiumCard(
       onTap: onTap,
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.dividerColor, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              offset: const Offset(0, 1),
-              blurRadius: 4,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PremiumAvatar(
+            imageUrl: avatarUrl.isEmpty ? null : avatarUrl,
+            name: name,
+            size: PremiumAvatar.sizeLg,
+            isVerified: isVerified,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            name,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          if (category.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              category,
+              style: AppTextStyles.caption.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AvatarWidget(
-              url: avatarUrl,
-              name: name,
-              size: 56,
-              showBorder: true,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                if (isVerified) const VerifiedBadge(size: 13),
-              ],
-            ),
-            if (category.isNotEmpty) ...[
-              const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Iconsax.people,
+                size: 12,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(width: AppSpacing.xs),
               Text(
-                category,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
+                _formatFollowers(followers),
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
                   color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const Icon(
+                Iconsax.star_1,
+                size: 12,
+                color: AppColors.warning,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                double.tryParse(rating.toString())?.toStringAsFixed(1) ?? '0.0',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
             ],
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Iconsax.people,
-                  size: 12,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  _formatFollowers(followers),
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Iconsax.star_1,
-                  size: 12,
-                  color: AppColors.warning,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  double.tryParse(rating.toString())?.toStringAsFixed(1) ?? '0.0',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

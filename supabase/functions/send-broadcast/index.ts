@@ -15,26 +15,42 @@
 //   always rejected. Signing happens here, server-side, with Web Crypto.
 //
 // ---------------------------------------------------------------------------
-// DEPLOY (NEEDS-USER-ACTION) — run from the repo root with the Supabase CLI:
-//
-//   1) Set the required secrets (never commit these):
-//        supabase secrets set \
-//          FCM_PROJECT_ID="your-firebase-project-id" \
-//          FCM_CLIENT_EMAIL="firebase-adminsdk-xxxx@your-project.iam.gserviceaccount.com" \
-//          FCM_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-//
-//      (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically by
-//       the platform for deployed functions; you do not set them manually.)
-//
-//      NOTE: FCM_PRIVATE_KEY must contain the PEM including the literal "\n"
-//      escape sequences — this function converts "\n" back to real newlines.
-//
-//   2) Deploy:
-//        supabase functions deploy send-broadcast
+// DEPLOY (NEEDS-USER-ACTION) — run from the repo root with the Supabase CLI.
 //
 // The values come from the Firebase service-account JSON (Project Settings ->
 // Service accounts -> Generate new private key): project_id, client_email,
-// private_key.
+// private_key. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected
+// automatically by the platform; you never set them manually.
+//
+//   1) STRONGLY RECOMMENDED — set the private key as single-line base64.
+//      A multi-line PEM passed through the shell/CLI is routinely mangled
+//      (literal "\n" not converted, double-escaping, or truncation), which
+//      corrupts the PKCS8 DER and makes FCM push fail with
+//      "incorrect length for APPLICATION [15] (constructed)". Base64-encoding
+//      the whole PEM into ONE line sidesteps all of that.
+//
+//      First extract the private_key from the service-account JSON into a .pem
+//      file (must start with "-----BEGIN PRIVATE KEY-----" — PKCS8, NOT
+//      "-----BEGIN RSA PRIVATE KEY-----" which is PKCS1 and unsupported by
+//      Web Crypto; convert PKCS1 -> PKCS8 with:
+//        openssl pkcs8 -topk8 -nocrypt -in pkcs1.pem -out service-account-private-key.pem
+//      ), then:
+//
+//        B64=$(base64 -w0 < service-account-private-key.pem)   # Linux
+//        # macOS: B64=$(base64 < service-account-private-key.pem | tr -d '\n')
+//        supabase secrets set \
+//          FCM_PROJECT_ID="your-firebase-project-id" \
+//          FCM_CLIENT_EMAIL="firebase-adminsdk-xxxx@your-project.iam.gserviceaccount.com" \
+//          FCM_PRIVATE_KEY_B64="$B64"
+//
+//   1-alt) FALLBACK — raw PEM secret (only if you cannot use base64). It must
+//      be a PKCS8 key and contain literal "\n" escapes; this function converts
+//      "\n" back to real newlines:
+//        supabase secrets set \
+//          FCM_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+//
+//   2) Deploy:
+//        supabase functions deploy send-broadcast
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -71,6 +87,15 @@ function strToBase64Url(str: string): string {
   return base64UrlEncode(new TextEncoder().encode(str));
 }
 
+// Distinguishes the private-key failure modes so the caller can surface a
+// concise, actionable (and sanitized) diagnostic without leaking key material.
+class PrivateKeyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PrivateKeyError";
+  }
+}
+
 // Convert a PEM PKCS8 private key into an ArrayBuffer of DER bytes.
 //
 // ROBUST: after removing the BEGIN/END markers we strip EVERY character that is
@@ -78,12 +103,47 @@ function strToBase64Url(str: string): string {
 // any stray literal "\n" / backslashes that survive secret-escaping — those
 // stray chars were corrupting the DER and caused the FCM push to fail with
 // "incorrect length for APPLICATION [15]" when importing the key.
+//
+// It also fails FAST with a clear message for the two other common causes of
+// that DER error: a PKCS1 key (Web Crypto's importKey('pkcs8', ...) only
+// accepts PKCS8) and an empty/undecodable base64 body.
 function pemToArrayBuffer(pem: string): ArrayBuffer {
+  // PKCS1 keys ("BEGIN RSA PRIVATE KEY") are DER-incompatible with the pkcs8
+  // importer and are a frequent cause of the "incorrect length" DER error.
+  if (/-----BEGIN RSA PRIVATE KEY-----/.test(pem)) {
+    throw new PrivateKeyError(
+      "invalid private key format (expected PKCS8): got a PKCS1 " +
+        '"BEGIN RSA PRIVATE KEY" key. Convert it with: ' +
+        "openssl pkcs8 -topk8 -nocrypt -in pkcs1.pem -out pkcs8.pem",
+    );
+  }
+  if (!/-----BEGIN PRIVATE KEY-----/.test(pem)) {
+    throw new PrivateKeyError(
+      "invalid private key format (expected PKCS8): missing " +
+        '"BEGIN PRIVATE KEY" PEM header',
+    );
+  }
+
   const cleaned = pem
     .replace(/-----BEGIN [^-]+-----/g, "")
     .replace(/-----END [^-]+-----/g, "")
     .replace(/[^A-Za-z0-9+/=]/g, "");
-  const binary = atob(cleaned);
+  if (cleaned.length === 0) {
+    throw new PrivateKeyError(
+      "invalid private key format (expected PKCS8): empty key body after " +
+        "decoding — check the secret is not truncated",
+    );
+  }
+
+  let binary: string;
+  try {
+    binary = atob(cleaned);
+  } catch (_) {
+    throw new PrivateKeyError(
+      "invalid private key format (expected PKCS8): base64 body could not " +
+        "be decoded — the secret is likely corrupted or truncated",
+    );
+  }
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
@@ -109,13 +169,27 @@ async function getAccessToken(
     strToBase64Url(JSON.stringify(claims))
   }`;
 
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    pemToArrayBuffer(privateKeyPem),
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
+  // pemToArrayBuffer throws PrivateKeyError (clear format diagnostics) which we
+  // let propagate. importKey itself throws a low-level DOMException on a
+  // malformed/corrupt PKCS8 DER (e.g. "incorrect length for APPLICATION [15]");
+  // translate that into an actionable PrivateKeyError too.
+  let key: CryptoKey;
+  try {
+    key = await crypto.subtle.importKey(
+      "pkcs8",
+      pemToArrayBuffer(privateKeyPem),
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+  } catch (e) {
+    if (e instanceof PrivateKeyError) throw e;
+    throw new PrivateKeyError(
+      "invalid private key format (expected PKCS8): the key bytes could not " +
+        "be parsed as PKCS8 DER — recommend setting FCM_PRIVATE_KEY_B64 " +
+        "(single-line base64 of the PEM) to avoid newline/escaping corruption",
+    );
+  }
 
   const signatureBuf = await crypto.subtle.sign(
     "RSASSA-PKCS1-v1_5",
@@ -135,8 +209,18 @@ async function getAccessToken(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OAuth token exchange failed (${res.status}): ${text}`);
+    // Surface the provider's short error code (e.g. "invalid_grant") but not
+    // the full body, which can be verbose. Never includes key material.
+    let code = "";
+    try {
+      const errJson = await res.json();
+      code = errJson?.error ?? "";
+    } catch (_) {
+      // ignore non-JSON bodies
+    }
+    throw new Error(
+      `OAuth token exchange failed (${res.status}${code ? `: ${code}` : ""})`,
+    );
   }
   const data = await res.json();
   return data.access_token as string;
@@ -318,7 +402,19 @@ Deno.serve(async (req: Request) => {
           }
         }
       } catch (e) {
-        pushError = e instanceof Error ? e.message : "FCM push failed";
+        // Never crash: in-app rows are already inserted. Record a sanitized,
+        // concise diagnostic that distinguishes the failure mode.
+        if (e instanceof PrivateKeyError) {
+          pushError = e.message;
+        } else if (e instanceof Error && e.message.startsWith("OAuth token")) {
+          pushError = e.message;
+        } else {
+          pushError = "FCM push failed (token/dispatch error)";
+        }
+        // The token exchange/key step failed before any per-device send, so no
+        // device received the push — record every target device as failed.
+        if (pushed === 0 && failed === 0) failed = tokens.length;
+        console.error("send-broadcast push error:", pushError);
       }
     }
   } else {

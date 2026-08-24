@@ -3,11 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_sheet.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/kyc_provider.dart';
 
@@ -36,33 +42,30 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'KYC Verification',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('KYC Verification', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Info banner
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.allMd,
                 border: Border.all(
                   color: AppColors.primary.withOpacity(0.2),
                 ),
@@ -74,37 +77,37 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                     color: AppColors.primary,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       'Complete KYC verification to unlock full platform features including withdrawals and campaign payments.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        height: 1.4,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
             // Document type selector
             Text(
               'Document Type',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
+              style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.allMd,
                 border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: DropdownButtonHideUnderline(
@@ -112,8 +115,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                   value: _selectedDocType,
                   isExpanded: true,
                   icon: const Icon(Iconsax.arrow_down_1),
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                   items: _documentTypes
@@ -130,18 +132,17 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
             // Image picker area
             Text(
               'Upload Document',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
+              style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             GestureDetector(
               onTap: _showImagePicker,
               child: Container(
@@ -149,7 +150,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                 height: 200,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.allMd,
                   border: Border.all(
                     color: Theme.of(context).dividerColor,
                     style: BorderStyle.solid,
@@ -157,7 +158,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                 ),
                 child: _selectedFile != null
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.allMd,
                         child: Image.file(
                           _selectedFile!,
                           fit: BoxFit.cover,
@@ -170,98 +171,62 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                           Icon(
                             Iconsax.document_upload,
                             size: 48,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.4),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           Text(
                             'Tap to upload document',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             'Camera or Gallery',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.4),
                             ),
                           ),
                         ],
                       ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
             // Upload button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed:
-                    _selectedFile != null && !_isUploading ? _uploadDocument : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isUploading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Upload Document',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-              ),
+            PremiumButton(
+              label: 'Upload Document',
+              gradient: true,
+              loading: _isUploading,
+              onPressed: _selectedFile != null && !_isUploading
+                  ? _uploadDocument
+                  : null,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Previous submissions
             Text(
               'Submitted Documents',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+              style: AppTextStyles.h6,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             kycAsync.when(
               data: (documents) {
                 if (documents.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Iconsax.document,
-                            size: 40,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'No documents submitted yet',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                            ),
-                          ),
-                        ],
-                      ),
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    child: EmptyState(
+                      icon: Iconsax.document,
+                      title: 'No documents submitted yet',
                     ),
                   );
                 }
@@ -277,7 +242,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                   onPressed: () => ref.invalidate(kycDocumentsProvider),
                   child: Text(
                     'Retry loading documents',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.labelLarge.copyWith(
                       color: AppColors.primary,
                     ),
                   ),
@@ -313,11 +278,11 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
@@ -327,7 +292,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.allSm,
             ),
             child: Icon(
               Iconsax.document_text,
@@ -335,15 +300,14 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   docType.toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
+                  style: AppTextStyles.labelMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -351,29 +315,31 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
                 if (createdAt.isNotEmpty)
                   Text(
                     'Submitted: ${_formatDate(createdAt)}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                    style: AppTextStyles.caption.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.4),
                     ),
                   ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm + 2, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
               color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.pillAll,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(statusIcon, size: 14, color: statusColor),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   status[0].toUpperCase() + status.substring(1),
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
+                  style: AppTextStyles.caption.copyWith(
                     fontWeight: FontWeight.w500,
                     color: statusColor,
                   ),
@@ -396,50 +362,29 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
   }
 
   void _showImagePicker() {
-    showModalBottomSheet(
+    showPremiumSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Select Image Source',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Iconsax.camera, color: AppColors.primary),
-                title: Text(
-                  'Camera',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Iconsax.gallery, color: AppColors.primary),
-                title: Text(
-                  'Gallery',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
+      title: 'Select Image Source',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Iconsax.camera, color: AppColors.primary),
+            title: Text('Camera', style: AppTextStyles.bodyMedium),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
           ),
-        ),
+          ListTile(
+            leading: const Icon(Iconsax.gallery, color: AppColors.primary),
+            title: Text('Gallery', style: AppTextStyles.bodyMedium),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -482,7 +427,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
             success
                 ? 'Document uploaded successfully'
                 : 'Failed to upload document. Try again.',
-            style: GoogleFonts.poppins(fontSize: 14),
+            style: AppTextStyles.bodyMedium,
           ),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),

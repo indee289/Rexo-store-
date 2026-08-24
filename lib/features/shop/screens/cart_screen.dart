@@ -1,12 +1,19 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/cached_image.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../providers/shop_provider.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -20,41 +27,33 @@ class CartScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Cart',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Cart',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: cartItems.isEmpty
-          ? _buildEmptyCart(context, theme)
+          ? _buildEmptyCart(context)
           : Column(
               children: [
                 // Cart items list
                 Expanded(
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     itemCount: cartItems.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.md),
                     itemBuilder: (context, index) {
-                      return _buildCartItem(context, ref, cartItems[index], theme);
+                      return _buildCartItem(
+                              context, ref, cartItems[index], theme)
+                          .staggeredEntrance(index);
                     },
                   ),
                 ),
 
                 // Order summary and checkout button
-                _buildOrderSummary(context, totalAmount, cartItems.length, theme),
+                _buildOrderSummary(
+                    context, totalAmount, cartItems.length, theme),
               ],
             ),
     );
@@ -74,52 +73,18 @@ class CartScreen extends ConsumerWidget {
         (images != null && images.isNotEmpty) ? images[0] as String : null;
     final productId = product['id'] as String;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           // Product image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 72,
-              height: 72,
-              child: imageUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: theme.dividerColor,
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: theme.dividerColor,
-                        child: Icon(
-                          Iconsax.image,
-                          color: theme.colorScheme.onSurface.withOpacity(0.4),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: theme.dividerColor,
-                      child: Icon(
-                        Iconsax.image,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      ),
-                    ),
-            ),
+          CachedImage(
+            imageUrl: imageUrl,
+            width: 72,
+            height: 72,
+            borderRadius: AppRadius.allSm,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
 
           // Product info
           Expanded(
@@ -134,7 +99,7 @@ class CartScreen extends ConsumerWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   '\u20B9${price.toStringAsFixed(0)}',
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -142,13 +107,13 @@ class CartScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
 
                 // Quantity controls
                 Row(
                   children: [
                     _buildQuantityButton(
-                      icon: Icons.remove,
+                      icon: Iconsax.minus,
                       onPressed: () {
                         ref
                             .read(cartProvider.notifier)
@@ -157,7 +122,8 @@ class CartScreen extends ConsumerWidget {
                       theme: theme,
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md),
                       child: Text(
                         '${item.quantity}',
                         style: AppTextStyles.labelLarge.copyWith(
@@ -166,7 +132,7 @@ class CartScreen extends ConsumerWidget {
                       ),
                     ),
                     _buildQuantityButton(
-                      icon: Icons.add,
+                      icon: Iconsax.add,
                       onPressed: () {
                         ref
                             .read(cartProvider.notifier)
@@ -181,15 +147,13 @@ class CartScreen extends ConsumerWidget {
           ),
 
           // Remove button
-          IconButton(
+          PremiumIconButton(
+            icon: Iconsax.trash,
+            iconSize: 20,
+            color: AppColors.error,
             onPressed: () {
               ref.read(cartProvider.notifier).removeFromCart(productId);
             },
-            icon: const Icon(
-              Iconsax.trash,
-              color: AppColors.error,
-              size: 20,
-            ),
           ),
         ],
       ),
@@ -208,7 +172,7 @@ class CartScreen extends ConsumerWidget {
         height: 28,
         decoration: BoxDecoration(
           border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppRadius.sm - 2),
         ),
         child: Icon(icon, size: 16, color: theme.colorScheme.onSurface),
       ),
@@ -222,7 +186,7 @@ class CartScreen extends ConsumerWidget {
     ThemeData theme,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         boxShadow: [
@@ -253,40 +217,22 @@ class CartScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total',
-                  style: AppTextStyles.h6,
-                ),
+                Text('Total', style: AppTextStyles.h6),
                 Text(
                   '\u20B9${totalAmount.toStringAsFixed(0)}',
-                  style: AppTextStyles.h5.copyWith(
-                    color: AppColors.primary,
-                  ),
+                  style: AppTextStyles.h5.copyWith(color: AppColors.primary),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => context.push('/checkout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Proceed to Checkout',
-                  style: AppTextStyles.button,
-                ),
-              ),
+            const SizedBox(height: AppSpacing.lg),
+            PremiumButton(
+              label: 'Proceed to Checkout',
+              icon: Iconsax.shopping_bag,
+              onPressed: () => context.push('/checkout'),
             ),
           ],
         ),
@@ -294,42 +240,16 @@ class CartScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyCart(BuildContext context, ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.shopping_cart,
-            size: 72,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Your cart is empty',
-            style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add some products to get started',
-            style: AppTextStyles.bodySmall,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => context.pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-            ),
-            child: Text(
-              'Continue Shopping',
-              style: AppTextStyles.button,
-            ),
-          ),
-        ],
+  Widget _buildEmptyCart(BuildContext context) {
+    return EmptyState(
+      icon: Iconsax.shopping_cart,
+      title: 'Your cart is empty',
+      subtitle: 'Add some products to get started',
+      cta: PremiumButton(
+        label: 'Continue Shopping',
+        expand: false,
+        icon: Iconsax.shop,
+        onPressed: () => context.pop(),
       ),
     );
   }

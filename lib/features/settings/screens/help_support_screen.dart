@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_card.dart';
 
 /// Help & Support screen with real contact options: email support, a short
 /// FAQ, and a shortcut to the in-app inbox to message the team.
@@ -43,44 +47,28 @@ class HelpSupportScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Help & Support',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor:
-            theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Help & Support',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           Text(
             'We\'re here to help',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.h5.copyWith(
               color: theme.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Reach out to the Rexo team and we\'ll get back to you as soon as we can.',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl - 4),
 
           // Contact options
           _ContactCard(
@@ -89,7 +77,7 @@ class HelpSupportScreen extends StatelessWidget {
             subtitle: _supportEmail,
             onTap: () => _emailSupport(context),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _ContactCard(
             icon: Iconsax.message,
             title: 'Message us',
@@ -97,16 +85,14 @@ class HelpSupportScreen extends StatelessWidget {
             onTap: () => context.push('/messages'),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xxl - 4),
           Text(
             'Frequently Asked Questions',
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.h6.copyWith(
               color: theme.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           const _FaqTile(
             question: 'How do I apply to a campaign?',
             answer:
@@ -155,58 +141,48 @@ class _ContactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
+    return PremiumCard(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 22),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: AppRadius.allMd,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: AppSpacing.md + 2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Icon(
-              Iconsax.arrow_right_3,
-              size: 18,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
-            ),
-          ],
-        ),
+          ),
+          Icon(
+            Iconsax.arrow_right_3,
+            size: 18,
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
+          ),
+        ],
       ),
     );
   }
@@ -225,12 +201,10 @@ class _FaqTile extends StatelessWidget {
       data: theme.copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: 12),
+        childrenPadding: const EdgeInsets.only(bottom: AppSpacing.md),
         title: Text(
           question,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+          style: AppTextStyles.labelLarge.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
@@ -241,8 +215,7 @@ class _FaqTile extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               answer,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
+              style: AppTextStyles.bodySmall.copyWith(
                 height: 1.4,
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),

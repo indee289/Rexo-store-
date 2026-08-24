@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../providers/addresses_provider.dart';
 
 class AddAddressScreen extends ConsumerStatefulWidget {
@@ -36,8 +41,10 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     final addr = widget.existingAddress;
     _nameController = TextEditingController(text: addr?['name'] ?? '');
     _phoneController = TextEditingController(text: addr?['phone'] ?? '');
-    _line1Controller = TextEditingController(text: addr?['address_line1'] ?? '');
-    _line2Controller = TextEditingController(text: addr?['address_line2'] ?? '');
+    _line1Controller =
+        TextEditingController(text: addr?['address_line1'] ?? '');
+    _line2Controller =
+        TextEditingController(text: addr?['address_line2'] ?? '');
     _cityController = TextEditingController(text: addr?['city'] ?? '');
     _stateController = TextEditingController(text: addr?['state'] ?? '');
     _pincodeController = TextEditingController(text: addr?['pincode'] ?? '');
@@ -63,22 +70,22 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Edit Address' : 'Add Address',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+          style: AppTextStyles.h5,
         ),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
           key: _formKey,
           child: Column(
@@ -92,7 +99,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Name is required' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _buildTextField(
                 controller: _phoneController,
                 label: 'Phone Number',
@@ -102,7 +109,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Phone is required' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _buildTextField(
                 controller: _line1Controller,
                 label: 'Address Line 1',
@@ -111,15 +118,16 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Address is required' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _buildTextField(
                 controller: _line2Controller,
                 label: 'Address Line 2 (Optional)',
                 hint: 'Landmark, Building name',
                 icon: Iconsax.building,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildTextField(
@@ -131,7 +139,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                           v == null || v.isEmpty ? 'Required' : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: _buildTextField(
                       controller: _stateController,
@@ -144,7 +152,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _buildTextField(
                 controller: _pincodeController,
                 label: 'Pincode',
@@ -157,14 +165,14 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               // Default toggle
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.allMd,
                   border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Row(
@@ -172,14 +180,16 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                     Icon(
                       Iconsax.star_1,
                       size: 20,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         'Set as default address',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
@@ -192,37 +202,13 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               // Save button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveAddress,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          _isEditing ? 'Update Address' : 'Save Address',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+              PremiumButton(
+                label: _isEditing ? 'Update Address' : 'Save Address',
+                gradient: true,
+                loading: _isSaving,
+                onPressed: _isSaving ? null : _saveAddress,
               ),
             ],
           ),
@@ -244,47 +230,17 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+          style: AppTextStyles.labelLarge.copyWith(
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 6),
-        TextFormField(
+        const SizedBox(height: AppSpacing.sm),
+        PremiumTextField(
           controller: controller,
+          hint: hint,
+          prefixIcon: icon,
           keyboardType: keyboardType,
           validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            ),
-            prefixIcon: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Theme.of(context).dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Theme.of(context).dividerColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-          style: GoogleFonts.poppins(fontSize: 14),
         ),
       ],
     );
@@ -336,7 +292,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
           SnackBar(
             content: Text(
               _isEditing ? 'Address updated' : 'Address saved',
-              style: GoogleFonts.poppins(fontSize: 14),
+              style: AppTextStyles.bodyMedium,
             ),
             backgroundColor: AppColors.success,
           ),
@@ -346,7 +302,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
           SnackBar(
             content: Text(
               'Failed to save address. Try again.',
-              style: GoogleFonts.poppins(fontSize: 14),
+              style: AppTextStyles.bodyMedium,
             ),
             backgroundColor: AppColors.error,
           ),

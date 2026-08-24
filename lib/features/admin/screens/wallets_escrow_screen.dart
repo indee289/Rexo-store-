@@ -43,11 +43,11 @@ class WalletsEscrowScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.brown.withOpacity(0.1),
+                              color: AppColors.accentBrown.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Iconsax.wallet,
-                                color: Colors.brown, size: 18),
+                                color: AppColors.accentBrown, size: 18),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

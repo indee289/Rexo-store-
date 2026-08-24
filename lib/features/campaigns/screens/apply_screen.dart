@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../providers/campaigns_provider.dart';
 
 class ApplyScreen extends ConsumerStatefulWidget {
@@ -82,24 +86,19 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Apply to Campaign',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Apply to Campaign', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
+        scrolledUnderElevation: 0.5,
+        leading: PremiumIconButton(
+          icon: Iconsax.arrow_left,
+          tooltip: 'Back',
           onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
           key: _formKey,
           child: Column(
@@ -111,10 +110,10 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                   if (campaign == null) return const SizedBox.shrink();
                   return Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.allMd,
                       border: Border.all(
                         color: AppColors.primary.withOpacity(0.2),
                       ),
@@ -126,10 +125,10 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                           color: AppColors.primary,
                           size: 20,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
-                            campaign['title'] ?? 'Campaign',
+                            (campaign['title'] ?? 'Campaign').toString(),
                             style: AppTextStyles.labelLarge.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -142,11 +141,10 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
 
               // Name
               _buildField(
-                theme: theme,
                 label: 'Name',
                 controller: _nameController,
                 hint: 'Your full name',
@@ -159,7 +157,6 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
               // Location
               _buildField(
-                theme: theme,
                 label: 'Location',
                 controller: _locationController,
                 hint: 'Country / region',
@@ -172,7 +169,6 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
               // Category
               _buildField(
-                theme: theme,
                 label: 'Category / Niche',
                 controller: _categoryController,
                 hint: 'e.g. Fashion, Tech, Fitness',
@@ -189,21 +185,18 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 children: [
                   Expanded(
                     child: _buildField(
-                      theme: theme,
                       label: 'City',
                       controller: _cityController,
                       hint: 'City',
                       icon: Iconsax.building,
                       textCapitalization: TextCapitalization.words,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Enter city'
-                          : null,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Enter city' : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: _buildField(
-                      theme: theme,
                       label: 'State',
                       controller: _stateController,
                       hint: 'State',
@@ -219,7 +212,6 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
               // Contact number
               _buildField(
-                theme: theme,
                 label: 'Contact Number',
                 controller: _contactController,
                 hint: '10-digit mobile number',
@@ -241,7 +233,6 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
               // Instagram profile link
               _buildField(
-                theme: theme,
                 label: 'Instagram Profile',
                 controller: _instagramController,
                 hint: '@handle or https://instagram.com/handle',
@@ -249,13 +240,14 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 keyboardType: TextInputType.url,
                 validator: (v) {
                   final value = (v ?? '').trim();
-                  if (value.isEmpty) return 'Please enter your Instagram profile';
+                  if (value.isEmpty) {
+                    return 'Please enter your Instagram profile';
+                  }
                   // Accept either a bare handle or a full/instagram URL.
                   final handleOk =
                       RegExp(r'^@?[A-Za-z0-9._]{1,30}$').hasMatch(value);
                   final uri = Uri.tryParse(value);
-                  final urlOk =
-                      uri != null && uri.hasScheme && uri.hasAuthority;
+                  final urlOk = uri != null && uri.hasScheme && uri.hasAuthority;
                   if (!handleOk && !urlOk) {
                     return 'Enter a valid handle or profile link';
                   }
@@ -265,7 +257,6 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
               // Followers
               _buildField(
-                theme: theme,
                 label: 'Followers',
                 controller: _followersController,
                 hint: 'Total followers (number)',
@@ -283,18 +274,16 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 },
               ),
 
-              // Pitch field
+              // Pitch field (multiline)
               Text('Your Pitch', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
-              TextFormField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField.multiline(
                 controller: _pitchController,
+                hint:
+                    'Tell the brand why you are the right fit for this campaign...',
+                minLines: 5,
                 maxLines: 6,
                 maxLength: 500,
-                decoration: _decoration(
-                  theme,
-                  hint:
-                      'Tell the brand why you are the right fit for this campaign...',
-                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter your pitch';
@@ -305,19 +294,16 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
 
               // Portfolio URL field (optional)
               Text('Portfolio URL (optional)', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 8),
-              TextFormField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _portfolioUrlController,
+                hint: 'https://your-portfolio.com',
+                prefixIcon: Iconsax.link,
                 keyboardType: TextInputType.url,
-                decoration: _decoration(
-                  theme,
-                  hint: 'https://your-portfolio.com',
-                  icon: Iconsax.link,
-                ),
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     final uri = Uri.tryParse(value);
@@ -328,36 +314,15 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Submit button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitApplication,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Submit Application',
-                          style: AppTextStyles.button,
-                        ),
-                ),
+              PremiumButton(
+                label: 'Submit Application',
+                icon: Iconsax.send_2,
+                gradient: true,
+                loading: _isSubmitting,
+                onPressed: _isSubmitting ? null : _submitApplication,
               ),
             ],
           ),
@@ -366,49 +331,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     );
   }
 
-  InputDecoration _decoration(
-    ThemeData theme, {
-    required String hint,
-    IconData? icon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTextStyles.bodyMedium.copyWith(
-        color: theme.colorScheme.onSurface.withOpacity(0.4),
-      ),
-      prefixIcon: icon != null
-          ? Icon(icon,
-              color: theme.colorScheme.onSurface.withOpacity(0.4), size: 20)
-          : null,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: theme.dividerColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: theme.dividerColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      filled: true,
-      fillColor: theme.colorScheme.surface,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    );
-  }
-
   Widget _buildField({
-    required ThemeData theme,
     required String label,
     required TextEditingController controller,
     required String hint,
@@ -419,18 +342,19 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: AppTextStyles.labelLarge),
-          const SizedBox(height: 8),
-          TextFormField(
+          const SizedBox(height: AppSpacing.sm),
+          PremiumTextField(
             controller: controller,
+            hint: hint,
+            prefixIcon: icon,
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
             textCapitalization: textCapitalization,
-            decoration: _decoration(theme, hint: hint, icon: icon),
             validator: validator,
           ),
         ],
@@ -469,13 +393,13 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.allLg,
           ),
           title: Row(
             children: [
               const Icon(Iconsax.tick_circle, color: AppColors.success),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text('Application Sent!', style: AppTextStyles.h6),
             ],
           ),
@@ -509,8 +433,8 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
           content: Text(errorMsg),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.allSm,
           ),
         ),
       );

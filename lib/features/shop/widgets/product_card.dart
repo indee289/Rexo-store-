@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/overlay_badge.dart';
 import '../../../core/widgets/premium_card.dart';
 
@@ -12,7 +12,8 @@ import '../../../core/widgets/premium_card.dart';
 ///
 /// Routes its container through [PremiumCard] and reuses the shared
 /// [OverlayBadge] so its surface, border, shadow and badges match the campaign
-/// cards in both light and dark themes.
+/// cards in both light and dark themes. Cover art loads through [CachedImage]
+/// for caching, decode-at-size, and a token-driven fallback.
 class ProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
 
@@ -46,18 +47,18 @@ class ProductCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _buildImage(context, imageUrl),
+                CachedImage(imageUrl: imageUrl),
                 // Stock indicator dot
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: AppSpacing.sm,
+                  right: AppSpacing.sm,
                   child: _buildStockDot(stock),
                 ),
                 // Category badge (on-media variant — sits on the image).
                 if (category.isNotEmpty)
                   Positioned(
-                    top: 8,
-                    left: 8,
+                    top: AppSpacing.sm,
+                    left: AppSpacing.sm,
                     child: OverlayBadge.onMedia(label: category),
                   ),
               ],
@@ -66,7 +67,7 @@ class ProductCard extends StatelessWidget {
 
           // Product info
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -78,7 +79,7 @@ class ProductCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
                     Text(
@@ -89,12 +90,15 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                     if (originalPrice != null && originalPrice > price) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: AppSpacing.xs + 2),
                       Text(
                         '\u20B9${originalPrice.toStringAsFixed(0)}',
                         style: AppTextStyles.caption.copyWith(
                           decoration: TextDecoration.lineThrough,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.4),
                         ),
                       ),
                     ],
@@ -104,46 +108,6 @@ class ProductCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildImage(BuildContext context, String? imageUrl) {
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: imageUrl,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(
-          color: Theme.of(context).dividerColor,
-          child: Center(
-            child: Icon(
-              Iconsax.image,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-              size: 32,
-            ),
-          ),
-        ),
-        errorWidget: (context, url, error) => Container(
-          color: Theme.of(context).dividerColor,
-          child: Center(
-            child: Icon(
-              Iconsax.image,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-              size: 32,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      color: Theme.of(context).dividerColor,
-      child: Center(
-        child: Icon(
-          Iconsax.image,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-          size: 32,
-        ),
       ),
     );
   }
@@ -164,7 +128,7 @@ class ProductCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: dotColor,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: AppColors.surface, width: 1.5),
       ),
     );
   }

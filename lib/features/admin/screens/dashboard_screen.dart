@@ -127,13 +127,13 @@ class DashboardScreen extends ConsumerWidget {
                       label: 'Pending Withdrawals',
                       value: '${data['pending_withdrawals'] ?? 0}',
                       icon: Iconsax.money_send,
-                      color: Colors.purple,
+                      color: AppColors.accentPurple,
                     ),
                     StatChip(
                       label: 'Pending KYC',
                       value: '${data['pending_kyc'] ?? 0}',
                       icon: Iconsax.document,
-                      color: Colors.teal,
+                      color: AppColors.accentTeal,
                     ),
                     StatChip(
                       label: 'Revenue',

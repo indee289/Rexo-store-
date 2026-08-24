@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/orders_provider.dart';
 
@@ -23,20 +27,17 @@ class OrderDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Order Details',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Order Details', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       body: orderAsync.when(
@@ -67,32 +68,32 @@ class OrderDetailScreen extends ConsumerWidget {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Order Info Card
           _buildInfoCard(context, formattedDate, paymentMethod),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Order Timeline
           Text('Order Status', style: AppTextStyles.h6),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           _buildTimeline(context, status),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
 
           // Order Items
           Text('Items', style: AppTextStyles.h6),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _buildItemsList(context, items),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Shipping Address
           if (shippingAddress != null) ...[
             Text('Shipping Address', style: AppTextStyles.h6),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             _buildAddressCard(context, shippingAddress),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
           ],
 
           // Total
@@ -103,23 +104,14 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, String date, String paymentMethod) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  Widget _buildInfoCard(
+      BuildContext context, String date, String paymentMethod) {
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
-          _buildInfoRow('Order ID', '#${orderId.substring(0, 8).toUpperCase()}'),
+          _buildInfoRow(
+              'Order ID', '#${orderId.substring(0, 8).toUpperCase()}'),
           Divider(color: Theme.of(context).dividerColor, height: 20),
           _buildInfoRow('Date', date),
           Divider(color: Theme.of(context).dividerColor, height: 20),
@@ -147,19 +139,8 @@ class OrderDetailScreen extends ConsumerWidget {
   Widget _buildTimeline(BuildContext context, String currentStatus) {
     final currentIndex = OrderStatus.getIndex(currentStatus);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: List.generate(OrderStatus.progression.length, (index) {
           final isCompleted = index <= currentIndex;
@@ -210,7 +191,8 @@ class OrderDetailScreen extends ConsumerWidget {
                 border: Border.all(color: dotColor, width: 2),
               ),
               child: isCompleted && !isCurrent
-                  ? const Icon(Icons.check, size: 12, color: AppColors.success)
+                  ? const Icon(Iconsax.tick_circle,
+                      size: 12, color: AppColors.success)
                   : isCurrent
                       ? Center(
                           child: Container(
@@ -228,11 +210,13 @@ class OrderDetailScreen extends ConsumerWidget {
               Container(
                 width: 2,
                 height: 32,
-                color: isCompleted ? AppColors.success : Theme.of(context).dividerColor,
+                color: isCompleted
+                    ? AppColors.success
+                    : Theme.of(context).dividerColor,
               ),
           ],
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         // Label
         Padding(
           padding: const EdgeInsets.only(top: 1),
@@ -250,14 +234,11 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildItemsList(BuildContext context, List<Map<String, dynamic>> items) {
+  Widget _buildItemsList(
+      BuildContext context, List<Map<String, dynamic>> items) {
     if (items.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
+      return PremiumCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Text(
           'No items found',
           style: AppTextStyles.bodySmall,
@@ -265,19 +246,8 @@ class OrderDetailScreen extends ConsumerWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: items.asMap().entries.map((entry) {
           final index = entry.key;
@@ -295,7 +265,7 @@ class OrderDetailScreen extends ConsumerWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.allSm,
                     ),
                     child: const Center(
                       child: Icon(
@@ -305,7 +275,7 @@ class OrderDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,30 +319,19 @@ class OrderDetailScreen extends ConsumerWidget {
     final pincode = address['pincode'] as String? ?? '';
     final phone = address['phone'] as String? ?? '';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(Iconsax.location, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(name, style: AppTextStyles.labelLarge),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             [line1, line2, '$city, $state - $pincode']
                 .where((s) => s.isNotEmpty)
@@ -380,7 +339,7 @@ class OrderDetailScreen extends ConsumerWidget {
             style: AppTextStyles.bodySmall,
           ),
           if (phone.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text('Phone: $phone', style: AppTextStyles.bodySmall),
           ],
         ],
@@ -390,10 +349,10 @@ class OrderDetailScreen extends ConsumerWidget {
 
   Widget _buildTotalCard(double total) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Row(
@@ -410,57 +369,22 @@ class OrderDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildNotFound(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Iconsax.bag_2, size: 64, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-          const SizedBox(height: 16),
-          Text('Order not found', style: AppTextStyles.h5),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-            child: const Text('Go Back'),
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: Iconsax.bag_2,
+      title: 'Order not found',
+      ctaLabel: 'Go Back',
+      onCta: () => context.pop(),
     );
   }
 
   Widget _buildError(WidgetRef ref, String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 64,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: 16),
-            Text('Failed to load order', style: AppTextStyles.h5),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(orderDetailProvider(orderId)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Iconsax.warning_2,
+      title: 'Failed to load order',
+      subtitle: error,
+      ctaLabel: 'Retry',
+      ctaIcon: Iconsax.refresh,
+      onCta: () => ref.invalidate(orderDetailProvider(orderId)),
     );
   }
 }

@@ -4,7 +4,12 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/notifications_provider.dart';
 
@@ -13,16 +18,12 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Notifications', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: PremiumAppBar(
+        title: 'Notifications',
         actions: [
           TextButton(
             onPressed: () {
@@ -40,7 +41,7 @@ class NotificationsScreen extends ConsumerWidget {
       body: notificationsAsync.when(
         data: (notifications) {
           if (notifications.isEmpty) {
-            return _buildEmptyState(theme);
+            return _buildEmptyState();
           }
 
           // Group by date
@@ -52,15 +53,22 @@ class NotificationsScreen extends ConsumerWidget {
               ref.invalidate(notificationsProvider);
             },
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: grouped.length,
               itemBuilder: (context, index) {
                 final group = grouped[index];
+                final items =
+                    group['items'] as List<Map<String, dynamic>>;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                      ),
                       child: Text(
                         group['label'] as String,
                         style: AppTextStyles.labelMedium.copyWith(
@@ -68,12 +76,9 @@ class NotificationsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    ...List<Widget>.from(
-                      (group['items'] as List<Map<String, dynamic>>)
-                          .map((notification) => _NotificationTile(
-                                notification: notification,
-                              )),
-                    ),
+                    for (var i = 0; i < items.length; i++)
+                      _NotificationTile(notification: items[i])
+                          .staggeredEntrance(i),
                   ],
                 );
               },
@@ -81,10 +86,10 @@ class NotificationsScreen extends ConsumerWidget {
           );
         },
         loading: () => ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: 6,
           itemBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.only(bottom: AppSpacing.sm),
             child: ShimmerCard(height: 80),
           ),
         ),
@@ -96,30 +101,11 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.notification,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No notifications yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'We will notify you when something happens',
-            style: AppTextStyles.bodySmall,
-          ),
-        ],
-      ),
+  Widget _buildEmptyState() {
+    return const EmptyState(
+      icon: Iconsax.notification,
+      title: 'No notifications yet',
+      subtitle: 'We will notify you when something happens',
     );
   }
 
@@ -185,9 +171,9 @@ class _NotificationTile extends ConsumerWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: AppSpacing.xl - 4),
         color: AppColors.error.withOpacity(0.1),
-        child: Icon(Iconsax.trash, color: AppColors.error),
+        child: const Icon(Iconsax.trash, color: AppColors.error),
       ),
       onDismissed: (_) {
         ref.read(notificationActionsProvider.notifier).deleteNotification(id);
@@ -199,11 +185,12 @@ class _NotificationTile extends ConsumerWidget {
           }
         },
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.all(AppSpacing.md + 2),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.allMd,
             border: Border(
               left: BorderSide(
                 color: isRead ? Colors.transparent : AppColors.primary,
@@ -227,7 +214,7 @@ class _NotificationTile extends ConsumerWidget {
                 height: 38,
                 decoration: BoxDecoration(
                   color: _getTypeColor(type).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.allSm,
                 ),
                 child: Icon(
                   _getTypeIcon(type),
@@ -235,7 +222,7 @@ class _NotificationTile extends ConsumerWidget {
                   size: 18,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +230,8 @@ class _NotificationTile extends ConsumerWidget {
                     Text(
                       title,
                       style: AppTextStyles.labelLarge.copyWith(
-                        fontWeight: isRead ? FontWeight.w400 : FontWeight.w600,
+                        fontWeight:
+                            isRead ? FontWeight.w400 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -257,7 +245,7 @@ class _NotificationTile extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(timeAgo, style: AppTextStyles.caption),
                   ],
                 ),
@@ -302,9 +290,9 @@ class _NotificationTile extends ConsumerWidget {
       case 'payment':
         return AppColors.success;
       case 'order':
-        return const Color(0xFF2196F3);
+        return AppColors.roleBrand;
       case 'message':
-        return const Color(0xFF9C27B0);
+        return AppColors.roleAdmin;
       case 'application':
         return AppColors.warning;
       default:

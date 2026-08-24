@@ -241,7 +241,7 @@ class _StatusBadge extends StatelessWidget {
         color = AppColors.error;
         break;
       default:
-        color = Colors.grey;
+        color = AppColors.neutral;
     }
 
     return Container(

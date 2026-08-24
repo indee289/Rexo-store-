@@ -5,7 +5,13 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/wallet_provider.dart';
 
@@ -20,12 +26,7 @@ class WalletScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Wallet', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-      ),
+      appBar: const PremiumAppBar(title: 'Wallet'),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
@@ -34,7 +35,7 @@ class WalletScreen extends ConsumerWidget {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -45,52 +46,57 @@ class WalletScreen extends ConsumerWidget {
                 error: (e, _) => _buildBalanceCard(null),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl - 4),
 
               // Action Buttons
               Row(
                 children: [
                   Expanded(
-                    child: _ActionButton(
-                      icon: Iconsax.money_add,
+                    child: PremiumButton(
                       label: 'Deposit',
-                      onTap: () => context.push('/wallet/deposit'),
+                      variant: PremiumButtonVariant.tonal,
+                      icon: Iconsax.money_add,
+                      onPressed: () => context.push('/wallet/deposit'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: _ActionButton(
-                      icon: Iconsax.money_send,
+                    child: PremiumButton(
                       label: 'Withdraw',
-                      onTap: () => context.push('/wallet/withdraw'),
+                      variant: PremiumButtonVariant.outline,
+                      icon: Iconsax.money_send,
+                      onPressed: () => context.push('/wallet/withdraw'),
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: AppSpacing.xxl - 4),
 
               // Transaction History
               Text('Transaction History', style: AppTextStyles.h6),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               transactionsAsync.when(
                 data: (transactions) {
                   if (transactions.isEmpty) {
-                    return _buildEmptyState(theme);
+                    return _buildEmptyState();
                   }
                   return Column(
-                    children: transactions
-                        .take(20)
-                        .map((t) => _buildTransactionTile(t, theme))
-                        .toList(),
+                    children: [
+                      for (var i = 0;
+                          i < transactions.take(20).length;
+                          i++)
+                        _buildTransactionTile(transactions[i], theme)
+                            .staggeredEntrance(i),
+                    ],
                   );
                 },
                 loading: () => Column(
                   children: List.generate(
                     4,
                     (_) => const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
                       child: ShimmerCard(height: 72),
                     ),
                   ),
@@ -116,14 +122,10 @@ class WalletScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF5722), Color(0xFFE64A19), Color(0xFFBF360C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        gradient: AppColors.primaryGradient,
+        borderRadius: AppRadius.allXl,
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.3),
@@ -142,7 +144,7 @@ class WalletScreen extends ConsumerWidget {
               fontSize: 13,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '\u20b9${_formatAmount(available)}',
             style: AppTextStyles.h2.copyWith(
@@ -150,26 +152,26 @@ class WalletScreen extends ConsumerWidget {
               fontSize: 34,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl - 4),
           Row(
             children: [
               _BalanceStat(
                 label: 'Escrow',
                 value: '\u20b9${_formatAmount(escrow)}',
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: AppSpacing.xl),
               _BalanceStat(
                 label: 'Earnings',
                 value: '\u20b9${_formatAmount(earnings)}',
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: AppSpacing.xl),
               _BalanceStat(
                 label: 'Withdrawn',
                 value: '\u20b9${_formatAmount(withdrawn)}',
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Align(
             alignment: Alignment.bottomRight,
             child: Text(
@@ -182,7 +184,8 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionTile(Map<String, dynamic> transaction, ThemeData theme) {
+  Widget _buildTransactionTile(
+      Map<String, dynamic> transaction, ThemeData theme) {
     final type = transaction['type'] as String;
     final amount = (transaction['amount'] ?? 0).toDouble();
     final status = transaction['status'] as String? ?? 'pending';
@@ -207,11 +210,11 @@ class WalletScreen extends ConsumerWidget {
     final isDeposit = type == 'deposit';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md + 2),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
@@ -222,7 +225,7 @@ class WalletScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: (isDeposit ? AppColors.success : AppColors.primary)
                   .withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.allSm,
             ),
             child: Icon(
               isDeposit ? Iconsax.money_add : Iconsax.money_send,
@@ -230,7 +233,7 @@ class WalletScreen extends ConsumerWidget {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,17 +258,19 @@ class WalletScreen extends ConsumerWidget {
               Text(
                 '${isDeposit ? '+' : '-'}\u20b9${_formatAmount(amount)}',
                 style: AppTextStyles.labelLarge.copyWith(
-                  color: isDeposit ? AppColors.success : theme.colorScheme.onSurface,
+                  color: isDeposit
+                      ? AppColors.success
+                      : theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: 2),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.sm - 4),
                 ),
                 child: Text(
                   status.toUpperCase(),
@@ -283,32 +288,11 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Column(
-        children: [
-          Icon(
-            Iconsax.empty_wallet,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No transactions yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your deposit and withdrawal history will appear here',
-            style: AppTextStyles.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+  Widget _buildEmptyState() {
+    return const EmptyState(
+      icon: Iconsax.empty_wallet,
+      title: 'No transactions yet',
+      subtitle: 'Your deposit and withdrawal history will appear here',
     );
   }
 
@@ -347,47 +331,6 @@ class _BalanceStat extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(label, style: AppTextStyles.labelLarge),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

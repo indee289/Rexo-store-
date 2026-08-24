@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
 
@@ -155,31 +158,26 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
       appBar: AppBar(
         title: Text(
           'Two-Factor Verification',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.h5.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         automaticallyImplyLeading: false,
         actions: [
-          TextButton(
+          PremiumButton(
+            label: 'Cancel',
+            variant: PremiumButtonVariant.ghost,
+            expand: false,
             onPressed: _isCancelling ? null : _cancel,
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
           ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -200,23 +198,20 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
                       color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
                     'Enter Verification Code',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+                    style: AppTextStyles.h3.copyWith(
                       color: theme.colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Open your authenticator app and enter the 6-digit code to '
                     'finish signing in.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
@@ -224,27 +219,26 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
             // Error message
             if (_errorMessage != null) ...[
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadius.allSm,
                   border: Border.all(color: AppColors.error.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
                     const Icon(Iconsax.warning_2,
                         color: AppColors.error, size: 18),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.error,
                         ),
                       ),
@@ -252,17 +246,17 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
             ],
 
             if (_isPreparing) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
             ] else ...[
-              // OTP field (mirrors the enrollment verify step's styling).
+              // OTP field (token-driven, spaced digits for a code look).
               TextField(
                 controller: _otpController,
                 keyboardType: TextInputType.number,
@@ -272,73 +266,45 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
                 onSubmitted: (_) {
                   if (!_isVerifying) _verify();
                 },
-                style: GoogleFonts.robotoMono(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.h3.copyWith(
                   letterSpacing: 8,
                   color: theme.colorScheme.onSurface,
                 ),
                 decoration: InputDecoration(
                   counterText: '',
                   hintText: '000000',
-                  hintStyle: GoogleFonts.robotoMono(
-                    fontSize: 24,
-                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  hintStyle: AppTextStyles.h3.copyWith(
                     letterSpacing: 8,
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.allMd,
                     borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.allMd,
                     borderSide: BorderSide(color: theme.dividerColor),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: AppRadius.allMd,
                     borderSide:
-                        const BorderSide(color: AppColors.primary, width: 1.5),
+                        BorderSide(color: AppColors.primary, width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.lg,
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
 
               // Verify button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isVerifying ? null : _verify,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isVerifying
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          'Verify',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+              PremiumButton(
+                label: 'Verify',
+                gradient: true,
+                loading: _isVerifying,
+                onPressed: _isVerifying ? null : _verify,
               ),
             ],
           ],

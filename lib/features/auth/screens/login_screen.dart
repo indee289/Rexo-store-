@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
 
@@ -29,6 +33,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  void _showSnack(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+      ),
+    );
+  }
+
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -50,16 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // `unauthenticated` + errorMessage (not `error`), so gate on the message,
     // not the status, otherwise password errors were silently swallowed.
     if (!authState.isAuthenticated && authState.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authState.errorMessage!),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      _showSnack(authState.errorMessage!, AppColors.error);
     } else if (authState.isAuthenticated) {
       context.go(AppRoutes.home);
     }
@@ -73,43 +79,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return AlertDialog(
           title: Text(
             'Reset Password',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            style: AppTextStyles.h6,
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Enter your account email and we\'ll send you a link to reset your password.',
-                style: GoogleFonts.poppins(fontSize: 13),
+                'Enter your account email and we\'ll send you a link to reset '
+                'your password.',
+                style: AppTextStyles.bodySmall,
               ),
-              const SizedBox(height: 16),
-              TextField(
+              const SizedBox(height: AppSpacing.lg),
+              PremiumTextField(
                 controller: controller,
+                hint: 'you@example.com',
+                prefixIcon: Iconsax.sms,
                 keyboardType: TextInputType.emailAddress,
                 autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'you@example.com',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
               ),
             ],
           ),
           actions: [
-            TextButton(
+            PremiumButton(
+              label: 'Cancel',
+              variant: PremiumButtonVariant.ghost,
+              expand: false,
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
+            PremiumButton(
+              label: 'Send Link',
+              expand: false,
               onPressed: () =>
                   Navigator.pop(dialogContext, controller.text.trim()),
-              child: const Text('Send Link'),
             ),
           ],
         );
@@ -121,43 +123,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Basic email sanity check before hitting the network.
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please enter a valid email address'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      _showSnack('Please enter a valid email address', AppColors.error);
       return;
     }
 
     try {
       await SupabaseService.resetPassword(email);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset link sent to $email'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      _showSnack('Password reset link sent to $email', AppColors.success);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Could not send reset link. Please try again.'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+      _showSnack(
+        'Could not send reset link. Please try again.',
+        AppColors.error,
       );
     }
   }
@@ -171,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Form(
             key: _formKey,
             child: Column(
@@ -186,7 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     height: 64,
                     decoration: BoxDecoration(
                       gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppRadius.allLg,
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary.withOpacity(0.3),
@@ -195,12 +173,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'R',
-                        style: TextStyle(
+                        style: AppTextStyles.h2.copyWith(
                           color: Colors.white,
-                          fontSize: 32,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -213,37 +190,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Welcome text
                 Text(
                   'Welcome Back',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
+                  style: AppTextStyles.h2.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Sign in to continue to Rexo',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
 
-                const SizedBox(height: 36),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Email field
-                TextFormField(
+                PremiumTextField(
                   controller: _emailController,
+                  label: 'Email',
+                  hint: 'Enter your email',
+                  prefixIcon: Iconsax.sms,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Enter your email',
-                    prefixIcon: Icon(
-                      Iconsax.sms,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      size: 20,
-                    ),
-                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email';
@@ -255,34 +223,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Password field
-                TextFormField(
+                PremiumTextField(
                   controller: _passwordController,
+                  label: 'Password',
+                  hint: 'Enter your password',
+                  prefixIcon: Iconsax.lock,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Enter your password',
-                    prefixIcon: Icon(
-                      Iconsax.lock,
+                  suffix: IconButton(
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
                       color: theme.colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                      icon: Icon(
-                        _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
-                        size: 20,
-                      ),
-                    ),
                   ),
+                  onSubmitted: (_) {
+                    if (!authState.isLoading) _handleSignIn();
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
@@ -294,52 +256,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
 
                 // Forgot password
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
+                  child: PremiumButton(
+                    label: 'Forgot Password?',
+                    variant: PremiumButtonVariant.ghost,
+                    expand: false,
                     onPressed: _handleForgotPassword,
-                    child: Text(
-                      'Forgot Password?',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
-                      ),
-                    ),
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Sign In button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _handleSignIn,
-                    child: authState.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Sign In',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
+                PremiumButton(
+                  label: 'Sign In',
+                  gradient: true,
+                  loading: authState.isLoading,
+                  onPressed: authState.isLoading ? null : _handleSignIn,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Register link
                 Center(
@@ -348,8 +288,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Text(
                         "Don't have an account? ",
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
@@ -357,8 +296,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onTap: () => context.go(AppRoutes.register),
                         child: Text(
                           'Sign Up',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
+                          style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
                           ),
@@ -368,7 +306,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ),

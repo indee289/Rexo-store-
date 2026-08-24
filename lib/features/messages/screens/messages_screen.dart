@@ -5,13 +5,25 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_sheet.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/shimmer_loading.dart';
-import '../../../core/widgets/verified_badge.dart';
 import '../providers/messages_provider.dart';
 
+/// Premium iOS-style messaging inbox (Screen Inventory #8).
+///
+/// Renders each conversation with a [PremiumAvatar], the counterpart name, a
+/// message preview, a timestamp, and an unread indicator (Requirements 13.1,
+/// 13.2). Tapping a row navigates to the Chat screen for that user
+/// (Requirement 13.3). Loading uses shimmer skeletons that match the final row
+/// layout; the empty state uses the shared [EmptyState] primitive.
 class MessagesScreen extends ConsumerWidget {
   const MessagesScreen({super.key});
 
@@ -26,18 +38,29 @@ class MessagesScreen extends ConsumerWidget {
         title: Text('Messages', style: AppTextStyles.h5),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         surfaceTintColor: Colors.transparent,
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: () => _openNewChatSearch(context),
-        tooltip: 'New chat',
-        child: const Icon(Iconsax.message_text, color: Colors.white),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: PremiumIconButton(
+              icon: Iconsax.message_text,
+              tooltip: 'New chat',
+              background: true,
+              tonal: true,
+              onPressed: () => _openNewChatSearch(context),
+            ),
+          ),
+        ],
       ),
       body: conversationsAsync.when(
         data: (conversations) {
           if (conversations.isEmpty) {
-            return _buildEmptyState(theme);
+            return const EmptyState(
+              icon: Iconsax.message,
+              title: 'No messages yet',
+              subtitle: 'Start a conversation with brands or creators',
+            );
           }
           return RefreshIndicator(
             color: AppColors.primary,
@@ -45,76 +68,47 @@ class MessagesScreen extends ConsumerWidget {
               ref.invalidate(conversationsProvider);
             },
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: conversations.length,
               separatorBuilder: (_, __) => Divider(
                 height: 1,
-                indent: 76,
+                thickness: 0.5,
+                indent: 84,
+                endIndent: AppSpacing.lg,
                 color: theme.dividerColor,
               ),
               itemBuilder: (context, index) {
                 final conversation = conversations[index];
-                return _ConversationTile(conversation: conversation);
+                return _ConversationTile(conversation: conversation)
+                    .staggeredEntrance(index);
               },
             ),
           );
         },
         loading: () => ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: 6,
-          itemBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: ShimmerCard(height: 72),
-          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          itemCount: 8,
+          itemBuilder: (_, __) => const ShimmerConversationRow(),
         ),
-        error: (e, _) => Center(
-          child:
-              Text('Failed to load messages', style: AppTextStyles.bodyMedium),
+        error: (e, _) => EmptyState(
+          icon: Iconsax.warning_2,
+          title: 'Failed to load messages',
+          subtitle: ErrorUtils.sanitize(e),
         ),
       ),
     );
   }
 
   void _openNewChatSearch(BuildContext context) {
-    showModalBottomSheet(
+    showPremiumSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => const _NewChatSheet(),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.message,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No messages yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Start a conversation with brands or creators',
-            style: AppTextStyles.bodySmall,
-          ),
-        ],
-      ),
+      title: 'New Chat',
+      child: const _NewChatSheet(),
     );
   }
 }
 
+/// A single premium conversation row.
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
 
@@ -130,21 +124,18 @@ class _ConversationTile extends StatelessWidget {
     final lastMessageAt =
         DateTime.tryParse(conversation['last_message_at'] ?? '');
     final isRead = conversation['is_read'] == true;
+    final isUnread = !isRead;
     final timeStr = lastMessageAt != null ? _formatTime(lastMessageAt) : '';
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      leading: CircleAvatar(
-        radius: 26,
-        backgroundColor: theme.dividerColor,
-        backgroundImage:
-            avatarUrl != null ? NetworkImage(avatarUrl) : null,
-        child: avatarUrl == null
-            ? Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: AppTextStyles.h5.copyWith(color: AppColors.primary),
-              )
-            : null,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      leading: PremiumAvatar(
+        imageUrl: avatarUrl,
+        name: name,
+        size: 52,
       ),
       title: Row(
         children: [
@@ -152,40 +143,54 @@ class _ConversationTile extends StatelessWidget {
             child: Text(
               name,
               style: AppTextStyles.labelLarge.copyWith(
-                fontWeight: isRead ? FontWeight.w400 : FontWeight.w600,
+                fontWeight: isUnread ? FontWeight.w700 : FontWeight.w500,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Text(timeStr, style: AppTextStyles.caption),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            timeStr,
+            style: AppTextStyles.caption.copyWith(
+              color: isUnread
+                  ? AppColors.primary
+                  : theme.colorScheme.onSurface.withOpacity(0.5),
+              fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
         ],
       ),
-      subtitle: Row(
-        children: [
-          Expanded(
-            child: Text(
-              lastMessage,
-              style: AppTextStyles.bodySmall.copyWith(
-                fontWeight: isRead ? FontWeight.w400 : FontWeight.w500,
-                color: isRead
-                    ? theme.colorScheme.onSurface.withOpacity(0.6)
-                    : theme.colorScheme.onSurface,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (!isRead)
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xs),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                lastMessage,
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
+                  color: isUnread
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-        ],
+            if (isUnread) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
       onTap: () => context.push('/messages/$otherUserId'),
     );
@@ -207,9 +212,12 @@ class _ConversationTile extends StatelessWidget {
   }
 }
 
-
-/// A WhatsApp-style "new chat" search sheet. Lets the user search public users
-/// by handle or name and tap a result to open the existing ChatScreen.
+/// A premium "new chat" search sheet. Lets the user search public users by
+/// handle or name and tap a result to open the existing Chat screen.
+///
+/// Rendered inside [showPremiumSheet], which supplies the grab handle, title
+/// row (with a close button) and safe-area padding — so this widget only owns
+/// the search field and the results list.
 class _NewChatSheet extends ConsumerStatefulWidget {
   const _NewChatSheet();
 
@@ -232,119 +240,48 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
     final theme = Theme.of(context);
     final resultsAsync = ref.watch(userSearchProvider(_query));
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.75,
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                decoration: BoxDecoration(
-                  color: theme.dividerColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Row(
-                  children: [
-                    Text('New Chat', style: AppTextStyles.h6),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Iconsax.close_circle,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  controller: _controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.search,
-                  onChanged: (value) => setState(() => _query = value),
-                  style: AppTextStyles.bodyMedium,
-                  decoration: InputDecoration(
-                    hintText: 'Search by name or @handle',
-                    hintStyle: AppTextStyles.bodyMedium.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    prefixIcon: Icon(
-                      Iconsax.search_normal,
-                      size: 20,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.close,
-                                size: 20,
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.4)),
-                            onPressed: () {
-                              _controller.clear();
-                              setState(() => _query = '');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: theme.scaffoldBackgroundColor,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: theme.dividerColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: _query.trim().isEmpty
-                    ? _hint(theme, 'Search for people to start a conversation')
-                    : resultsAsync.when(
-                        data: (users) {
-                          if (users.isEmpty) {
-                            return _hint(theme, 'No users found');
-                          }
-                          return ListView.separated(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            itemCount: users.length,
-                            separatorBuilder: (_, __) => Divider(
-                              height: 1,
-                              indent: 76,
-                              color: theme.dividerColor,
-                            ),
-                            itemBuilder: (context, index) {
-                              return _UserResultTile(user: users[index]);
-                            },
-                          );
-                        },
-                        loading: () => const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.primary),
-                        ),
-                        error: (e, _) => _hint(theme, ErrorUtils.sanitize(e)),
-                      ),
-              ),
-            ],
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.7,
+      child: Column(
+        children: [
+          PremiumTextField.search(
+            controller: _controller,
+            hint: 'Search by name or @handle',
+            autofocus: true,
+            onChanged: (value) => setState(() => _query = value),
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: _query.trim().isEmpty
+                ? _hint(theme, 'Search for people to start a conversation')
+                : resultsAsync.when(
+                    data: (users) {
+                      if (users.isEmpty) {
+                        return _hint(theme, 'No users found');
+                      }
+                      return ListView.separated(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                        itemCount: users.length,
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          indent: 72,
+                          color: theme.dividerColor,
+                        ),
+                        itemBuilder: (context, index) {
+                          return _UserResultTile(user: users[index]);
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary),
+                    ),
+                    error: (e, _) => _hint(theme, ErrorUtils.sanitize(e)),
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -352,7 +289,7 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
   Widget _hint(ThemeData theme, String text) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Text(
           text,
           textAlign: TextAlign.center,
@@ -380,20 +317,19 @@ class _UserResultTile extends StatelessWidget {
     final isVerified = user['is_verified'] == true;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: AvatarWidget(url: avatarUrl, name: name, size: 46),
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(
-              name,
-              style: AppTextStyles.labelLarge,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (isVerified) const VerifiedBadge(size: 14),
-        ],
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 0, vertical: AppSpacing.xs),
+      leading: PremiumAvatar(
+        imageUrl: avatarUrl,
+        name: name,
+        size: 46,
+        isVerified: isVerified,
+      ),
+      title: Text(
+        name,
+        style: AppTextStyles.labelLarge,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
       subtitle: handle.isNotEmpty
           ? Text(

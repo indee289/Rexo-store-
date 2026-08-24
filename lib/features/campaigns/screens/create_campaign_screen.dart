@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/image_upload_field.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
 
@@ -110,8 +115,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
           content: const Text('Campaign created successfully!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.allMd,
           ),
         ),
       );
@@ -124,8 +129,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
           content: const Text('Failed to create campaign. Please try again.'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.allMd,
           ),
         ),
       );
@@ -138,27 +143,23 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Create Campaign',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Create Campaign', style: AppTextStyles.h5),
+        centerTitle: false,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
+        scrolledUnderElevation: 0.5,
+        leading: PremiumIconButton(
+          icon: Iconsax.arrow_left,
+          tooltip: 'Back',
           onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left,
-              color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
           key: _formKey,
           child: Column(
@@ -166,11 +167,12 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
             children: [
               // 1. Campaign Name
               _buildLabel('Campaign Name'),
-              const SizedBox(height: 8),
-              _buildTextField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _campaignNameController,
                 hint: 'Enter campaign name',
-                icon: Iconsax.document_text,
+                prefixIcon: Iconsax.document_text,
+                textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a campaign name';
@@ -179,11 +181,11 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 2. Category dropdown
               _buildLabel('Category'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildDropdown(
                 value: _selectedCategory,
                 items: _categories,
@@ -194,11 +196,11 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 3. Platform dropdown
               _buildLabel('Platform'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildDropdown(
                 value: _selectedPlatform,
                 items: _platforms,
@@ -209,15 +211,15 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 4. Slots (number)
               _buildLabel('Slots'),
-              const SizedBox(height: 8),
-              _buildTextField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _slotsController,
                 hint: 'Number of slots (e.g. 10)',
-                icon: Iconsax.people,
+                prefixIcon: Iconsax.people,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -230,15 +232,15 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 5. Budget (number)
               _buildLabel('Budget (\u20B9)'),
-              const SizedBox(height: 8),
-              _buildTextField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _budgetController,
                 hint: 'Total budget',
-                icon: Iconsax.money,
+                prefixIcon: Iconsax.money,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -251,15 +253,16 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 6. Company Name
               _buildLabel('Company Name'),
-              const SizedBox(height: 8),
-              _buildTextField(
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
                 controller: _companyNameController,
                 hint: 'Enter company name',
-                icon: Iconsax.building,
+                prefixIcon: Iconsax.building,
+                textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter company name';
@@ -268,7 +271,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 7. Campaign Cover Image
               ImageUploadField(
@@ -279,11 +282,11 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 8. Gender dropdown
               _buildLabel('Gender'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildDropdown(
                 value: _selectedGender,
                 items: _genders,
@@ -294,11 +297,11 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // 9. Page Profile Category dropdown
               _buildLabel('Page Profile Category'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildDropdown(
                 value: _selectedPageProfileCategory,
                 items: _pageProfileCategories,
@@ -309,42 +312,18 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 },
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Submit button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _handleSubmit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          'Create Campaign',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+              PremiumButton(
+                label: 'Create Campaign',
+                icon: Iconsax.add_circle,
+                gradient: true,
+                loading: _isSubmitting,
+                onPressed: _isSubmitting ? null : _handleSubmit,
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -353,66 +332,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   }
 
   Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: GoogleFonts.poppins(
-          fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-        prefixIcon: maxLines == 1
-            ? Icon(icon,
-                size: 20,
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.4))
-            : null,
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-      ),
-    );
+    return Text(text, style: AppTextStyles.labelLarge);
   }
 
   Widget _buildDropdown({
@@ -420,23 +340,24 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final theme = Theme.of(context);
     return Container(
       height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: theme.dividerColor),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
           icon: const Icon(Iconsax.arrow_down_1, size: 20),
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurface,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: theme.colorScheme.onSurface,
           ),
+          dropdownColor: theme.colorScheme.surface,
           items: items.map((item) {
             return DropdownMenuItem<String>(
               value: item,

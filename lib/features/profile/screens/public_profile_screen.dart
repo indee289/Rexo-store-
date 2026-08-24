@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/role_badge.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../../services/supabase_service.dart';
@@ -28,21 +32,16 @@ class PublicProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(publicProfileProvider(handle));
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          '@$handle',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('@$handle', style: AppTextStyles.h5),
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
       body: profileAsync.when(
         data: (profile) {
@@ -52,66 +51,27 @@ class PublicProfileScreen extends ConsumerWidget {
           return _buildProfileContent(context, profile);
         },
         loading: () => const Padding(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppSpacing.lg),
           child: ShimmerLoading(height: 200),
         ),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Iconsax.warning_2,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Failed to load profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
+        error: (error, _) => EmptyState(
+          icon: Iconsax.warning_2,
+          title: 'Failed to load profile',
         ),
       ),
     );
   }
 
   Widget _buildNotFound(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.user,
-            size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'User not found',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'No user with handle @$handle exists.',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: Iconsax.user,
+      title: 'User not found',
+      subtitle: 'No user with handle @$handle exists.',
     );
   }
 
-  Widget _buildProfileContent(BuildContext context, Map<String, dynamic> profile) {
+  Widget _buildProfileContent(
+      BuildContext context, Map<String, dynamic> profile) {
     final name = profile['name'] ?? 'User';
     final avatarUrl = profile['avatar_url'] as String?;
     final bio = profile['bio'] ?? '';
@@ -120,28 +80,18 @@ class PublicProfileScreen extends ConsumerWidget {
     final isVerified = (profile['is_verified'] == true);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           // Avatar
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage:
-                avatarUrl != null ? NetworkImage(avatarUrl) : null,
-            child: avatarUrl == null
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: GoogleFonts.poppins(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : null,
+          PremiumAvatar(
+            imageUrl: avatarUrl,
+            name: name,
+            size: PremiumAvatar.sizeXl,
+            showRing: true,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           // Name + verified badge
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -151,8 +101,7 @@ class PublicProfileScreen extends ConsumerWidget {
                 child: Text(
                   name,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
+                  style: AppTextStyles.h4.copyWith(
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -161,116 +110,61 @@ class PublicProfileScreen extends ConsumerWidget {
               if (isVerified) const VerifiedBadge(size: 20),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           // Handle
           Text(
             '@$userHandle',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 12),
-          // Role badge
-          _buildRoleBadge(role),
+          const SizedBox(height: AppSpacing.md),
+          // Role badge (token-driven)
+          RoleBadge.fromString(role.toString()),
           // Bio
           if (bio.toString().isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               bio.toString(),
-              style: GoogleFonts.poppins(
-                fontSize: 13,
+              style: AppTextStyles.bodySmall.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
           ],
-          const SizedBox(height: 32),
-          // Stats placeholder
+          const SizedBox(height: AppSpacing.xxl),
+          // Stats
           _buildStatsSection(context, profile),
         ],
       ),
     );
   }
 
-  Widget _buildRoleBadge(String role) {
-    Color badgeColor;
-    String label;
-
-    switch (role) {
-      case 'brand':
-        badgeColor = const Color(0xFF2196F3);
-        label = 'Brand';
-        break;
-      case 'admin':
-        badgeColor = const Color(0xFF9C27B0);
-        label = 'Admin';
-        break;
-      default:
-        badgeColor = AppColors.primary;
-        label = 'Creator';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: badgeColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsSection(BuildContext context, Map<String, dynamic> profile) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
+  Widget _buildStatsSection(
+      BuildContext context, Map<String, dynamic> profile) {
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStat(context, 'Campaigns', profile['campaigns_count']?.toString() ?? '0'),
-          Container(width: 1, height: 32, color: Theme.of(context).dividerColor),
-          _buildStat(context, 'Rating', profile['rating']?.toString() ?? '-'),
-          Container(width: 1, height: 32, color: Theme.of(context).dividerColor),
-          _buildStat(context, 'Joined', _formatJoinDate(profile['created_at'])),
+          StatPill(
+            label: 'Campaigns',
+            value: profile['campaigns_count']?.toString() ?? '0',
+          ),
+          Container(
+              width: 1, height: 32, color: Theme.of(context).dividerColor),
+          StatPill(
+            label: 'Rating',
+            value: profile['rating']?.toString() ?? '-',
+          ),
+          Container(
+              width: 1, height: 32, color: Theme.of(context).dividerColor),
+          StatPill(
+            label: 'Joined',
+            value: _formatJoinDate(profile['created_at']),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStat(BuildContext context, String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-      ],
     );
   }
 

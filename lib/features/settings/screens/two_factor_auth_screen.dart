@@ -7,6 +7,11 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../../../services/supabase_service.dart';
 
 class TwoFactorAuthScreen extends ConsumerStatefulWidget {
@@ -273,28 +278,17 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Two-Factor Authentication',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Two-Factor Authentication',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -321,35 +315,34 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                                 : AppColors.primary,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
                         Text(
                           'Two-Factor Authentication',
-                          style: GoogleFonts.poppins(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
+                          style: AppTextStyles.h3.copyWith(
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.xs + 2,
                           ),
                           decoration: BoxDecoration(
                             color: _isMfaEnabled
                                 ? AppColors.success.withOpacity(0.1)
-                                : theme.colorScheme.onSurface.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(20),
+                                : theme.colorScheme.onSurface
+                                    .withOpacity(0.05),
+                            borderRadius: AppRadius.pillAll,
                           ),
                           child: Text(
                             _isMfaEnabled ? 'Enabled' : 'Disabled',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
+                            style: AppTextStyles.labelMedium.copyWith(
                               fontWeight: FontWeight.w600,
                               color: _isMfaEnabled
                                   ? AppColors.success
-                                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                                  : theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                             ),
                           ),
                         ),
@@ -357,15 +350,15 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xl),
 
                   // Error message
                   if (_errorMessage != null) ...[
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.allSm,
                         border: Border.all(
                           color: AppColors.error.withOpacity(0.3),
                         ),
@@ -374,12 +367,11 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                         children: [
                           const Icon(Iconsax.warning_2,
                               color: AppColors.error, size: 18),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
                               _errorMessage!,
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
+                              style: AppTextStyles.caption.copyWith(
                                 color: AppColors.error,
                               ),
                             ),
@@ -387,7 +379,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl - 4),
                   ],
 
                   // MFA enabled state - show disable option
@@ -403,7 +395,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                     _buildDisabledView(theme),
                   ],
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
@@ -417,13 +409,11 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         // Benefits section
         Text(
           'Benefits of 2FA',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.h6.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         _buildBenefitItem(
           theme,
           icon: Iconsax.shield_tick,
@@ -453,40 +443,16 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
               'TOTP-based authentication works with Google Authenticator, Authy, and other authenticator apps.',
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xl),
 
         // Enable button
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: _isEnrolling ? null : _enrollMfa,
-            icon: _isEnrolling
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Iconsax.shield_tick),
-            label: Text(
-              _isEnrolling ? 'Setting up...' : 'Enable Two-Factor Authentication',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-          ),
+        PremiumButton(
+          label: _isEnrolling
+              ? 'Setting up...'
+              : 'Enable Two-Factor Authentication',
+          icon: Iconsax.shield_tick,
+          loading: _isEnrolling,
+          onPressed: _isEnrolling ? null : _enrollMfa,
         ),
       ],
     );
@@ -499,29 +465,26 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
         // Step 1: QR Code
         Text(
           'Step 1: Scan QR Code',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.h6.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'Open your authenticator app (Google Authenticator, Authy, etc.) and scan this QR code:',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
+          style: AppTextStyles.bodySmall.copyWith(
             color: theme.colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // QR Code display
         Center(
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.allMd,
               border: Border.all(color: theme.dividerColor),
             ),
             child: _qrData != null
@@ -548,8 +511,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                     child: Text(
                       'QR unavailable\nUse the manual key below',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
+                      style: AppTextStyles.caption.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.5),
                       ),
                     ),
@@ -557,15 +519,15 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Manual secret key
         if (_secret != null) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.allSm,
               border: Border.all(color: theme.dividerColor),
             ),
             child: Column(
@@ -573,12 +535,11 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
               children: [
                 Text(
                   'Manual entry key:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
+                  style: AppTextStyles.caption.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 SelectableText(
                   _secret!,
                   style: GoogleFonts.robotoMono(
@@ -592,26 +553,23 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
           ),
         ],
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xl),
 
         // Step 2: Enter code
         Text(
           'Step 2: Enter Verification Code',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.h6.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'Enter the 6-digit code from your authenticator app:',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
+          style: AppTextStyles.bodySmall.copyWith(
             color: theme.colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
 
         TextField(
           controller: _otpController,
@@ -632,83 +590,49 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
               letterSpacing: 8,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.allMd,
               borderSide: BorderSide(color: theme.dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.allMd,
               borderSide: BorderSide(color: theme.dividerColor),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: BorderSide(color: AppColors.primary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.lg,
             ),
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.xl - 4),
 
         // Verify button
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isVerifying ? null : _verifyOtp,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: _isVerifying
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    'Verify and Enable',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
+        PremiumButton(
+          label: 'Verify and Enable',
+          loading: _isVerifying,
+          onPressed: _isVerifying ? null : _verifyOtp,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
 
         // Cancel button
-        SizedBox(
-          width: double.infinity,
-          child: TextButton(
-            onPressed: () {
-              setState(() {
-                _qrCodeUrl = null;
-                _otpAuthUri = null;
-                _secret = null;
-                _factorId = null;
-                _errorMessage = null;
-              });
-              _otpController.clear();
-            },
-            child: Text(
-              'Cancel Setup',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ),
+        PremiumButton(
+          label: 'Cancel Setup',
+          variant: PremiumButtonVariant.ghost,
+          onPressed: () {
+            setState(() {
+              _qrCodeUrl = null;
+              _otpAuthUri = null;
+              _secret = null;
+              _factorId = null;
+              _errorMessage = null;
+            });
+            _otpController.clear();
+          },
         ),
       ],
     );
@@ -720,34 +644,32 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
       children: [
         // Success message
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: AppColors.success.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.allMd,
             border: Border.all(color: AppColors.success.withOpacity(0.3)),
           ),
           child: Row(
             children: [
               const Icon(Iconsax.shield_tick,
                   color: AppColors.success, size: 24),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Two-Factor Authentication is Active',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
+                      style: AppTextStyles.labelLarge.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.success,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       'Your account is protected with an additional layer of security.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
+                      style: AppTextStyles.bodySmall.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
@@ -758,7 +680,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
           ),
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: AppSpacing.xl),
 
         // Disable button
         SizedBox(
@@ -777,17 +699,18 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                   )
                 : const Icon(Iconsax.shield_cross),
             label: Text(
-              _isUnenrolling ? 'Disabling...' : 'Disable Two-Factor Authentication',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
+              _isUnenrolling
+                  ? 'Disabling...'
+                  : 'Disable Two-Factor Authentication',
+              style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.error,
               side: const BorderSide(color: AppColors.error),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              shape: const RoundedRectangleBorder(
+                borderRadius: AppRadius.allMd,
               ),
             ),
           ),
@@ -803,7 +726,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
     required String description,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -812,19 +735,18 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.allSm,
             ),
             child: Icon(icon, size: 18, color: AppColors.primary),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
+                  style: AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -832,8 +754,7 @@ class _TwoFactorAuthScreenState extends ConsumerState<TwoFactorAuthScreen> {
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
+                  style: AppTextStyles.caption.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.6),
                     height: 1.4,
                   ),

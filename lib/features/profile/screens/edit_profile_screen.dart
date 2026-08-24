@@ -2,13 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -75,6 +79,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  void _showSnack(String message, Color background) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: AppTextStyles.bodySmall),
+        backgroundColor: background,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
+      ),
+    );
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -110,55 +125,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         if (success) {
           // Refresh profile data
           ref.invalidate(currentUserProfileProvider);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Profile updated successfully',
-                style: GoogleFonts.poppins(fontSize: 13),
-              ),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
+          _showSnack('Profile updated successfully', AppColors.success);
           Navigator.of(context).pop();
         } else {
           // Read the actual error from the notifier for a specific message
           final errorMessage = notifier.lastError != null
               ? ErrorUtils.sanitize(notifier.lastError)
               : 'Failed to update profile';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                errorMessage,
-                style: GoogleFonts.poppins(fontSize: 13),
-              ),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
+          _showSnack(errorMessage, AppColors.error);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              ErrorUtils.sanitize(e),
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        _showSnack(ErrorUtils.sanitize(e), AppColors.error);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -171,16 +150,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
+        title: Text('Edit Profile', style: AppTextStyles.h5),
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
@@ -199,8 +173,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   )
                 : Text(
                     'Save',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
+                    style: AppTextStyles.labelLarge.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                     ),
@@ -209,7 +182,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Form(
           key: _formKey,
           child: Column(
@@ -229,8 +202,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       )
                     else
-                      AvatarWidget(
-                        url: _currentAvatarUrl,
+                      PremiumAvatar(
+                        imageUrl: _currentAvatarUrl,
                         name: _nameController.text,
                         size: 100,
                       ),
@@ -243,7 +216,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.surface, width: 2),
+                          border: Border.all(
+                              color: theme.colorScheme.surface, width: 2),
                         ),
                         child: const Icon(
                           Iconsax.camera,
@@ -255,17 +229,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Tap to change photo',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
+                style: AppTextStyles.bodySmall.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               // Name field
-              _buildTextField(
+              _buildField(
                 controller: _nameController,
                 label: 'Name',
                 hint: 'Enter your full name',
@@ -277,65 +250,39 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               // Handle field
-              _buildTextField(
+              _buildField(
                 controller: _handleController,
                 label: 'Handle',
-                hint: 'your_handle',
+                hint: '@your_handle',
                 icon: Iconsax.user_tag,
-                prefixText: '@',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               // Bio field
-              _buildTextField(
+              _buildField(
                 controller: _bioController,
                 label: 'Bio',
                 hint: 'Tell us about yourself...',
                 icon: Iconsax.document_text,
-                maxLines: 4,
+                multiline: true,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               // Phone field
-              _buildTextField(
+              _buildField(
                 controller: _phoneController,
                 label: 'Phone',
                 hint: 'Enter your phone number',
                 icon: Iconsax.call,
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               // Save button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          'Save Changes',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+              PremiumButton(
+                label: 'Save Changes',
+                gradient: true,
+                loading: _isSaving,
+                onPressed: _isSaving ? null : _saveProfile,
               ),
             ],
           ),
@@ -344,13 +291,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildField({
     required TextEditingController controller,
     required String label,
     required String hint,
     required IconData icon,
-    String? prefixText,
-    int maxLines = 1,
+    bool multiline = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
@@ -360,58 +306,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+          style: AppTextStyles.labelLarge.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          validator: validator,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: theme.colorScheme.onSurface,
+        const SizedBox(height: AppSpacing.sm),
+        if (multiline)
+          PremiumTextField.multiline(
+            controller: controller,
+            hint: hint,
+            minLines: 3,
+            maxLines: 4,
+            validator: validator,
+          )
+        else
+          PremiumTextField(
+            controller: controller,
+            hint: hint,
+            prefixIcon: icon,
+            keyboardType: keyboardType,
+            validator: validator,
           ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
-            ),
-            prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-            prefixText: prefixText,
-            prefixStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: theme.colorScheme.onSurface,
-            ),
-            filled: true,
-            fillColor: theme.colorScheme.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-        ),
       ],
     );
   }

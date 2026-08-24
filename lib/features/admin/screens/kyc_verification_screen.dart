@@ -50,11 +50,11 @@ class KycVerificationScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.indigo.withOpacity(0.1),
+                              color: AppColors.accentIndigo.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Iconsax.document,
-                                color: Colors.indigo, size: 18),
+                                color: AppColors.accentIndigo, size: 18),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

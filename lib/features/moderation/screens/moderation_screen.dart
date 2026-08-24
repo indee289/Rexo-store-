@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/moderation_provider.dart';
@@ -34,46 +37,17 @@ class ModerationScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Moderation',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Moderation', style: AppTextStyles.h5),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        iconTheme:
+            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Iconsax.lock,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Access Denied',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Only administrators can access moderation tools.',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      body: const EmptyState(
+        icon: Iconsax.lock,
+        title: 'Access Denied',
+        subtitle: 'Only administrators can access moderation tools.',
       ),
     );
   }
@@ -84,29 +58,21 @@ class ModerationScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          title: Text(
-            'Moderation',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
+          title: Text('Moderation', style: AppTextStyles.h5),
           backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
-          iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+          scrolledUnderElevation: 0.5,
+          iconTheme:
+              IconThemeData(color: Theme.of(context).colorScheme.onSurface),
           bottom: TabBar(
             labelColor: AppColors.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             indicatorColor: AppColors.primary,
-            labelStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
+            labelStyle:
+                AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+            unselectedLabelStyle:
+                AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w400),
             tabs: const [
               Tab(text: 'Queue'),
               Tab(text: 'AI Logs'),
@@ -129,59 +95,32 @@ class ModerationScreen extends ConsumerWidget {
     return queueAsync.when(
       data: (items) {
         if (items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Iconsax.tick_circle,
-                  size: 48,
-                  color: AppColors.success,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Queue is clear',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'No pending moderation items',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
+          return const EmptyState(
+            icon: Iconsax.tick_circle,
+            title: 'Queue is clear',
+            subtitle: 'No pending moderation items',
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: items.length,
-          itemBuilder: (context, index) => _buildQueueItem(context, ref, items[index]),
+          itemBuilder: (context, index) =>
+              _buildQueueItem(context, ref, items[index]),
         );
       },
       loading: () => const Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: ShimmerLoading(height: 400),
       ),
-      error: (_, __) => Center(
-        child: Text(
-          'Failed to load queue',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.error,
-          ),
-        ),
+      error: (_, __) => const EmptyState(
+        icon: Iconsax.warning_2,
+        title: 'Failed to load queue',
       ),
     );
   }
 
-  Widget _buildQueueItem(BuildContext context, WidgetRef ref, Map<String, dynamic> item) {
+  Widget _buildQueueItem(
+      BuildContext context, WidgetRef ref, Map<String, dynamic> item) {
     final contentType = item['content_type'] ?? 'unknown';
     final reason = item['reason'] ?? 'No reason';
     final reportedBy = item['reported_by'] ?? 'Unknown';
@@ -191,11 +130,11 @@ class ModerationScreen extends ConsumerWidget {
         : '';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md + 2),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
@@ -204,15 +143,15 @@ class ModerationScreen extends ConsumerWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: AppRadius.allSm,
                 ),
                 child: Text(
                   contentType.toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
+                  style: AppTextStyles.labelSmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
@@ -221,72 +160,72 @@ class ModerationScreen extends ConsumerWidget {
               const Spacer(),
               Text(
                 createdAt,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             reason,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Reported by: $reportedBy',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
+            style: AppTextStyles.caption.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    ref.read(moderationActionProvider.notifier).rejectItem(itemId);
+                    ref
+                        .read(moderationActionProvider.notifier)
+                        .rejectItem(itemId);
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: const BorderSide(color: AppColors.error),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.allSm,
                     ),
                   ),
                   child: Text(
                     'Reject',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.labelMedium
+                        .copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    ref.read(moderationActionProvider.notifier).approveItem(itemId);
+                    ref
+                        .read(moderationActionProvider.notifier)
+                        .approveItem(itemId);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.allSm,
                     ),
                   ),
                   child: Text(
                     'Approve',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
+                    style: AppTextStyles.labelMedium.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -304,45 +243,25 @@ class ModerationScreen extends ConsumerWidget {
     return logsAsync.when(
       data: (logs) {
         if (logs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Iconsax.chart_2,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'No AI moderation logs',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
+          return const EmptyState(
+            icon: Iconsax.chart_2,
+            title: 'No AI moderation logs',
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: logs.length,
-          itemBuilder: (context, index) => _buildAILogItem(context, logs[index]),
+          itemBuilder: (context, index) =>
+              _buildAILogItem(context, logs[index]),
         );
       },
       loading: () => const Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: ShimmerLoading(height: 400),
       ),
-      error: (_, __) => Center(
-        child: Text(
-          'Failed to load AI logs',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.error,
-          ),
-        ),
+      error: (_, __) => const EmptyState(
+        icon: Iconsax.warning_2,
+        title: 'Failed to load AI logs',
       ),
     );
   }
@@ -357,11 +276,11 @@ class ModerationScreen extends ConsumerWidget {
         : '';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
@@ -370,12 +289,11 @@ class ModerationScreen extends ConsumerWidget {
           Row(
             children: [
               const Icon(Iconsax.chart_2, size: 16, color: AppColors.primary),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.xs + 2),
               Expanded(
                 child: Text(
                   flaggedReason,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
+                  style: AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -383,28 +301,28 @@ class ModerationScreen extends ConsumerWidget {
               ),
               Text(
                 contentType,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                style: AppTextStyles.labelSmall.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           // Confidence score progress bar
           Row(
             children: [
               Text(
                 'Confidence:',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: AppRadius.allSm,
                   child: LinearProgressIndicator(
                     value: confidenceScore,
                     backgroundColor: Theme.of(context).dividerColor,
@@ -419,33 +337,32 @@ class ModerationScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 '${(confidenceScore * 100).toStringAsFixed(0)}%',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
+                style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs + 2),
           Row(
             children: [
               Text(
                 'Action: $actionTaken',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const Spacer(),
               Text(
                 createdAt,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
             ],

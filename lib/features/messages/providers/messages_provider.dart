@@ -312,6 +312,179 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
       return false;
     }
   }
+
+  /// Edit a message previously sent by the current user.
+  ///
+  /// Updates the message [content] and sets `edited_at = now()`. Requires:
+  /// - non-empty content after trimming,
+  /// - the current user to be the sender (guarded client-side and enforced by
+  ///   the RLS/trigger on the `messages` table),
+  /// - the target message to not already be unsent (edit is disallowed once a
+  ///   message is unsent).
+  ///
+  /// Returns `true` on success, `false` on any precondition violation or
+  /// database/RLS failure (leaving the message unchanged in that case).
+  ///
+  /// See design "Key Functions > editMessage" (Requirements 4.2, 4.4, 4.5, 4.6).
+  Future<bool> editMessage({
+    required String messageId,
+    required String newContent,
+  }) async {
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return false;
+
+      // Precondition: non-empty content after trimming.
+      final trimmed = newContent.trim();
+      if (trimmed.isEmpty) return false;
+
+      // Fetch the target row to guard client-side and to know which
+      // conversation to invalidate.
+      final row = await SupabaseService.client
+          .from('messages')
+          .select('sender_id, receiver_id, is_unsent')
+          .eq('id', messageId)
+          .maybeSingle();
+
+      if (row == null) return false;
+
+      final senderId = (row['sender_id'] ?? '').toString();
+      final receiverId = (row['receiver_id'] ?? '').toString();
+      final isUnsent = row['is_unsent'] == true;
+
+      // Precondition: only the sender may edit, and not once unsent.
+      if (senderId != user.id) return false;
+      if (isUnsent) return false;
+
+      await SupabaseService.client
+          .from('messages')
+          .update({
+            'content': trimmed,
+            'edited_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', messageId);
+
+      _invalidateConversation(user.id, senderId, receiverId);
+
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Unsend a message previously sent by the current user.
+  ///
+  /// Sets `is_unsent = true`, which is terminal: the displayed content becomes
+  /// empty for both participants and the message can no longer be edited. Only
+  /// the sender may unsend (guarded client-side and enforced by RLS/trigger).
+  ///
+  /// Returns `true` on success, `false` on any precondition violation or
+  /// database/RLS failure (leaving the message unchanged in that case).
+  ///
+  /// See design "Key Functions > unsendMessage" (Requirements 5.1, 5.3, 5.5).
+  Future<bool> unsendMessage(String messageId) async {
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return false;
+
+      final row = await SupabaseService.client
+          .from('messages')
+          .select('sender_id, receiver_id')
+          .eq('id', messageId)
+          .maybeSingle();
+
+      if (row == null) return false;
+
+      final senderId = (row['sender_id'] ?? '').toString();
+      final receiverId = (row['receiver_id'] ?? '').toString();
+
+      // Precondition: only the sender may unsend.
+      if (senderId != user.id) return false;
+
+      await SupabaseService.client
+          .from('messages')
+          .update({'is_unsent': true}).eq('id', messageId);
+
+      _invalidateConversation(user.id, senderId, receiverId);
+
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Delete a message for the current user only ("delete for me").
+  ///
+  /// Appends the current user's id to the message's `deleted_for` set using set
+  /// semantics (the id appears at most once). Any participant (sender or
+  /// receiver) may do this; the other participant is unaffected. If the id is
+  /// already present the call is a no-op and returns `true` (idempotent).
+  ///
+  /// Returns `true` on success, `false` on any precondition violation or
+  /// database/RLS failure.
+  ///
+  /// See design "Key Functions > deleteForMe" (Requirements 6.1, 6.2, 6.4).
+  Future<bool> deleteForMe(String messageId) async {
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return false;
+
+      final row = await SupabaseService.client
+          .from('messages')
+          .select('sender_id, receiver_id, deleted_for')
+          .eq('id', messageId)
+          .maybeSingle();
+
+      if (row == null) return false;
+
+      final senderId = (row['sender_id'] ?? '').toString();
+      final receiverId = (row['receiver_id'] ?? '').toString();
+
+      // Precondition: caller must be a participant.
+      if (senderId != user.id && receiverId != user.id) return false;
+
+      // Set semantics: read the current set, add our id only if absent.
+      final current = (row['deleted_for'] as List?)
+              ?.where((e) => e != null)
+              .map((e) => e.toString())
+              .toList() ??
+          <String>[];
+
+      if (!current.contains(user.id)) {
+        current.add(user.id);
+        await SupabaseService.client
+            .from('messages')
+            .update({'deleted_for': current}).eq('id', messageId);
+      }
+
+      _invalidateConversation(user.id, senderId, receiverId);
+
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Invalidate the providers affected by a soft-state change on a message.
+  ///
+  /// The chat providers are keyed by the *other* participant's user id, so we
+  /// derive it from the message's sender/receiver relative to [currentUserId].
+  /// The conversations list is always refreshed since previews may change.
+  void _invalidateConversation(
+    String currentUserId,
+    String senderId,
+    String receiverId,
+  ) {
+    final otherUserId = senderId == currentUserId ? receiverId : senderId;
+    if (otherUserId.isNotEmpty) {
+      ref.invalidate(chatMessagesProvider(otherUserId));
+      ref.invalidate(chatMessagesStreamProvider(otherUserId));
+    }
+    ref.invalidate(conversationsProvider);
+  }
 }
 
 /// Message actions provider

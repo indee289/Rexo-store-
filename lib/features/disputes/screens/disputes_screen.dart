@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/disputes_provider.dart';
 
@@ -21,20 +25,17 @@ class DisputesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Disputes',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Disputes', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
         actions: [
           TextButton.icon(
@@ -42,8 +43,7 @@ class DisputesScreen extends ConsumerWidget {
             icon: const Icon(Iconsax.add, size: 18, color: AppColors.primary),
             label: Text(
               'Raise',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
+              style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 color: AppColors.primary,
               ),
@@ -54,7 +54,7 @@ class DisputesScreen extends ConsumerWidget {
       body: disputesAsync.when(
         data: (disputes) {
           if (disputes.isEmpty) {
-            return _buildEmptyState(context);
+            return _buildEmptyState();
           }
           return RefreshIndicator(
             color: AppColors.primary,
@@ -62,9 +62,10 @@ class DisputesScreen extends ConsumerWidget {
               ref.invalidate(userDisputesProvider);
             },
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: disputes.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.md),
               itemBuilder: (context, index) {
                 return _buildDisputeCard(context, disputes[index]);
               },
@@ -90,19 +91,8 @@ class DisputesScreen extends ConsumerWidget {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -121,7 +111,7 @@ class DisputesScreen extends ConsumerWidget {
               _buildStatusBadge(context, status),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             formattedDate,
             style: AppTextStyles.bodySmall,
@@ -135,7 +125,7 @@ class DisputesScreen extends ConsumerWidget {
     Color badgeColor;
     switch (status.toLowerCase()) {
       case 'open':
-        badgeColor = const Color(0xFF2196F3);
+        badgeColor = AppColors.roleBrand;
         break;
       case 'investigating':
         badgeColor = AppColors.warning;
@@ -151,10 +141,11 @@ class DisputesScreen extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm + 2, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.pillAll,
       ),
       child: Text(
         status[0].toUpperCase() + status.substring(1),
@@ -166,63 +157,22 @@ class DisputesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.message_question,
-            size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No disputes',
-            style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You have no active disputes at the moment',
-            style: AppTextStyles.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+  Widget _buildEmptyState() {
+    return const EmptyState(
+      icon: Iconsax.message_question,
+      title: 'No disputes',
+      subtitle: 'You have no active disputes at the moment',
     );
   }
 
   Widget _buildErrorState(WidgetRef ref, String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 64,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: 16),
-            Text('Failed to load disputes', style: AppTextStyles.h5),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(userDisputesProvider),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Iconsax.warning_2,
+      title: 'Failed to load disputes',
+      subtitle: error,
+      ctaLabel: 'Retry',
+      ctaIcon: Iconsax.refresh,
+      onCta: () => ref.invalidate(userDisputesProvider),
     );
   }
 }

@@ -97,7 +97,7 @@ class ActionsScreen extends StatelessWidget {
               icon: Iconsax.money_send,
               title: 'Withdrawal Queue',
               subtitle: 'Process pending withdrawals',
-              color: Colors.purple,
+              color: AppColors.accentPurple,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -108,7 +108,7 @@ class ActionsScreen extends StatelessWidget {
               icon: Iconsax.shop,
               title: 'Shop Admin',
               subtitle: 'Manage products and orders',
-              color: Colors.teal,
+              color: AppColors.accentTeal,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ShopAdminScreen()),
@@ -128,7 +128,7 @@ class ActionsScreen extends StatelessWidget {
               icon: Iconsax.document,
               title: 'KYC Verification',
               subtitle: 'Verify identity documents',
-              color: Colors.indigo,
+              color: AppColors.accentIndigo,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -139,7 +139,7 @@ class ActionsScreen extends StatelessWidget {
               icon: Iconsax.wallet,
               title: 'Wallets & Escrow',
               subtitle: 'Manage wallets and escrow',
-              color: Colors.brown,
+              color: AppColors.accentBrown,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -150,7 +150,7 @@ class ActionsScreen extends StatelessWidget {
               icon: Iconsax.notification,
               title: 'Push Broadcast',
               subtitle: 'Send notifications to users',
-              color: Colors.pink,
+              color: AppColors.accentPink,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -161,7 +161,7 @@ class ActionsScreen extends StatelessWidget {
               icon: Iconsax.award,
               title: 'Rexo Program Review',
               subtitle: 'Review program applications',
-              color: Colors.amber,
+              color: AppColors.accentAmber,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const RexoProgramScreen()),

@@ -59,11 +59,11 @@ class RexoProgramScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.1),
+                              color: AppColors.accentAmber.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Iconsax.award,
-                                color: Colors.amber, size: 18),
+                                color: AppColors.accentAmber, size: 18),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

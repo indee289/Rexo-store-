@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../profile/providers/profile_provider.dart';
@@ -20,46 +25,28 @@ class MediaKitScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Media Kit',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Media Kit', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       body: profileAsync.when(
         data: (profileState) => _buildContent(context, profileState),
         loading: () => const ShimmerLoading(),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Iconsax.warning_2,
-                size: 48,
-                color: AppColors.error.withOpacity(0.7),
-              ),
-              const SizedBox(height: 12),
-              Text('Failed to load profile', style: AppTextStyles.bodyMedium),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(currentUserProfileProvider),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                ),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        error: (error, _) => EmptyState(
+          icon: Iconsax.warning_2,
+          title: 'Failed to load profile',
+          ctaLabel: 'Retry',
+          ctaIcon: Iconsax.refresh,
+          onCta: () => ref.invalidate(currentUserProfileProvider),
         ),
       ),
     );
@@ -79,7 +66,7 @@ class MediaKitScreen extends ConsumerWidget {
         (roleProfile?['engagement_rate'] as num?)?.toDouble() ?? 0.0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
           // Media Kit Card
@@ -87,7 +74,7 @@ class MediaKitScreen extends ConsumerWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.allXl,
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.3),
@@ -97,7 +84,7 @@ class MediaKitScreen extends ConsumerWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 children: [
                   // Avatar
@@ -115,15 +102,14 @@ class MediaKitScreen extends ConsumerWidget {
                     child: Center(
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'C',
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
+                        style: AppTextStyles.h3.copyWith(
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -132,8 +118,7 @@ class MediaKitScreen extends ConsumerWidget {
                         child: Text(
                           name,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 22,
+                          style: AppTextStyles.h4.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -144,16 +129,14 @@ class MediaKitScreen extends ConsumerWidget {
                     ],
                   ),
                   if (handle.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       '@$handle',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(color: Colors.white.withOpacity(0.7)),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xl),
                   // Stats grid
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -173,7 +156,7 @@ class MediaKitScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -196,52 +179,26 @@ class MediaKitScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
 
           // Info section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+          PremiumCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('About Your Media Kit', style: AppTextStyles.h6),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Share this media kit with brands to showcase your stats, engagement, and campaign history. This summary helps brands understand your reach and value as a creator.',
                   style: AppTextStyles.bodySmall,
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Iconsax.export_1, size: 18),
-                    label: Text(
-                      'Share Media Kit',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
+                const SizedBox(height: AppSpacing.lg),
+                PremiumButton(
+                  label: 'Share Media Kit',
+                  variant: PremiumButtonVariant.outline,
+                  icon: Iconsax.export_1,
+                  onPressed: () {},
                 ),
               ],
             ),
@@ -256,8 +213,7 @@ class MediaKitScreen extends ConsumerWidget {
       children: [
         Text(
           value,
-          style: GoogleFonts.poppins(
-            fontSize: 18,
+          style: AppTextStyles.h5.copyWith(
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -265,10 +221,8 @@ class MediaKitScreen extends ConsumerWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: Colors.white.withOpacity(0.7),
-          ),
+          style: AppTextStyles.caption
+              .copyWith(color: Colors.white.withOpacity(0.7)),
         ),
       ],
     );

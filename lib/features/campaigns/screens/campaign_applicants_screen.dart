@@ -5,10 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/avatar_widget.dart';
-import '../../../core/widgets/verified_badge.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_sheet.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 
 /// Lists the applicants for one of the brand's own campaigns. Each row is
@@ -34,14 +38,20 @@ class CampaignApplicantsScreen extends ConsumerWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(campaignTitle, style: AppTextStyles.h5),
+        centerTitle: false,
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         surfaceTintColor: Colors.transparent,
       ),
       body: applicantsAsync.when(
         data: (applicants) {
           if (applicants.isEmpty) {
-            return _buildEmptyState(theme);
+            return const EmptyState(
+              icon: Iconsax.people,
+              title: 'No applicants yet',
+              subtitle: 'Creators who apply will appear here',
+            );
           }
           return RefreshIndicator(
             color: AppColors.primary,
@@ -49,47 +59,26 @@ class CampaignApplicantsScreen extends ConsumerWidget {
               ref.invalidate(campaignApplicantsProvider(campaignId));
             },
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: applicants.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, index) {
                 return _ApplicantTile(application: applicants[index]);
               },
             ),
           );
         },
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(ErrorUtils.sanitize(e), textAlign: TextAlign.center),
-          ),
+        loading: () => ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          itemCount: 6,
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+          itemBuilder: (_, __) => const ShimmerConversationRow(),
         ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Iconsax.people,
-              size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
-          const SizedBox(height: 16),
-          Text(
-            'No applicants yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Creators who apply will appear here',
-            style: AppTextStyles.bodySmall,
-          ),
-        ],
+        error: (e, _) => EmptyState(
+          icon: Iconsax.warning_2,
+          title: 'Could not load applicants',
+          subtitle: ErrorUtils.sanitize(e),
+        ),
       ),
     );
   }
@@ -104,10 +93,9 @@ class _ApplicantTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final creator = application['creator'] as Map<String, dynamic>?;
-    final displayName = (application['applicant_name'] ??
-            creator?['name'] ??
-            'Applicant')
-        .toString();
+    final displayName =
+        (application['applicant_name'] ?? creator?['name'] ?? 'Applicant')
+            .toString();
     final handle = (creator?['handle'] ?? '').toString();
     final avatarUrl = creator?['avatar_url'] as String?;
     final isVerified = creator?['is_verified'] == true;
@@ -116,35 +104,33 @@ class _ApplicantTile extends StatelessWidget {
     final followers = application['followers_count'];
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadius.allLg,
       onTap: () => _showApplicantDetail(context, application),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.allLg,
           border: Border.all(color: theme.dividerColor),
         ),
         child: Row(
           children: [
-            AvatarWidget(url: avatarUrl, name: displayName, size: 48),
-            const SizedBox(width: 12),
+            PremiumAvatar(
+              imageUrl: avatarUrl,
+              name: displayName,
+              size: 48,
+              isVerified: isVerified,
+            ),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          displayName,
-                          style: AppTextStyles.labelLarge,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isVerified) const VerifiedBadge(size: 14),
-                    ],
+                  Text(
+                    displayName,
+                    style: AppTextStyles.labelLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (handle.isNotEmpty)
                     Text(
@@ -153,7 +139,7 @@ class _ApplicantTile extends StatelessWidget {
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Row(
                     children: [
                       if (category.isNotEmpty) ...[
@@ -170,7 +156,7 @@ class _ApplicantTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: AppSpacing.sm),
                       ],
                       if (followers != null) ...[
                         Icon(Iconsax.people,
@@ -216,23 +202,25 @@ class _StatusBadge extends StatelessWidget {
         color = AppColors.error;
         break;
       case 'withdrawn':
-        color = Colors.grey;
+        color = AppColors.textSecondary;
         break;
       default:
         color = AppColors.warning;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.allSm,
       ),
       child: Text(
         status.toUpperCase(),
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.labelSmall.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
-          fontSize: 9,
         ),
       ),
     );
@@ -255,14 +243,10 @@ String? _normalizeInstagram(String? raw) {
 
 void _showApplicantDetail(
     BuildContext context, Map<String, dynamic> application) {
-  showModalBottomSheet(
+  showPremiumSheet<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (ctx) => _ApplicantDetailSheet(application: application),
+    title: 'Applicant Details',
+    child: _ApplicantDetailSheet(application: application),
   );
 }
 
@@ -281,118 +265,99 @@ class _ApplicantDetailSheet extends StatelessWidget {
     final handle = (creator?['handle'] ?? '').toString();
     final avatarUrl = creator?['avatar_url'] as String?;
     final isVerified = creator?['is_verified'] == true;
-    final instagram = _normalizeInstagram(
-        (application['instagram_url'] ?? '').toString());
+    final instagram =
+        _normalizeInstagram((application['instagram_url'] ?? '').toString());
     final pitch = (application['pitch'] ?? '').toString();
     final portfolio = (application['portfolio_url'] ?? '').toString();
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: theme.dividerColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              PremiumAvatar(
+                imageUrl: avatarUrl,
+                name: displayName,
+                size: 56,
+                isVerified: isVerified,
               ),
-            ),
-            Row(
-              children: [
-                AvatarWidget(url: avatarUrl, name: displayName, size: 56),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              style: AppTextStyles.h6,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (isVerified) const VerifiedBadge(size: 16),
-                        ],
-                      ),
-                      if (handle.isNotEmpty)
-                        Text(
-                          '@$handle',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color:
-                                theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: AppTextStyles.h6,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (handle.isNotEmpty)
+                      Text(
+                        '@$handle',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _DetailRow(
-                icon: Iconsax.location,
-                label: 'Location',
-                value: application['location']),
-            _DetailRow(
-                icon: Iconsax.category,
-                label: 'Category',
-                value: application['category']),
-            _DetailRow(
-                icon: Iconsax.building,
-                label: 'City',
-                value: application['city']),
-            _DetailRow(
-                icon: Iconsax.map,
-                label: 'State',
-                value: application['state']),
-            _DetailRow(
-                icon: Iconsax.call,
-                label: 'Contact',
-                value: application['contact_number']),
-            _DetailRow(
-              icon: Iconsax.people,
-              label: 'Followers',
-              value: application['followers_count'] != null
-                  ? NumberFormat.decimalPattern()
-                      .format(application['followers_count'])
-                  : null,
-            ),
-            const SizedBox(height: 8),
-
-            // Clickable Instagram link
-            if (instagram != null)
-              _LinkTile(
-                icon: Iconsax.instagram,
-                label: 'Instagram',
-                display: (application['instagram_url'] ?? instagram).toString(),
-                url: instagram,
               ),
-            if (portfolio.isNotEmpty)
-              _LinkTile(
-                icon: Iconsax.link,
-                label: 'Portfolio',
-                display: portfolio,
-                url: portfolio,
-              ),
-
-            if (pitch.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text('Pitch', style: AppTextStyles.labelLarge),
-              const SizedBox(height: 6),
-              Text(pitch, style: AppTextStyles.bodyMedium),
             ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _DetailRow(
+              icon: Iconsax.location,
+              label: 'Location',
+              value: application['location']),
+          _DetailRow(
+              icon: Iconsax.category,
+              label: 'Category',
+              value: application['category']),
+          _DetailRow(
+              icon: Iconsax.building,
+              label: 'City',
+              value: application['city']),
+          _DetailRow(
+              icon: Iconsax.map, label: 'State', value: application['state']),
+          _DetailRow(
+              icon: Iconsax.call,
+              label: 'Contact',
+              value: application['contact_number']),
+          _DetailRow(
+            icon: Iconsax.people,
+            label: 'Followers',
+            value: application['followers_count'] != null
+                ? NumberFormat.decimalPattern()
+                    .format(application['followers_count'])
+                : null,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Clickable Instagram link
+          if (instagram != null)
+            _LinkTile(
+              icon: Iconsax.instagram,
+              label: 'Instagram',
+              display: (application['instagram_url'] ?? instagram).toString(),
+              url: instagram,
+            ),
+          if (portfolio.isNotEmpty)
+            _LinkTile(
+              icon: Iconsax.link,
+              label: 'Portfolio',
+              display: portfolio,
+              url: portfolio,
+            ),
+
+          if (pitch.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Text('Pitch', style: AppTextStyles.labelLarge),
+            const SizedBox(height: AppSpacing.xs),
+            Text(pitch, style: AppTextStyles.bodyMedium),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -415,19 +380,19 @@ class _DetailRow extends StatelessWidget {
     if (text.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Text(
             '$label:',
             style: AppTextStyles.bodySmall.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               text,
@@ -458,8 +423,7 @@ class _LinkTile extends StatelessWidget {
     var launched = false;
     if (uri != null) {
       try {
-        launched =
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (_) {
         launched = false;
       }
@@ -478,22 +442,21 @@ class _LinkTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.allSm,
         onTap: () => _open(context),
         child: Row(
           children: [
             Icon(icon, size: 18, color: AppColors.primary),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Text(
               '$label:',
               style: AppTextStyles.bodySmall.copyWith(
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 display,

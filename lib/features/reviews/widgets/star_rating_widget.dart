@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 
@@ -30,9 +31,10 @@ class StarRatingWidget extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Icon(
-              isFilled ? Icons.star_rounded : Icons.star_outline_rounded,
+              Iconsax.star_1,
               size: size,
-              color: isFilled ? AppColors.warning : Theme.of(context).dividerColor,
+              color:
+                  isFilled ? AppColors.warning : Theme.of(context).dividerColor,
             ),
           ),
         );
@@ -62,11 +64,11 @@ class StarRatingCompact extends StatelessWidget {
         final isHalf = starIndex == rating.ceil() && rating % 1 >= 0.5;
 
         return Icon(
-          isFilled || isHalf
-              ? Icons.star_rounded
-              : Icons.star_outline_rounded,
+          Iconsax.star_1,
           size: size,
-          color: isFilled || isHalf ? AppColors.warning : Theme.of(context).dividerColor,
+          color: isFilled || isHalf
+              ? AppColors.warning
+              : Theme.of(context).dividerColor,
         );
       }),
     );

@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/section_header.dart';
 import '../../coupons/providers/coupons_provider.dart';
 import '../providers/shop_provider.dart';
 
@@ -46,7 +54,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool get _hasPhysicalProducts {
     final items = ref.read(cartProvider);
     return items.any(
-      (item) => item.product['category']?.toString().toLowerCase() == 'physical',
+      (item) =>
+          item.product['category']?.toString().toLowerCase() == 'physical',
     );
   }
 
@@ -58,42 +67,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (cartItems.isEmpty) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          title: Text(
-            'Checkout',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 0,
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
-          ),
+        appBar: PremiumAppBar(
+          title: 'Checkout',
+          showBack: true,
+          onBack: () => context.pop(),
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Iconsax.shopping_cart,
-                size: 64,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-              ),
-              const SizedBox(height: 16),
-              Text('Your cart is empty', style: AppTextStyles.h5),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/shop'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                ),
-                child: const Text('Go to Shop'),
-              ),
-            ],
+        body: EmptyState(
+          icon: Iconsax.shopping_cart,
+          title: 'Your cart is empty',
+          cta: PremiumButton(
+            label: 'Go to Shop',
+            expand: false,
+            icon: Iconsax.shop,
+            onPressed: () => context.go('/shop'),
           ),
         ),
       );
@@ -101,28 +87,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Checkout',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Checkout',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -130,25 +104,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   children: [
                     // Apply Coupon section
                     _buildCouponSection(context, totalAmount),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Order items summary
                     _buildOrderItemsSummary(context, cartItems),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
 
                     // Shipping address (only for physical products)
                     if (_hasPhysicalProducts) ...[
-                      _buildSectionTitle('Shipping Address'),
-                      const SizedBox(height: 12),
+                      const SectionHeader(title: 'Shipping Address'),
+                      const SizedBox(height: AppSpacing.md),
                       _buildShippingForm(context),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
 
                     // Payment method
-                    _buildSectionTitle('Payment Method'),
-                    const SizedBox(height: 12),
+                    const SectionHeader(title: 'Payment Method'),
+                    const SizedBox(height: AppSpacing.md),
                     _buildPaymentSelection(context),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
 
                     // Order total
                     _buildOrderTotal(context, totalAmount),
@@ -168,19 +142,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _buildCouponSection(BuildContext context, double totalAmount) {
     final couponState = ref.watch(couponNotifierProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -190,13 +153,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           if (couponState.appliedCoupon != null) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.success.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.allSm,
                 border: Border.all(
                   color: AppColors.success.withOpacity(0.3),
                 ),
@@ -208,7 +171,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     size: 18,
                     color: AppColors.success,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,17 +192,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ],
                     ),
                   ),
-                  IconButton(
+                  PremiumIconButton(
+                    icon: Iconsax.close_circle,
+                    iconSize: 18,
                     onPressed: () {
-                      ref.read(couponNotifierProvider.notifier).removeCoupon();
+                      ref
+                          .read(couponNotifierProvider.notifier)
+                          .removeCoupon();
                     },
-                    icon: Icon(
-                      Icons.close,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -248,84 +208,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
+                  child: PremiumTextField(
                     controller: _couponController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter coupon code',
-                      hintStyle: AppTextStyles.bodySmall,
-                      prefixIcon: Icon(
-                        Iconsax.ticket_discount,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.primary),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      isDense: true,
-                    ),
-                    style: AppTextStyles.bodyMedium,
+                    hint: 'Enter coupon code',
+                    prefixIcon: Iconsax.ticket_discount,
                     textCapitalization: TextCapitalization.characters,
                   ),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 44,
-                  child: ElevatedButton(
-                    onPressed: couponState.isApplying
-                        ? null
-                        : () {
-                            if (_couponController.text.trim().isNotEmpty) {
-                              ref
-                                  .read(couponNotifierProvider.notifier)
-                                  .applyCoupon(
-                                    _couponController.text.trim(),
-                                    totalAmount,
-                                  );
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    child: couponState.isApplying
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            'Apply',
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
+                const SizedBox(width: AppSpacing.sm),
+                PremiumButton(
+                  label: 'Apply',
+                  expand: false,
+                  loading: couponState.isApplying,
+                  onPressed: couponState.isApplying
+                      ? null
+                      : () {
+                          if (_couponController.text.trim().isNotEmpty) {
+                            ref
+                                .read(couponNotifierProvider.notifier)
+                                .applyCoupon(
+                                  _couponController.text.trim(),
+                                  totalAmount,
+                                );
+                          }
+                        },
                 ),
               ],
             ),
             if (couponState.error != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 couponState.error!,
                 style: AppTextStyles.caption.copyWith(
@@ -339,24 +250,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(title, style: AppTextStyles.h6);
-  }
-
   Widget _buildOrderItemsSummary(BuildContext context, List<CartItem> items) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -366,9 +262,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
                   children: [
                     Expanded(
@@ -383,7 +279,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       'x${item.quantity}',
                       style: AppTextStyles.caption,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Text(
                       '\u20B9${item.subtotal.toStringAsFixed(0)}',
                       style: AppTextStyles.labelMedium.copyWith(
@@ -399,74 +295,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildShippingForm(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
-          _buildTextField(
+          PremiumTextField(
             controller: _nameController,
             label: 'Full Name',
-            icon: Iconsax.user,
+            prefixIcon: Iconsax.user,
             validator: (v) =>
                 (v == null || v.isEmpty) ? 'Name is required' : null,
           ),
-          const SizedBox(height: 12),
-          _buildTextField(
+          const SizedBox(height: AppSpacing.md),
+          PremiumTextField(
             controller: _address1Controller,
             label: 'Address Line 1',
-            icon: Iconsax.location,
+            prefixIcon: Iconsax.location,
             validator: (v) =>
                 (v == null || v.isEmpty) ? 'Address is required' : null,
           ),
-          const SizedBox(height: 12),
-          _buildTextField(
+          const SizedBox(height: AppSpacing.md),
+          PremiumTextField(
             controller: _address2Controller,
             label: 'Address Line 2 (Optional)',
-            icon: Iconsax.building,
+            prefixIcon: Iconsax.building,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
-                child: _buildTextField(
+                child: PremiumTextField(
                   controller: _cityController,
                   label: 'City',
-                  icon: Iconsax.buildings,
+                  prefixIcon: Iconsax.buildings,
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Required' : null,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: _buildTextField(
+                child: PremiumTextField(
                   controller: _stateController,
                   label: 'State',
-                  icon: Iconsax.map,
+                  prefixIcon: Iconsax.map,
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Required' : null,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
-                child: _buildTextField(
+                child: PremiumTextField(
                   controller: _pincodeController,
                   label: 'Pincode',
-                  icon: Iconsax.hashtag,
+                  prefixIcon: Iconsax.hashtag,
                   keyboardType: TextInputType.number,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Required';
@@ -475,12 +360,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: _buildTextField(
+                child: PremiumTextField(
                   controller: _phoneController,
                   label: 'Phone',
-                  icon: Iconsax.call,
+                  prefixIcon: Iconsax.call,
                   keyboardType: TextInputType.phone,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Required';
@@ -496,61 +381,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: AppTextStyles.bodySmall,
-        prefixIcon: Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-        isDense: true,
-      ),
-      style: AppTextStyles.bodyMedium,
-      validator: validator,
-    );
-  }
-
   Widget _buildPaymentSelection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
           _buildPaymentOption(context, 'UPI', Iconsax.mobile),
@@ -561,7 +394,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentOption(BuildContext context, String method, IconData icon) {
+  Widget _buildPaymentOption(
+      BuildContext context, String method, IconData icon) {
     final isSelected = _selectedPaymentMethod == method;
 
     return InkWell(
@@ -569,15 +403,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         setState(() => _selectedPaymentMethod = method);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
             Icon(
               icon,
               size: 20,
-              color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: isSelected
+                  ? AppColors.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 method,
@@ -592,7 +428,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : Theme.of(context).dividerColor,
+                  color: isSelected
+                      ? AppColors.primary
+                      : Theme.of(context).dividerColor,
                   width: 2,
                 ),
               ),
@@ -621,10 +459,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final finalTotal = totalAmount - discount;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Column(
@@ -640,7 +478,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ],
           ),
           if (discount > 0) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -675,9 +513,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPlaceOrderButton(BuildContext context, List<CartItem> items, double totalAmount) {
+  Widget _buildPlaceOrderButton(
+      BuildContext context, List<CartItem> items, double totalAmount) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -689,35 +528,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ],
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isPlacingOrder
-                ? null
-                : () => _handlePlaceOrder(items, totalAmount),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: _isPlacingOrder
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    'Place Order',
-                    style: AppTextStyles.button,
-                  ),
-          ),
+        child: PremiumButton(
+          label: 'Place Order',
+          gradient: true,
+          loading: _isPlacingOrder,
+          onPressed: _isPlacingOrder
+              ? null
+              : () => _handlePlaceOrder(items, totalAmount),
         ),
       ),
     );
@@ -767,13 +584,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
           title: Row(
             children: [
               const Icon(Iconsax.tick_circle, color: AppColors.success),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text('Order Placed!', style: AppTextStyles.h6),
             ],
           ),
@@ -804,7 +618,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.allSm,
           ),
         ),
       );

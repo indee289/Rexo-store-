@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/admin_provider.dart';
@@ -128,13 +128,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Create Campaign',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: Text('Create Campaign', style: AppTextStyles.h5),
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Iconsax.arrow_left),
@@ -350,13 +346,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : Text(
-                          'Submit Campaign',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      : Text('Submit Campaign', style: AppTextStyles.button),
                 ),
               ),
 
@@ -371,9 +361,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.poppins(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
+      style: AppTextStyles.labelMedium.copyWith(
         color: Theme.of(context).colorScheme.onSurface,
       ),
     );

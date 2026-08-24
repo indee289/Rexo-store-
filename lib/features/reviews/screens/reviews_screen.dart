@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_sheet.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/reviews_provider.dart';
 import '../widgets/review_card.dart';
@@ -38,20 +45,17 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Reviews',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Reviews', style: AppTextStyles.h5),
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+        scrolledUnderElevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -60,8 +64,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         icon: const Icon(Iconsax.edit, color: Colors.white, size: 20),
         label: Text(
           'Add Review',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
+          style: AppTextStyles.labelLarge.copyWith(
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
@@ -92,15 +95,15 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         // Average rating card
         _buildAverageRatingCard(averageRating, reviews.length),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.xl),
         // Review list
         ...reviews.map(
           (review) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: ReviewCard(review: review),
           ),
         ),
@@ -110,19 +113,8 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Widget _buildAverageRatingCard(double average, int count) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return PremiumCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         children: [
           Text(
@@ -131,9 +123,9 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           StarRatingCompact(rating: average, size: 24),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             '$count ${count == 1 ? 'review' : 'reviews'}',
             style: AppTextStyles.bodySmall,
@@ -147,100 +139,47 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     int selectedRating = 0;
     final commentController = TextEditingController();
 
-    showModalBottomSheet(
+    showPremiumSheet<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      title: 'Write a Review',
+      child: StatefulBuilder(
+        builder: (context, setModalState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: StarRatingWidget(
+                  rating: selectedRating,
+                  size: 36,
+                  onChanged: (rating) {
+                    setModalState(() => selectedRating = rating);
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              PremiumTextField.multiline(
+                controller: commentController,
+                hint: 'Share your experience...',
+                minLines: 4,
+                maxLines: 6,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              PremiumButton(
+                label: 'Submit Review',
+                gradient: true,
+                onPressed: selectedRating > 0
+                    ? () => _submitReview(
+                          context,
+                          selectedRating,
+                          commentController.text,
+                        )
+                    : null,
+              ),
+            ],
+          );
+        },
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                20,
-                20,
-                MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).dividerColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Write a Review', style: AppTextStyles.h5),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: StarRatingWidget(
-                      rating: selectedRating,
-                      size: 36,
-                      onChanged: (rating) {
-                        setModalState(() => selectedRating = rating);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: commentController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: 'Share your experience...',
-                      hintStyle: AppTextStyles.bodySmall,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.primary),
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
-                    ),
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: selectedRating > 0
-                          ? () => _submitReview(
-                                context,
-                                selectedRating,
-                                commentController.text,
-                              )
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: Theme.of(context).dividerColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text('Submit Review', style: AppTextStyles.button),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -272,7 +211,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.allSm,
           ),
         ),
       );
@@ -283,7 +222,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.allSm,
           ),
         ),
       );
@@ -291,67 +230,26 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.star_1,
-            size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No reviews yet',
-            style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Be the first to leave a review',
-            style: AppTextStyles.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return const EmptyState(
+      icon: Iconsax.star_1,
+      title: 'No reviews yet',
+      subtitle: 'Be the first to leave a review',
     );
   }
 
   Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 64,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: 16),
-            Text('Failed to load reviews', style: AppTextStyles.h5),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref.invalidate(reviewsProvider(ReviewsParam(
-                  targetId: widget.targetId,
-                  targetType: widget.targetType,
-                )));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Iconsax.warning_2,
+      title: 'Failed to load reviews',
+      subtitle: error,
+      ctaLabel: 'Retry',
+      ctaIcon: Iconsax.refresh,
+      onCta: () {
+        ref.invalidate(reviewsProvider(ReviewsParam(
+          targetId: widget.targetId,
+          targetType: widget.targetType,
+        )));
+      },
     );
   }
 }
