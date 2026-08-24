@@ -75,31 +75,67 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// Surfaces a "coming soon" notice for the header call/video actions. The app
+  /// has no calling backend, so these deliberately do not attempt any call
+  /// flow — they only inform the user (matches the reference header visually).
+  void _showComingSoon(String kind) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$kind calls coming soon',
+          style: AppTextStyles.bodyMedium,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final messagesAsync = ref.watch(chatMessagesProvider(widget.otherUserId));
     final conversationsAsync = ref.watch(conversationsProvider);
 
-    // Get other user's name from conversations
-    String otherUserName = 'User';
+    // Resolve the header name/avatar. First try the conversations list, which
+    // is already loaded for existing threads.
+    String otherUserName = '';
     String? otherUserAvatar;
     conversationsAsync.whenData((conversations) {
       final conv = conversations.where(
         (c) => c['other_user_id'] == widget.otherUserId,
       );
       if (conv.isNotEmpty) {
-        otherUserName = conv.first['other_user_name'] ?? 'User';
-        otherUserAvatar = conv.first['other_user_avatar'];
+        otherUserName = (conv.first['other_user_name'] ?? '').toString();
+        otherUserAvatar = conv.first['other_user_avatar'] as String?;
       }
     });
+
+    // Fallback: a chat opened straight from search is a brand-new conversation
+    // with no messages, so it is absent from conversationsProvider and the name
+    // resolves to empty/"User". Look up the peer's public profile row so the
+    // header shows the real name (or handle) instead of the generic "User".
+    if (otherUserName.isEmpty || otherUserName == 'User') {
+      final peer = ref.watch(chatPeerProvider(widget.otherUserId)).asData?.value;
+      if (peer != null) {
+        final peerName = (peer['name'] ?? '').toString().trim();
+        final peerHandle = (peer['handle'] ?? '').toString().trim();
+        if (peerName.isNotEmpty) {
+          otherUserName = peerName;
+        } else if (peerHandle.isNotEmpty) {
+          otherUserName = '@$peerHandle';
+        }
+        otherUserAvatar ??= peer['avatar_url'] as String?;
+      }
+    }
+
+    // Display fallback only when nothing has resolved yet (still loading).
+    final displayName = otherUserName.isEmpty ? 'User' : otherUserName;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
         titleSpacing: AppSpacing.sm,
@@ -113,7 +149,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             const SizedBox(width: AppSpacing.xs),
             _HeaderAvatar(
               imageUrl: otherUserAvatar,
-              name: otherUserName,
+              name: displayName,
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -123,7 +159,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    otherUserName,
+                    displayName,
                     style: AppTextStyles.labelLarge
                         .copyWith(fontWeight: FontWeight.w700),
                     maxLines: 1,
@@ -139,6 +175,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ],
         ),
+        actions: [
+          // The app has no calling backend; these match the reference header
+          // visually and surface a "coming soon" notice rather than faking a
+          // call flow.
+          PremiumIconButton(
+            icon: Iconsax.call,
+            tooltip: 'Voice call',
+            onPressed: () => _showComingSoon('Voice'),
+          ),
+          PremiumIconButton(
+            icon: Iconsax.video,
+            tooltip: 'Video call',
+            onPressed: () => _showComingSoon('Video'),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
       ),
       body: Column(
         children: [

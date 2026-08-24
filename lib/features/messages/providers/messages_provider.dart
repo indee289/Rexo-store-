@@ -127,6 +127,29 @@ final userSearchProvider =
   return List<Map<String, dynamic>>.from(response);
 });
 
+/// Fetches the public profile row for a chat peer by user id.
+///
+/// Used by the Chat screen to resolve the header name/avatar when the
+/// conversation is brand-new (no messages yet) and therefore not present in
+/// [conversationsProvider]. Without this the header would fall back to the
+/// generic "User" label when a chat is opened straight from user search.
+///
+/// Returns the peer's public columns (`id, name, handle, avatar_url,
+/// is_verified`) or `null` when no matching row exists.
+final chatPeerProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
+        (ref, userId) async {
+  if (userId.isEmpty) return null;
+
+  final row = await SupabaseService.client
+      .from('users')
+      .select('id, name, handle, avatar_url, is_verified')
+      .eq('id', userId)
+      .maybeSingle();
+
+  return row;
+});
+
 /// Provider for chat messages between current user and another user
 final chatMessagesProvider =
     FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(

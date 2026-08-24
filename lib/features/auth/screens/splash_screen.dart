@@ -13,7 +13,7 @@ import '../../../services/supabase_service.dart';
 
 /// Clean brand splash shown once on cold start.
 ///
-/// Orange background, a single centered Rexo logo that fades/scales in, then
+/// Blue brand background, a single centered Rexo logo that fades/scales in, then
 /// navigates straight to Home (valid session) or Login. No white reveal
 /// circle, no duplicate logo, no extra splash, no flicker.
 class SplashScreen extends ConsumerStatefulWidget {

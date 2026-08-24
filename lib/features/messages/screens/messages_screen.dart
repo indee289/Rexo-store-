@@ -19,10 +19,10 @@ import '../providers/messages_provider.dart';
 
 /// Premium iOS-style messaging inbox (Screen Inventory #8).
 ///
-/// Matches the reference messaging UI: a left-aligned bold "Messages" title, a
-/// frosted search field directly beneath it, and airy conversation rows built
-/// from [PremiumAvatar] (with a subtle green presence dot), the counterpart
-/// name, a message preview, a timestamp, and an unread indicator (Requirements
+/// Matches the reference messaging UI: a light-blue canvas, a left-aligned bold
+/// "Messages" title, a frosted search field directly beneath it, and airy
+/// conversation rows built from a plain [PremiumAvatar], the counterpart name,
+/// a message preview, a timestamp, and an unread indicator (Requirements
 /// 13.1, 13.2). Tapping a row navigates to the Chat screen for that user
 /// (Requirement 13.3). Loading uses shimmer skeletons that match the final row
 /// layout; the empty state uses the shared [EmptyState] primitive.
@@ -60,18 +60,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         centerTitle: false,
         titleSpacing: AppSpacing.lg,
         title: Text('Messages', style: AppTextStyles.h4),
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
           Padding(
@@ -131,13 +130,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     padding:
                         const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      indent: 84,
-                      endIndent: AppSpacing.lg,
-                      color: theme.dividerColor,
-                    ),
+                    // No divider — the reference uses airy spacing between rows
+                    // rather than hairlines.
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.xs),
                     itemBuilder: (context, index) {
                       final conversation = filtered[index];
                       return _ConversationTile(conversation: conversation)
@@ -172,61 +168,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   }
 }
 
-/// A circular [PremiumAvatar] with a subtle green presence dot overlaid in the
-/// bottom-right corner, matching the reference's "online" affordance.
-///
-/// The dot is purely decorative (the app has no presence backend); it uses the
-/// [AppColors.success] token and a surface-colored rim so it reads cleanly on
-/// any avatar.
-class _PresenceAvatar extends StatelessWidget {
-  final String? imageUrl;
-  final String name;
-  final double size;
-  final bool isVerified;
-
-  const _PresenceAvatar({
-    required this.imageUrl,
-    required this.name,
-    required this.size,
-    this.isVerified = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final surface = Theme.of(context).colorScheme.surface;
-    final dotSize = (size * 0.28).clamp(10.0, 16.0);
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          PremiumAvatar(
-            imageUrl: imageUrl,
-            name: name,
-            size: size,
-            isVerified: isVerified,
-          ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: dotSize,
-              height: dotSize,
-              decoration: BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-                border: Border.all(color: surface, width: 2),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// A single premium conversation row.
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
@@ -251,7 +192,7 @@ class _ConversationTile extends StatelessWidget {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      leading: _PresenceAvatar(
+      leading: PremiumAvatar(
         imageUrl: avatarUrl,
         name: name,
         size: 52,
