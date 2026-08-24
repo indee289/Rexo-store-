@@ -47,6 +47,14 @@ class OneSignalService {
   /// store observers weakly, so we retain them here for the app's lifetime.
   static final List<void Function(String?)> _retainedObservers = [];
 
+  /// Concise, tagged logging that shows up in `adb logcat` (search for
+  /// `[OneSignal]`). Emitted via [debugPrint] so it is visible in the release
+  /// APK too — useful for verifying device registration end-to-end. This is
+  /// separate from OneSignal's own internal verbose log level.
+  static void _log(String message) {
+    debugPrint('[OneSignal] $message');
+  }
+
   /// Initialize OneSignal. Safe to call once after the first frame.
   /// Never throws — any failure leaves the SDK inactive and the app running.
   ///
@@ -66,9 +74,14 @@ class OneSignalService {
 
       OneSignal.initialize(_appId);
       _initialized = true;
-    } catch (_) {
+      _log('initialized with appId=$_appId');
+      // Log the push subscription status shortly after init so registration is
+      // observable even before the first change event fires.
+      logPushSubscriptionStatus(context: 'post-init');
+    } catch (e) {
       // OneSignal unavailable (e.g. no Play Services / misconfigured) — skip.
       _initialized = false;
+      _log('initialize FAILED: $e');
     }
   }
 
@@ -83,8 +96,11 @@ class OneSignalService {
     try {
       if (!_initialized) await initialize();
       OneSignal.login(userId);
-    } catch (_) {
+      _log('login(external_id=$userId)');
+      logPushSubscriptionStatus(context: 'after-login');
+    } catch (e) {
       // Non-critical — targeting by external id simply won't be available.
+      _log('login FAILED: $e');
     }
   }
 
@@ -94,8 +110,10 @@ class OneSignalService {
     try {
       if (!_initialized) return;
       OneSignal.logout();
-    } catch (_) {
+      _log('logout()');
+    } catch (e) {
       // Non-critical.
+      _log('logout FAILED: $e');
     }
   }
 
@@ -155,9 +173,32 @@ class OneSignalService {
   static Future<bool> requestPermission() async {
     try {
       if (!_initialized) await initialize();
-      return await OneSignal.Notifications.requestPermission(true);
-    } catch (_) {
+      final granted = await OneSignal.Notifications.requestPermission(true);
+      _log('requestPermission -> granted=$granted');
+      logPushSubscriptionStatus(context: 'after-permission');
+      return granted;
+    } catch (e) {
+      _log('requestPermission FAILED: $e');
       return false;
+    }
+  }
+
+  /// Log the current push subscription status (id, optedIn, token presence).
+  /// Visible in `adb logcat` under the `[OneSignal]` tag. Use this to confirm
+  /// the device obtained a real, server-assigned subscription id.
+  static void logPushSubscriptionStatus({String context = ''}) {
+    try {
+      final sub = OneSignal.User.pushSubscription;
+      final id = sub.id;
+      final optedIn = sub.optedIn;
+      final hasToken = (sub.token != null && sub.token!.isNotEmpty);
+      final registered =
+          id != null && id.isNotEmpty && !id.startsWith('local-');
+      final suffix = context.isEmpty ? '' : ' ($context)';
+      _log('push status$suffix -> id=$id, optedIn=$optedIn, '
+          'hasToken=$hasToken, serverRegistered=$registered');
+    } catch (e) {
+      _log('logPushSubscriptionStatus FAILED: $e');
     }
   }
 
@@ -179,7 +220,13 @@ class OneSignalService {
       if (!_initialized) return;
       _retainedObservers.add(onChange);
       OneSignal.User.pushSubscription.addObserver((state) {
-        onChange(state.current.id);
+        final cur = state.current;
+        final registered = cur.id != null &&
+            cur.id!.isNotEmpty &&
+            !cur.id!.startsWith('local-');
+        _log('push subscription changed -> id=${cur.id}, '
+            'optedIn=${cur.optedIn}, serverRegistered=$registered');
+        onChange(cur.id);
       });
     } catch (_) {
       // Non-critical — verification dialog simply won't trigger.
