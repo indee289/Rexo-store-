@@ -59,10 +59,10 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     _maybeReconcile(isFollowingAsync, followerCountAsync);
 
     // Displayed values: optimistic override wins, otherwise provider truth.
-    final displayedFollowing = _optimisticFollowing ??
-        isFollowingAsync.maybeWhen(data: (v) => v, orElse: () => false);
-    final displayedCount = _optimisticCount ??
-        followerCountAsync.maybeWhen(data: (v) => v, orElse: () => 0);
+    final bool displayedFollowing = _optimisticFollowing ??
+        isFollowingAsync.maybeWhen<bool>(data: (v) => v, orElse: () => false);
+    final int displayedCount = _optimisticCount ??
+        followerCountAsync.maybeWhen<int>(data: (v) => v, orElse: () => 0);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
