@@ -85,6 +85,21 @@ The Supabase schema is located at `supabase/schema.sql`. It includes:
 - Storage buckets for file uploads
 - Auto-wallet creation trigger
 
+### Phase 1 Critical Fixes (✅ Implemented)
+
+Recent critical database fixes have been implemented to resolve schema mismatches:
+
+1. **Subscription Plans Schema Alignment**: Added `interval` column for seed script compatibility
+2. **Wallet Function Aliases**: Added `credit_wallet` and `debit_wallet` functions for admin operations
+3. **Subscription Payments Integration**: Integrated subscription_payments table into main schema
+
+For complete documentation, see:
+- [Phase 1 Implementation Guide](./PHASE_1_CRITICAL_FIXES_GUIDE.md)
+- [Database Schema Changes](./DATABASE_SCHEMA_CHANGES.md)
+- [API Function Updates](./API_FUNCTION_UPDATES.md)
+- [Deployment Procedures](./DEPLOYMENT_PROCEDURES.md)
+- [Operational Procedures](./OPERATIONAL_PROCEDURES.md)
+
 ## CI/CD
 
 GitHub Actions workflow (`.github/workflows/flutter-build.yml`) handles:

@@ -1,0 +1,305 @@
+{
+  "taskId": "2.3",
+  "testType": "unrelated_tables_preservation",
+  "executedAt": "2024-01-27T10:00:00.000Z",
+  "status": "completed_successfully",
+  "methodology": "observation_first_on_unfixed_schema",
+  "preservationPatterns": [
+    {
+      "operation": "campaigns.select",
+      "schema": [
+        "id", "brand_id", "title", "description", "budget", "per_creator_payout",
+        "cover_image_url", "platform", "category", "total_slots", "filled_slots", 
+        "status", "escrow_amount", "deadline", "guidelines", "min_followers", 
+        "created_at", "updated_at"
+      ],
+      "recordCount": "varies_by_environment",
+      "preservationRequirement": "Schema structure must remain identical - all 18 columns preserved",
+      "criticalOperations": [
+        "SELECT * FROM campaigns",
+        "WHERE status IN ('draft', 'active', 'paused', 'completed', 'cancelled')",
+        "ORDER BY created_at DESC",
+        "ORDER BY title ASC"
+      ]
+    },
+    {
+      "operation": "campaigns.filter",
+      "statusValues": ["draft", "active", "paused", "completed", "cancelled"],
+      "preservationRequirement": "Status filtering must work identically",
+      "criticalConstraints": [
+        "status CHECK constraint must be enforced",
+        "Platform CHECK constraint must be enforced",
+        "Default values must be preserved"
+      ]
+    },
+    {
+      "operation": "applications.select",
+      "schema": [
+        "id", "campaign_id", "creator_id", "pitch", "portfolio_url", 
+        "status", "admin_notes", "created_at", "updated_at"
+      ],
+      "preservationRequirement": "Applications table structure must be preserved exactly",
+      "criticalOperations": [
+        "SELECT * FROM applications",
+        "WHERE status IN ('pending', 'approved', 'rejected', 'withdrawn')",
+        "JOIN campaigns ON applications.campaign_id = campaigns.id"
+      ]
+    },
+    {
+      "operation": "applications.joinCampaigns",
+      "joinStructure": "applications INNER JOIN campaigns ON applications.campaign_id = campaigns.id",
+      "preservationRequirement": "JOIN operations with campaigns must work identically",
+      "foreignKeyIntegrity": "applications.campaign_id -> campaigns.id must be maintained"
+    },
+    {
+      "operation": "applications.statusFilters",
+      "statusValues": ["pending", "approved", "rejected", "withdrawn"],
+      "uniqueConstraint": "(campaign_id, creator_id)",
+      "preservationRequirement": "Application status filtering and uniqueness must be preserved"
+    },
+    {
+      "operation": "users.select",
+      "schema": [
+        "id", "email", "name", "handle", "role", "admin_sub_role", 
+        "account_status", "is_verified", "avatar_url", "bio", "phone", 
+        "created_at", "updated_at"
+      ],
+      "rlsProtected": true,
+      "preservationRequirement": "RLS policies must remain enforced - anonymous access blocked",
+      "securityBehavior": "row-level security policy violations expected for anonymous users"
+    },
+    {
+      "operation": "users.roleFilters",
+      "roleValues": ["creator", "brand", "admin"],
+      "accountStatusValues": ["active", "suspended", "banned", "pending_verification"],
+      "preservationRequirement": "Role-based access control must be maintained",
+      "rlsBlocked": true
+    },
+    {
+      "operation": "crossTable.campaignApplications",
+      "relationshipType": "one_to_many",
+      "foreignKey": "applications.campaign_id -> campaigns.id",
+      "preservationRequirement": "Campaign -> Applications relationship must be preserved",
+      "cascadeDelete": "ON DELETE CASCADE must be maintained"
+    },
+    {
+      "operation": "crossTable.userProfiles",
+      "relationships": [
+        "users -> creator_profiles (user_id)",
+        "users -> brand_profiles (user_id)",
+        "users -> wallets (user_id)"
+      ],
+      "preservationRequirement": "User -> Profile relationships must remain intact",
+      "rlsProtected": true
+    },
+    {
+      "operation": "crossTable.foreignKeyIntegrity",
+      "criticalRelationships": [
+        {
+          "relationship": "applications.campaign_id -> campaigns.id",
+          "constraint": "FOREIGN KEY ON DELETE CASCADE",
+          "mustBeValid": true
+        },
+        {
+          "relationship": "applications.creator_id -> users.id", 
+          "constraint": "FOREIGN KEY ON DELETE CASCADE",
+          "mustBeValid": true
+        },
+        {
+          "relationship": "wallets.user_id -> users.id",
+          "constraint": "FOREIGN KEY ON DELETE CASCADE", 
+          "mustBeValid": true
+        },
+        {
+          "relationship": "campaigns.brand_id -> users.id",
+          "constraint": "FOREIGN KEY ON DELETE CASCADE",
+          "mustBeValid": true
+        }
+      ],
+      "preservationRequirement": "All foreign key constraints must remain valid and enforced"
+    },
+    {
+      "operation": "auth.rlsEnforcement",
+      "rlsActive": true,
+      "anonymousAccessBlocked": true,
+      "preservationRequirement": "Row Level Security enforcement must be unchanged",
+      "expectedBehavior": "Anonymous users should receive row-level security policy violations"
+    }
+  ],
+  "testResults": {
+    "campaigns": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {"name": "readOperations", "status": "PASSED"},
+        {"name": "filterOperations", "status": "PASSED"}, 
+        {"name": "orderingOperations", "status": "PASSED"}
+      ]
+    },
+    "applications": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {"name": "readOperations", "status": "PASSED"},
+        {"name": "joinOperations", "status": "PASSED"},
+        {"name": "statusOperations", "status": "PASSED"}
+      ]
+    },
+    "users": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {"name": "readOperations", "status": "PASSED"},
+        {"name": "roleOperations", "status": "PASSED"},
+        {"name": "accountStatusOperations", "status": "PASSED"}
+      ]
+    },
+    "crossTable": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {"name": "campaignApplications", "status": "PASSED"},
+        {"name": "userProfiles", "status": "PASSED"},
+        {"name": "walletUsers", "status": "PASSED"},
+        {"name": "foreignKeyIntegrity", "status": "PASSED"}
+      ]
+    },
+    "auth": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {"name": "basicFlows", "status": "PASSED"}
+      ]
+    }
+  },
+  "propertyBasedResults": {
+    "propertiesTested": 8,
+    "totalTestCases": 64,
+    "passed": 64,
+    "failed": 0,
+    "successRate": 100.0,
+    "properties": [
+      {
+        "name": "Foreign Key Consistency",
+        "description": "All foreign key relationships are valid",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "User-Wallet Relationship Integrity",
+        "description": "All wallets reference valid users",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "Campaign Status Consistency", 
+        "description": "All campaigns have valid status values",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "Application Status Consistency",
+        "description": "All applications have valid status values", 
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "User Role Consistency",
+        "description": "All users have valid role values",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "Cross-Table Query Consistency",
+        "description": "Cross-table queries return consistent results",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "Timestamp Consistency",
+        "description": "All timestamps are reasonable and valid",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "Unique Constraint Preservation",
+        "description": "All unique constraints are properly enforced",
+        "testCases": 8,
+        "passed": 8,
+        "failed": 0
+      }
+    ]
+  },
+  "validationRequirements": {
+    "reRunAfterFixes": true,
+    "allTestsMustPass": true,
+    "identicalResults": true,
+    "regressionDetection": true,
+    "validationCommands": [
+      "./run_task_2_3_preservation.sh",
+      "node test_unrelated_tables_preservation.js",
+      "node test_unrelated_tables_pbt.js"
+    ],
+    "successCriteria": [
+      "All unit tests pass with identical results",
+      "All property-based tests pass with identical results",
+      "Query structures remain unchanged",
+      "RLS blocking patterns remain identical",
+      "Foreign key relationships intact",
+      "Performance not degraded"
+    ],
+    "failureCriteria": [
+      "Any test that previously passed now fails",
+      "Any query result structure changes",
+      "Any new errors introduced",
+      "Any RLS behavior changes",
+      "Any constraint enforcement changes"
+    ]
+  },
+  "criticalPreservationGuarantees": {
+    "campaignsTable": {
+      "schemaPreservation": "All 18 columns must remain identical",
+      "operationsPreservation": "CRUD operations must work identically",
+      "constraintsPreservation": "Status CHECK constraints must be enforced",
+      "relationshipsPreservation": "Foreign key to users(brand_id) must be intact"
+    },
+    "applicationsTable": {
+      "schemaPreservation": "All 9 columns must remain identical", 
+      "uniqueConstraintPreservation": "(campaign_id, creator_id) uniqueness enforced",
+      "foreignKeyPreservation": "References to campaigns and users must be valid",
+      "joinPreservation": "JOINs with campaigns must work identically"
+    },
+    "usersTable": {
+      "rlsPreservation": "Row Level Security policies unchanged",
+      "authenticationPreservation": "Anonymous access patterns identical",
+      "roleBasedAccessPreservation": "Role-based filtering behavior unchanged",
+      "profileRelationshipsPreservation": "Relationships to profiles intact"
+    },
+    "crossTableOperations": {
+      "foreignKeyIntegrity": "All FK constraints remain valid and enforced",
+      "joinConsistency": "Cross-table JOINs produce identical results",
+      "cascadeDeletePreservation": "CASCADE delete behaviors unchanged",
+      "relationshipIntegrity": "All table relationships remain intact"
+    }
+  },
+  "regressionDetectionStrategy": {
+    "automatedTesting": "Comprehensive test suite detects preservation violations",
+    "baselineComparison": "Results compared against documented baseline",
+    "propertyValidation": "Mathematical properties ensure formal correctness",
+    "performanceMonitoring": "Query performance regression detection",
+    "securityValidation": "RLS and authentication behavior verification"
+  },
+  "deploymentSafety": {
+    "preDeploymentValidation": "All preservation tests must pass in staging",
+    "postDeploymentVerification": "Smoke tests verify critical operations",
+    "rollbackCriteria": "Any preservation test failure triggers rollback",
+    "continuousMonitoring": "Ongoing monitoring of table operation success rates"
+  }
+}

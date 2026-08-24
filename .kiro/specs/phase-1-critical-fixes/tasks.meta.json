@@ -1,0 +1,481 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Test subscription plans migration failure": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016100
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555022416
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555133328
+      }
+    ],
+    "1.2 Test wallet RPC function failures": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016107
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555135821
+      }
+    ],
+    "1.3 Test subscription payment table failure": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016109
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555322800
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555481468
+      }
+    ],
+    "2.1 Test existing subscription plans data preservation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016111
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555487890
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555682574
+      }
+    ],
+    "2.2 Test wallet function preservation (existing names)": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016113
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555685321
+      }
+    ],
+    "2.3 Test unrelated table operations preservation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016115
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787556207303
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787556594822
+      }
+    ],
+    "2.4 Test RLS policy preservation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016118
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787556598231
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557192183
+      }
+    ],
+    "3.1 Create Migration 1: Subscription Plans Schema Alignment": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016120
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557199671
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557433175
+      }
+    ],
+    "3.2 Create Migration 2: Wallet RPC Function Aliases": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016124
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557436398
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787561608252
+      }
+    ],
+    "3.3 Create Migration 3: Subscription Payments Table Integration": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016127
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557584597
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557752568
+      }
+    ],
+    "3.4 Execute migrations in correct order": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016129
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557755651
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557965854
+      }
+    ],
+    "3.5.1 Re-run subscription plans migration test": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016131
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557971316
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558130343
+      }
+    ],
+    "3.5.2 Re-run wallet RPC function tests  ": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016134
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558133138
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558271682
+      }
+    ],
+    "3.5.3 Re-run subscription payment table test": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016136
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558274674
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558430583
+      }
+    ],
+    "3.6.1 Re-run subscription plans data preservation tests": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016138
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558433761
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558534681
+      }
+    ],
+    "3.6.2 Re-run wallet function preservation tests": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016140
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558537701
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558774351
+      }
+    ],
+    "3.6.3 Re-run unrelated operations preservation tests": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016142
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558777199
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559001722
+      }
+    ],
+    "3.6.4 Re-run RLS policy preservation tests": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016145
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559004703
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559092917
+      }
+    ],
+    "4.1 Test complete subscription workflow": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016147
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559096079
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559360397
+      }
+    ],
+    "4.2 Test complete wallet management workflow  ": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016149
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559363094
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559627505
+      }
+    ],
+    "4.3 Test admin dashboard operations": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016151
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559630363
+      }
+    ],
+    "4.4 Performance and security validation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016154
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559821040
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560163429
+      }
+    ],
+    "5.1 Create rollback scripts": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016156
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560173185
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560501044
+      }
+    ],
+    "5.2 Update documentation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016158
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560507445
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560950291
+      }
+    ],
+    "5.3 Create monitoring and alerting": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016163
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560953521
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787561403686
+      }
+    ],
+    "6. Checkpoint - Ensure all tests pass and system is stable": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555016166
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787561410527
+      },
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787561555487
+      }
+    ],
+    "1. Write bug condition exploration tests": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787555481470
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fixes)": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787557192186
+      }
+    ],
+    "3.5 Verify bug condition exploration tests now pass": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787558430586
+      }
+    ],
+    "3.6 Verify preservation tests still pass": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787559092920
+      }
+    ],
+    "4. Integration Testing and Validation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787560163433
+      }
+    ],
+    "5. Rollback Procedures and Documentation": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787561403689
+      }
+    ],
+    "3. Fix Phase 1 Critical Database Issues": [
+      {
+        "executionId": "db57ef1a-4f41-423b-81ec-9dce59f9372c",
+        "chatSessionId": "d8efd33f-13b8-459f-b423-0c93d5724458",
+        "timestamp": 1787561591771
+      }
+    ]
+  }
+}

@@ -1,0 +1,437 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Phase 1 Critical Database Fixes - Monitoring Dashboard",
+    "tags": ["phase1", "database", "rexo", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Health Status Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "phase1_health_status",
+            "legendFormat": "{{component}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "displayMode": "basic"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "healthy": {
+                    "color": "green",
+                    "index": 0,
+                    "text": "✅ Healthy"
+                  },
+                  "warning": {
+                    "color": "yellow",
+                    "index": 1,
+                    "text": "⚠️ Warning"
+                  },
+                  "critical": {
+                    "color": "red",
+                    "index": 2,
+                    "text": "❌ Critical"
+                  }
+                },
+                "type": "value"
+              }
+            ]
+          }
+        },
+        "options": {
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Subscription Plans Operations",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(phase1_subscription_plans_operations_total[5m])",
+            "legendFormat": "{{operation_type}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Operations/sec",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "visible",
+            "placement": "bottom"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        }
+      },
+      {
+        "id": 3,
+        "title": "Wallet Functions Operations",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(phase1_wallet_functions_operations_total[5m])",
+            "legendFormat": "{{operation_type}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Operations/sec",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "visible",
+            "placement": "bottom"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        }
+      },
+      {
+        "id": 4,
+        "title": "Subscription Payments Operations",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(phase1_subscription_payments_operations_total[5m])",
+            "legendFormat": "{{operation_type}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Operations/sec",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 14
+        }
+      },
+      {
+        "id": 5,
+        "title": "Error Rate by Component",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(phase1_errors_total[5m]) * 100",
+            "legendFormat": "{{component}} - {{error_type}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Error Rate %",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 5
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 22
+        }
+      },
+      {
+        "id": 6,
+        "title": "Average Response Time",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(phase1_operation_duration_seconds_sum[5m]) / rate(phase1_operation_duration_seconds_count[5m]) * 1000",
+            "legendFormat": "{{component}} - {{operation_type}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Response Time (ms)",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 500
+                },
+                {
+                  "color": "red",
+                  "value": 1000
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 22
+        }
+      },
+      {
+        "id": 7,
+        "title": "Database Connections",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "pg_stat_activity_count",
+            "legendFormat": "Total Connections",
+            "refId": "A"
+          },
+          {
+            "expr": "pg_stat_activity_count{state='active'}",
+            "legendFormat": "Active Connections",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Connections",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 30
+        }
+      },
+      {
+        "id": 8,
+        "title": "Database Size Growth",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "pg_database_size_bytes{datname='rexo_marketplace'}",
+            "legendFormat": "Database Size",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Bytes",
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            },
+            "unit": "bytes"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 30
+        }
+      },
+      {
+        "id": 9,
+        "title": "Active Alerts",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "phase1_active_alerts",
+            "legendFormat": "",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          }
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "component": "Component",
+                "severity": "Severity",
+                "message": "Alert Message",
+                "timestamp": "Timestamp"
+              }
+            }
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 36
+        }
+      },
+      {
+        "id": 10,
+        "title": "Phase 1 Component Status",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "phase1_component_health_score",
+            "legendFormat": "{{component}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "spectrum"
+            },
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              }
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 44
+        }
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": []
+  },
+  "folderUid": "phase1-monitoring",
+  "message": "Phase 1 Critical Database Fixes Monitoring Dashboard",
+  "overwrite": true
+}

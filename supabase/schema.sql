@@ -1081,6 +1081,7 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
     price DECIMAL NOT NULL,
     features JSONB,
     duration_days INTEGER NOT NULL,
+    interval TEXT DEFAULT 'month' CHECK (interval IN ('month', 'year', 'week', 'day')),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

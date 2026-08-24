@@ -1,0 +1,238 @@
+# ============================================================
+# AlertManager Configuration for Phase 1 Monitoring
+# ============================================================
+
+global:
+  smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
+  smtp_from: '${SMTP_FROM:-alerts@rexo.com}'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASS}'
+
+route:
+  group_by: ['alertname', 'component']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'phase1-default'
+  routes:
+  # Critical alerts - immediate notification via all channels
+  - match:
+      service: rexo-marketplace
+      severity: critical
+    receiver: 'phase1-critical'
+    group_wait: 10s
+    repeat_interval: 5m
+    
+  # Warning alerts - standard notification
+  - match:
+      service: rexo-marketplace
+      severity: warning
+    receiver: 'phase1-warning'
+    group_wait: 1m
+    repeat_interval: 30m
+    
+  # Info alerts - low priority notification
+  - match:
+      service: rexo-marketplace
+      severity: info
+    receiver: 'phase1-info'
+    group_wait: 5m
+    repeat_interval: 4h
+
+  # Component-specific routing
+  - match:
+      component: subscription_plans
+    receiver: 'subscription-plans-team'
+    continue: true
+    
+  - match:
+      component: wallet_functions
+    receiver: 'wallet-team'
+    continue: true
+    
+  - match:
+      component: subscription_payments
+    receiver: 'payments-team'
+    continue: true
+
+receivers:
+# Critical alerts receiver
+- name: 'phase1-critical'
+  email_configs:
+  - to: '${CRITICAL_EMAIL:-critical-alerts@rexo.com}'
+    subject: '[CRITICAL] Phase 1 Alert: {{ .GroupLabels.alertname }}'
+    headers:
+      Priority: 'urgent'
+    body: |
+      🚨 CRITICAL PHASE 1 ALERT 🚨
+      
+      Alert: {{ .GroupLabels.alertname }}
+      Component: {{ .GroupLabels.component }}
+      
+      {{ range .Alerts }}
+      Summary: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      
+      Runbook: {{ .Annotations.runbook_url }}
+      Dashboard: {{ .Annotations.dashboard_url }}
+      
+      Labels:
+      {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+      {{ end }}
+      
+      Fired at: {{ .StartsAt }}
+      {{ end }}
+      
+      Please investigate immediately and follow the runbook procedures.
+    
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#critical-alerts'
+    color: 'danger'
+    title: '🚨 CRITICAL: Phase 1 Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Component:* {{ .GroupLabels.component }}
+      {{ range .Alerts }}
+      *Summary:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Runbook:* {{ .Annotations.runbook_url }}
+      {{ end }}
+    actions:
+    - type: button
+      text: 'View Dashboard'
+      url: '{{ .Annotations.dashboard_url }}'
+    - type: button
+      text: 'View Runbook'
+      url: '{{ .Annotations.runbook_url }}'
+      
+  pagerduty_configs:
+  - routing_key: '${PAGERDUTY_INTEGRATION_KEY}'
+    severity: 'critical'
+    summary: 'Phase 1 Critical: {{ .GroupLabels.alertname }}'
+    details:
+      component: '{{ .GroupLabels.component }}'
+      alert_count: '{{ len .Alerts }}'
+
+# Warning alerts receiver
+- name: 'phase1-warning'
+  email_configs:
+  - to: '${WARNING_EMAIL:-alerts@rexo.com}'
+    subject: '[WARNING] Phase 1 Alert: {{ .GroupLabels.alertname }}'
+    body: |
+      ⚠️ PHASE 1 WARNING ALERT ⚠️
+      
+      Alert: {{ .GroupLabels.alertname }}
+      Component: {{ .GroupLabels.component }}
+      
+      {{ range .Alerts }}
+      Summary: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Runbook: {{ .Annotations.runbook_url }}
+      {{ end }}
+      
+      Please review when convenient.
+      
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#alerts'
+    color: 'warning'
+    title: '⚠️ WARNING: Phase 1 Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Component:* {{ .GroupLabels.component }}
+      {{ range .Alerts }}*Summary:* {{ .Annotations.summary }}{{ end }}
+
+# Info alerts receiver
+- name: 'phase1-info'
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#notifications'
+    color: 'good'
+    title: 'ℹ️ INFO: Phase 1 Notification'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}*Summary:* {{ .Annotations.summary }}{{ end }}
+
+# Default receiver
+- name: 'phase1-default'
+  email_configs:
+  - to: '${DEFAULT_EMAIL:-alerts@rexo.com}'
+    subject: '[Phase 1] Alert: {{ .GroupLabels.alertname }}'
+    body: |
+      Phase 1 Alert
+      
+      {{ range .Alerts }}
+      Summary: {{ .Annotations.summary }}
+      Component: {{ .Labels.component }}
+      {{ end }}
+
+# Component-specific receivers
+- name: 'subscription-plans-team'
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#subscription-team'
+    color: '{{ if eq .GroupLabels.severity "critical" }}danger{{ else if eq .GroupLabels.severity "warning" }}warning{{ else }}good{{ end }}'
+    title: 'Subscription Plans Alert'
+    text: |
+      {{ range .Alerts }}*{{ .Annotations.summary }}*
+      Component: {{ .Labels.component }}{{ end }}
+
+- name: 'wallet-team'
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#wallet-team'
+    color: '{{ if eq .GroupLabels.severity "critical" }}danger{{ else if eq .GroupLabels.severity "warning" }}warning{{ else }}good{{ end }}'
+    title: 'Wallet Functions Alert'
+    text: |
+      {{ range .Alerts }}*{{ .Annotations.summary }}*
+      Component: {{ .Labels.component }}{{ end }}
+
+- name: 'payments-team'
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#payments-team'
+    color: '{{ if eq .GroupLabels.severity "critical" }}danger{{ else if eq .GroupLabels.severity "warning" }}warning{{ else }}good{{ end }}'
+    title: 'Subscription Payments Alert'
+    text: |
+      {{ range .Alerts }}*{{ .Annotations.summary }}*
+      Component: {{ .Labels.component }}{{ end }}
+
+# Inhibit rules to prevent spam
+inhibit_rules:
+# Inhibit info alerts when critical or warning alerts are firing for the same component
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  equal: ['component', 'alertname']
+
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'info'
+  equal: ['component', 'alertname']
+
+- source_match:
+    severity: 'warning'
+  target_match:
+    severity: 'info'
+  equal: ['component', 'alertname']
+
+# Inhibit subscription plans alerts if the database is down
+- source_match:
+    alertname: 'Phase1DatabaseConnectionFailure'
+  target_match_re:
+    alertname: '.*SubscriptionPlans.*'
+
+# Inhibit wallet function alerts if the database is down
+- source_match:
+    alertname: 'Phase1DatabaseConnectionFailure'
+  target_match_re:
+    alertname: '.*WalletFunctions.*'
+
+# Inhibit subscription payment alerts if the database is down
+- source_match:
+    alertname: 'Phase1DatabaseConnectionFailure'
+  target_match_re:
+    alertname: '.*SubscriptionPayments.*'
