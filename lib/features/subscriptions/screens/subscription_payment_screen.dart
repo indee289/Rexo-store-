@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/subscriptions_provider.dart';
@@ -178,11 +179,10 @@ class _SubscriptionPaymentScreenState
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Subscribe to ${widget.planName}', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: PremiumAppBar(
+        title: 'Subscribe to ${widget.planName}',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

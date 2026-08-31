@@ -10,6 +10,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_card.dart';
 import '../../../core/widgets/premium_icon_button.dart';
@@ -29,20 +30,10 @@ class SubscriptionsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Subscriptions', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor:
-            theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: PremiumIconButton(
-            icon: Iconsax.arrow_left,
-            onPressed: () => context.pop(),
-          ),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Subscriptions',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),

@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/moderation_provider.dart';
@@ -36,14 +37,7 @@ class ModerationScreen extends ConsumerWidget {
   Widget _buildAccessDenied(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Moderation', style: AppTextStyles.h5),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        iconTheme:
-            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
-      ),
+      appBar: PremiumAppBar(title: 'Moderation', showBack: true),
       body: const EmptyState(
         icon: Iconsax.lock,
         title: 'Access Denied',
@@ -57,13 +51,9 @@ class ModerationScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          title: Text('Moderation', style: AppTextStyles.h5),
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 0,
-          scrolledUnderElevation: 0.5,
-          iconTheme:
-              IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        appBar: PremiumAppBar(
+          title: 'Moderation',
+          showBack: true,
           bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor:
