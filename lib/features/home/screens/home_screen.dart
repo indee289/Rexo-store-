@@ -5,9 +5,6 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/campaign_card.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -31,11 +28,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -52,45 +46,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverAppBar(
                 floating: true,
                 snap: true,
-                backgroundColor: theme.scaffoldBackgroundColor,
+                backgroundColor: Colors.white,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 surfaceTintColor: Colors.transparent,
                 centerTitle: false,
-                titleSpacing: 20,
+                titleSpacing: 16,
+                bottom: const PreferredSize(
+                  preferredSize: Size.fromHeight(1),
+                  child: Divider(height: 1, color: AppColors.border),
+                ),
                 title: Row(
                   children: [
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Iconsax.crown_1,
                         color: Colors.white,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    ShaderMask(
-                      shaderCallback: (bounds) =>
-                          AppColors.primaryGradient.createShader(bounds),
-                      child: Text(
-                        'Rexo',
-                        style: AppTextStyles.h4.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Rexo',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ],
                 ),
-                actions: [
-                  _buildNavActions(isDark),
-                ],
+                actions: [_buildNavActions()],
               ),
 
               SliverToBoxAdapter(
@@ -98,14 +91,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildEmailBanner(),
-                    const SizedBox(height: 4),
                     const CategoryChips(),
                     const SizedBox(height: 16),
-                    _buildSegmentedTabs(isDark),
+                    _buildSegmentedTabs(),
                     const SizedBox(height: 16),
                     if (_tab == 0) _buildCampaigns(),
                     if (_tab == 1) _buildCreators(),
-                    const SizedBox(height: 120),
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -116,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildNavActions(bool isDark) {
+  Widget _buildNavActions() {
     final profileAsync = ref.watch(homeUserProfileProvider);
     return Padding(
       padding: const EdgeInsets.only(right: 16),
@@ -125,30 +117,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Notification bell
           GestureDetector(
             onTap: () => context.push(AppRoutes.notifications),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkSurfaceAlt
-                    : AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.border,
-                ),
-              ),
-              child: Icon(
-                Iconsax.notification,
-                size: 20,
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.textSecondary,
-              ),
+            child: const Icon(
+              Iconsax.notification,
+              size: 22,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
           // Avatar
           profileAsync.maybeWhen(
             data: (p) => GestureDetector(
@@ -156,72 +131,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: PremiumAvatar(
                 imageUrl: p?['avatar_url'],
                 name: p?['name'] ?? '',
-                size: 38,
+                size: 32,
               ),
             ),
-            orElse: () => const SizedBox(width: 38, height: 38),
+            orElse: () => const SizedBox(width: 32, height: 32),
           ),
         ],
       ),
     );
   }
 
-  /// Equal-width segmented control — both tabs always same width.
-  Widget _buildSegmentedTabs(bool isDark) {
+  /// Equal-width segmented tabs — Instagram-style: active = teal text +
+  /// 2px teal bottom border; inactive = gray text. No filled background.
+  Widget _buildSegmentedTabs() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        height: 46,
-        padding: const EdgeInsets.all(4),
+        height: 44,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-          ),
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
-            _segTab(0, Iconsax.briefcase, 'Campaigns', isDark),
-            _segTab(1, Iconsax.people, 'Top Creators', isDark),
+            _segTab(0, Iconsax.briefcase, 'Campaigns'),
+            _segTab(1, Iconsax.people, 'Top Creators'),
           ],
         ),
       ),
     );
   }
 
-  Widget _segTab(int idx, IconData icon, String label, bool isDark) {
+  Widget _segTab(int idx, IconData icon, String label) {
     final active = _tab == idx;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _tab = idx),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
+        child: Container(
           decoration: BoxDecoration(
-            gradient: active ? AppColors.primaryGradient : null,
+            color: active ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
+            border: active
+                ? Border.all(color: AppColors.border)
                 : null,
           ),
+          margin: const EdgeInsets.all(3),
+          alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
                 size: 15,
-                color: active
-                    ? Colors.white
-                    : (isDark
-                        ? AppColors.darkTextHint
-                        : AppColors.textHint),
+                color: active ? AppColors.primary : AppColors.textHint,
               ),
               const SizedBox(width: 5),
               Text(
@@ -230,12 +193,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   fontSize: 13,
                   fontWeight:
                       active ? FontWeight.w600 : FontWeight.w500,
-                  color: active
-                      ? Colors.white
-                      : (isDark
-                          ? AppColors.darkTextHint
-                          : AppColors.textHint),
-                  letterSpacing: -0.2,
+                  color: active ? AppColors.primary : AppColors.textHint,
+                  letterSpacing: -0.1,
                 ),
               ),
             ],
@@ -257,7 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           : ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: list.length,
               itemBuilder: (_, i) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -271,7 +230,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
       loading: () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: List.generate(
             3,
@@ -293,7 +252,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               subtitle: 'Pull down to refresh.',
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -301,7 +260,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   for (int i = 0; i < list.length; i++)
                     SizedBox(
                       width:
-                          (MediaQuery.of(context).size.width - 40 - 12) / 2,
+                          (MediaQuery.of(context).size.width - 32 - 12) /
+                              2,
                       child: CreatorCard(
                         creator: list[i],
                         onTap: () {
@@ -314,7 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
       loading: () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -332,17 +292,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return const SizedBox.shrink();
       }
       return Container(
-        margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.warning.withOpacity(0.08),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.warning.withOpacity(0.3)),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Iconsax.sms, color: AppColors.warning, size: 18),
-            const SizedBox(width: 10),
+            Icon(Iconsax.sms, color: AppColors.warning, size: 16),
+            SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Please verify your email to unlock all features.',

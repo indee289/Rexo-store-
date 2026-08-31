@@ -1,25 +1,24 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() =>
+      _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
@@ -64,14 +63,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  /// Shows bottom sheet to pick photo source
   void _showAvatarPickerSheet() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
-          color: AppColors.darkSurface,
+          color: Colors.white,
           borderRadius: AppRadius.topXl,
         ),
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -81,25 +79,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
+                width: 36,
                 height: 4,
                 decoration: const BoxDecoration(
-                  color: AppColors.darkBorder,
+                  color: AppColors.border,
                   borderRadius: AppRadius.pillAll,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              Text(
+              const Text(
                 'Change Profile Photo',
-                style: AppTextStyles.h6.copyWith(
-                  color: AppColors.darkTextPrimary,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _AvatarOptionButton(
+                  _AvatarOption(
                     icon: Iconsax.camera,
                     label: 'Camera',
                     color: AppColors.primary,
@@ -108,7 +108,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       _pickImage(ImageSource.camera);
                     },
                   ),
-                  _AvatarOptionButton(
+                  _AvatarOption(
                     icon: Iconsax.gallery,
                     label: 'Gallery',
                     color: AppColors.accentPurple,
@@ -118,7 +118,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     },
                   ),
                   if (_currentAvatarUrl != null || _selectedImage != null)
-                    _AvatarOptionButton(
+                    _AvatarOption(
                       icon: Iconsax.trash,
                       label: 'Remove',
                       color: AppColors.error,
@@ -155,7 +155,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _isUploadingAvatar = true;
       });
 
-      // Upload immediately for instant feedback
       try {
         final notifier = ref.read(profileNotifierProvider.notifier);
         final avatarUrl = await notifier.uploadAvatar(_selectedImage!);
@@ -181,7 +180,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _showSnack(String message, Color background) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: AppTextStyles.bodySmall),
+        content: Text(message),
         backgroundColor: background,
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
@@ -191,19 +190,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSaving = true);
 
     try {
       final notifier = ref.read(profileNotifierProvider.notifier);
-
       final fields = <String, dynamic>{
         'name': _nameController.text.trim(),
         'handle': _handleController.text.trim(),
         'bio': _bioController.text.trim(),
         'phone': _phoneController.text.trim(),
       };
-
       if (_currentAvatarUrl != null) {
         fields['avatar_url'] = _currentAvatarUrl;
       }
@@ -234,46 +230,38 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // ── Custom dark top bar ─────────────────────────────────────────
+            // ── AppBar ────────────────────────────────────────────────────
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: const BoxDecoration(
-                color: AppColors.darkSurface,
+                color: Colors.white,
                 border: Border(
-                  bottom: BorderSide(color: AppColors.darkBorder, width: 1),
+                  bottom: BorderSide(color: AppColors.border, width: 1),
                 ),
               ),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.darkCard,
-                        borderRadius: AppRadius.allSm,
-                        border: Border.all(color: AppColors.darkBorder),
-                      ),
-                      child: const Icon(
-                        Iconsax.arrow_left,
-                        size: 18,
-                        color: AppColors.darkTextPrimary,
-                      ),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      size: 28,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Edit Profile',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.h5.copyWith(
-                        color: AppColors.darkTextPrimary,
-                        fontWeight: FontWeight.w700,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -281,8 +269,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     onTap: _isSaving ? null : _saveProfile,
                     child: _isSaving
                         ? const SizedBox(
-                            width: 36,
-                            height: 36,
+                            width: 40,
+                            height: 40,
                             child: Center(
                               child: SizedBox(
                                 width: 18,
@@ -294,11 +282,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               ),
                             ),
                           )
-                        : Text(
+                        : const Text(
                             'Save',
-                            style: AppTextStyles.labelLarge.copyWith(
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
                             ),
                           ),
                   ),
@@ -306,124 +295,64 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
 
-            // ── Body ────────────────────────────────────────────────────────
+            // ── Body ──────────────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Avatar section
-                      _buildAvatarSection(),
+                      // Avatar section — center
+                      Center(child: _buildAvatarSection()),
                       const SizedBox(height: AppSpacing.xxl),
 
-                      // Form fields on dark cards
-                      _buildDarkField(
+                      _buildField(
                         controller: _nameController,
                         label: 'Full Name',
                         hint: 'Enter your full name',
                         icon: Iconsax.user,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
                             return 'Name is required';
                           }
                           return null;
                         },
-                      )
-                          .animate()
-                          .fadeIn(
-                              delay: const Duration(milliseconds: 50),
-                              duration: AppMotion.base)
-                          .slideX(begin: 0.02, end: 0),
+                      ),
                       const SizedBox(height: AppSpacing.lg),
 
-                      _buildDarkField(
+                      _buildField(
                         controller: _handleController,
                         label: 'Username',
                         hint: '@your_handle',
                         icon: Iconsax.user_tag,
-                      )
-                          .animate()
-                          .fadeIn(
-                              delay: const Duration(milliseconds: 100),
-                              duration: AppMotion.base)
-                          .slideX(begin: 0.02, end: 0),
+                      ),
                       const SizedBox(height: AppSpacing.lg),
 
-                      _buildDarkMultilineField(
+                      _buildMultilineField(
                         controller: _bioController,
                         label: 'Bio',
                         hint: 'Tell the world about yourself...',
-                      )
-                          .animate()
-                          .fadeIn(
-                              delay: const Duration(milliseconds: 150),
-                              duration: AppMotion.base)
-                          .slideX(begin: 0.02, end: 0),
+                      ),
                       const SizedBox(height: AppSpacing.lg),
 
-                      _buildDarkField(
+                      _buildField(
                         controller: _phoneController,
                         label: 'Phone',
                         hint: '+91 98765 43210',
                         icon: Iconsax.call,
                         keyboardType: TextInputType.phone,
-                      )
-                          .animate()
-                          .fadeIn(
-                              delay: const Duration(milliseconds: 200),
-                              duration: AppMotion.base)
-                          .slideX(begin: 0.02, end: 0),
+                      ),
                       const SizedBox(height: AppSpacing.xxl),
 
-                      // Save Changes gradient button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            borderRadius: AppRadius.allMd,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.4),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: _isSaving ? null : _saveProfile,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: AppRadius.allMd),
-                            ),
-                            icon: _isSaving
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2),
-                                  )
-                                : const Icon(Iconsax.save_2,
-                                    color: Colors.white, size: 18),
-                            label: Text(
-                              'Save Changes',
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                          .animate()
-                          .fadeIn(
-                              delay: const Duration(milliseconds: 250),
-                              duration: AppMotion.base),
+                      // Save button
+                      PremiumButton(
+                        label: 'Save Changes',
+                        loading: _isSaving,
+                        onPressed: _isSaving ? null : _saveProfile,
+                        icon: Iconsax.save_2,
+                      ),
                       const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
@@ -444,31 +373,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              AnimatedContainer(
-                duration: AppMotion.base,
-                width: 108,
-                height: 108,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _selectedImage != null
-                        ? AppColors.primary
-                        : AppColors.darkBorder,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(
-                          _selectedImage != null ? 0.25 : 0.05),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
                 child: ClipOval(
                   child: _isUploadingAvatar
                       ? Container(
-                          color: AppColors.darkCard,
+                          color: AppColors.surfaceAlt,
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary,
@@ -479,74 +391,51 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       : _selectedImage != null
                           ? Image.file(
                               _selectedImage!,
-                              width: 108,
-                              height: 108,
+                              width: 80,
+                              height: 80,
                               fit: BoxFit.cover,
                             )
                           : PremiumAvatar(
                               imageUrl: _currentAvatarUrl,
                               name: _nameController.text,
-                              size: 108,
-                              showRing: false,
+                              size: 80,
                             ),
                 ),
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: AnimatedScale(
-                  scale: _isUploadingAvatar ? 0.8 : 1.0,
-                  duration: AppMotion.fast,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.darkBackground, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: _isUploadingAvatar
-                        ? const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Iconsax.camera,
-                            size: 16, color: Colors.white),
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Iconsax.camera,
+                    size: 14,
+                    color: Colors.white,
                   ),
                 ),
               ),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(duration: AppMotion.base)
-            .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1)),
-
-        const SizedBox(height: AppSpacing.sm),
+        ),
+        const SizedBox(height: 8),
         Text(
           _isUploadingAvatar ? 'Uploading...' : 'Tap to change photo',
-          style: AppTextStyles.caption.copyWith(
-            color: _isUploadingAvatar
-                ? AppColors.primary
-                : AppColors.darkTextSecondary,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDarkField({
+  Widget _buildField({
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -559,42 +448,41 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Text(
           label,
-          style: AppTextStyles.labelLarge.copyWith(
-            color: AppColors.darkTextPrimary,
-            fontWeight: FontWeight.w600,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.darkTextPrimary,
-          ),
+          style: const TextStyle(
+              fontSize: 14, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.darkTextHint,
-            ),
+            hintStyle: const TextStyle(
+                fontSize: 14, color: AppColors.textHint),
             filled: true,
-            fillColor: AppColors.darkCard,
+            fillColor: AppColors.surfaceAlt,
             prefixIcon:
-                Icon(icon, color: AppColors.darkTextSecondary, size: 20),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                Icon(icon, color: AppColors.textHint, size: 20),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.darkBorder),
+              borderSide: const BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.darkBorder),
+              borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
               borderSide:
-                  const BorderSide(color: AppColors.primary, width: 1.5),
+                  const BorderSide(color: AppColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
@@ -602,7 +490,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.error, width: 2),
             ),
           ),
         ),
@@ -610,7 +499,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildDarkMultilineField({
+  Widget _buildMultilineField({
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -620,39 +509,38 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Text(
           label,
-          style: AppTextStyles.labelLarge.copyWith(
-            color: AppColors.darkTextPrimary,
-            fontWeight: FontWeight.w600,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           maxLines: 4,
           minLines: 3,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.darkTextPrimary,
-          ),
+          style: const TextStyle(
+              fontSize: 14, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.darkTextHint,
-            ),
+            hintStyle: const TextStyle(
+                fontSize: 14, color: AppColors.textHint),
             filled: true,
-            fillColor: AppColors.darkCard,
+            fillColor: AppColors.surfaceAlt,
             contentPadding: const EdgeInsets.all(16),
             border: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.darkBorder),
+              borderSide: const BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.darkBorder),
+              borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadius.allMd,
               borderSide:
-                  const BorderSide(color: AppColors.primary, width: 1.5),
+                  const BorderSide(color: AppColors.primary, width: 2),
             ),
           ),
         ),
@@ -661,14 +549,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 }
 
-/// Avatar picker option button (camera/gallery/remove)
-class _AvatarOptionButton extends StatelessWidget {
+/// Avatar picker option button.
+class _AvatarOption extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
 
-  const _AvatarOptionButton({
+  const _AvatarOption({
     required this.icon,
     required this.label,
     required this.color,
@@ -682,20 +570,21 @@ class _AvatarOptionButton extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: AppRadius.allLg,
+              borderRadius: AppRadius.allMd,
               border: Border.all(color: color.withOpacity(0.2)),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 26),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 6),
           Text(
             label,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
