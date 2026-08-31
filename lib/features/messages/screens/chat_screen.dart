@@ -113,26 +113,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final displayName =
         otherUserName.isEmpty ? 'User' : otherUserName;
 
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pageBg = isDark ? AppColors.darkBackground : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final surfaceAlt =
+        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: pageBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: pageBg,
         elevation: 0,
-        scrolledUnderElevation: 1,
-        shadowColor: AppColors.border,
+        scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: AppColors.border),
-        ),
         title: Row(
           children: [
             IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.chevron_left,
-                  size: 28, color: AppColors.textPrimary),
+              icon: Icon(Icons.chevron_left,
+                  size: 28, color: cs.onSurface),
             ),
             PremiumAvatar(
               imageUrl: otherUserAvatar,
@@ -147,10 +149,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 children: [
                   Text(
                     displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -247,9 +249,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: CircularProgressIndicator(
                     color: AppColors.primary),
               ),
-              error: (e, _) => const Center(
+              error: (e, _) => Center(
                 child: Text('Failed to load messages',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: cs.onSurfaceVariant)),
               ),
             ),
           ),
@@ -257,10 +259,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // ── Input bar ──────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: pageBg,
               border: Border(
-                top: BorderSide(color: AppColors.border, width: 1),
+                top: BorderSide(color: borderColor, width: 1),
               ),
             ),
             child: SafeArea(
@@ -271,9 +273,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceAlt,
-                        borderRadius: AppRadius.allMd,
-                        border: Border.all(color: AppColors.border),
+                        color: surfaceAlt,
+                        borderRadius: AppRadius.pillAll,
                       ),
                       child: TextField(
                         controller: _messageController,
@@ -281,16 +282,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             TextCapitalization.sentences,
                         maxLines: 4,
                         minLines: 1,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textPrimary),
-                        decoration: const InputDecoration(
+                            color: cs.onSurface),
+                        decoration: InputDecoration(
                           hintText: 'Message...',
                           hintStyle: TextStyle(
-                              fontSize: 14, color: AppColors.textHint),
+                              fontSize: 14, color: cs.onSurfaceVariant),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                         onSubmitted: (_) => _sendMessage(),
                       ),
@@ -323,17 +324,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    final cs = Theme.of(context).colorScheme;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.message_text, size: 48, color: AppColors.textHint),
-          SizedBox(height: 12),
+          Icon(Iconsax.message_text, size: 48, color: cs.onSurfaceVariant),
+          const SizedBox(height: 12),
           Text('No messages yet',
-              style: TextStyle(color: AppColors.textSecondary)),
-          SizedBox(height: 4),
+              style: TextStyle(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 4),
           Text('Say hello!',
-              style: TextStyle(fontSize: 13, color: AppColors.textHint)),
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
         ],
       ),
     );
@@ -414,14 +416,16 @@ class _DateSeparator extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.surfaceAlt,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.darkSurfaceAlt
+                : AppColors.surfaceAlt,
             borderRadius: AppRadius.pillAll,
           ),
           child: Text(
             _label(date),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -635,7 +639,9 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppColors.error : AppColors.textPrimary;
+    final color = destructive
+        ? AppColors.error
+        : Theme.of(context).colorScheme.onSurface;
     return Opacity(
       opacity: onTap == null ? 0.5 : 1.0,
       child: InkWell(
