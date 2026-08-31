@@ -25,20 +25,7 @@ class MediaKitScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Media Kit', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: PremiumIconButton(
-            icon: Iconsax.arrow_left,
-            onPressed: () => context.pop(),
-          ),
-        ),
-      ),
+      appBar: PremiumAppBar(title: 'Media Kit', showBack: true),
       body: profileAsync.when(
         data: (profileState) => _buildContent(context, profileState),
         loading: () => const ShimmerLoading(),
