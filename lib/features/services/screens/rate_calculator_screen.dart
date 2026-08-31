@@ -46,20 +46,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Rate Calculator', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: PremiumIconButton(
-            icon: Iconsax.arrow_left,
-            onPressed: () => context.pop(),
-          ),
-        ),
-      ),
+      appBar: PremiumAppBar(title: 'Rate Calculator', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

@@ -9,6 +9,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/premium_text_field.dart';
@@ -85,17 +86,10 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Apply to Campaign', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        leading: PremiumIconButton(
-          icon: Iconsax.arrow_left,
-          tooltip: 'Back',
-          onPressed: () => context.pop(),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Apply to Campaign',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
