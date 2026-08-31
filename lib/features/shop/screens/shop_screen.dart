@@ -27,7 +27,7 @@ class ShopScreen extends ConsumerWidget {
     final cartCount = ref.watch(cartItemCountProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Shop',
         actions: [
@@ -147,15 +147,10 @@ class ShopScreen extends ConsumerWidget {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Cannot Add Products',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary)),
+          title: const Text('Cannot Add Products'),
           content: const Text(
             'You need to be approved for the Rexo Program to sell products. '
             'Go to your Profile page and apply.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           actions: [
             TextButton(

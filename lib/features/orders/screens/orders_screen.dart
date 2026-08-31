@@ -21,7 +21,7 @@ class OrdersScreen extends ConsumerWidget {
     final ordersAsync = ref.watch(userOrdersProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Orders',
         showBack: true,
@@ -85,22 +85,19 @@ class OrdersScreen extends ConsumerWidget {
     }
 
     final statusColor = _statusColor(status);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     return GestureDetector(
       onTap: () => context.push('/orders/$orderId'),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: AppRadius.allLg,
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x06000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: borderColor),
         ),
         child: Row(
           children: [
@@ -109,7 +106,7 @@ class OrdersScreen extends ConsumerWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.primaryBg,
+                color: AppColors.primary.withOpacity(0.12),
                 borderRadius: AppRadius.allSm,
               ),
               child: const Icon(Iconsax.bag_2,
@@ -124,10 +121,10 @@ class OrdersScreen extends ConsumerWidget {
                 children: [
                   Text(
                     productName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -135,9 +132,9 @@ class OrdersScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     '#${orderId.substring(0, 8).toUpperCase()} • $formattedDate',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],

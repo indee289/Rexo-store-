@@ -20,7 +20,7 @@ class NotificationsScreen extends ConsumerWidget {
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Notifications',
         actions: [
@@ -159,13 +159,21 @@ class _NotificationTile extends StatelessWidget {
 
     final iconData = _iconForType(type);
     final iconColor = _colorForType(type);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final textPrimary = cs.onSurface;
+    final textSecondary = cs.onSurfaceVariant;
+    final textHint =
+        isDark ? AppColors.darkTextHint : AppColors.textHint;
 
     return Container(
       decoration: BoxDecoration(
-        color: isRead ? Colors.white : AppColors.primaryBg,
-        border: const Border(
-            bottom:
-                BorderSide(color: AppColors.divider, width: 1)),
+        color: isRead
+            ? Colors.transparent
+            : AppColors.primary.withOpacity(isDark ? 0.12 : 0.06),
+        border: Border(
+            bottom: BorderSide(
+                color: Theme.of(context).dividerColor, width: 1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +214,7 @@ class _NotificationTile extends StatelessWidget {
                       fontWeight: isRead
                           ? FontWeight.w500
                           : FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -215,9 +223,9 @@ class _NotificationTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       body,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -232,9 +240,9 @@ class _NotificationTile extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(8, 14, 12, 0),
             child: Text(
               timeStr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textHint,
+                color: textHint,
               ),
             ),
           ),

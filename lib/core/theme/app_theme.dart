@@ -24,7 +24,7 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: GoogleFonts.poppins().fontFamily,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       splashFactory: InkSparkle.splashFactory,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
@@ -153,7 +153,7 @@ class AppTheme {
       brightness: Brightness.dark,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.darkBackground,
-      fontFamily: GoogleFonts.poppins().fontFamily,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       splashFactory: InkSparkle.splashFactory,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,

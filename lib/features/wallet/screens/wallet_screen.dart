@@ -23,7 +23,7 @@ class WalletScreen extends ConsumerWidget {
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const PremiumAppBar(title: 'Wallet'),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -47,12 +47,12 @@ class WalletScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
 
               // ── Transactions ────────────────────────────────────────────
-              const Text(
+              Text(
                 'Recent Transactions',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -71,7 +71,7 @@ class WalletScreen extends ConsumerWidget {
                       for (var i = 0;
                           i < transactions.take(20).length;
                           i++)
-                        _buildTransactionTile(transactions[i])
+                        _buildTransactionTile(context, transactions[i])
                             .staggeredEntrance(i),
                     ],
                   );
@@ -85,9 +85,11 @@ class WalletScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                error: (e, _) => const Center(
+                error: (e, _) => Center(
                   child: Text('Failed to load transactions',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               ),
 
@@ -177,7 +179,12 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionTile(Map<String, dynamic> transaction) {
+  Widget _buildTransactionTile(
+      BuildContext context, Map<String, dynamic> transaction) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
     final type = transaction['type'] as String;
     final amount = (transaction['amount'] ?? 0).toDouble();
     final status = transaction['status'] as String? ?? 'pending';
@@ -208,9 +215,9 @@ class WalletScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: AppRadius.allMd,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         children: [
@@ -239,17 +246,17 @@ class WalletScreen extends ConsumerWidget {
               children: [
                 Text(
                   isDeposit ? 'Deposit' : 'Withdrawal',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
                   ),
                 ),
                 Text(
                   '$method • $dateStr',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: cs.onSurfaceVariant,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
