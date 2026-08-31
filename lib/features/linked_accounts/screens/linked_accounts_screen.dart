@@ -29,6 +29,15 @@ class _LinkedAccountsScreenState
   bool _isSaving = false;
   bool _populated = false;
 
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _surfaceAlt =>
+      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+  Color get _textHint => _isDark ? AppColors.darkTextHint : AppColors.textHint;
+
   @override
   void dispose() {
     _instagramController.dispose();
@@ -44,7 +53,7 @@ class _LinkedAccountsScreenState
     final accountsAsync = ref.watch(linkedAccountsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Linked Accounts',
         showBack: true,
@@ -116,9 +125,8 @@ class _LinkedAccountsScreenState
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: AppColors.primaryBg,
-              borderRadius: AppRadius.allMd,
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              color: AppColors.primary.withOpacity(_isDark ? 0.14 : 0.08),
+              borderRadius: AppRadius.allLg,
             ),
             child: Row(
               children: [
@@ -126,14 +134,14 @@ class _LinkedAccountsScreenState
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.12),
+                    color: AppColors.primary.withOpacity(0.16),
                     borderRadius: AppRadius.allSm,
                   ),
                   child: const Icon(Iconsax.link_2,
                       color: AppColors.primary, size: 20),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -142,14 +150,14 @@ class _LinkedAccountsScreenState
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: _cs.onSurface,
                         ),
                       ),
                       Text(
                         'Link platforms to boost your campaign reach',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: _cs.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -244,16 +252,9 @@ class _LinkedAccountsScreenState
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _cardBg,
         borderRadius: AppRadius.allLg,
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: _borderColor),
       ),
       child: Column(
         children: [
@@ -275,10 +276,10 @@ class _LinkedAccountsScreenState
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: _cs.onSurface,
                       ),
                     ),
                     Row(
@@ -290,7 +291,7 @@ class _LinkedAccountsScreenState
                             shape: BoxShape.circle,
                             color: connected
                                 ? AppColors.success
-                                : AppColors.textHint,
+                                : _textHint,
                           ),
                         ),
                         const SizedBox(width: 5),
@@ -300,7 +301,7 @@ class _LinkedAccountsScreenState
                             fontSize: 12,
                             color: connected
                                 ? AppColors.success
-                                : AppColors.textHint,
+                                : _textHint,
                           ),
                         ),
                       ],
@@ -313,28 +314,26 @@ class _LinkedAccountsScreenState
           const SizedBox(height: 12),
           TextFormField(
             controller: controller,
-            style: const TextStyle(
-                fontSize: 14, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 14, color: _cs.onSurface),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                  fontSize: 14, color: AppColors.textHint),
+              hintStyle: TextStyle(fontSize: 14, color: _textHint),
               filled: true,
-              fillColor: AppColors.surfaceAlt,
+              fillColor: _surfaceAlt,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: AppRadius.allMd,
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: AppRadius.allMd,
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: AppRadius.allMd,
-                borderSide: BorderSide(color: color, width: 2),
+                borderSide: BorderSide(color: color, width: 1.5),
               ),
             ),
           ),
@@ -348,11 +347,11 @@ class _LinkedAccountsScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Iconsax.warning_2,
-              size: 48, color: AppColors.textHint),
+          Icon(Iconsax.warning_2,
+              size: 48, color: _cs.onSurfaceVariant),
           const SizedBox(height: 12),
-          const Text('Failed to load accounts',
-              style: TextStyle(color: AppColors.textSecondary)),
+          Text('Failed to load accounts',
+              style: TextStyle(color: _cs.onSurfaceVariant)),
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => ref.invalidate(linkedAccountsProvider),
