@@ -13,7 +13,6 @@ import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_chip.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/home_provider.dart';
@@ -28,7 +27,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedTabIndex = 0; // 0 = Campaigns, 1 = Top Creators
+  int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +53,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildEmailVerificationBanner(),
-                    _buildGreetingSection(),
                     const SizedBox(height: AppSpacing.sm),
                     const CategoryChips(),
                     const SizedBox(height: AppSpacing.lg),
@@ -62,7 +60,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: AppSpacing.md),
                     if (_selectedTabIndex == 0) _buildCampaignsContent(),
                     if (_selectedTabIndex == 1) _buildCreatorsContent(),
-                    // Leave room for the floating translucent dock.
                     const SizedBox(height: 120),
                   ],
                 ),
@@ -88,7 +85,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       titleSpacing: AppSpacing.lg,
       title: Row(
         children: [
-          // App logo/icon
           Container(
             width: 32,
             height: 32,
@@ -122,14 +118,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       IconButton(
                         onPressed: () => context.push(AppRoutes.notifications),
-                        icon: Icon(Iconsax.notification, color: theme.colorScheme.onSurface, size: 22),
+                        icon: Icon(Iconsax.notification,
+                            color: theme.colorScheme.onSurface, size: 22),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        constraints:
+                            const BoxConstraints(minWidth: 36, minHeight: 36),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       GestureDetector(
                         onTap: () => context.push(AppRoutes.profile),
-                        child: PremiumAvatar(imageUrl: avatarUrl, name: name, size: 32),
+                        child: PremiumAvatar(
+                            imageUrl: avatarUrl, name: name, size: 32),
                       ),
                     ],
                   ),
@@ -144,57 +143,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildGreetingSection() {
-    final profileAsync = ref.watch(homeUserProfileProvider);
-    return profileAsync.maybeWhen(
-      data: (profile) {
-        final name = (profile?['name'] ?? '').toString().split(' ').first;
-        if (name.isEmpty) return const SizedBox.shrink();
-        final hour = DateTime.now().hour;
-        final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  /// Equal-width segmented control — both tabs always same size.
+  Widget _buildToggleTabs() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: AppSpacing.screenPadding,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.darkSurfaceAlt
+              : AppColors.surfaceAlt,
+          borderRadius: AppRadius.allLg,
+          border: Border.all(color: theme.dividerColor, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            _buildTab(
+              index: 0,
+              icon: Iconsax.briefcase,
+              label: 'Campaigns',
+            ),
+            _buildTab(
+              index: 1,
+              icon: Iconsax.people,
+              label: 'Top Creators',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab({
+    required int index,
+    required IconData icon,
+    required String label,
+  }) {
+    final isSelected = _selectedTabIndex == index;
+    final theme = Theme.of(context);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTabIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: AppRadius.allMd,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                '$greeting, $name 👋',
-                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.w700),
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? Colors.white
+                    : theme.colorScheme.onSurface.withOpacity(0.5),
               ),
+              const SizedBox(width: 6),
               Text(
-                'Find your next campaign',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                label,
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: isSelected
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withOpacity(0.5),
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
           ),
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
-    );
-  }
-
-  /// Segmented Campaigns / Top Creators toggle built from [PremiumChip]s.
-  Widget _buildToggleTabs() {
-    return Padding(
-      padding: AppSpacing.screenPadding,
-      child: Row(
-        children: [
-          PremiumChip(
-            label: 'Campaigns',
-            icon: Iconsax.briefcase,
-            selected: _selectedTabIndex == 0,
-            onTap: () => setState(() => _selectedTabIndex = 0),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          PremiumChip(
-            label: 'Top Creators',
-            icon: Iconsax.people,
-            selected: _selectedTabIndex == 1,
-            onTap: () => setState(() => _selectedTabIndex = 1),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -307,11 +341,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final user = SupabaseService.currentUser;
       if (user == null) return const SizedBox.shrink();
-
-      final emailConfirmedAt = user.emailConfirmedAt;
-      if (emailConfirmedAt != null) {
-        return const SizedBox.shrink();
-      }
+      if (user.emailConfirmedAt != null) return const SizedBox.shrink();
 
       return Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -332,11 +362,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppColors.warning.withOpacity(0.15),
                   borderRadius: AppRadius.allSm,
                 ),
-                child: const Icon(
-                  Iconsax.sms,
-                  color: AppColors.warning,
-                  size: 20,
-                ),
+                child: const Icon(Iconsax.sms,
+                    color: AppColors.warning, size: 20),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -352,8 +379,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Please check your inbox and verify your email address '
-                      'to access all features.',
+                      'Check your inbox to verify your email address.',
                       style: AppTextStyles.caption.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
