@@ -93,3 +93,10 @@ final homeUserProfileProvider = FutureProvider<Map<String, dynamic>?>((ref) asyn
 
   return await SupabaseService.getUserProfile(user.id);
 });
+
+
+/// Local (in-memory) set of bookmarked/saved campaign ids for the Home screen.
+/// Toggled by the bookmark icon on each featured campaign card. Kept in
+/// Riverpod so the saved state survives rebuilds without extra dependencies.
+final savedCampaignsProvider =
+    StateProvider<Set<String>>((ref) => <String>{});

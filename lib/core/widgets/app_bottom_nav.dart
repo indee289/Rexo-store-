@@ -4,12 +4,11 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 
-/// Modern floating dock navigation.
+/// Fixed bottom navigation bar (matches the Home reference).
 ///
-/// A rounded, elevated bar that floats above the content (thanks to the
-/// [Scaffold.extendBody] on [AppShell]). The active tab is highlighted with a
-/// green pill containing the icon + label; inactive tabs show a muted icon.
-/// Fully theme-aware for light and dark mode.
+/// Exactly four tabs — Home, Campaigns, Shop, Profile — each with an icon and
+/// a label. The active tab shows a soft violet rounded chip behind its icon
+/// plus a violet label; inactive tabs show a muted icon + label. Theme-aware.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -22,34 +21,34 @@ class AppBottomNav extends StatelessWidget {
 
   static const _items = [
     _Item(Iconsax.home_2, 'Home'),
-    _Item(Iconsax.briefcase, 'Campaigns'),
+    _Item(Iconsax.send_2, 'Campaigns'),
     _Item(Iconsax.shop, 'Shop'),
-    _Item(Iconsax.messages_2, 'Inbox'),
     _Item(Iconsax.user, 'Profile'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkCard : Colors.white;
+    final barColor = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
     final inactive = isDark ? AppColors.darkTextHint : AppColors.textHint;
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-              width: 1,
-            ),
-            boxShadow: AppElevation.raised(isDark),
+    return Container(
+      decoration: BoxDecoration(
+        color: barColor,
+        border: Border(top: BorderSide(color: borderColor, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.30 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, -2),
           ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
           child: Row(
             children: List.generate(
               _items.length,
@@ -97,33 +96,30 @@ class _NavItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
+            duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(9),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
             decoration: BoxDecoration(
-              color: active ? AppColors.primary : Colors.transparent,
-              borderRadius: AppRadius.pillAll,
+              color: active
+                  ? AppColors.primary.withOpacity(0.12)
+                  : Colors.transparent,
+              borderRadius: AppRadius.allMd,
             ),
             child: Icon(
               item.icon,
               size: 22,
-              color: active ? Colors.white : inactiveColor,
+              color: active ? AppColors.primary : inactiveColor,
             ),
           ),
-          if (active) ...[
-            const SizedBox(height: 3),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-                letterSpacing: -0.1,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            item.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              color: active ? AppColors.primary : inactiveColor,
             ),
-          ],
+          ),
         ],
       ),
     );

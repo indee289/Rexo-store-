@@ -255,16 +255,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          /// Messages / Inbox branch
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.messages,
-                builder: (context, state) => const MessagesScreen(),
-              ),
-            ],
-          ),
-
           /// Profile branch
           StatefulShellBranch(
             routes: [
@@ -338,6 +328,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.notifications,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      /// Messages / Inbox screen (opened from the Home header inbox icon;
+      /// no longer a bottom-nav tab per the Home reference).
+      GoRoute(
+        path: AppRoutes.messages,
+        builder: (context, state) => const MessagesScreen(),
       ),
 
       /// Chat screen

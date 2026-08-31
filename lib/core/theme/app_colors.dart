@@ -9,12 +9,12 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ── Brand — Green ──────────────────────────────────────────────────────────
-  static const Color primary       = Color(0xFF16C784); // Fresh green
-  static const Color primaryLight  = Color(0xFF34D399); // Emerald 400
-  static const Color primaryDark   = Color(0xFF0EA46B); // Deep green
-  static const Color primaryDeep   = Color(0xFF0B8457); // Deepest green
-  static const Color primaryBg     = Color(0xFFE9FBF3); // Tinted green wash
+  // ── Brand — Purple ─────────────────────────────────────────────────────────
+  static const Color primary       = Color(0xFF7C3AED); // Violet 600
+  static const Color primaryLight  = Color(0xFFA78BFA); // Violet 400
+  static const Color primaryDark   = Color(0xFF6D28D9); // Violet 700
+  static const Color primaryDeep   = Color(0xFF5B21B6); // Violet 800
+  static const Color primaryBg     = Color(0xFFF1EBFF); // Tinted violet wash
 
   // ── Secondary (compatibility) ──────────────────────────────────────────────
   static const Color secondary     = Color(0xFF0B0B12); // Near-black
@@ -22,8 +22,8 @@ class AppColors {
   // ── Accent ─────────────────────────────────────────────────────────────────
   static const Color accent        = Color(0xFF16C784); // Alias → primary green
   static const Color accentPink    = Color(0xFFF43F8E);
-  static const Color accentTeal    = Color(0xFF16C784);
-  static const Color accentPurple  = Color(0xFF8B7CF6);
+  static const Color accentTeal    = Color(0xFF14B8A6);
+  static const Color accentPurple  = Color(0xFF8B5CF6);
   static const Color accentGreen   = Color(0xFF22C55E);
   static const Color accentOrange  = Color(0xFFFB923C);
   static const Color accentIndigo  = Color(0xFF6366F1);
@@ -83,12 +83,12 @@ class AppColors {
 
   // ── Gradients ──────────────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF34D399), Color(0xFF16C784)],
+    colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF16C784), Color(0xFF0EA46B)],
+    colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
