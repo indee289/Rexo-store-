@@ -1,59 +1,65 @@
 import 'package:flutter/material.dart';
 
+/// Central color palette — modern, minimal "grouped-card" design language.
+///
+/// Direction: fresh green accent, near-black text, soft off-white page
+/// background with pure-white floating cards (light) and a clean near-black
+/// surface stack (dark). All token names are kept stable so every screen and
+/// widget that already references them picks up the new look automatically.
 class AppColors {
   AppColors._();
 
-  // ── Brand — Teal ───────────────────────────────────────────────────────────
-  static const Color primary       = Color(0xFF0D9488); // Teal 600
-  static const Color primaryLight  = Color(0xFF14B8A6); // Teal 500
-  static const Color primaryDark   = Color(0xFF0F766E); // Teal 700
-  static const Color primaryDeep   = Color(0xFF115E59); // Teal 800
-  static const Color primaryBg     = Color(0xFFF0FDFA); // Teal 50
+  // ── Brand — Green ──────────────────────────────────────────────────────────
+  static const Color primary       = Color(0xFF16C784); // Fresh green
+  static const Color primaryLight  = Color(0xFF34D399); // Emerald 400
+  static const Color primaryDark   = Color(0xFF0EA46B); // Deep green
+  static const Color primaryDeep   = Color(0xFF0B8457); // Deepest green
+  static const Color primaryBg     = Color(0xFFE9FBF3); // Tinted green wash
 
   // ── Secondary (compatibility) ──────────────────────────────────────────────
-  static const Color secondary     = Color(0xFF0F172A); // Near-black
+  static const Color secondary     = Color(0xFF0B0B12); // Near-black
 
   // ── Accent ─────────────────────────────────────────────────────────────────
-  static const Color accent        = Color(0xFFF59E0B); // Amber
-  static const Color accentPink    = Color(0xFFEC4899);
-  static const Color accentTeal    = Color(0xFF14B8A6);
-  static const Color accentPurple  = Color(0xFFA855F7);
+  static const Color accent        = Color(0xFF16C784); // Alias → primary green
+  static const Color accentPink    = Color(0xFFF43F8E);
+  static const Color accentTeal    = Color(0xFF16C784);
+  static const Color accentPurple  = Color(0xFF8B7CF6);
   static const Color accentGreen   = Color(0xFF22C55E);
-  static const Color accentOrange  = Color(0xFFF97316);
+  static const Color accentOrange  = Color(0xFFFB923C);
   static const Color accentIndigo  = Color(0xFF6366F1);
   static const Color accentAmber   = Color(0xFFF59E0B);
   static const Color accentBrown   = Color(0xFF92400E);
-  static const Color neutral       = Color(0xFF6B7280);
+  static const Color neutral       = Color(0xFF71717A);
 
   // ── Semantic ───────────────────────────────────────────────────────────────
-  static const Color success = Color(0xFF22C55E);
+  static const Color success = Color(0xFF16C784);
   static const Color warning = Color(0xFFF59E0B);
-  static const Color error   = Color(0xFFEF4444);
+  static const Color error   = Color(0xFFF43F5E);
   static const Color info    = Color(0xFF38BDF8);
 
   // ── Light surfaces ─────────────────────────────────────────────────────────
-  static const Color background  = Color(0xFFFFFFFF); // Pure white
-  static const Color surface     = Color(0xFFFFFFFF);
+  static const Color background  = Color(0xFFF6F7F9); // Soft off-white page
+  static const Color surface     = Color(0xFFFFFFFF); // Floating cards
   static const Color card        = Color(0xFFFFFFFF);
-  static const Color surfaceAlt  = Color(0xFFF8FAFC); // Near-white for inputs
-  static const Color border      = Color(0xFFE2E8F0); // Light gray
-  static const Color divider     = Color(0xFFF1F5F9);
+  static const Color surfaceAlt  = Color(0xFFF1F3F6); // Inputs / subtle fills
+  static const Color border      = Color(0xFFEDEFF3); // Very light hairline
+  static const Color divider     = Color(0xFFF1F3F6);
 
-  // ── Dark surfaces (kept for compatibility) ─────────────────────────────────
-  static const Color darkBackground  = Color(0xFF0D0E1A);
-  static const Color darkSurface     = Color(0xFF13141F);
-  static const Color darkCard        = Color(0xFF1A1B2E);
-  static const Color darkSurfaceAlt  = Color(0xFF1E2035);
-  static const Color darkBorder      = Color(0xFF2A2B40);
-  static const Color darkDivider     = Color(0xFF1E2035);
-  static const Color darkTextPrimary   = Color(0xFFF0F0FF);
-  static const Color darkTextSecondary = Color(0xFF9B9DC8);
-  static const Color darkTextHint      = Color(0xFF4B4D72);
+  // ── Dark surfaces ──────────────────────────────────────────────────────────
+  static const Color darkBackground  = Color(0xFF0B0B0F); // Near-black page
+  static const Color darkSurface     = Color(0xFF141419); // App bars
+  static const Color darkCard        = Color(0xFF1A1A21); // Floating cards
+  static const Color darkSurfaceAlt  = Color(0xFF20202A); // Inputs / fills
+  static const Color darkBorder      = Color(0xFF2A2A34);
+  static const Color darkDivider     = Color(0xFF23232D);
+  static const Color darkTextPrimary   = Color(0xFFF5F5F7);
+  static const Color darkTextSecondary = Color(0xFFA1A1AA);
+  static const Color darkTextHint      = Color(0xFF6B6B76);
 
   // ── Light text ─────────────────────────────────────────────────────────────
-  static const Color textPrimary   = Color(0xFF0F172A); // Near black
-  static const Color textSecondary = Color(0xFF64748B); // Medium gray
-  static const Color textHint      = Color(0xFF94A3B8); // Light gray
+  static const Color textPrimary   = Color(0xFF0B0B12); // Near black
+  static const Color textSecondary = Color(0xFF6B7280); // Medium gray
+  static const Color textHint      = Color(0xFF9CA3AF); // Light gray
 
   // ── Social ─────────────────────────────────────────────────────────────────
   static const Color socialInstagram = Color(0xFFE1306C);
@@ -70,34 +76,34 @@ class AppColors {
   static const Color verified    = primary;
 
   // ── Shimmer ────────────────────────────────────────────────────────────────
-  static const Color shimmerBase      = Color(0xFFF1F5F9);
+  static const Color shimmerBase      = Color(0xFFEDEFF3);
   static const Color shimmerHighlight = Color(0xFFFFFFFF);
   static const Color darkShimmerBase      = darkSurfaceAlt;
-  static const Color darkShimmerHighlight = Color(0xFF252640);
+  static const Color darkShimmerHighlight = Color(0xFF2C2C38);
 
   // ── Gradients ──────────────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+    colors: [Color(0xFF34D399), Color(0xFF16C784)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+    colors: [Color(0xFF16C784), Color(0xFF0EA46B)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFFFFFFFF), Color(0xFFF8FAFC)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFF6F7F9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient darkCardGradient = LinearGradient(
-    colors: [Color(0xFF1A1B2E), Color(0xFF13141F)],
+    colors: [Color(0xFF1A1A21), Color(0xFF141419)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient goldGradient = LinearGradient(
-    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+    colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

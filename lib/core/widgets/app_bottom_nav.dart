@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
-/// Instagram-style bottom navigation bar.
-/// White background, 1px top border, 5 equal-width tabs.
-/// Active: teal icon + teal label below. Inactive: gray icon, no label.
+/// Modern floating dock navigation.
+///
+/// A rounded, elevated bar that floats above the content (thanks to the
+/// [Scaffold.extendBody] on [AppShell]). The active tab is highlighted with a
+/// green pill containing the icon + label; inactive tabs show a muted icon.
+/// Fully theme-aware for light and dark mode.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -26,17 +30,26 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.darkCard : Colors.white;
+    final inactive = isDark ? AppColors.darkTextHint : AppColors.textHint;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+              width: 1,
+            ),
+            boxShadow: AppElevation.raised(isDark),
+          ),
           child: Row(
             children: List.generate(
               _items.length,
@@ -44,6 +57,7 @@ class AppBottomNav extends StatelessWidget {
                 child: _NavItem(
                   item: _items[i],
                   active: currentIndex == i,
+                  inactiveColor: inactive,
                   onTap: () => onTap(i),
                 ),
               ),
@@ -64,11 +78,13 @@ class _Item {
 class _NavItem extends StatelessWidget {
   final _Item item;
   final bool active;
+  final Color inactiveColor;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.item,
     required this.active,
+    required this.inactiveColor,
     required this.onTap,
   });
 
@@ -80,17 +96,28 @@ class _NavItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            item.icon,
-            size: 22,
-            color: active ? AppColors.primary : AppColors.textHint,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: active ? AppColors.primary : Colors.transparent,
+              borderRadius: AppRadius.pillAll,
+            ),
+            child: Icon(
+              item.icon,
+              size: 22,
+              color: active ? Colors.white : inactiveColor,
+            ),
           ),
           if (active) ...[
             const SizedBox(height: 3),
             Text(
               item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w600,
                 color: AppColors.primary,
                 letterSpacing: -0.1,

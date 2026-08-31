@@ -6,7 +6,6 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
@@ -20,9 +19,10 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentUserProfileProvider);
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: profileAsync.when(
         data: (profileState) =>
             _buildContent(context, ref, profileState),
@@ -31,13 +31,13 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Iconsax.warning_2,
-                  size: 48, color: AppColors.textHint),
+              Icon(Iconsax.warning_2,
+                  size: 48, color: cs.onSurfaceVariant),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Failed to load profile',
                 style: TextStyle(
-                    fontSize: 14, color: AppColors.textSecondary),
+                    fontSize: 14, color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 12),
               TextButton(
@@ -60,6 +60,9 @@ class ProfileScreen extends ConsumerWidget {
       return const Center(child: Text('No profile data'));
     }
 
+    final cs = Theme.of(context).colorScheme;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
+
     final isAdmin = ref.watch(isAdminProvider);
     final name = profile['name'] ?? 'User';
     final handle = profile['handle'] ?? '';
@@ -70,33 +73,29 @@ class ProfileScreen extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        // ── White AppBar with settings icon ────────────────────────────────
+        // ── AppBar with settings icon ──────────────────────────────────────
         SliverAppBar(
           pinned: true,
-          backgroundColor: Colors.white,
+          backgroundColor: bg,
           elevation: 0,
-          scrolledUnderElevation: 1,
+          scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           centerTitle: true,
-          title: const Text(
+          title: Text(
             'Profile',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurface,
             ),
           ),
           actions: [
             IconButton(
               onPressed: () => context.push('/settings'),
-              icon: const Icon(Iconsax.menu_1,
-                  color: AppColors.textPrimary, size: 22),
+              icon: Icon(Iconsax.menu_1,
+                  color: cs.onSurface, size: 22),
             ),
           ],
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: AppColors.border),
-          ),
         ),
 
         // ── Avatar + stats row ─────────────────────────────────────────────
@@ -136,10 +135,10 @@ class ProfileScreen extends ConsumerWidget {
                     Flexible(
                       child: Text(
                         name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: cs.onSurface,
                         ),
                       ),
                     ),
@@ -153,9 +152,9 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     '@$handle',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -163,9 +162,9 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     bio,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                       height: 1.4,
                     ),
                   ),
@@ -176,7 +175,7 @@ class ProfileScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBg,
+                    color: AppColors.primary.withOpacity(0.12),
                     borderRadius: AppRadius.pillAll,
                   ),
                   child: Text(
@@ -197,7 +196,7 @@ class ProfileScreen extends ConsumerWidget {
         // ── Action buttons row ─────────────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               children: [
                 Expanded(
@@ -223,10 +222,10 @@ class ProfileScreen extends ConsumerWidget {
         ),
 
         // ── Divider ────────────────────────────────────────────────────────
-        const SliverToBoxAdapter(
+        SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.only(top: 20),
-            child: Divider(height: 1, color: AppColors.border),
+            padding: const EdgeInsets.only(top: 20),
+            child: Divider(height: 1, color: Theme.of(context).dividerColor),
           ),
         ),
 
@@ -235,22 +234,26 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             children: [
               _buildMenuItem(
+                context,
                 icon: Iconsax.wallet_1,
                 title: 'Wallet',
                 onTap: () => context.push('/wallet'),
               ),
               _buildMenuItem(
+                context,
                 icon: Iconsax.bag_2,
                 title: 'My Orders',
                 onTap: () => context.push('/orders'),
               ),
               _buildMenuItem(
+                context,
                 icon: Iconsax.crown_1,
                 title: 'Subscriptions',
                 onTap: () => context.push('/subscriptions'),
               ),
               if (isAdmin)
                 _buildMenuItem(
+                  context,
                   icon: Iconsax.shield_tick,
                   title: 'Admin Center',
                   onTap: () => context.push('/admin'),
@@ -276,7 +279,7 @@ class ProfileScreen extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _StatCol(label: 'Campaigns', value: '0'),
+        const _StatCol(label: 'Campaigns', value: '0'),
         _StatCol(label: 'Followers', value: fmt(followersAsync)),
         _StatCol(label: 'Following', value: fmt(followingAsync)),
       ],
@@ -311,22 +314,25 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildMenuItem(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: AppColors.primary.withOpacity(0.04),
+        splashColor: AppColors.primary.withOpacity(0.06),
         child: Container(
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(color: AppColors.divider, width: 1)),
+                bottom: BorderSide(
+                    color: Theme.of(context).dividerColor, width: 1)),
           ),
           child: Row(
             children: [
@@ -334,7 +340,7 @@ class ProfileScreen extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryBg,
+                  color: AppColors.primary.withOpacity(0.12),
                   borderRadius: AppRadius.allSm,
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 20),
@@ -343,17 +349,17 @@ class ProfileScreen extends ConsumerWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: cs.onSurface,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: AppColors.textHint,
+                color: cs.onSurfaceVariant,
               ),
             ],
           ),
@@ -370,22 +376,23 @@ class _StatCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: AppColors.textSecondary,
+            color: cs.onSurfaceVariant,
           ),
         ),
       ],
@@ -402,16 +409,21 @@ class _ActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final fillColor = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 36,
+        height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: ghost ? Colors.transparent : Colors.white,
+          color: ghost ? Colors.transparent : fillColor,
           borderRadius: AppRadius.allMd,
           border: Border.all(
-            color: ghost ? Colors.transparent : AppColors.border,
+            color: ghost ? borderColor : borderColor,
           ),
         ),
         child: Text(
@@ -419,7 +431,7 @@ class _ActionBtn extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: ghost ? AppColors.textSecondary : AppColors.textPrimary,
+            color: ghost ? cs.onSurfaceVariant : cs.onSurface,
           ),
         ),
       ),

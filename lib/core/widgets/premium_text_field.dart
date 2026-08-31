@@ -138,6 +138,16 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor =
+        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+    final hintColor =
+        isDark ? AppColors.darkTextHint : AppColors.textHint;
+    final labelColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final textColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
     final IconData? prefix =
         _isSearch ? Iconsax.search_normal : widget.prefixIcon;
 
@@ -145,15 +155,18 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
     if (_isSearch && _controller.text.isNotEmpty) {
       suffix = IconButton(
         icon: const Icon(Iconsax.close_circle, size: 18),
-        color: AppColors.textHint,
+        color: hintColor,
         onPressed: _clear,
       );
     }
 
-    OutlineInputBorder _border(Color color, [double width = 1]) =>
+    // Borderless filled fields; only the focus state shows a green outline.
+    OutlineInputBorder _border(Color color, [double width = 1.5]) =>
         OutlineInputBorder(
           borderRadius: AppRadius.allMd,
-          borderSide: BorderSide(color: color, width: width),
+          borderSide: color == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: color, width: width),
         );
 
     InputDecoration decoration = InputDecoration(
@@ -162,41 +175,25 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       prefixText: _isSearch ? null : widget.prefixText,
       prefixIcon: prefix == null
           ? null
-          : Icon(prefix, size: 20, color: AppColors.textHint),
+          : Icon(prefix, size: 20, color: hintColor),
       suffixIcon: suffix,
       filled: true,
-      fillColor: AppColors.surfaceAlt,
-      border: _border(AppColors.border),
-      enabledBorder: _border(AppColors.border),
-      focusedBorder: _border(AppColors.primary, 2),
+      fillColor: fillColor,
+      border: _border(Colors.transparent),
+      enabledBorder: _border(Colors.transparent),
+      focusedBorder: _border(AppColors.primary, 1.5),
       errorBorder: _border(AppColors.error),
-      focusedErrorBorder: _border(AppColors.error, 2),
-      hintStyle: const TextStyle(
-        fontSize: 14,
-        color: AppColors.textHint,
-      ),
-      labelStyle: const TextStyle(
-        fontSize: 14,
-        color: AppColors.textSecondary,
-      ),
+      focusedErrorBorder: _border(AppColors.error, 1.5),
+      hintStyle: TextStyle(fontSize: 14, color: hintColor),
+      labelStyle: TextStyle(fontSize: 14, color: labelColor),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
 
     if (_isSearch) {
-      final pill = OutlineInputBorder(
-        borderRadius: AppRadius.allMd,
-        borderSide: const BorderSide(color: AppColors.border, width: 1),
-      );
       decoration = decoration.copyWith(
         isDense: true,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: pill,
-        enabledBorder: pill,
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       );
     }
 
@@ -213,7 +210,7 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       minLines: _isMultiline ? widget.minLines : 1,
       maxLines: widget.obscureText ? 1 : (_isMultiline ? widget.maxLines : 1),
       maxLength: widget.maxLength,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 14, color: textColor),
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,

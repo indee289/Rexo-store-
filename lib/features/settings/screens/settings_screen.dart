@@ -23,13 +23,28 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  // ── Theme-aware color helpers ────────────────────────────────────────────
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _pageBg =>
+      _isDark ? AppColors.darkBackground : AppColors.background;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _dividerColor =>
+      _isDark ? AppColors.darkDivider : AppColors.divider;
+  Color get _textPrimary =>
+      _isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+  Color get _textSecondary =>
+      _isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+  Color get _textHint => _isDark ? AppColors.darkTextHint : AppColors.textHint;
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _pageBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -37,27 +52,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.border, width: 1),
-                ),
-              ),
+              color: _pageBg,
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(Icons.chevron_left,
-                        size: 28, color: AppColors.textPrimary),
+                    icon: Icon(Icons.chevron_left,
+                        size: 28, color: _textPrimary),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Settings',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        color: _textPrimary,
                       ),
                     ),
                   ),
@@ -78,6 +88,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               _buildUserCard(context, profileState),
                         ) ??
                         const SizedBox(height: AppSpacing.lg),
+
+                    // APPEARANCE section
+                    _sectionLabel('APPEARANCE'),
+                    _settingsCard([
+                      _appearanceItem(settings.themeMode),
+                    ]),
 
                     // ACCOUNT section
                     _sectionLabel('ACCOUNT'),
@@ -130,7 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onTap: () => context.push('/security-logs')),
                       _item(context,
                           icon: Iconsax.lock_1,
-                          iconColor: AppColors.textSecondary,
+                          iconColor: _textSecondary,
                           title: 'Change Password',
                           subtitle: 'Send password reset email',
                           onTap: () => _handleChangePassword(context)),
@@ -171,7 +187,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _settingsCard([
                       _switchItem(context,
                           icon: Iconsax.eye,
-                          iconColor: AppColors.textSecondary,
+                          iconColor: _textSecondary,
                           title: 'Public Profile',
                           subtitle: 'Allow others to find your profile',
                           value: true,
@@ -189,17 +205,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onTap: () => context.push('/help-support')),
                       _item(context,
                           icon: Iconsax.shield_tick,
-                          iconColor: AppColors.textHint,
+                          iconColor: _textHint,
                           title: 'Privacy Policy',
                           onTap: () => context.push('/privacy-policy')),
                       _item(context,
                           icon: Iconsax.document_text,
-                          iconColor: AppColors.textHint,
+                          iconColor: _textHint,
                           title: 'Terms of Service',
                           onTap: () => context.push('/terms-of-service')),
                       _item(context,
                           icon: Iconsax.info_circle,
-                          iconColor: AppColors.textHint,
+                          iconColor: _textHint,
                           title: 'About Rexo',
                           subtitle: 'Version 1.0.0',
                           onTap: () => _showAbout(context)),
@@ -213,7 +229,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           horizontal: AppSpacing.lg),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: _cardBg,
                           borderRadius: AppRadius.allLg,
                           border: Border.all(
                               color: AppColors.error.withOpacity(0.2)),
@@ -248,9 +264,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ),
                               ),
                             ),
-                            const Divider(
-                                height: 1,
-                                color: AppColors.divider),
+                            Divider(height: 1, color: _dividerColor),
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
@@ -310,16 +324,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _cardBg,
           borderRadius: AppRadius.allLg,
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: _borderColor),
         ),
         child: Row(
           children: [
@@ -335,18 +342,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: _textPrimary,
                     ),
                   ),
                   if (handle.isNotEmpty)
                     Text(
                       '@$handle',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: _textSecondary,
                       ),
                     ),
                   const SizedBox(height: 4),
@@ -354,7 +361,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBg,
+                      color: _isDark
+                          ? AppColors.darkSurfaceAlt
+                          : AppColors.primaryBg,
                       borderRadius: AppRadius.pillAll,
                     ),
                     child: Text(
@@ -399,7 +408,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: color ?? AppColors.textHint,
+          color: color ?? _textHint,
           letterSpacing: 0.8,
         ),
       ),
@@ -410,19 +419,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _cardBg,
           borderRadius: AppRadius.allLg,
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x05000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: _borderColor),
         ),
         child: Column(children: children),
+      ),
+    );
+  }
+
+  // ── Appearance (theme mode) selector ──────────────────────────────────────
+  Widget _appearanceItem(ThemeMode mode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.12),
+                  borderRadius: AppRadius.allSm,
+                ),
+                child: const Icon(Iconsax.moon,
+                    size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Theme',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Choose how Rexo looks',
+                      style: TextStyle(fontSize: 12, color: _textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _themeChoice('System', Iconsax.mobile, ThemeMode.system, mode),
+              const SizedBox(width: 8),
+              _themeChoice('Light', Iconsax.sun_1, ThemeMode.light, mode),
+              const SizedBox(width: 8),
+              _themeChoice('Dark', Iconsax.moon, ThemeMode.dark, mode),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _themeChoice(
+      String label, IconData icon, ThemeMode value, ThemeMode current) {
+    final selected = value == current;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => ref.read(settingsProvider.notifier).setThemeMode(value),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary
+                : (_isDark
+                    ? AppColors.darkSurfaceAlt
+                    : AppColors.surfaceAlt),
+            borderRadius: AppRadius.allMd,
+            border: Border.all(
+              color: selected ? AppColors.primary : Colors.transparent,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon,
+                  size: 18,
+                  color: selected ? Colors.white : _textSecondary),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : _textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -443,9 +544,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Container(
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(color: AppColors.divider, width: 1)),
+                bottom: BorderSide(color: _dividerColor, width: 1)),
           ),
           child: Row(
             children: [
@@ -453,7 +554,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.10),
+                  color: iconColor.withOpacity(0.12),
                   borderRadius: AppRadius.allSm,
                 ),
                 child: Icon(icon, size: 18, color: iconColor),
@@ -466,28 +567,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: _textPrimary,
                       ),
                     ),
                     if (subtitle != null)
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: _textSecondary,
                         ),
                       ),
                   ],
                 ),
               ),
               trailing ??
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
                     size: 18,
-                    color: AppColors.textHint,
+                    color: _textHint,
                   ),
             ],
           ),
@@ -508,9 +609,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-            bottom: BorderSide(color: AppColors.divider, width: 1)),
+            bottom: BorderSide(color: _dividerColor, width: 1)),
       ),
       child: Row(
         children: [
@@ -518,7 +619,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.10),
+              color: iconColor.withOpacity(0.12),
               borderRadius: AppRadius.allSm,
             ),
             child: Icon(icon, size: 18, color: iconColor),
@@ -531,17 +632,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: _textPrimary,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: _textSecondary,
                   ),
                 ),
               ],

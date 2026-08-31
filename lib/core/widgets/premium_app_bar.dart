@@ -32,29 +32,29 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.background;
+    final fg = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
     Widget? resolvedLeading = leading;
     final bool canPop = Navigator.of(context).canPop();
     if (resolvedLeading == null &&
         (showBack || (automaticallyImplyLeading && canPop))) {
       resolvedLeading = _CleanBackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
+        color: fg,
       );
     }
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
-        ),
-      ),
+      color: bg,
       child: AppBar(
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            color: fg,
             letterSpacing: -0.2,
           ),
         ),
@@ -66,6 +66,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
         bottom: bottom,
         backgroundColor: Colors.transparent,
+        foregroundColor: fg,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -78,16 +79,17 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
 class _CleanBackButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _CleanBackButton({required this.onTap});
+  final Color? color;
+  const _CleanBackButton({required this.onTap, this.color});
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onTap,
-      icon: const Icon(
+      icon: Icon(
         Icons.chevron_left,
         size: 28,
-        color: AppColors.textPrimary,
+        color: color ?? AppColors.textPrimary,
       ),
     );
   }
@@ -118,21 +120,26 @@ class PremiumSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.background;
+    final fg = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
     final bool canPop = Navigator.of(context).canPop();
     Widget? leading;
     if (showBack || canPop) {
       leading = _CleanBackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
+        color: fg,
       );
     }
 
     return SliverAppBar(
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
+          color: fg,
           letterSpacing: -0.2,
         ),
       ),
@@ -142,19 +149,16 @@ class PremiumSliverAppBar extends StatelessWidget {
         if (actions != null) ...actions!,
         const SizedBox(width: 4),
       ],
-      backgroundColor: Colors.white,
+      backgroundColor: bg,
       surfaceTintColor: Colors.transparent,
+      foregroundColor: fg,
       elevation: 0,
-      scrolledUnderElevation: 1,
+      scrolledUnderElevation: 0,
       centerTitle: true,
       expandedHeight: flexibleSpace != null ? expandedHeight : null,
       pinned: pinned,
       floating: floating,
       flexibleSpace: flexibleSpace,
-      bottom: const PreferredSize(
-        preferredSize: Size.fromHeight(1),
-        child: Divider(height: 1, color: AppColors.border),
-      ),
     );
   }
 }

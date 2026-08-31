@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Corner-radius scale (Theme_System token set).
 ///
-/// See design "Radius & elevation tokens".
+/// Tuned for the modern minimal look: generous, soft rounding on cards,
+/// buttons, inputs and sheets.
 abstract class AppRadius {
   AppRadius._();
 
-  static const double sm = 8; // chips, badges
-  static const double md = 12; // buttons, inputs
-  static const double lg = 16; // cards
-  static const double xl = 24; // bottom sheets
+  static const double sm = 10; // chips, badges, small tiles
+  static const double md = 14; // buttons, inputs
+  static const double lg = 20; // cards
+  static const double xl = 28; // bottom sheets, large surfaces
   static const double pill = 999; // fully rounded pills / avatars
 
   /// Pre-built `BorderRadius` helpers for the common sizes.
@@ -19,35 +20,36 @@ abstract class AppRadius {
   static const BorderRadius allXl = BorderRadius.all(Radius.circular(xl));
   static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 
-  /// Top-only radius (used by bottom sheets / the glass dock).
+  /// Top-only radius (used by bottom sheets / the floating dock).
   static const BorderRadius topXl =
       BorderRadius.vertical(top: Radius.circular(xl));
 }
 
 /// Soft elevation shadows (Theme_System token set).
 ///
-/// Provides a soft shadow in light mode and a lifted shadow in dark mode,
-/// mirroring the existing `PremiumCard` treatment.
+/// Diffuse, low-opacity shadows give floating cards a gentle lift in light
+/// mode and a subtle depth in dark mode.
 abstract class AppElevation {
   AppElevation._();
 
-  /// Card shadow. Not `const` because it depends on `isDark` and uses
-  /// `withOpacity`, matching the pattern already used in `AppTheme`.
+  /// Card shadow — soft and diffuse.
   static List<BoxShadow> card(bool isDark) => [
         BoxShadow(
-          color: Colors.black.withOpacity(isDark ? 0.30 : 0.04),
-          offset: const Offset(0, 2),
-          blurRadius: 8,
+          color: Colors.black.withOpacity(isDark ? 0.28 : 0.05),
+          offset: const Offset(0, 4),
+          blurRadius: 16,
+          spreadRadius: -2,
         ),
       ];
 
-  /// Slightly stronger shadow for floating/raised surfaces (e.g. the dock,
-  /// sticky CTAs, sheets).
+  /// Slightly stronger shadow for floating/raised surfaces (dock, sticky CTAs,
+  /// sheets, dialogs).
   static List<BoxShadow> raised(bool isDark) => [
         BoxShadow(
-          color: Colors.black.withOpacity(isDark ? 0.40 : 0.08),
-          offset: const Offset(0, 6),
-          blurRadius: 20,
+          color: Colors.black.withOpacity(isDark ? 0.45 : 0.10),
+          offset: const Offset(0, 10),
+          blurRadius: 30,
+          spreadRadius: -4,
         ),
       ];
 }

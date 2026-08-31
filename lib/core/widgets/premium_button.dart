@@ -46,7 +46,8 @@ class _PremiumButtonState extends State<PremiumButton> {
 
   @override
   Widget build(BuildContext context) {
-    final style = _resolveStyle();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final style = _resolveStyle(isDark);
 
     final Widget content = widget.loading
         ? SizedBox(
@@ -117,7 +118,7 @@ class _PremiumButtonState extends State<PremiumButton> {
     );
   }
 
-  _ButtonStyle _resolveStyle() {
+  _ButtonStyle _resolveStyle(bool isDark) {
     switch (widget.variant) {
       case PremiumButtonVariant.filled:
         return _ButtonStyle(
@@ -127,12 +128,12 @@ class _PremiumButtonState extends State<PremiumButton> {
         );
       case PremiumButtonVariant.tonal:
         return _ButtonStyle(
-          fill: AppColors.primaryBg,
-          foreground: AppColors.primary,
+          fill: isDark ? AppColors.darkSurfaceAlt : AppColors.primaryBg,
+          foreground: isDark ? AppColors.primaryLight : AppColors.primaryDeep,
         );
       case PremiumButtonVariant.outline:
         return _ButtonStyle(
-          fill: Colors.white,
+          fill: Colors.transparent,
           foreground: AppColors.primary,
           border: Border.all(color: AppColors.primary, width: 1.5),
         );
@@ -143,7 +144,7 @@ class _PremiumButtonState extends State<PremiumButton> {
         );
       case PremiumButtonVariant.glass:
         return _ButtonStyle(
-          fill: Colors.white.withOpacity(0.15),
+          fill: Colors.white.withOpacity(isDark ? 0.08 : 0.15),
           foreground: Colors.white,
           border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
         );

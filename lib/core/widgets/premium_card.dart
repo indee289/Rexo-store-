@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
-/// Clean white card with 16px radius, 1px border, soft shadow, optional onTap.
+/// Floating card — borderless, soft diffuse shadow, generous rounding.
+/// Theme-aware: pure white in light mode, elevated dark surface in dark mode.
 class PremiumCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -16,35 +18,35 @@ class PremiumCard extends StatelessWidget {
     required this.child,
     this.padding,
     this.onTap,
-    this.borderRadius = 16,
+    this.borderRadius = AppRadius.lg,
     this.gradient = false,
     this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = backgroundColor ??
+        (isDark ? AppColors.darkCard : Colors.white);
+    final radius = BorderRadius.circular(borderRadius);
 
     return Material(
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(color: AppColors.border, width: 1),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
+          borderRadius: radius,
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
+            width: 1,
+          ),
+          boxShadow: AppElevation.card(isDark),
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(borderRadius),
-          splashColor: AppColors.primary.withOpacity(0.05),
-          highlightColor: AppColors.primary.withOpacity(0.03),
+          borderRadius: radius,
+          splashColor: AppColors.primary.withOpacity(0.06),
+          highlightColor: AppColors.primary.withOpacity(0.04),
           child: Padding(
             padding: padding ?? EdgeInsets.zero,
             child: child,

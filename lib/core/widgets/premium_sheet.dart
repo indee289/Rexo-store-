@@ -41,6 +41,9 @@ Future<T?> showPremiumSheet<T>({
     // fully transparent (otherwise a solid Material sheet covers the blur).
     backgroundColor: Colors.transparent,
     elevation: 0,
+    // This primitive paints its own grab handle, so suppress the framework
+    // handle enabled globally by the theme (avoids a duplicate handle).
+    showDragHandle: false,
     // Keep the framework from clipping/rounding on top of our custom clip.
     clipBehavior: Clip.none,
     barrierColor: Colors.black.withOpacity(0.4),

@@ -26,10 +26,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _tab = 0;
 
+  // ── Theme-aware color helpers ────────────────────────────────────────────
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _pageBg =>
+      _isDark ? AppColors.darkBackground : AppColors.background;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _surfaceAlt =>
+      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+  Color get _textPrimary =>
+      _isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+  Color get _textHint => _isDark ? AppColors.darkTextHint : AppColors.textHint;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _pageBg,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -46,16 +59,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverAppBar(
                 floating: true,
                 snap: true,
-                backgroundColor: Colors.white,
+                backgroundColor: _pageBg,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 surfaceTintColor: Colors.transparent,
                 centerTitle: false,
                 titleSpacing: 16,
-                bottom: const PreferredSize(
-                  preferredSize: Size.fromHeight(1),
-                  child: Divider(height: 1, color: AppColors.border),
-                ),
                 title: Row(
                   children: [
                     Container(
@@ -117,10 +126,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Notification bell
           GestureDetector(
             onTap: () => context.push(AppRoutes.notifications),
-            child: const Icon(
+            child: Icon(
               Iconsax.notification,
               size: 22,
-              color: AppColors.textPrimary,
+              color: _textPrimary,
             ),
           ),
           const SizedBox(width: 16),
@@ -147,11 +156,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        height: 44,
+        height: 48,
         decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          color: _surfaceAlt,
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
@@ -168,15 +176,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _tab = idx),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: active
-                ? Border.all(color: AppColors.border)
+            color: active ? _cardBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(_isDark ? 0.25 : 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                 : null,
           ),
-          margin: const EdgeInsets.all(3),
+          margin: const EdgeInsets.all(4),
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -184,7 +199,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Icon(
                 icon,
                 size: 15,
-                color: active ? AppColors.primary : AppColors.textHint,
+                color: active ? AppColors.primary : _textHint,
               ),
               const SizedBox(width: 5),
               Text(
@@ -193,7 +208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   fontSize: 13,
                   fontWeight:
                       active ? FontWeight.w600 : FontWeight.w500,
-                  color: active ? AppColors.primary : AppColors.textHint,
+                  color: active ? AppColors.primary : _textHint,
                   letterSpacing: -0.1,
                 ),
               ),
