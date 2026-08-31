@@ -11,6 +11,7 @@ import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/campaign_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
@@ -32,13 +33,7 @@ class CampaignsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Campaigns', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-      ),
+      appBar: const PremiumAppBar(title: 'Campaigns'),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {

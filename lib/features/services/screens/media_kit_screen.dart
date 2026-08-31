@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_card.dart';

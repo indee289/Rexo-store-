@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../widgets/premium_card.dart';
 import '../providers/admin_provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -18,8 +19,8 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Settings'),
+      appBar: PremiumAppBar(
+        title: 'Settings',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

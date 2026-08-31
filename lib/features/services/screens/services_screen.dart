@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_card.dart';
 import '../../../core/widgets/premium_icon_button.dart';
@@ -22,20 +23,7 @@ class ServicesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Creator Services', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: PremiumIconButton(
-            icon: Iconsax.arrow_left,
-            onPressed: () => context.pop(),
-          ),
-        ),
-      ),
+      appBar: PremiumAppBar(title: 'Creator Services', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
