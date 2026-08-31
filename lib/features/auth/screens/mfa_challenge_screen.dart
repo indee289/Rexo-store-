@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
@@ -155,17 +156,9 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Two-Factor Verification',
-          style: AppTextStyles.h5.copyWith(
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        automaticallyImplyLeading: false,
+      appBar: PremiumAppBar(
+        title: 'Two-Factor Verification',
+        showBack: false,
         actions: [
           PremiumButton(
             label: 'Cancel',

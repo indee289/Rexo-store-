@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../providers/admin_provider.dart';
 
 class PushBroadcastScreen extends ConsumerStatefulWidget {
@@ -83,8 +84,8 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Push Broadcast'),
+      appBar: PremiumAppBar(
+        title: 'Push Broadcast',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

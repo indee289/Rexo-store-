@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../widgets/premium_card.dart';
 import '../widgets/stat_chip.dart';
 import '../../profile/providers/profile_provider.dart';
@@ -19,11 +21,11 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Dashboard'),
+      appBar: PremiumAppBar(
+        title: 'Admin Dashboard',
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.refresh),
+            icon: const Icon(Iconsax.refresh, size: 20),
             onPressed: () => ref.invalidate(adminStatsProvider),
           ),
         ],
@@ -143,12 +145,7 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  ),
-                ),
+                loading: () => const ShimmerLoading(height: 320),
                 error: (error, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),

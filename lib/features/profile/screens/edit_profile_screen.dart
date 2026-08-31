@@ -12,6 +12,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_text_field.dart';
@@ -238,26 +239,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Edit Profile', style: AppTextStyles.h5),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurface.withOpacity(0.06),
-              borderRadius: AppRadius.allMd,
-            ),
-            child: Icon(Iconsax.arrow_left,
-                color: theme.colorScheme.onSurface, size: 20),
-          ),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Edit Profile',
+        showBack: true,
+        onBack: () => Navigator.of(context).pop(),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -272,9 +257,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   )
                 : TextButton(
                     onPressed: _saveProfile,
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                    ),
                     child: Text(
                       'Save',
                       style: AppTextStyles.labelLarge.copyWith(

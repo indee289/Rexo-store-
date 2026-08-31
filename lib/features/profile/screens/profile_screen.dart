@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/role_badge.dart';
@@ -27,13 +28,8 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Profile', style: AppTextStyles.h5),
-        centerTitle: false,
-        backgroundColor:
-            theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
+      appBar: PremiumAppBar(
+        title: 'Profile',
         actions: [
           IconButton(
             tooltip: 'Settings',

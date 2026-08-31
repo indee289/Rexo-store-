@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../widgets/premium_card.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/admin_provider.dart';
@@ -175,8 +176,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('User Management'),
+      appBar: PremiumAppBar(
+        title: 'User Management',
       ),
       body: Column(
         children: [

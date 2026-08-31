@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../widgets/premium_card.dart';
 import '../providers/admin_provider.dart';
 
@@ -17,11 +18,11 @@ class AuditLogsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Audit Logs'),
+      appBar: PremiumAppBar(
+        title: 'Audit Logs',
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.refresh),
+            icon: const Icon(Iconsax.refresh, size: 20),
             onPressed: () => ref.invalidate(adminAuditLogsProvider),
           ),
         ],
