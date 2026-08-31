@@ -15,9 +15,15 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(adminStatsProvider);
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pageBg = isDark ? AppColors.darkBackground : AppColors.background;
+    final surfaceAlt =
+        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: pageBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -25,22 +31,17 @@ class DashboardScreen extends ConsumerWidget {
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.border, width: 1),
-                ),
-              ),
+              color: pageBg,
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Admin Centre',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
                       ),
                     ),
                   ),
@@ -50,12 +51,12 @@ class DashboardScreen extends ConsumerWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceAlt,
+                        color: surfaceAlt,
                         borderRadius: AppRadius.allSm,
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: borderColor),
                       ),
-                      child: const Icon(Iconsax.refresh,
-                          size: 18, color: AppColors.textSecondary),
+                      child: Icon(Iconsax.refresh,
+                          size: 18, color: cs.onSurfaceVariant),
                     ),
                   ),
                 ],
@@ -79,12 +80,12 @@ class DashboardScreen extends ConsumerWidget {
                         data: (data) => Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Overview',
                               style: TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.md),
@@ -143,12 +144,12 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: AppSpacing.xl),
                             // Quick actions row
-                            const Text(
+                            Text(
                               'Quick Actions',
                               style: TextStyle(
                                 fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.md),
@@ -194,10 +195,10 @@ class DashboardScreen extends ConsumerWidget {
                               const Icon(Iconsax.warning_2,
                                   size: 48, color: AppColors.error),
                               const SizedBox(height: 12),
-                              const Text(
+                              Text(
                                 'Failed to load stats',
                                 style: TextStyle(
-                                    color: AppColors.textSecondary),
+                                    color: cs.onSurfaceVariant),
                               ),
                               const SizedBox(height: 8),
                               TextButton(
@@ -237,19 +238,15 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: AppRadius.allLg,
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,7 +255,7 @@ class _StatCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
+              color: color.withOpacity(0.12),
               borderRadius: AppRadius.allSm,
             ),
             child: Icon(icon, color: color, size: 22),
@@ -266,17 +263,17 @@ class _StatCard extends StatelessWidget {
           const Spacer(),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: cs.onSurface,
             ),
           ),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: cs.onSurfaceVariant,
             ),
           ),
         ],
@@ -304,9 +301,10 @@ class _QuickAction extends StatelessWidget {
         child: Container(
           height: 52,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.primary.withOpacity(
+                Theme.of(context).brightness == Brightness.dark ? 0.14 : 0.08),
             borderRadius: AppRadius.allMd,
-            border: Border.all(color: AppColors.primary),
+            border: Border.all(color: AppColors.primary.withOpacity(0.4)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
