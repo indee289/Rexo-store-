@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../widgets/premium_card.dart';
 import '../../../services/supabase_service.dart';
 
@@ -25,8 +26,8 @@ class RexoProgramScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Rexo Program Review'),
+      appBar: PremiumAppBar(
+        title: 'Rexo Program Review',
       ),
       body: applications.when(
         data: (list) {
