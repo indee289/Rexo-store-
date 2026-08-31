@@ -5,17 +5,24 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/campaign_card.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/home_provider.dart';
 import '../widgets/category_chips.dart';
-import '../widgets/creator_card.dart';
 
+/// Home screen — modern store-style composition:
+/// pill search bar, a featured banner carousel with page dots, a horizontal
+/// "Top Creators" circle row, category filter chips, and a 2-column campaign
+/// card grid. Fully theme-aware (light + dark). All providers/data/navigation
+/// are unchanged; the search field filters the already-fetched lists locally.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -24,7 +31,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _tab = 0;
+  String _query = '';
 
   // ── Theme-aware color helpers ────────────────────────────────────────────
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
@@ -55,58 +62,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           child: CustomScrollView(
             slivers: [
-              // ── App Bar ──────────────────────────────────────────────────
-              SliverAppBar(
-                floating: true,
-                snap: true,
-                backgroundColor: _pageBg,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                surfaceTintColor: Colors.transparent,
-                centerTitle: false,
-                titleSpacing: 16,
-                title: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Iconsax.crown_1,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Rexo',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [_buildNavActions()],
-              ),
-
               SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _buildTopBar(),
+                    _buildSearchBar(),
                     _buildEmailBanner(),
+                    const SizedBox(height: 4),
+                    _buildBannerCarousel(),
+                    const SizedBox(height: 8),
+                    _buildCreatorsSection(),
+                    const SizedBox(height: 4),
                     const CategoryChips(),
-                    const SizedBox(height: 16),
-                    _buildSegmentedTabs(),
-                    const SizedBox(height: 16),
-                    if (_tab == 0) _buildCampaigns(),
-                    if (_tab == 1) _buildCreators(),
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 8),
+                    SectionHeader(
+                      title: 'Campaigns',
+                      actionLabel: 'See all',
+                      onAction: () => context.push(AppRoutes.campaigns),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    ),
+                    _buildCampaignsGrid(),
+                    const SizedBox(height: 110),
                   ],
                 ),
               ),
@@ -117,177 +94,252 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildNavActions() {
+  // ── Top bar: logo + name, notifications + avatar ──────────────────────────
+  Widget _buildTopBar() {
     final profileAsync = ref.watch(homeUserProfileProvider);
     return Padding(
-      padding: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
         children: [
-          // Notification bell
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.notifications),
-            child: Icon(
-              Iconsax.notification,
-              size: 22,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Iconsax.crown_1, color: Colors.white, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Rexo',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
               color: _textPrimary,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(width: 16),
-          // Avatar
+          const Spacer(),
+          _circleIcon(
+            icon: Iconsax.notification,
+            onTap: () => context.push(AppRoutes.notifications),
+          ),
+          const SizedBox(width: 10),
           profileAsync.maybeWhen(
             data: (p) => GestureDetector(
               onTap: () => context.push(AppRoutes.profile),
               child: PremiumAvatar(
                 imageUrl: p?['avatar_url'],
                 name: p?['name'] ?? '',
-                size: 32,
+                size: 38,
               ),
             ),
-            orElse: () => const SizedBox(width: 32, height: 32),
+            orElse: () => const SizedBox(width: 38, height: 38),
           ),
         ],
       ),
     );
   }
 
-  /// Equal-width segmented tabs — Instagram-style: active = teal text +
-  /// 2px teal bottom border; inactive = gray text. No filled background.
-  Widget _buildSegmentedTabs() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+  Widget _circleIcon({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        height: 48,
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: _cardBg,
+          shape: BoxShape.circle,
+          border: Border.all(color: _borderColor),
+        ),
+        child: Icon(icon, size: 20, color: _textPrimary),
+      ),
+    );
+  }
+
+  // ── Search pill ───────────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: _surfaceAlt,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.pillAll,
         ),
         child: Row(
           children: [
-            _segTab(0, Iconsax.briefcase, 'Campaigns'),
-            _segTab(1, Iconsax.people, 'Top Creators'),
+            Icon(Iconsax.search_normal, size: 20, color: _textHint),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                onChanged: (v) => setState(() => _query = v.trim()),
+                textInputAction: TextInputAction.search,
+                style: TextStyle(fontSize: 14, color: _textPrimary),
+                decoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  hintText: 'Search campaigns, creators…',
+                  hintStyle: TextStyle(fontSize: 14, color: _textHint),
+                ),
+              ),
+            ),
+            if (_query.isNotEmpty)
+              GestureDetector(
+                onTap: () => setState(() => _query = ''),
+                child: Icon(Iconsax.close_circle, size: 18, color: _textHint),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _segTab(int idx, IconData icon, String label) {
-    final active = _tab == idx;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _tab = idx),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          decoration: BoxDecoration(
-            color: active ? _cardBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(11),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(_isDark ? 0.25 : 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          margin: const EdgeInsets.all(4),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: active ? AppColors.primary : _textHint,
+  // ── Featured banner carousel ──────────────────────────────────────────────
+  Widget _buildBannerCarousel() {
+    final async = ref.watch(featuredCampaignsProvider);
+    return async.maybeWhen(
+      data: (list) {
+        if (list.isEmpty) return const SizedBox.shrink();
+        return _BannerCarousel(
+          campaigns: list.take(5).toList(),
+          onTap: (id) => context.push('/campaigns/$id'),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: ShimmerCard(height: 168, borderRadius: 28),
+      ),
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  // ── Top creators (horizontal circle row) ──────────────────────────────────
+  Widget _buildCreatorsSection() {
+    final async = ref.watch(trendingCreatorsProvider);
+    return async.maybeWhen(
+      data: (list) {
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(
+              title: 'Top Creators',
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+            ),
+            SizedBox(
+              height: 104,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 16),
+                itemBuilder: (_, i) => _creatorCircle(list[i]),
               ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      active ? FontWeight.w600 : FontWeight.w500,
-                  color: active ? AppColors.primary : _textHint,
-                  letterSpacing: -0.1,
-                ),
+            ),
+          ],
+        );
+      },
+      loading: () => SizedBox(
+        height: 104,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 6,
+          separatorBuilder: (_, __) => const SizedBox(width: 16),
+          itemBuilder: (_, __) => const ShimmerCircle(size: 64),
+        ),
+      ),
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _creatorCircle(Map<String, dynamic> creator) {
+    final userData = creator['users'] as Map<String, dynamic>?;
+    final name = (userData?['name'] ?? 'Creator').toString();
+    final avatarUrl = (userData?['avatar_url'] ?? '').toString();
+    final isVerified = (userData?['is_verified'] == true);
+    final id = creator['user_id']?.toString();
+
+    return GestureDetector(
+      onTap: () {
+        if (id != null) context.push('/creators/$id');
+      },
+      child: SizedBox(
+        width: 68,
+        child: Column(
+          children: [
+            PremiumAvatar(
+              imageUrl: avatarUrl.isEmpty ? null : avatarUrl,
+              name: name,
+              size: 64,
+              isVerified: isVerified,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: _textPrimary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCampaigns() {
+  // ── Campaigns 2-column grid ───────────────────────────────────────────────
+  Widget _buildCampaignsGrid() {
     final async = ref.watch(recentCampaignsProvider);
     return async.when(
-      data: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Iconsax.document,
-              title: 'No campaigns yet',
-              subtitle: 'Pull down to refresh.',
-            )
-          : ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: list.length,
-              itemBuilder: (_, i) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: CampaignCard(
-                  campaign: list[i],
-                  onTap: () {
-                    final id = list[i]['id']?.toString();
-                    if (id != null) context.push('/campaigns/$id');
-                  },
-                ).staggeredEntrance(i),
-              ),
-            ),
-      loading: () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: List.generate(
-            3,
-            (_) => const ShimmerCampaignCardCompact(),
-          ),
-        ),
-      ),
-      error: (_, __) => _errorState('Failed to load campaigns'),
-    );
-  }
+      data: (list) {
+        final filtered = _query.isEmpty
+            ? list
+            : list.where((c) {
+                final t = (c['title'] ?? '').toString().toLowerCase();
+                final b = (c['brand_name'] ?? '').toString().toLowerCase();
+                return t.contains(_query.toLowerCase()) ||
+                    b.contains(_query.toLowerCase());
+              }).toList();
 
-  Widget _buildCreators() {
-    final async = ref.watch(trendingCreatorsProvider);
-    return async.when(
-      data: (list) => list.isEmpty
-          ? const EmptyState(
-              icon: Iconsax.people,
-              title: 'No creators found',
-              subtitle: 'Pull down to refresh.',
-            )
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (int i = 0; i < list.length; i++)
-                    SizedBox(
-                      width:
-                          (MediaQuery.of(context).size.width - 32 - 12) /
-                              2,
-                      child: CreatorCard(
-                        creator: list[i],
-                        onTap: () {
-                          final id = list[i]['user_id']?.toString();
-                          if (id != null) context.push('/creators/$id');
-                        },
-                      ).staggeredEntrance(i),
-                    ),
-                ],
-              ),
-            ),
+        if (filtered.isEmpty) {
+          return const EmptyState(
+            icon: Iconsax.search_normal,
+            title: 'No campaigns found',
+            subtitle: 'Try a different search or category.',
+          );
+        }
+
+        final cellWidth =
+            (MediaQuery.of(context).size.width - 32 - 12) / 2;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (int i = 0; i < filtered.length; i++)
+                SizedBox(
+                  width: cellWidth,
+                  child: CampaignCard(
+                    campaign: filtered[i],
+                    onTap: () {
+                      final id = filtered[i]['id']?.toString();
+                      if (id != null) context.push('/campaigns/$id');
+                    },
+                  ).staggeredEntrance(i),
+                ),
+            ],
+          ),
+        );
+      },
       loading: () => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Wrap(
@@ -296,7 +348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: List.generate(4, (_) => const ShimmerCreatorCard()),
         ),
       ),
-      error: (_, __) => _errorState('Failed to load creators'),
+      error: (_, __) => _errorState('Failed to load campaigns'),
     );
   }
 
@@ -307,11 +359,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return const SizedBox.shrink();
       }
       return Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.warning.withOpacity(0.10),
+          borderRadius: AppRadius.allMd,
           border: Border.all(color: AppColors.warning.withOpacity(0.3)),
         ),
         child: const Row(
@@ -353,4 +405,175 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
       );
+}
+
+/// Swipeable featured-campaign banner with page dots.
+class _BannerCarousel extends StatefulWidget {
+  final List<Map<String, dynamic>> campaigns;
+  final ValueChanged<String> onTap;
+
+  const _BannerCarousel({required this.campaigns, required this.onTap});
+
+  @override
+  State<_BannerCarousel> createState() => _BannerCarouselState();
+}
+
+class _BannerCarouselState extends State<_BannerCarousel> {
+  final _controller = PageController(viewportFraction: 0.92);
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 168,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: widget.campaigns.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _HeroBanner(
+                campaign: widget.campaigns[i],
+                onTap: widget.onTap,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            widget.campaigns.length,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: i == _page ? 20 : 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: i == _page
+                    ? AppColors.primary
+                    : AppColors.primary.withOpacity(0.25),
+                borderRadius: AppRadius.pillAll,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroBanner extends StatelessWidget {
+  final Map<String, dynamic> campaign;
+  final ValueChanged<String> onTap;
+
+  const _HeroBanner({required this.campaign, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = (campaign['title'] ?? 'Featured Campaign').toString();
+    final cover = (campaign['cover_image_url'] ?? '').toString();
+    final id = campaign['id']?.toString();
+    final brand = _brandName();
+
+    return GestureDetector(
+      onTap: () {
+        if (id != null) onTap(id);
+      },
+      child: ClipRRect(
+        borderRadius: AppRadius.allXl,
+        child: Container(
+          decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 12, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'FEATURED CAMPAIGN',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withOpacity(0.85),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.15,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      if (brand.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          brand,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: AppRadius.pillAll,
+                        ),
+                        child: const Text(
+                          'View',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDeep,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (cover.isNotEmpty)
+                CachedImage(
+                  imageUrl: cover,
+                  width: 130,
+                  height: 168,
+                  fit: BoxFit.cover,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _brandName() {
+    final users = campaign['users'];
+    if (users is Map && users['name'] != null) return users['name'].toString();
+    final b = campaign['brand_name'];
+    return (b == null) ? '' : b.toString();
+  }
 }
