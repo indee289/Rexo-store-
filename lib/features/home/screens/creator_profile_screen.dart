@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../models/creator_view.dart';
 import '../providers/creators_provider.dart';
@@ -66,24 +67,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Creator Profile',
-          style: AppTextStyles.h5.copyWith(color: theme.colorScheme.onSurface),
-        ),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        leadingWidth: 44 + AppSpacing.sm,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.xs),
-          child: PremiumIconButton(
-            icon: Iconsax.arrow_left,
-            onPressed: () => context.pop(),
-            tooltip: 'Back',
-          ),
-        ),
-      ),
+      appBar: PremiumAppBar(title: 'Creator Profile', showBack: true),
       body: creatorAsync.when(
         data: (creator) {
           // Genuinely unknown user id → creator unavailable (Req 7.4).

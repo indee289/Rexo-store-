@@ -42,15 +42,7 @@ class MyCampaignsScreen extends ConsumerWidget {
   const MyCampaignsScreen({super.key});
 
   PreferredSizeWidget _appBar(BuildContext context, String title) {
-    final theme = Theme.of(context);
-    return AppBar(
-      title: Text(title, style: AppTextStyles.h5),
-      centerTitle: false,
-      backgroundColor: theme.colorScheme.surface,
-      elevation: 0,
-      scrolledUnderElevation: 0.5,
-      surfaceTintColor: Colors.transparent,
-    );
+    return PremiumAppBar(title: title);
   }
 
   @override
