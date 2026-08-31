@@ -7,28 +7,7 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Central app theme.
-///
-/// Exposes [AppTheme.lightTheme] and [AppTheme.darkTheme] — the two entry
-/// points consumed by `MaterialApp` (see `lib/app.dart`). These getter
-/// names/signatures are intentionally stable; do not rename them.
-///
-/// The theme is fully token-driven (see `lib/core/theme/`): colors come from
-/// [AppColors], text styles from [AppTextStyles], radii from [AppRadius], and
-/// spacing from [AppSpacing]. Both light and dark variants share the same
-/// structure so components inherit a cohesive, premium, iOS-style look.
-///
-/// Premium/iOS notes:
-///   * The app bar is clean and minimal (surface background, `elevation: 0`,
-///     `surfaceTintColor` transparent, a barely-there scrolled-under
-///     elevation). A truly translucent/frosted app bar is composed at the
-///     widget level with a `BackdropFilter` over this surface treatment; the
-///     theme provides the flat, tint-free base that lets that read cleanly.
-///   * The bottom navigation background is transparent so the glass dock
-///     (`AppGlass`) can render its own blurred, translucent surface without a
-///     competing opaque bar behind it.
-///   * Sheets, cards, chips, and inputs all use [AppRadius]/[AppColors] tokens
-///     so glass buttons and translucent surfaces sit on a consistent system.
+/// Central app theme — premium Material 3 with iOS-style polish.
 class AppTheme {
   AppTheme._();
 
@@ -36,10 +15,6 @@ class AppTheme {
   // Light theme
   // ---------------------------------------------------------------------------
   static ThemeData get lightTheme {
-    const textPrimary = AppColors.textPrimary;
-    const textSecondary = AppColors.textSecondary;
-    const textHint = AppColors.textHint;
-
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -48,8 +23,8 @@ class AppTheme {
       fontFamily: GoogleFonts.poppins().fontFamily,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        primaryContainer: AppColors.primaryLight,
-        secondary: AppColors.secondary,
+        primaryContainer: AppColors.surfaceAlt,
+        secondary: AppColors.accent,
         surface: AppColors.surface,
         error: AppColors.error,
         onPrimary: Colors.white,
@@ -60,19 +35,19 @@ class AppTheme {
         onError: Colors.white,
       ),
       textTheme: _buildTextTheme(
-        primary: textPrimary,
-        secondary: textSecondary,
-        hint: textHint,
+        primary: AppColors.textPrimary,
+        secondary: AppColors.textSecondary,
+        hint: AppColors.textHint,
       ),
       appBarTheme: _appBarTheme(
         background: AppColors.surface,
-        foreground: textPrimary,
+        foreground: AppColors.textPrimary,
         overlay: SystemUiOverlayStyle.dark,
       ),
       cardTheme: _cardTheme(
         color: AppColors.card,
         border: AppColors.border,
-        shadow: Colors.black.withOpacity(0.05),
+        shadow: Colors.black.withOpacity(0.04),
       ),
       elevatedButtonTheme: _elevatedButtonTheme,
       outlinedButtonTheme: _outlinedButtonTheme,
@@ -80,12 +55,10 @@ class AppTheme {
       inputDecorationTheme: _inputDecorationTheme(
         fill: AppColors.surfaceAlt,
         border: AppColors.border,
-        hint: textHint,
-        label: textSecondary,
+        hint: AppColors.textHint,
+        label: AppColors.textSecondary,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        // Transparent so the premium glass dock (AppGlass) renders its own
-        // blurred, translucent surface without a competing opaque bar.
         backgroundColor: Colors.transparent,
         elevation: 0,
         selectedItemColor: AppColors.primary,
@@ -101,16 +74,33 @@ class AppTheme {
       chipTheme: _chipTheme(
         background: AppColors.surfaceAlt,
         border: AppColors.border,
-        label: textPrimary,
+        label: AppColors.textPrimary,
       ),
       bottomSheetTheme: _bottomSheetTheme(AppColors.surface),
       dialogTheme: _dialogTheme(
         background: AppColors.surface,
-        title: textPrimary,
+        title: AppColors.textPrimary,
       ),
       snackBarTheme: _snackBarTheme(
         background: AppColors.secondary,
         content: Colors.white,
+      ),
+      listTileTheme: ListTileThemeData(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        iconColor: AppColors.textSecondary,
+        style: ListTileStyle.list,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return Colors.white;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          return AppColors.border;
+        }),
       ),
     );
   }
@@ -119,98 +109,99 @@ class AppTheme {
   // Dark theme
   // ---------------------------------------------------------------------------
   static ThemeData get darkTheme {
-    // Dark surface ramp mirrors the design's dark column
-    // (background #121212, surface #1E1E1E, surfaceAlt #2C2C2C, border #3A3A3A).
-    const darkBackground = Color(0xFF121212);
-    const darkSurface = Color(0xFF1E1E1E);
-    const darkBorder = Color(0xFF3A3A3A);
-    const darkDivider = Color(0xFF2A2A2A);
-    const darkTextPrimary = Color(0xFFF5F5F5);
-    const darkTextSecondary = Color(0xFFB0B0B0);
-    const darkTextHint = Color(0xFF757575);
-
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: darkBackground,
+      scaffoldBackgroundColor: AppColors.darkBackground,
       fontFamily: GoogleFonts.poppins().fontFamily,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
-        primaryContainer: AppColors.primaryDark,
-        secondary: AppColors.secondary,
-        surface: darkSurface,
+        primaryContainer: AppColors.darkSurfaceAlt,
+        secondary: AppColors.accent,
+        surface: AppColors.darkSurface,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onSurface: darkTextPrimary,
-        onSurfaceVariant: darkTextSecondary,
-        outline: darkBorder,
+        onSurface: AppColors.darkTextPrimary,
+        onSurfaceVariant: AppColors.darkTextSecondary,
+        outline: AppColors.darkBorder,
         onError: Colors.white,
       ),
       textTheme: _buildTextTheme(
-        primary: darkTextPrimary,
-        secondary: darkTextSecondary,
-        hint: darkTextHint,
+        primary: AppColors.darkTextPrimary,
+        secondary: AppColors.darkTextSecondary,
+        hint: AppColors.darkTextHint,
       ),
       appBarTheme: _appBarTheme(
-        background: darkSurface,
-        foreground: darkTextPrimary,
+        background: AppColors.darkSurface,
+        foreground: AppColors.darkTextPrimary,
         overlay: SystemUiOverlayStyle.light,
       ),
       cardTheme: _cardTheme(
-        color: AppColors.darkSurfaceAlt,
-        border: darkBorder,
-        shadow: Colors.black.withOpacity(0.2),
+        color: AppColors.darkCard,
+        border: AppColors.darkBorder,
+        shadow: Colors.black.withOpacity(0.3),
       ),
       elevatedButtonTheme: _elevatedButtonTheme,
       outlinedButtonTheme: _outlinedButtonTheme,
       textButtonTheme: _textButtonTheme,
       inputDecorationTheme: _inputDecorationTheme(
         fill: AppColors.darkSurfaceAlt,
-        border: darkBorder,
-        hint: darkTextHint,
-        label: darkTextSecondary,
+        border: AppColors.darkBorder,
+        hint: AppColors.darkTextHint,
+        label: AppColors.darkTextSecondary,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        // Transparent so the premium glass dock (AppGlass) renders its own
-        // blurred, translucent surface without a competing opaque bar.
         backgroundColor: Colors.transparent,
         elevation: 0,
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: darkTextHint,
+        unselectedItemColor: AppColors.darkTextHint,
         type: BottomNavigationBarType.fixed,
         showUnselectedLabels: true,
       ),
       dividerTheme: const DividerThemeData(
-        color: darkDivider,
+        color: AppColors.darkDivider,
         thickness: 1,
         space: 1,
       ),
       chipTheme: _chipTheme(
         background: AppColors.darkSurfaceAlt,
-        border: darkBorder,
-        label: darkTextPrimary,
+        border: AppColors.darkBorder,
+        label: AppColors.darkTextPrimary,
       ),
-      bottomSheetTheme: _bottomSheetTheme(darkSurface),
+      bottomSheetTheme: _bottomSheetTheme(AppColors.darkSurface),
       dialogTheme: _dialogTheme(
-        background: darkSurface,
-        title: darkTextPrimary,
+        background: AppColors.darkSurface,
+        title: AppColors.darkTextPrimary,
       ),
       snackBarTheme: _snackBarTheme(
         background: AppColors.darkSurfaceAlt,
-        content: darkTextPrimary,
+        content: AppColors.darkTextPrimary,
+      ),
+      listTileTheme: ListTileThemeData(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        iconColor: AppColors.darkTextSecondary,
+        style: ListTileStyle.list,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return AppColors.darkTextHint;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          return AppColors.darkBorder;
+        }),
       ),
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Shared builders — token-driven so light/dark stay in lock-step.
+  // Shared builders
   // ---------------------------------------------------------------------------
-
-  /// Builds the [TextTheme] from the shared [AppTextStyles] scale, applying the
-  /// per-mode text colors. Sizes/weights are preserved from the existing scale
-  /// so no screen shifts visually; only the source of truth becomes the tokens.
   static TextTheme _buildTextTheme({
     required Color primary,
     required Color secondary,
@@ -235,9 +226,6 @@ class AppTheme {
     );
   }
 
-  /// Clean, minimal, iOS-style app bar. Surface background, no base elevation,
-  /// tint-free (so it reads flat like iOS), a whisper of scrolled-under
-  /// elevation, centered [AppTextStyles.h5] title, and a premium back control.
   static AppBarTheme _appBarTheme({
     required Color background,
     required Color foreground,
@@ -248,13 +236,10 @@ class AppTheme {
       foregroundColor: foreground,
       elevation: 0,
       scrolledUnderElevation: 0.5,
-      // Kill the Material 3 surface tint so the bar stays flat/clean and any
-      // widget-level translucent (glass) treatment reads correctly.
       surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.black.withOpacity(0.06),
+      shadowColor: Colors.black.withOpacity(0.08),
       centerTitle: true,
       titleSpacing: AppSpacing.lg,
-      // Premium back control: refined size + consistent foreground color.
       iconTheme: IconThemeData(color: foreground, size: 22),
       actionsIconTheme: IconThemeData(color: foreground, size: 22),
       titleTextStyle: AppTextStyles.h5.copyWith(color: foreground),
@@ -332,9 +317,9 @@ class AppTheme {
       ),
       border: outline(border),
       enabledBorder: outline(border),
-      focusedBorder: outline(AppColors.primary, 1.5),
+      focusedBorder: outline(AppColors.primary, 2),
       errorBorder: outline(AppColors.error),
-      focusedErrorBorder: outline(AppColors.error, 1.5),
+      focusedErrorBorder: outline(AppColors.error, 2),
       hintStyle: AppTextStyles.bodyMedium.copyWith(color: hint),
       labelStyle: AppTextStyles.bodyMedium.copyWith(color: label),
       errorStyle: AppTextStyles.caption.copyWith(color: AppColors.error),
@@ -354,9 +339,6 @@ class AppTheme {
     );
   }
 
-  /// Bottom sheet base. `xl` top radius matches the design's sheet spec and the
-  /// glass sheet treatment; a widget-level `BackdropFilter` can layer frost on
-  /// top of this surface for the premium translucent look.
   static BottomSheetThemeData _bottomSheetTheme(Color background) =>
       BottomSheetThemeData(
         backgroundColor: background,
