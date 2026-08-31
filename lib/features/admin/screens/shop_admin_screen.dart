@@ -36,8 +36,8 @@ class _ShopAdminScreenState extends ConsumerState<ShopAdminScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Shop Admin'),
+      appBar: PremiumAppBar(
+        title: 'Shop Admin',
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,

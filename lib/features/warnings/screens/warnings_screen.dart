@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_sheet.dart';
 import '../../../core/widgets/premium_text_field.dart';
@@ -23,14 +24,7 @@ class WarningsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Warnings & Suspensions', style: AppTextStyles.h5),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        iconTheme:
-            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
-      ),
+      appBar: PremiumAppBar(title: 'Warnings & Suspensions', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

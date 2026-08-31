@@ -10,6 +10,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/premium_sheet.dart';
@@ -64,14 +65,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        centerTitle: false,
-        titleSpacing: AppSpacing.lg,
-        title: Text('Messages', style: AppTextStyles.h4),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: PremiumAppBar(
+        title: 'Messages',
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
