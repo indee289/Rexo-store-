@@ -24,25 +24,19 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: profileAsync.when(
-        data: (profileState) =>
-            _buildContent(context, ref, profileState),
+        data: (profileState) => _buildContent(context, ref, profileState),
         loading: () => const ShimmerProfile(),
         error: (error, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Iconsax.warning_2,
-                  size: 48, color: cs.onSurfaceVariant),
+              Icon(Iconsax.warning_2, size: 48, color: cs.onSurfaceVariant),
               const SizedBox(height: 16),
-              Text(
-                'Failed to load profile',
-                style: TextStyle(
-                    fontSize: 14, color: cs.onSurfaceVariant),
-              ),
+              Text('Failed to load profile',
+                  style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
               const SizedBox(height: 12),
               TextButton(
-                onPressed: () =>
-                    ref.invalidate(currentUserProfileProvider),
+                onPressed: () => ref.invalidate(currentUserProfileProvider),
                 child: const Text('Retry',
                     style: TextStyle(color: AppColors.primary)),
               ),
@@ -61,19 +55,21 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = Theme.of(context).scaffoldBackgroundColor;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     final isAdmin = ref.watch(isAdminProvider);
     final name = profile['name'] ?? 'User';
     final handle = profile['handle'] ?? '';
-    final role = profile['role'] ?? 'creator';
+    final role = (profile['role'] ?? 'creator').toString();
     final avatarUrl = profile['avatar_url'];
     final bio = (profile['bio'] ?? '').toString();
     final isVerified = (profile['is_verified'] == true);
 
     return CustomScrollView(
       slivers: [
-        // ── AppBar with settings icon ──────────────────────────────────────
         SliverAppBar(
           pinned: true,
           backgroundColor: bg,
@@ -81,142 +77,131 @@ class ProfileScreen extends ConsumerWidget {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           centerTitle: true,
-          title: Text(
-            'Profile',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
-            ),
-          ),
+          title: Text('Profile',
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface)),
           actions: [
             IconButton(
               onPressed: () => context.push('/settings'),
-              icon: Icon(Iconsax.menu_1,
-                  color: cs.onSurface, size: 22),
+              icon: Icon(Iconsax.setting_2, color: cs.onSurface, size: 22),
             ),
           ],
         ),
 
-        // ── Avatar + stats row ─────────────────────────────────────────────
+        // ── Premium identity card ─────────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding:
-                const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Avatar circle
-                PremiumAvatar(
-                  imageUrl: avatarUrl,
-                  name: name,
-                  size: 80,
-                  isVerified: isVerified,
-                ),
-                const SizedBox(width: 20),
-                // Stats
-                Expanded(
-                  child: _buildFollowStats(context, ref),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Name, handle, bio, role ────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurface,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: AppRadius.allXl,
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.28 : 0.05),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                    spreadRadius: -4,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      PremiumAvatar(
+                        imageUrl: avatarUrl,
+                        name: name,
+                        size: 72,
+                        isVerified: isVerified,
+                        showRing: true,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildFollowStats(context, ref),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurface,
+                            letterSpacing: -0.3,
+                          ),
                         ),
                       ),
-                    ),
-                    if (isVerified) ...[
-                      const SizedBox(width: 4),
-                      const VerifiedBadge(size: 18),
+                      if (isVerified) ...[
+                        const SizedBox(width: 5),
+                        const VerifiedBadge(size: 18),
+                      ],
                     ],
+                  ),
+                  if (handle.toString().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text('@$handle',
+                        style: TextStyle(
+                            fontSize: 13.5, color: cs.onSurfaceVariant)),
                   ],
-                ),
-                if (handle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '@$handle',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: cs.onSurfaceVariant,
+                  if (bio.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(bio,
+                        style: TextStyle(
+                            fontSize: 13.5, height: 1.4, color: cs.onSurface)),
+                  ],
+                  const SizedBox(height: 10),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(isDark ? 0.20 : 0.12),
+                      borderRadius: AppRadius.pillAll,
                     ),
+                    child: Text(
+                      role.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _GradientButton(
+                          label: 'Edit Profile',
+                          icon: Iconsax.edit_2,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const EditProfileScreen()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _TonalButton(
+                          label: 'Share',
+                          icon: Iconsax.share,
+                          onTap: () => _shareProfile(context, handle.toString()),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-                if (bio.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    bio,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: cs.onSurface,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                // Role chip
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.12),
-                    borderRadius: AppRadius.pillAll,
-                  ),
-                  child: Text(
-                    role.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Action buttons row ─────────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _ActionBtn(
-                    label: 'Edit Profile',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen()),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ActionBtn(
-                    label: 'Share',
-                    onTap: () => _shareProfile(context, handle),
-                    ghost: true,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -224,34 +209,38 @@ class ProfileScreen extends ConsumerWidget {
         // ── Menu group card ────────────────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
             child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.darkCard
-                    : Colors.white,
+                color: cardBg,
                 borderRadius: AppRadius.allLg,
-                border: Border.all(color: Theme.of(context).dividerColor),
+                border: Border.all(color: borderColor),
               ),
               child: Column(
                 children: [
                   _buildMenuItem(
                     context,
                     icon: Iconsax.wallet_1,
+                    iconColor: AppColors.primary,
                     title: 'Wallet',
+                    subtitle: 'Balance & transactions',
                     onTap: () => context.push('/wallet'),
                   ),
                   _buildMenuItem(
                     context,
                     icon: Iconsax.bag_2,
+                    iconColor: AppColors.accentIndigo,
                     title: 'My Orders',
+                    subtitle: 'Track your purchases',
                     onTap: () => context.push('/orders'),
                   ),
                   _buildMenuItem(
                     context,
                     icon: Iconsax.crown_1,
+                    iconColor: AppColors.accentAmber,
                     title: 'Subscriptions',
+                    subtitle: 'Manage your plan',
                     onTap: () => context.push('/subscriptions'),
                     isLast: !isAdmin,
                   ),
@@ -259,7 +248,9 @@ class ProfileScreen extends ConsumerWidget {
                     _buildMenuItem(
                       context,
                       icon: Iconsax.shield_tick,
+                      iconColor: AppColors.accentPink,
                       title: 'Admin Center',
+                      subtitle: 'Manage the platform',
                       onTap: () => context.push('/admin'),
                       isLast: true,
                     ),
@@ -282,12 +273,20 @@ class ProfileScreen extends ConsumerWidget {
           error: (_, __) => '0',
         );
 
+    final divider = Container(
+      width: 1,
+      height: 28,
+      color: Theme.of(context).dividerColor,
+    );
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const _StatCol(label: 'Campaigns', value: '0'),
-        _StatCol(label: 'Followers', value: fmt(followersAsync)),
-        _StatCol(label: 'Following', value: fmt(followingAsync)),
+        const Expanded(child: _StatCol(label: 'Campaigns', value: '0')),
+        divider,
+        Expanded(child: _StatCol(label: 'Followers', value: fmt(followersAsync))),
+        divider,
+        Expanded(child: _StatCol(label: 'Following', value: fmt(followingAsync))),
       ],
     );
   }
@@ -323,7 +322,9 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildMenuItem(
     BuildContext context, {
     required IconData icon,
+    required Color iconColor,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
     bool isLast = false,
   }) {
@@ -334,15 +335,16 @@ class ProfileScreen extends ConsumerWidget {
         onTap: onTap,
         splashColor: AppColors.primary.withOpacity(0.06),
         child: Container(
-          height: 58,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(
-                    color: isLast
-                        ? Colors.transparent
-                        : Theme.of(context).dividerColor,
-                    width: 1)),
+              bottom: BorderSide(
+                color: isLast
+                    ? Colors.transparent
+                    : Theme.of(context).dividerColor,
+                width: 1,
+              ),
+            ),
           ),
           child: Row(
             children: [
@@ -350,27 +352,36 @@ class ProfileScreen extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
+                  color: iconColor.withOpacity(0.12),
                   borderRadius: AppRadius.allSm,
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurface,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: cs.onSurfaceVariant,
-              ),
+              Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant),
             ],
           ),
         ),
@@ -393,56 +404,95 @@ class _StatCol extends StatelessWidget {
           value,
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: cs.onSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
         ),
       ],
     );
   }
 }
 
-class _ActionBtn extends StatelessWidget {
+/// Filled violet gradient button.
+class _GradientButton extends StatelessWidget {
   final String label;
+  final IconData icon;
   final VoidCallback onTap;
-  final bool ghost;
-  const _ActionBtn(
-      {required this.label, required this.onTap, this.ghost = false});
+  const _GradientButton(
+      {required this.label, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: AppRadius.allMd,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tonal (soft violet) secondary button.
+class _TonalButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _TonalButton(
+      {required this.label, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
-    final fillColor = isDark ? AppColors.darkCard : Colors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 40,
+        height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: ghost ? Colors.transparent : fillColor,
+          color: AppColors.primary.withOpacity(isDark ? 0.18 : 0.10),
           borderRadius: AppRadius.allMd,
-          border: Border.all(
-            color: ghost ? borderColor : borderColor,
-          ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: ghost ? cs.onSurfaceVariant : cs.onSurface,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+          ],
         ),
       ),
     );

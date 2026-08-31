@@ -130,8 +130,16 @@ class _CtaButtonState extends State<_CtaButton> {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            gradient: AppColors.primaryGradient,
             borderRadius: AppRadius.allMd,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.35),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+                spreadRadius: -2,
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
