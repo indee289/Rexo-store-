@@ -7,7 +7,6 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../providers/auth_provider.dart';
 
@@ -28,6 +27,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'creator';
+
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _textPrimary =>
+      _isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+  Color get _textSecondary =>
+      _isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
   @override
   void dispose() {
@@ -79,7 +84,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -88,42 +93,46 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
-                // ── Back button ───────────────────────────────────────────────
+                // ── Back button ───────────────────────────────────────────
                 GestureDetector(
                   onTap: () => context.go(AppRoutes.login),
-                  child: const Icon(
-                    Icons.chevron_left,
-                    size: 32,
-                    color: AppColors.textPrimary,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _isDark
+                          ? AppColors.darkSurfaceAlt
+                          : AppColors.surfaceAlt,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.chevron_left,
+                        size: 26, color: _textPrimary),
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
-                // ── Heading ───────────────────────────────────────────────────
-                const Text(
-                  'Create Account',
+                // ── Heading ───────────────────────────────────────────────
+                Text(
+                  'Create account 🚀',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: _textPrimary,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                const SizedBox(height: 6),
+                Text(
                   'Join the creator economy',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: TextStyle(fontSize: 15, color: _textSecondary),
                 ),
 
                 const SizedBox(height: 28),
 
-                // ── Full Name ─────────────────────────────────────────────────
+                // ── Full Name ─────────────────────────────────────────────
                 _RegField(
                   controller: _nameController,
                   label: 'Full Name',
@@ -143,7 +152,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Username ──────────────────────────────────────────────────
+                // ── Username ──────────────────────────────────────────────
                 _RegField(
                   controller: _usernameController,
                   label: 'Username',
@@ -175,7 +184,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Email ─────────────────────────────────────────────────────
+                // ── Email ─────────────────────────────────────────────────
                 _RegField(
                   controller: _emailController,
                   label: 'Email',
@@ -195,7 +204,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Password ──────────────────────────────────────────────────
+                // ── Password ──────────────────────────────────────────────
                 _RegField(
                   controller: _passwordController,
                   label: 'Password',
@@ -208,7 +217,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         setState(() => _obscurePassword = !_obscurePassword),
                     child: Icon(
                       _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                      color: AppColors.textHint,
+                      color: _textSecondary,
                       size: 20,
                     ),
                   ),
@@ -230,7 +239,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Confirm Password ──────────────────────────────────────────
+                // ── Confirm Password ──────────────────────────────────────
                 _RegField(
                   controller: _confirmPasswordController,
                   label: 'Confirm Password',
@@ -245,7 +254,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       _obscureConfirmPassword
                           ? Iconsax.eye_slash
                           : Iconsax.eye,
-                      color: AppColors.textHint,
+                      color: _textSecondary,
                       size: 20,
                     ),
                   ),
@@ -262,13 +271,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 const SizedBox(height: 28),
 
-                // ── Role selector ─────────────────────────────────────────────
-                const Text(
+                // ── Role selector ─────────────────────────────────────────
+                Text(
                   'I am a',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    color: _textPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -300,7 +309,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 const SizedBox(height: 28),
 
-                // ── Create Account button ─────────────────────────────────────
+                // ── Create Account button ─────────────────────────────────
                 PremiumButton(
                   label: authState.isLoading ? 'Creating...' : 'Create Account',
                   loading: authState.isLoading,
@@ -309,17 +318,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 const SizedBox(height: 24),
 
-                // ── Sign in link ──────────────────────────────────────────────
+                // ── Sign in link ──────────────────────────────────────────
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Already have an account? ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: TextStyle(fontSize: 14, color: _textSecondary),
                       ),
                       GestureDetector(
                         onTap: () => context.go(AppRoutes.login),
@@ -346,7 +352,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-/// Light-theme role selection card.
+/// Theme-aware role selection card.
 class _RoleCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -364,16 +370,29 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final surfaceAlt =
+        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final textHint = isDark ? AppColors.darkTextHint : AppColors.textHint;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryBg : Colors.white,
-          borderRadius: AppRadius.allMd,
+          color: isSelected
+              ? AppColors.primary.withOpacity(isDark ? 0.16 : 0.10)
+              : cardBg,
+          borderRadius: AppRadius.allLg,
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary : borderColor,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -384,13 +403,13 @@ class _RoleCard extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withOpacity(0.12)
-                    : AppColors.surfaceAlt,
+                    ? AppColors.primary.withOpacity(0.16)
+                    : surfaceAlt,
                 borderRadius: AppRadius.allSm,
               ),
               child: Icon(
                 icon,
-                color: isSelected ? AppColors.primary : AppColors.textHint,
+                color: isSelected ? AppColors.primary : textHint,
                 size: 22,
               ),
             ),
@@ -400,17 +419,14 @@ class _RoleCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                color: isSelected ? AppColors.primary : textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               description,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12, color: textSecondary),
             ),
           ],
         ),
@@ -419,7 +435,7 @@ class _RoleCard extends StatelessWidget {
   }
 }
 
-/// Reusable light-theme form field for register screen.
+/// Theme-aware, borderless filled form field for the register screen.
 class _RegField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -449,15 +465,30 @@ class _RegField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+    final hintColor = isDark ? AppColors.darkTextHint : AppColors.textHint;
+    final textColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final labelColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
+          borderRadius: AppRadius.allMd,
+          borderSide: c == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: c, width: w),
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: labelColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -469,39 +500,21 @@ class _RegField extends StatelessWidget {
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           validator: validator,
-          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 14, color: textColor),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                const TextStyle(fontSize: 14, color: AppColors.textHint),
+            hintStyle: TextStyle(fontSize: 14, color: hintColor),
             filled: true,
-            fillColor: AppColors.surfaceAlt,
-            prefixIcon:
-                Icon(icon, color: AppColors.textHint, size: 20),
+            fillColor: fill,
+            prefixIcon: Icon(icon, color: hintColor, size: 20),
             suffixIcon: suffixIcon,
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
-            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: border(Colors.transparent),
+            enabledBorder: border(Colors.transparent),
+            focusedBorder: border(AppColors.primary, 1.5),
+            errorBorder: border(AppColors.error),
+            focusedErrorBorder: border(AppColors.error, 1.5),
           ),
         ),
       ],
