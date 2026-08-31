@@ -368,16 +368,19 @@ class _LinkedAccountsScreenState
     setState(() => _isSaving = true);
 
     try {
-      final notifier = ref.read(linkedAccountsProvider.notifier);
-      final updates = [
-        {'platform': 'instagram', 'handle': _instagramController.text.trim()},
-        {'platform': 'youtube', 'handle': _youtubeController.text.trim()},
-        {'platform': 'tiktok', 'handle': _tiktokController.text.trim()},
-        {'platform': 'twitter', 'handle': _twitterController.text.trim()},
-        {'platform': 'facebook', 'handle': _facebookController.text.trim()},
-      ];
-
-      await notifier.saveAccounts(updates);
+      final notifier = ref.read(linkedAccountsActionsProvider.notifier);
+      final platformHandles = {
+        'instagram': _instagramController.text.trim(),
+        'youtube': _youtubeController.text.trim(),
+        'tiktok': _tiktokController.text.trim(),
+        'twitter': _twitterController.text.trim(),
+        'facebook': _facebookController.text.trim(),
+      };
+      for (final entry in platformHandles.entries) {
+        if (entry.value.isNotEmpty) {
+          await notifier.saveAccount(platform: entry.key, handle: entry.value);
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
