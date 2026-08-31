@@ -46,14 +46,22 @@ class EmptyState extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 92,
+              height: 92,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.12),
+                gradient: AppColors.primaryGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                    spreadRadius: -6,
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 36, color: AppColors.primary),
+              child: Icon(icon, size: 40, color: Colors.white),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(

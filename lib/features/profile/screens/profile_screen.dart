@@ -221,45 +221,51 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
 
-        // ── Divider ────────────────────────────────────────────────────────
+        // ── Menu group card ────────────────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: Divider(height: 1, color: Theme.of(context).dividerColor),
-          ),
-        ),
-
-        // ── Menu items ─────────────────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              _buildMenuItem(
-                context,
-                icon: Iconsax.wallet_1,
-                title: 'Wallet',
-                onTap: () => context.push('/wallet'),
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+            child: Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.darkCard
+                    : Colors.white,
+                borderRadius: AppRadius.allLg,
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
-              _buildMenuItem(
-                context,
-                icon: Iconsax.bag_2,
-                title: 'My Orders',
-                onTap: () => context.push('/orders'),
+              child: Column(
+                children: [
+                  _buildMenuItem(
+                    context,
+                    icon: Iconsax.wallet_1,
+                    title: 'Wallet',
+                    onTap: () => context.push('/wallet'),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Iconsax.bag_2,
+                    title: 'My Orders',
+                    onTap: () => context.push('/orders'),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Iconsax.crown_1,
+                    title: 'Subscriptions',
+                    onTap: () => context.push('/subscriptions'),
+                    isLast: !isAdmin,
+                  ),
+                  if (isAdmin)
+                    _buildMenuItem(
+                      context,
+                      icon: Iconsax.shield_tick,
+                      title: 'Admin Center',
+                      onTap: () => context.push('/admin'),
+                      isLast: true,
+                    ),
+                ],
               ),
-              _buildMenuItem(
-                context,
-                icon: Iconsax.crown_1,
-                title: 'Subscriptions',
-                onTap: () => context.push('/subscriptions'),
-              ),
-              if (isAdmin)
-                _buildMenuItem(
-                  context,
-                  icon: Iconsax.shield_tick,
-                  title: 'Admin Center',
-                  onTap: () => context.push('/admin'),
-                ),
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
         ),
       ],
@@ -319,6 +325,7 @@ class ProfileScreen extends ConsumerWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isLast = false,
   }) {
     final cs = Theme.of(context).colorScheme;
     return Material(
@@ -327,12 +334,15 @@ class ProfileScreen extends ConsumerWidget {
         onTap: onTap,
         splashColor: AppColors.primary.withOpacity(0.06),
         child: Container(
-          height: 56,
+          height: 58,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(
-                    color: Theme.of(context).dividerColor, width: 1)),
+                    color: isLast
+                        ? Colors.transparent
+                        : Theme.of(context).dividerColor,
+                    width: 1)),
           ),
           child: Row(
             children: [
