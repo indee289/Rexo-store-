@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_app_bar.dart';
@@ -20,12 +19,11 @@ class WalletScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final walletAsync = ref.watch(walletProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: const PremiumAppBar(title: 'Wallet'),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -39,55 +37,41 @@ class WalletScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Balance Card
+              // ── Balance card ────────────────────────────────────────────
               walletAsync.when(
-                data: (wallet) => _buildBalanceCard(wallet),
-                loading: () => const ShimmerCard(height: 200),
-                error: (e, _) => _buildBalanceCard(null),
+                data: (wallet) => _buildBalanceCard(context, wallet),
+                loading: () => const ShimmerCard(height: 180),
+                error: (e, _) => _buildBalanceCard(context, null),
               ),
 
-              const SizedBox(height: AppSpacing.xl - 4),
+              const SizedBox(height: AppSpacing.xl),
 
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: PremiumButton(
-                      label: 'Deposit',
-                      variant: PremiumButtonVariant.tonal,
-                      icon: Iconsax.money_add,
-                      onPressed: () => context.push('/wallet/deposit'),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: PremiumButton(
-                      label: 'Withdraw',
-                      variant: PremiumButtonVariant.outline,
-                      icon: Iconsax.money_send,
-                      onPressed: () => context.push('/wallet/withdraw'),
-                    ),
-                  ),
-                ],
+              // ── Transactions ────────────────────────────────────────────
+              const Text(
+                'Recent Transactions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
-
-              const SizedBox(height: AppSpacing.xxl - 4),
-
-              // Transaction History
-              Text('Transaction History', style: AppTextStyles.h6),
               const SizedBox(height: AppSpacing.md),
 
               transactionsAsync.when(
                 data: (transactions) {
                   if (transactions.isEmpty) {
-                    return _buildEmptyState();
+                    return const EmptyState(
+                      icon: Iconsax.receipt,
+                      title: 'No transactions yet',
+                      subtitle: 'Your transactions will appear here.',
+                    );
                   }
                   return Column(
                     children: [
                       for (var i = 0;
                           i < transactions.take(20).length;
                           i++)
-                        _buildTransactionTile(transactions[i], theme)
+                        _buildTransactionTile(transactions[i])
                             .staggeredEntrance(i),
                     ],
                   );
@@ -101,11 +85,13 @@ class WalletScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                error: (e, _) => Center(
+                error: (e, _) => const Center(
                   child: Text('Failed to load transactions',
-                      style: AppTextStyles.bodyMedium),
+                      style: TextStyle(color: AppColors.textSecondary)),
                 ),
               ),
+
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -113,86 +99,94 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceCard(Map<String, dynamic>? wallet) {
+  Widget _buildBalanceCard(
+      BuildContext context, Map<String, dynamic>? wallet) {
     final available = (wallet?['available_balance'] ?? 0).toDouble();
     final escrow = (wallet?['escrow_balance'] ?? 0).toDouble();
     final earnings = (wallet?['total_earnings'] ?? 0).toDouble();
-    final withdrawn = (wallet?['total_withdrawn'] ?? 0).toDouble();
-    final currency = wallet?['currency'] ?? 'INR';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: AppColors.heroGradient,
         borderRadius: AppRadius.allXl,
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.3),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Available Balance',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.white70,
+          const Text(
+            'Total Balance',
+            style: TextStyle(
               fontSize: 13,
+              color: Colors.white70,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 8),
           Text(
-            '\u20b9${_formatAmount(available)}',
-            style: AppTextStyles.h2.copyWith(
+            '₹${_formatAmount(available)}',
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
-              fontSize: 34,
             ),
           ),
-          const SizedBox(height: AppSpacing.xl - 4),
+          const SizedBox(height: 16),
           Row(
             children: [
               _BalanceStat(
-                label: 'Escrow',
-                value: '\u20b9${_formatAmount(escrow)}',
-              ),
+                  label: 'Escrow',
+                  value: '₹${_formatAmount(escrow)}'),
               const SizedBox(width: AppSpacing.xl),
               _BalanceStat(
-                label: 'Earnings',
-                value: '\u20b9${_formatAmount(earnings)}',
-              ),
-              const SizedBox(width: AppSpacing.xl),
-              _BalanceStat(
-                label: 'Withdrawn',
-                value: '\u20b9${_formatAmount(withdrawn)}',
-              ),
+                  label: 'Earnings',
+                  value: '₹${_formatAmount(earnings)}'),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              currency,
-              style: AppTextStyles.caption.copyWith(color: Colors.white54),
-            ),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
+            children: [
+              Expanded(
+                child: PremiumButton(
+                  label: 'Deposit',
+                  variant: PremiumButtonVariant.glass,
+                  icon: Iconsax.money_add,
+                  onPressed: () => context.push('/wallet/deposit'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: PremiumButton(
+                  label: 'Withdraw',
+                  variant: PremiumButtonVariant.glass,
+                  icon: Iconsax.money_send,
+                  onPressed: () => context.push('/wallet/withdraw'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionTile(
-      Map<String, dynamic> transaction, ThemeData theme) {
+  Widget _buildTransactionTile(Map<String, dynamic> transaction) {
     final type = transaction['type'] as String;
     final amount = (transaction['amount'] ?? 0).toDouble();
     final status = transaction['status'] as String? ?? 'pending';
-    final method = transaction['payment_method'] ?? transaction['method'] ?? '';
-    final createdAt = DateTime.tryParse(transaction['created_at'] ?? '');
+    final method =
+        transaction['payment_method'] ?? transaction['method'] ?? '';
+    final createdAt =
+        DateTime.tryParse(transaction['created_at'] ?? '');
     final dateStr = createdAt != null
-        ? DateFormat('dd MMM yyyy, hh:mm a').format(createdAt)
+        ? DateFormat('dd MMM yyyy').format(createdAt)
         : '';
 
     Color statusColor;
@@ -211,41 +205,52 @@ class WalletScreen extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md + 2),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: Colors.white,
         borderRadius: AppRadius.allMd,
-        border: Border.all(color: AppColors.darkBorder),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: (isDeposit ? AppColors.success : AppColors.primary)
-                  .withOpacity(0.1),
+                  .withOpacity(0.10),
               borderRadius: AppRadius.allSm,
             ),
             child: Icon(
-              isDeposit ? Iconsax.money_add : Iconsax.money_send,
-              color: isDeposit ? AppColors.success : AppColors.primary,
+              isDeposit
+                  ? Iconsax.money_add
+                  : Iconsax.money_send,
+              color: isDeposit
+                  ? AppColors.success
+                  : AppColors.primary,
               size: 20,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   isDeposit ? 'Deposit' : 'Withdrawal',
-                  style: AppTextStyles.labelLarge,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  '$method \u2022 $dateStr',
-                  style: AppTextStyles.caption,
+                  '$method • $dateStr',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -256,28 +261,26 @@ class WalletScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isDeposit ? '+' : '-'}\u20b9${_formatAmount(amount)}',
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: isDeposit
-                      ? AppColors.success
-                      : theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
+                '${isDeposit ? '+' : '-'}₹${_formatAmount(amount)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDeposit ? AppColors.success : AppColors.error,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm, vertical: 2),
+                    horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.sm - 4),
+                  color: statusColor.withOpacity(0.10),
+                  borderRadius: AppRadius.pillAll,
                 ),
                 child: Text(
-                  status.toUpperCase(),
-                  style: AppTextStyles.caption.copyWith(
-                    color: statusColor,
+                  status,
+                  style: TextStyle(
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    fontSize: 9,
+                    color: statusColor,
                   ),
                 ),
               ),
@@ -288,17 +291,12 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
-    return const EmptyState(
-      icon: Iconsax.empty_wallet,
-      title: 'No transactions yet',
-      subtitle: 'Your deposit and withdrawal history will appear here',
-    );
-  }
-
   String _formatAmount(double amount) {
-    if (amount == amount.roundToDouble()) {
-      return amount.toStringAsFixed(0);
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(2)}M';
+    }
+    if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(1)}K';
     }
     return amount.toStringAsFixed(2);
   }
@@ -307,7 +305,6 @@ class WalletScreen extends ConsumerWidget {
 class _BalanceStat extends StatelessWidget {
   final String label;
   final String value;
-
   const _BalanceStat({required this.label, required this.value});
 
   @override
@@ -316,18 +313,18 @@ class _BalanceStat extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
-          style: AppTextStyles.caption.copyWith(
-            color: Colors.white60,
-            fontSize: 10,
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
-        const SizedBox(height: 2),
         Text(
-          value,
-          style: AppTextStyles.labelLarge.copyWith(
-            color: Colors.white,
-            fontSize: 13,
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.white70,
           ),
         ),
       ],

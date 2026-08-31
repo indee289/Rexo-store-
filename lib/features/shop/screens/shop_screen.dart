@@ -23,12 +23,11 @@ class ShopScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final products = ref.watch(productsProvider);
     final cartCount = ref.watch(cartItemCountProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: PremiumAppBar(
         title: 'Shop',
         actions: [
@@ -47,7 +46,7 @@ class ShopScreen extends ConsumerWidget {
         },
         child: CustomScrollView(
           slivers: [
-            // Category tabs
+            // Category filter
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -64,7 +63,7 @@ class ShopScreen extends ConsumerWidget {
             products.when(
               data: (data) {
                 if (data.isEmpty) {
-                  return SliverFillRemaining(
+                  return const SliverFillRemaining(
                     hasScrollBody: false,
                     child: EmptyState(
                       icon: Iconsax.shop,
@@ -74,8 +73,8 @@ class ShopScreen extends ConsumerWidget {
                   );
                 }
                 return SliverPadding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg),
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
@@ -85,16 +84,17 @@ class ShopScreen extends ConsumerWidget {
                       childAspectRatio: 0.7,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => ProductCard(product: data[index])
-                          .staggeredEntrance(index),
+                      (context, index) =>
+                          ProductCard(product: data[index])
+                              .staggeredEntrance(index),
                       childCount: data.length,
                     ),
                   ),
                 );
               },
               loading: () => SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg),
                 sliver: SliverGrid(
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
@@ -104,58 +104,28 @@ class ShopScreen extends ConsumerWidget {
                     childAspectRatio: 0.7,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    _shimmerBuilder,
+                    (_, __) => const ShimmerCard(height: 220),
                     childCount: 6,
                   ),
                 ),
               ),
               error: (error, _) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildErrorState(ref, ErrorUtils.sanitize(error)),
+                child: EmptyState(
+                  icon: Iconsax.warning_2,
+                  title: 'Failed to load products',
+                  subtitle: ErrorUtils.sanitize(error),
+                  cta: PremiumButton(
+                    label: 'Retry',
+                    expand: false,
+                    icon: Iconsax.refresh,
+                    onPressed: () => ref.invalidate(productsProvider),
+                  ),
+                ),
               ),
             ),
 
-            // Bottom spacing
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _shimmerBuilder(BuildContext context, int index) =>
-      const ShimmerCard(height: 220);
-
-  Widget _buildErrorState(WidgetRef ref, String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 64,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Failed to load products',
-              style: AppTextStyles.h5,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            PremiumButton(
-              label: 'Retry',
-              expand: false,
-              icon: Iconsax.refresh,
-              onPressed: () => ref.invalidate(productsProvider),
-            ),
           ],
         ),
       ),
@@ -169,26 +139,29 @@ class ShopScreen extends ConsumerWidget {
     if (canAdd) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Product management is available in the Admin app.'),
+          content:
+              Text('Product management is available in the Admin app.'),
         ),
       );
     } else {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('Cannot Add Products', style: AppTextStyles.h6),
-          content: Text(
-            'You need to be approved for the Rexo Program to sell products. Go to your Profile page and apply for the Rexo Program.',
-            style: AppTextStyles.bodyMedium,
+          title: const Text('Cannot Add Products',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
+          content: const Text(
+            'You need to be approved for the Rexo Program to sell products. '
+            'Go to your Profile page and apply.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'OK',
-                style: AppTextStyles.labelLarge
-                    .copyWith(color: AppColors.primary),
-              ),
+              child: const Text('OK',
+                  style: TextStyle(color: AppColors.primary)),
             ),
           ],
         ),
@@ -197,10 +170,8 @@ class ShopScreen extends ConsumerWidget {
   }
 }
 
-/// Cart action button with an unread-style count badge.
 class _CartAction extends StatelessWidget {
   final int count;
-
   const _CartAction({required this.count});
 
   @override
@@ -219,14 +190,21 @@ class _CartAction extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.xs),
               decoration: const BoxDecoration(
-                color: AppColors.primary,
+                color: AppColors.error,
                 shape: BoxShape.circle,
               ),
-              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              constraints: const BoxConstraints(
+                minWidth: 16,
+                minHeight: 16,
+              ),
               child: Text(
-                '$count',
-                style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+                count > 99 ? '99+' : '$count',
                 textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

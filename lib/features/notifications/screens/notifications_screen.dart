@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_app_bar.dart';
@@ -21,17 +20,21 @@ class NotificationsScreen extends ConsumerWidget {
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: PremiumAppBar(
         title: 'Notifications',
         actions: [
           TextButton(
             onPressed: () {
-              ref.read(notificationActionsProvider.notifier).markAllAsRead();
+              ref
+                  .read(notificationActionsProvider.notifier)
+                  .markAllAsRead();
             },
-            child: Text(
-              'Mark All Read',
-              style: AppTextStyles.labelMedium.copyWith(
+            child: const Text(
+              'Mark all read',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
                 color: AppColors.primary,
               ),
             ),
@@ -41,10 +44,13 @@ class NotificationsScreen extends ConsumerWidget {
       body: notificationsAsync.when(
         data: (notifications) {
           if (notifications.isEmpty) {
-            return _buildEmptyState();
+            return const EmptyState(
+              icon: Iconsax.notification,
+              title: 'No notifications',
+              subtitle: 'You\'re all caught up!',
+            );
           }
 
-          // Group by date
           final grouped = _groupByDate(notifications);
 
           return RefreshIndicator(
@@ -53,7 +59,8 @@ class NotificationsScreen extends ConsumerWidget {
               ref.invalidate(notificationsProvider);
             },
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              padding:
+                  const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: grouped.length,
               itemBuilder: (context, index) {
                 final group = grouped[index];
@@ -62,22 +69,23 @@ class NotificationsScreen extends ConsumerWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Section header
                     Padding(
                       padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.sm,
-                      ),
+                          16, 16, 16, 8),
                       child: Text(
                         group['label'] as String,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textHint,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                     for (var i = 0; i < items.length; i++)
-                      _NotificationTile(notification: items[i])
+                      _NotificationTile(
+                              notification: items[i])
                           .staggeredEntrance(i),
                   ],
                 );
@@ -86,26 +94,15 @@ class NotificationsScreen extends ConsumerWidget {
           );
         },
         loading: () => ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: 6,
-          itemBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.only(bottom: AppSpacing.sm),
-            child: ShimmerCard(height: 80),
-          ),
+          itemCount: 8,
+          itemBuilder: (_, __) => const ShimmerLoading(height: 72),
         ),
-        error: (e, _) => Center(
-          child: Text('Failed to load notifications',
-              style: AppTextStyles.bodyMedium),
+        error: (e, _) => const EmptyState(
+          icon: Iconsax.warning_2,
+          title: 'Failed to load notifications',
+          subtitle: 'Please try again.',
         ),
       ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const EmptyState(
-      icon: Iconsax.notification,
-      title: 'No notifications yet',
-      subtitle: 'We will notify you when something happens',
     );
   }
 
@@ -115,191 +112,168 @@ class NotificationsScreen extends ConsumerWidget {
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
-    final List<Map<String, dynamic>> todayItems = [];
-    final List<Map<String, dynamic>> yesterdayItems = [];
-    final List<Map<String, dynamic>> earlierItems = [];
-
-    for (final n in notifications) {
-      final createdAt = DateTime.tryParse(n['created_at'] ?? '');
-      if (createdAt == null) {
-        earlierItems.add(n);
-        continue;
-      }
-      final date = DateTime(createdAt.year, createdAt.month, createdAt.day);
-      if (date == today) {
-        todayItems.add(n);
-      } else if (date == yesterday) {
-        yesterdayItems.add(n);
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final notification in notifications) {
+      final createdAt =
+          DateTime.tryParse(notification['created_at'] ?? '');
+      String label;
+      if (createdAt != null) {
+        final date = DateTime(
+            createdAt.year, createdAt.month, createdAt.day);
+        if (date == today) {
+          label = 'TODAY';
+        } else if (date == yesterday) {
+          label = 'YESTERDAY';
+        } else {
+          label = 'EARLIER';
+        }
       } else {
-        earlierItems.add(n);
+        label = 'EARLIER';
       }
+      groups.putIfAbsent(label, () => []).add(notification);
     }
 
-    final groups = <Map<String, dynamic>>[];
-    if (todayItems.isNotEmpty) {
-      groups.add({'label': 'Today', 'items': todayItems});
-    }
-    if (yesterdayItems.isNotEmpty) {
-      groups.add({'label': 'Yesterday', 'items': yesterdayItems});
-    }
-    if (earlierItems.isNotEmpty) {
-      groups.add({'label': 'Earlier', 'items': earlierItems});
-    }
-
-    return groups;
+    const order = ['TODAY', 'YESTERDAY', 'EARLIER'];
+    return order
+        .where((key) => groups.containsKey(key))
+        .map((key) => {'label': key, 'items': groups[key]!})
+        .toList();
   }
 }
 
-class _NotificationTile extends ConsumerWidget {
+class _NotificationTile extends StatelessWidget {
   final Map<String, dynamic> notification;
-
   const _NotificationTile({required this.notification});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context) {
+    final title = notification['title'] as String? ?? '';
+    final body = notification['body'] as String? ?? '';
+    final type = notification['type'] as String? ?? 'general';
     final isRead = notification['is_read'] == true;
-    final title = notification['title'] ?? '';
-    final body = notification['body'] ?? '';
-    final type = notification['type'] ?? 'general';
-    final id = notification['id'] as String;
-    final createdAt = DateTime.tryParse(notification['created_at'] ?? '');
-    final timeAgo = createdAt != null ? _formatTimeAgo(createdAt) : '';
+    final createdAt =
+        DateTime.tryParse(notification['created_at'] ?? '');
+    final timeStr = createdAt != null
+        ? DateFormat('hh:mm a').format(createdAt)
+        : '';
 
-    return Dismissible(
-      key: Key(id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: AppSpacing.xl - 4),
-        color: AppColors.error.withOpacity(0.1),
-        child: const Icon(Iconsax.trash, color: AppColors.error),
+    final iconData = _iconForType(type);
+    final iconColor = _colorForType(type);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isRead ? Colors.white : AppColors.primaryBg,
+        border: const Border(
+            bottom:
+                BorderSide(color: AppColors.divider, width: 1)),
       ),
-      onDismissed: (_) {
-        ref.read(notificationActionsProvider.notifier).deleteNotification(id);
-      },
-      child: GestureDetector(
-        onTap: () {
-          if (!isRead) {
-            ref.read(notificationActionsProvider.notifier).markAsRead(id);
-          }
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-          padding: const EdgeInsets.all(AppSpacing.md + 2),
-          decoration: BoxDecoration(
-            color: AppColors.darkCard,
-            borderRadius: AppRadius.allMd,
-            border: Border(
-              left: BorderSide(
-                color: isRead ? Colors.transparent : AppColors.primary,
-                width: isRead ? 0 : 3,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left teal strip for unread
+          Container(
+            width: 3,
+            height: 72,
+            color: isRead ? Colors.transparent : AppColors.primary,
+          ),
+          const SizedBox(width: 12),
+          // Icon in colored circle
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  Icon(iconData, size: 20, color: iconColor),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Text
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isRead
+                          ? FontWeight.w500
+                          : FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      body,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: _getTypeColor(type).withOpacity(0.1),
-                  borderRadius: AppRadius.allSm,
-                ),
-                child: Icon(
-                  _getTypeIcon(type),
-                  color: _getTypeColor(type),
-                  size: 18,
-                ),
+          // Time
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 14, 12, 0),
+            child: Text(
+              timeStr,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textHint,
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.labelLarge.copyWith(
-                        fontWeight:
-                            isRead ? FontWeight.w400 : FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (body.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        body,
-                        style: AppTextStyles.bodySmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(timeAgo, style: AppTextStyles.caption),
-                  ],
-                ),
-              ),
-              if (!isRead)
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  IconData _getTypeIcon(String type) {
+  IconData _iconForType(String type) {
     switch (type) {
       case 'campaign':
-        return Iconsax.volume_high;
-      case 'payment':
-        return Iconsax.wallet;
-      case 'order':
-        return Iconsax.shopping_bag;
+        return Iconsax.briefcase;
+      case 'wallet':
+        return Iconsax.wallet_1;
       case 'message':
         return Iconsax.message;
-      case 'application':
-        return Iconsax.document;
+      case 'follow':
+        return Iconsax.people;
+      case 'alert':
+        return Iconsax.warning_2;
       default:
         return Iconsax.notification;
     }
   }
 
-  Color _getTypeColor(String type) {
+  Color _colorForType(String type) {
     switch (type) {
       case 'campaign':
         return AppColors.primary;
-      case 'payment':
+      case 'wallet':
         return AppColors.success;
-      case 'order':
-        return AppColors.roleBrand;
       case 'message':
-        return AppColors.roleAdmin;
-      case 'application':
+        return AppColors.accentPurple;
+      case 'follow':
+        return AppColors.accentPink;
+      case 'alert':
         return AppColors.warning;
       default:
-        return AppColors.primary;
+        return AppColors.textSecondary;
     }
-  }
-
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return DateFormat('dd MMM').format(dateTime);
   }
 }

@@ -11,7 +11,6 @@ import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
@@ -36,6 +35,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   bool _isSubmitting = false;
 
   final List<String> _paymentMethods = ['UPI', 'Bank Transfer', 'Other'];
+  final List<int> _quickAmounts = [100, 500, 1000, 5000];
 
   @override
   void dispose() {
@@ -52,44 +52,30 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
       imageQuality: 80,
     );
     if (image != null) {
-      setState(() {
-        _proofFile = image;
-      });
+      setState(() => _proofFile = image);
     }
   }
 
   Future<String?> _uploadProof() async {
     if (_proofFile == null) return null;
-
     final user = SupabaseService.currentUser;
     if (user == null) return null;
 
     final bytes = await _proofFile!.readAsBytes();
     final fileName = '${const Uuid().v4()}.jpg';
     final filePath = 'deposit-proofs/${user.id}/$fileName';
-
-    final publicUrl = await R2StorageService.uploadFile(
-      filePath,
-      bytes,
-      'image/jpeg',
-    );
-
-    return publicUrl;
+    return R2StorageService.uploadFile(filePath, bytes, 'image/jpeg');
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSubmitting = true);
 
     try {
       String? proofUrl;
-      if (_proofFile != null) {
-        proofUrl = await _uploadProof();
-      }
+      if (_proofFile != null) proofUrl = await _uploadProof();
 
       final amount = double.parse(_amountController.text.trim());
-
       final success =
           await ref.read(walletActionsProvider.notifier).submitDeposit(
                 amount: amount,
@@ -100,11 +86,10 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Deposit request submitted successfully!'),
+          const SnackBar(
+            content: Text('Deposit request submitted successfully!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
           ),
         );
         context.pop();
@@ -126,33 +111,39 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.white,
       appBar: PremiumAppBar(
-        title: 'Deposit Funds',
+        title: 'Deposit',
         showBack: true,
         onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl - 4),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Amount field
-              Text('Amount', style: AppTextStyles.labelLarge),
-              const SizedBox(height: AppSpacing.sm),
+              // ── Amount input ──────────────────────────────────────────
+              const Text(
+                'Amount',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
               PremiumTextField(
                 controller: _amountController,
                 hint: '0.00',
-                prefixText: '\u20b9 ',
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                prefixText: '₹ ',
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,2}')),
                 ],
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -166,29 +157,100 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                 },
               ),
 
-              const SizedBox(height: AppSpacing.xl - 4),
+              const SizedBox(height: 12),
 
-              // Payment method dropdown
-              Text('Payment Method', style: AppTextStyles.labelLarge),
-              const SizedBox(height: AppSpacing.sm),
-              DropdownButtonFormField<String>(
-                value: _paymentMethod,
-                items: _paymentMethods
-                    .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+              // ── Quick amounts ─────────────────────────────────────────
+              Wrap(
+                spacing: 8,
+                children: _quickAmounts
+                    .map((amt) => GestureDetector(
+                          onTap: () {
+                            _amountController.text = '$amt';
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryBg,
+                              borderRadius: AppRadius.pillAll,
+                              border: Border.all(
+                                  color: AppColors.primary
+                                      .withOpacity(0.3)),
+                            ),
+                            child: Text(
+                              '₹$amt',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ))
                     .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _paymentMethod = value);
-                  }
-                },
-                decoration: const InputDecoration(),
               ),
 
-              const SizedBox(height: AppSpacing.xl - 4),
+              const SizedBox(height: 24),
 
-              // Transaction reference
-              Text('Transaction Reference', style: AppTextStyles.labelLarge),
-              const SizedBox(height: AppSpacing.sm),
+              // ── Payment method ────────────────────────────────────────
+              const Text(
+                'Payment Method',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _paymentMethods
+                    .map((m) => GestureDetector(
+                          onTap: () =>
+                              setState(() => _paymentMethod = m),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _paymentMethod == m
+                                  ? AppColors.primaryBg
+                                  : Colors.white,
+                              borderRadius: AppRadius.allMd,
+                              border: Border.all(
+                                color: _paymentMethod == m
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                                width: _paymentMethod == m ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              m,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: _paymentMethod == m
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Transaction ref ───────────────────────────────────────
+              const Text(
+                'Transaction Reference',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
               PremiumTextField(
                 controller: _transactionRefController,
                 hint: 'Enter transaction ID or reference',
@@ -200,21 +262,27 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                 },
               ),
 
-              const SizedBox(height: AppSpacing.xl - 4),
+              const SizedBox(height: 24),
 
-              // Upload proof
-              Text('Payment Proof (optional)',
-                  style: AppTextStyles.labelLarge),
-              const SizedBox(height: AppSpacing.sm),
+              // ── Upload proof ──────────────────────────────────────────
+              const Text(
+                'Payment Proof (optional)',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
+                    color: AppColors.surfaceAlt,
                     borderRadius: AppRadius.allMd,
-                    border: Border.all(color: theme.dividerColor),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: _proofFile != null
                       ? ClipRRect(
@@ -224,31 +292,28 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : Column(
+                      : const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Iconsax.image,
-                              size: 32,
-                              color: theme.colorScheme.onSurface
-                                  .withOpacity(0.4),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
+                            Icon(Iconsax.image,
+                                size: 30, color: AppColors.textHint),
+                            SizedBox(height: 8),
                             Text(
                               'Tap to upload screenshot',
-                              style: AppTextStyles.bodySmall,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary),
                             ),
                           ],
                         ),
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: 32),
 
-              // Submit button
+              // ── Submit ────────────────────────────────────────────────
               PremiumButton(
-                label: 'Submit Deposit',
-                gradient: true,
+                label: 'Proceed',
                 loading: _isSubmitting,
                 onPressed: _isSubmitting ? null : _submit,
               ),
