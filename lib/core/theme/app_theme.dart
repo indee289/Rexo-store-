@@ -7,7 +7,7 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Central app theme — premium Material 3 with bold indigo design system.
+/// Central app theme — clean light teal Instagram-style design system.
 class AppTheme {
   AppTheme._();
 
@@ -19,13 +19,13 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: Colors.white,
       fontFamily: GoogleFonts.poppins().fontFamily,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        primaryContainer: AppColors.surfaceAlt,
-        secondary: AppColors.accentPurple,
-        surface: AppColors.surface,
+        primaryContainer: AppColors.primaryBg,
+        secondary: AppColors.secondary,
+        surface: Colors.white,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
@@ -39,15 +39,38 @@ class AppTheme {
         secondary: AppColors.textSecondary,
         hint: AppColors.textHint,
       ),
-      appBarTheme: _appBarTheme(
-        background: AppColors.background,
-        foreground: AppColors.textPrimary,
-        overlay: SystemUiOverlayStyle.dark,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shadowColor: AppColors.border,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        titleSpacing: AppSpacing.lg,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
+        actionsIconTheme: const IconThemeData(
+            color: AppColors.textPrimary, size: 22),
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          letterSpacing: -0.2,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        shape: const Border(
+          bottom: BorderSide(color: AppColors.border, width: 1),
+        ),
       ),
-      cardTheme: _cardTheme(
-        color: AppColors.card,
-        border: AppColors.border,
-        shadow: Colors.black.withOpacity(0.04),
+      cardTheme: CardTheme(
+        color: Colors.white,
+        elevation: 0,
+        shadowColor: const Color(0x08000000),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.allLg,
+          side: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        margin: EdgeInsets.zero,
       ),
       elevatedButtonTheme: _elevatedButtonTheme,
       outlinedButtonTheme: _outlinedButtonTheme,
@@ -59,42 +82,61 @@ class AppTheme {
         label: AppColors.textSecondary,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textHint,
         type: BottomNavigationBarType.fixed,
-        showUnselectedLabels: true,
+        showUnselectedLabels: false,
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: 1,
         space: 1,
       ),
-      chipTheme: _chipTheme(
-        background: AppColors.surfaceAlt,
-        border: AppColors.border,
-        label: AppColors.textPrimary,
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.primaryBg,
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: AppColors.primary,
+        ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.pillAll,
+        ),
+        side: BorderSide.none,
       ),
-      bottomSheetTheme: _bottomSheetTheme(AppColors.surface),
-      dialogTheme: _dialogTheme(
-        background: AppColors.surface,
-        title: AppColors.textPrimary,
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.topXl),
       ),
-      snackBarTheme: _snackBarTheme(
-        background: AppColors.textPrimary,
-        content: Colors.white,
+      dialogTheme: DialogTheme(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl - 4),
+        ),
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
       ),
-      listTileTheme: ListTileThemeData(
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+        behavior: SnackBarBehavior.floating,
+      ),
+      listTileTheme: const ListTileThemeData(
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         iconColor: AppColors.textSecondary,
         style: ListTileStyle.list,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) return Colors.white;
           return Colors.white;
         }),
         trackColor: MaterialStateProperty.resolveWith((states) {
@@ -106,7 +148,7 @@ class AppTheme {
   }
 
   // ---------------------------------------------------------------------------
-  // Dark theme
+  // Dark theme (kept for system compat)
   // ---------------------------------------------------------------------------
   static ThemeData get darkTheme {
     return ThemeData(
@@ -133,15 +175,31 @@ class AppTheme {
         secondary: AppColors.darkTextSecondary,
         hint: AppColors.darkTextHint,
       ),
-      appBarTheme: _appBarTheme(
-        background: AppColors.darkBackground,
-        foreground: AppColors.darkTextPrimary,
-        overlay: SystemUiOverlayStyle.light,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.darkSurface,
+        foregroundColor: AppColors.darkTextPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.darkTextPrimary,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        shape: Border(
+          bottom: BorderSide(color: AppColors.darkBorder, width: 1),
+        ),
       ),
-      cardTheme: _cardTheme(
+      cardTheme: const CardTheme(
         color: AppColors.darkCard,
-        border: AppColors.darkBorder,
-        shadow: Colors.black.withOpacity(0.3),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.allLg,
+          side: BorderSide(color: AppColors.darkBorder, width: 1),
+        ),
+        margin: EdgeInsets.zero,
       ),
       elevatedButtonTheme: _elevatedButtonTheme,
       outlinedButtonTheme: _outlinedButtonTheme,
@@ -158,33 +216,12 @@ class AppTheme {
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.darkTextHint,
         type: BottomNavigationBarType.fixed,
-        showUnselectedLabels: true,
+        showUnselectedLabels: false,
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.darkDivider,
         thickness: 1,
         space: 1,
-      ),
-      chipTheme: _chipTheme(
-        background: AppColors.darkSurfaceAlt,
-        border: AppColors.darkBorder,
-        label: AppColors.darkTextPrimary,
-      ),
-      bottomSheetTheme: _bottomSheetTheme(AppColors.darkSurface),
-      dialogTheme: _dialogTheme(
-        background: AppColors.darkSurface,
-        title: AppColors.darkTextPrimary,
-      ),
-      snackBarTheme: _snackBarTheme(
-        background: AppColors.darkSurfaceAlt,
-        content: AppColors.darkTextPrimary,
-      ),
-      listTileTheme: ListTileThemeData(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        iconColor: AppColors.darkTextSecondary,
-        style: ListTileStyle.list,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: MaterialStateProperty.resolveWith((states) {
@@ -223,44 +260,6 @@ class AppTheme {
       labelLarge: AppTextStyles.labelLarge.copyWith(color: primary),
       labelMedium: AppTextStyles.labelMedium.copyWith(color: secondary),
       labelSmall: AppTextStyles.labelSmall.copyWith(color: hint),
-    );
-  }
-
-  static AppBarTheme _appBarTheme({
-    required Color background,
-    required Color foreground,
-    required SystemUiOverlayStyle overlay,
-  }) {
-    return AppBarTheme(
-      backgroundColor: background,
-      foregroundColor: foreground,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.transparent,
-      centerTitle: false,
-      titleSpacing: AppSpacing.lg,
-      iconTheme: IconThemeData(color: foreground, size: 22),
-      actionsIconTheme: IconThemeData(color: foreground, size: 22),
-      titleTextStyle: AppTextStyles.h5.copyWith(color: foreground),
-      systemOverlayStyle: overlay,
-    );
-  }
-
-  static CardTheme _cardTheme({
-    required Color color,
-    required Color border,
-    required Color shadow,
-  }) {
-    return CardTheme(
-      color: color,
-      elevation: 0,
-      shadowColor: shadow,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.allLg,
-        side: BorderSide(color: border, width: 0.5),
-      ),
-      margin: EdgeInsets.zero,
     );
   }
 
@@ -325,48 +324,4 @@ class AppTheme {
       errorStyle: AppTextStyles.caption.copyWith(color: AppColors.error),
     );
   }
-
-  static ChipThemeData _chipTheme({
-    required Color background,
-    required Color border,
-    required Color label,
-  }) {
-    return ChipThemeData(
-      backgroundColor: background,
-      labelStyle: AppTextStyles.labelMedium.copyWith(color: label),
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.allSm),
-      side: BorderSide(color: border),
-    );
-  }
-
-  static BottomSheetThemeData _bottomSheetTheme(Color background) =>
-      BottomSheetThemeData(
-        backgroundColor: background,
-        surfaceTintColor: Colors.transparent,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.topXl),
-      );
-
-  static DialogTheme _dialogTheme({
-    required Color background,
-    required Color title,
-  }) =>
-      DialogTheme(
-        backgroundColor: background,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl - 4),
-        ),
-        titleTextStyle: AppTextStyles.h5.copyWith(color: title),
-      );
-
-  static SnackBarThemeData _snackBarTheme({
-    required Color background,
-    required Color content,
-  }) =>
-      SnackBarThemeData(
-        backgroundColor: background,
-        contentTextStyle: AppTextStyles.bodyMedium.copyWith(color: content),
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
-        behavior: SnackBarBehavior.floating,
-      );
 }

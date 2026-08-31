@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ── Brand ──────────────────────────────────────────────────────────────────
-  static const Color primary       = Color(0xFF6366F1); // Indigo 500
-  static const Color primaryLight  = Color(0xFF818CF8); // Indigo 400
-  static const Color primaryDark   = Color(0xFF4F46E5); // Indigo 600
-  static const Color primaryDeep   = Color(0xFF3730A3); // Indigo 700
+  // ── Brand — Teal ───────────────────────────────────────────────────────────
+  static const Color primary       = Color(0xFF0D9488); // Teal 600
+  static const Color primaryLight  = Color(0xFF14B8A6); // Teal 500
+  static const Color primaryDark   = Color(0xFF0F766E); // Teal 700
+  static const Color primaryDeep   = Color(0xFF115E59); // Teal 800
+  static const Color primaryBg     = Color(0xFFF0FDFA); // Teal 50
+
+  // ── Secondary (compatibility) ──────────────────────────────────────────────
+  static const Color secondary     = Color(0xFF0F172A); // Near-black
 
   // ── Accent ─────────────────────────────────────────────────────────────────
-  static const Color accent        = Color(0xFFF59E0B); // Amber — warm contrast
+  static const Color accent        = Color(0xFFF59E0B); // Amber
   static const Color accentPink    = Color(0xFFEC4899);
   static const Color accentTeal    = Color(0xFF14B8A6);
   static const Color accentPurple  = Color(0xFFA855F7);
@@ -28,17 +32,17 @@ class AppColors {
   static const Color info    = Color(0xFF38BDF8);
 
   // ── Light surfaces ─────────────────────────────────────────────────────────
-  static const Color background  = Color(0xFFF5F6FF); // very slight indigo tint
+  static const Color background  = Color(0xFFFFFFFF); // Pure white
   static const Color surface     = Color(0xFFFFFFFF);
   static const Color card        = Color(0xFFFFFFFF);
-  static const Color surfaceAlt  = Color(0xFFEEF0FF); // indigo tinted
-  static const Color border      = Color(0xFFE0E2F0);
-  static const Color divider     = Color(0xFFF0F1FA);
+  static const Color surfaceAlt  = Color(0xFFF8FAFC); // Near-white for inputs
+  static const Color border      = Color(0xFFE2E8F0); // Light gray
+  static const Color divider     = Color(0xFFF1F5F9);
 
-  // ── Dark surfaces ──────────────────────────────────────────────────────────
-  static const Color darkBackground  = Color(0xFF0D0E1A); // near black indigo
-  static const Color darkSurface     = Color(0xFF13141F); // dark navy
-  static const Color darkCard        = Color(0xFF1A1B2E); // card navy
+  // ── Dark surfaces (kept for compatibility) ─────────────────────────────────
+  static const Color darkBackground  = Color(0xFF0D0E1A);
+  static const Color darkSurface     = Color(0xFF13141F);
+  static const Color darkCard        = Color(0xFF1A1B2E);
   static const Color darkSurfaceAlt  = Color(0xFF1E2035);
   static const Color darkBorder      = Color(0xFF2A2B40);
   static const Color darkDivider     = Color(0xFF1E2035);
@@ -47,9 +51,9 @@ class AppColors {
   static const Color darkTextHint      = Color(0xFF4B4D72);
 
   // ── Light text ─────────────────────────────────────────────────────────────
-  static const Color textPrimary   = Color(0xFF0D0E1A);
-  static const Color textSecondary = Color(0xFF4B4D72);
-  static const Color textHint      = Color(0xFF9B9DC8);
+  static const Color textPrimary   = Color(0xFF0F172A); // Near black
+  static const Color textSecondary = Color(0xFF64748B); // Medium gray
+  static const Color textHint      = Color(0xFF94A3B8); // Light gray
 
   // ── Social ─────────────────────────────────────────────────────────────────
   static const Color socialInstagram = Color(0xFFE1306C);
@@ -66,24 +70,24 @@ class AppColors {
   static const Color verified    = primary;
 
   // ── Shimmer ────────────────────────────────────────────────────────────────
-  static const Color shimmerBase      = Color(0xFFE8E9F8);
-  static const Color shimmerHighlight = Color(0xFFF5F6FF);
+  static const Color shimmerBase      = Color(0xFFF1F5F9);
+  static const Color shimmerHighlight = Color(0xFFFFFFFF);
   static const Color darkShimmerBase      = darkSurfaceAlt;
   static const Color darkShimmerHighlight = Color(0xFF252640);
 
   // ── Gradients ──────────────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF818CF8), Color(0xFF4F46E5)],
+    colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF4F46E5), Color(0xFFA855F7)],
+    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFFEEF0FF), Color(0xFFF5F6FF)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFF8FAFC)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

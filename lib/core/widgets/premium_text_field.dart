@@ -2,54 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
-import '../theme/app_glass.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
-import '../theme/app_spacing.dart';
 
-/// The visual/behavioral variants of [PremiumTextField].
-enum PremiumTextFieldVariant {
-  /// A standard single-line field (login, forms, ...).
-  standard,
+/// Visual variants for [PremiumTextField].
+enum PremiumTextFieldVariant { standard, search, multiline }
 
-  /// A rounded, frosted "pill" search field with a leading search glyph and a
-  /// clear affordance once text is present.
-  search,
-
-  /// A multi-line field that grows with content (bio, message composer, ...).
-  multiline,
-}
-
-/// A premium text field (Layer-2 primitive) that consumes the app's shared
-/// `inputDecorationTheme`.
-///
-/// Rather than re-styling every border/fill inline, this widget leans on the
-/// theme's `inputDecorationTheme` (single source of truth) and only layers the
-/// per-variant affordances on top:
-///
-///   * [PremiumTextFieldVariant.standard] – theme defaults, optional prefix
-///     Iconsax glyph, optional label/hint.
-///   * [PremiumTextFieldVariant.search] – a frosted, pill-shaped field with a
-///     leading `Iconsax.search_normal` glyph and a clear button that appears
-///     once the field is non-empty. The frost uses the [AppGlass] tokens for a
-///     modern, iOS-style look.
-///   * [PremiumTextFieldVariant.multiline] – grows between [minLines] and
-///     [maxLines].
-///
-/// Fully token-driven: no raw color literals, no inline font construction.
+/// Clean teal-focused text field: #F8FAFC fill, 12px radius, 1px border,
+/// 2px teal on focus, floating label or hint, prefix/suffix icons.
 class PremiumTextField extends StatefulWidget {
   final TextEditingController? controller;
   final PremiumTextFieldVariant variant;
   final String? hint;
   final String? label;
-
-  /// Optional leading Iconsax glyph. Ignored for the search variant (which
-  /// always uses `Iconsax.search_normal`).
   final IconData? prefixIcon;
-
-  /// Optional trailing widget (e.g. a visibility toggle). Ignored for the
-  /// search variant, which manages its own clear button.
   final Widget? suffix;
-
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final bool obscureText;
@@ -58,17 +25,9 @@ class PremiumTextField extends StatefulWidget {
   final int minLines;
   final int maxLines;
   final int? maxLength;
-
-  /// Optional input formatters (e.g. digits-only, phone filtering).
   final List<TextInputFormatter>? inputFormatters;
-
-  /// Optional static prefix text shown before the input (e.g. a currency
-  /// symbol). Ignored for the search variant.
   final String? prefixText;
-
-  /// Auto-capitalization behavior for the field.
   final TextCapitalization textCapitalization;
-
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final FormFieldValidator<String>? validator;
@@ -97,7 +56,6 @@ class PremiumTextField extends StatefulWidget {
     this.validator,
   });
 
-  /// Convenience constructor for the search variant.
   const PremiumTextField.search({
     Key? key,
     TextEditingController? controller,
@@ -118,7 +76,6 @@ class PremiumTextField extends StatefulWidget {
           onSubmitted: onSubmitted,
         );
 
-  /// Convenience constructor for the multiline variant.
   const PremiumTextField.multiline({
     Key? key,
     TextEditingController? controller,
@@ -159,14 +116,13 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
     super.initState();
     _controller = widget.controller ?? TextEditingController();
     _ownsController = widget.controller == null;
-    if (_isSearch) _controller.addListener(_onSearchChanged);
+    if (_isSearch) _controller.addListener(_onChanged);
   }
 
   bool get _isSearch => widget.variant == PremiumTextFieldVariant.search;
-  bool get _isMultiline =>
-      widget.variant == PremiumTextFieldVariant.multiline;
+  bool get _isMultiline => widget.variant == PremiumTextFieldVariant.multiline;
 
-  void _onSearchChanged() => setState(() {});
+  void _onChanged() => setState(() {});
 
   void _clear() {
     _controller.clear();
@@ -175,62 +131,71 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
 
   @override
   void dispose() {
-    if (_isSearch) _controller.removeListener(_onSearchChanged);
+    if (_isSearch) _controller.removeListener(_onChanged);
     if (_ownsController) _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    // Prefix glyph: search always uses the search glyph; other variants use
-    // whatever the caller provided.
     final IconData? prefix =
         _isSearch ? Iconsax.search_normal : widget.prefixIcon;
 
-    // Trailing affordance: search shows a clear button once non-empty.
     Widget? suffix = widget.suffix;
     if (_isSearch && _controller.text.isNotEmpty) {
       suffix = IconButton(
-        icon: const Icon(Iconsax.close_circle, size: 20),
-        splashRadius: 20,
-        color: theme.colorScheme.onSurface.withOpacity(0.5),
+        icon: const Icon(Iconsax.close_circle, size: 18),
+        color: AppColors.textHint,
         onPressed: _clear,
       );
     }
 
-    // Start from the theme's shared decoration and only override what each
-    // variant needs, so borders/fills/hints stay centrally controlled.
+    OutlineInputBorder _border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: AppRadius.allMd,
+          borderSide: BorderSide(color: color, width: width),
+        );
+
     InputDecoration decoration = InputDecoration(
       hintText: widget.hint,
       labelText: widget.label,
       prefixText: _isSearch ? null : widget.prefixText,
-      prefixIcon: prefix == null ? null : Icon(prefix, size: 20),
+      prefixIcon: prefix == null
+          ? null
+          : Icon(prefix, size: 20, color: AppColors.textHint),
       suffixIcon: suffix,
+      filled: true,
+      fillColor: AppColors.surfaceAlt,
+      border: _border(AppColors.border),
+      enabledBorder: _border(AppColors.border),
+      focusedBorder: _border(AppColors.primary, 2),
+      errorBorder: _border(AppColors.error),
+      focusedErrorBorder: _border(AppColors.error, 2),
+      hintStyle: const TextStyle(
+        fontSize: 14,
+        color: AppColors.textHint,
+      ),
+      labelStyle: const TextStyle(
+        fontSize: 14,
+        color: AppColors.textSecondary,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
 
     if (_isSearch) {
-      // Frosted pill: keep the theme's border logic but round it to a pill and
-      // tint the fill with the glass token for the iOS-style look.
       final pill = OutlineInputBorder(
-        borderRadius: AppRadius.pillAll,
-        borderSide: BorderSide(color: AppGlass.border(isDark), width: 1),
+        borderRadius: AppRadius.allMd,
+        borderSide: const BorderSide(color: AppColors.border, width: 1),
       );
       decoration = decoration.copyWith(
         isDense: true,
-        filled: true,
-        fillColor: AppGlass.surface(isDark),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: pill,
         enabledBorder: pill,
         focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadius.pillAll,
-          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+          borderRadius: AppRadius.allMd,
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       );
     }
@@ -248,6 +213,7 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       minLines: _isMultiline ? widget.minLines : 1,
       maxLines: widget.obscureText ? 1 : (_isMultiline ? widget.maxLines : 1),
       maxLength: widget.maxLength,
+      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,

@@ -2,13 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// A premium card container with optional gradient, proper depth shadows,
-/// and theme-aware light/dark surfaces.
-///
-/// Use [gradient] to enable the subtle indigo-tinted card gradient. Use
-/// [backgroundColor] to override the surface colour entirely. The card
-/// supports an optional [onTap] handler with an ink splash bounded to the
-/// card's rounded corners.
+/// Clean white card with 16px radius, 1px border, soft shadow, optional onTap.
 class PremiumCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -29,33 +23,20 @@ class PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = backgroundColor ?? Colors.white;
 
-    final bgColor = backgroundColor ??
-        (isDark ? AppColors.darkCard : AppColors.surface);
-
-    final cardContent = Material(
+    return Material(
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
-          color: gradient ? null : bgColor,
-          gradient: gradient
-              ? (isDark
-                  ? AppColors.darkCardGradient
-                  : AppColors.cardGradient)
-              : null,
+          color: bgColor,
           borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-            width: 1,
-          ),
-          boxShadow: [
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: const [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withOpacity(0.3)
-                  : AppColors.primary.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Color(0x08000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -70,11 +51,6 @@ class PremiumCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: cardContent,
     );
   }
 }

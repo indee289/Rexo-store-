@@ -1,62 +1,18 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_glass.dart';
-import '../theme/app_motion.dart';
-import '../theme/app_radius.dart';
-import '../theme/app_text_styles.dart';
 
-/// Premium frosted-glass AppBar for the Rexo app.
-///
-/// Features:
-/// * Frosted glass (BackdropFilter + translucent fill) in glass mode
-/// * Bold centered title with Poppins typography
-/// * Premium Iconsax back button with animated press scale
-/// * Optional gradient title accent
-/// * Smooth fade-in entrance animation
-/// * Configurable: solid surface, frosted glass, or transparent
-enum PremiumAppBarStyle {
-  /// Clean solid surface background (default, matches AppBarTheme)
-  solid,
-
-  /// Frosted glass — translucent blur shows content scrolling behind
-  glass,
-
-  /// Fully transparent — for use over hero images/gradients
-  transparent,
-}
-
+/// Clean Instagram-style AppBar.
+/// White background, 0 elevation, 1px bottom border, title 18px w600 centered.
 class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
-  /// Title text.
   final String title;
-
-  /// Optional trailing action widgets.
   final List<Widget>? actions;
-
-  /// Explicit leading widget. Ignored when [showBack] is true.
   final Widget? leading;
-
-  /// Whether to show a premium Iconsax back button.
   final bool showBack;
-
-  /// Tap handler for the back button.
   final VoidCallback? onBack;
-
-  /// Forwarded to AppBar.automaticallyImplyLeading.
   final bool automaticallyImplyLeading;
-
-  /// Optional bottom widget (e.g. a TabBar).
   final PreferredSizeWidget? bottom;
-
-  /// Visual style of the bar.
-  final PremiumAppBarStyle style;
-
-  /// When true, the title uses a gradient accent color.
-  final bool gradientTitle;
 
   const PremiumAppBar({
     super.key,
@@ -67,8 +23,6 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.automaticallyImplyLeading = true,
     this.bottom,
-    this.style = PremiumAppBarStyle.solid,
-    this.gradientTitle = false,
   });
 
   @override
@@ -78,166 +32,68 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final onSurface = theme.colorScheme.onSurface;
-
-    // Resolve leading widget
     Widget? resolvedLeading = leading;
-    final bool showAutoBack = leading == null &&
-        automaticallyImplyLeading &&
-        Navigator.of(context).canPop();
-
-    if (showBack || showAutoBack) {
-      resolvedLeading = _PremiumBackButton(
-        color: onSurface,
+    final bool canPop = Navigator.of(context).canPop();
+    if (resolvedLeading == null &&
+        (showBack || (automaticallyImplyLeading && canPop))) {
+      resolvedLeading = _CleanBackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
       );
     }
 
-    // Build title widget
-    Widget titleWidget = gradientTitle
-        ? ShaderMask(
-            shaderCallback: (bounds) =>
-                AppColors.primaryGradient.createShader(bounds),
-            child: Text(
-              title,
-              style: AppTextStyles.h5.copyWith(color: Colors.white),
-            ),
-          )
-        : Text(
-            title,
-            style: AppTextStyles.h5.copyWith(color: onSurface),
-          );
-
-    titleWidget = titleWidget
-        .animate()
-        .fadeIn(duration: AppMotion.base, curve: AppMotion.standard);
-
-    // Determine background
-    Color? backgroundColor;
-    switch (style) {
-      case PremiumAppBarStyle.solid:
-        backgroundColor = AppColors.darkSurface;
-        break;
-      case PremiumAppBarStyle.glass:
-        backgroundColor = Colors.transparent;
-        break;
-      case PremiumAppBarStyle.transparent:
-        backgroundColor = Colors.transparent;
-        break;
-    }
-
-    Widget appBar = AppBar(
-      title: titleWidget,
-      leading: resolvedLeading,
-      automaticallyImplyLeading: automaticallyImplyLeading,
-      actions: [
-        if (actions != null) ...actions!,
-        const SizedBox(width: 4),
-      ],
-      bottom: bottom,
-      backgroundColor: backgroundColor,
-      elevation: 0,
-      scrolledUnderElevation:
-          style == PremiumAppBarStyle.glass ? 0 : 0.5,
-      centerTitle: true,
-      surfaceTintColor: Colors.transparent,
-    );
-
-    // Wrap with frosted glass effect for glass style
-    if (style == PremiumAppBarStyle.glass) {
-      return ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(
-            sigmaX: AppGlass.blurSigma,
-            sigmaY: AppGlass.blurSigma,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppGlass.dock(isDark),
-              border: Border(
-                bottom: BorderSide(
-                  color: AppGlass.border(isDark),
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: appBar,
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      child: AppBar(
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.2,
           ),
         ),
-      );
-    }
-
-    // Solid style: add a subtle bottom border using dark tokens
-    if (style == PremiumAppBarStyle.solid) {
-      return Container(
-        decoration: const BoxDecoration(
-          color: AppColors.darkSurface,
-          border: Border(
-            bottom: BorderSide(
-              color: AppColors.darkBorder,
-              width: 1,
-            ),
-          ),
-        ),
-        child: appBar,
-      );
-    }
-
-    return appBar;
-  }
-}
-
-/// Premium animated back button with Iconsax glyph and press-scale feedback.
-class _PremiumBackButton extends StatefulWidget {
-  final Color color;
-  final VoidCallback onTap;
-
-  const _PremiumBackButton({required this.color, required this.onTap});
-
-  @override
-  State<_PremiumBackButton> createState() => _PremiumBackButtonState();
-}
-
-class _PremiumBackButtonState extends State<_PremiumBackButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? AppMotion.pressScale : 1.0,
-        duration: AppMotion.fast,
-        curve: AppMotion.standard,
-        child: Container(
-          width: 40,
-          height: 40,
-          margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: AppColors.darkCard,
-            borderRadius: AppRadius.allMd,
-            border: BorderDirectional(
-              end: BorderSide(color: AppColors.darkBorder, width: 0),
-            ),
-          ),
-          child: Icon(
-            Iconsax.arrow_left,
-            color: widget.color,
-            size: 20,
-          ),
-        ),
+        leading: resolvedLeading,
+        automaticallyImplyLeading: false,
+        actions: [
+          if (actions != null) ...actions!,
+          const SizedBox(width: 4),
+        ],
+        bottom: bottom,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
       ),
     );
   }
 }
 
-/// Sliver version of the premium app bar for CustomScrollView integration.
+class _CleanBackButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _CleanBackButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      icon: const Icon(
+        Icons.chevron_left,
+        size: 28,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+}
+
+/// Sliver version of the clean AppBar.
 class PremiumSliverAppBar extends StatelessWidget {
   final String title;
   final List<Widget>? actions;
@@ -262,15 +118,10 @@ class PremiumSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final onSurface = theme.colorScheme.onSurface;
-
+    final bool canPop = Navigator.of(context).canPop();
     Widget? leading;
-    final bool showAutoBack = Navigator.of(context).canPop();
-    if (showBack || showAutoBack) {
-      leading = _PremiumBackButton(
-        color: onSurface,
+    if (showBack || canPop) {
+      leading = _CleanBackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
       );
     }
@@ -278,22 +129,32 @@ class PremiumSliverAppBar extends StatelessWidget {
     return SliverAppBar(
       title: Text(
         title,
-        style: AppTextStyles.h5.copyWith(color: onSurface),
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          letterSpacing: -0.2,
+        ),
       ),
       leading: leading,
+      automaticallyImplyLeading: false,
       actions: [
         if (actions != null) ...actions!,
         const SizedBox(width: 4),
       ],
-      backgroundColor: theme.appBarTheme.backgroundColor,
+      backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      scrolledUnderElevation: 0.5,
+      scrolledUnderElevation: 1,
       centerTitle: true,
       expandedHeight: flexibleSpace != null ? expandedHeight : null,
       pinned: pinned,
       floating: floating,
       flexibleSpace: flexibleSpace,
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, color: AppColors.border),
+      ),
     );
   }
 }
