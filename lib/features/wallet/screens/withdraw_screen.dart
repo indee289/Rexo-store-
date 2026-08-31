@@ -103,8 +103,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       }
     });
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Withdraw',
         showBack: true,
@@ -135,11 +140,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Available Balance',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                         Text(
@@ -159,15 +164,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               const SizedBox(height: 24),
 
               // ── Amount ────────────────────────────────────────────────
-              const Text(
-                'Amount',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+              _label(context, 'Amount'),
               PremiumTextField(
                 controller: _amountController,
                 hint: '0.00',
@@ -196,15 +193,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               const SizedBox(height: 24),
 
               // ── Method ────────────────────────────────────────────────
-              const Text(
-                'Withdrawal Method',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+              _label(context, 'Withdrawal Method'),
               Row(
                 children: ['UPI', 'Bank Transfer'].map((m) {
                   final selected = _method == m;
@@ -219,16 +208,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                           duration:
                               const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(
-                              vertical: 12),
+                              vertical: 14),
                           decoration: BoxDecoration(
                             color: selected
-                                ? AppColors.primaryBg
-                                : Colors.white,
+                                ? AppColors.primary
+                                    .withOpacity(isDark ? 0.16 : 0.10)
+                                : cardBg,
                             borderRadius: AppRadius.allMd,
                             border: Border.all(
                               color: selected
                                   ? AppColors.primary
-                                  : AppColors.border,
+                                  : borderColor,
                               width: selected ? 1.5 : 1,
                             ),
                           ),
@@ -240,7 +230,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                               fontWeight: FontWeight.w600,
                               color: selected
                                   ? AppColors.primary
-                                  : AppColors.textSecondary,
+                                  : cs.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -254,15 +244,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
               // ── Bank details ──────────────────────────────────────────
               if (_method == 'UPI') ...[
-                const Text(
-                  'UPI ID',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                _label(context, 'UPI ID'),
                 PremiumTextField(
                   controller: _upiIdController,
                   hint: 'yourname@upi',
@@ -274,13 +256,14 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                   },
                 ),
               ] else ...[
-                _bankField('Account Number', _accountNumberController,
+                _bankField(context, 'Account Number',
+                    _accountNumberController,
                     'Enter account number', TextInputType.number),
                 const SizedBox(height: AppSpacing.lg),
-                _bankField('IFSC Code', _ifscController,
+                _bankField(context, 'IFSC Code', _ifscController,
                     'e.g. SBIN0001234', null),
                 const SizedBox(height: AppSpacing.lg),
-                _bankField('Account Holder Name',
+                _bankField(context, 'Account Holder Name',
                     _accountHolderController, 'Enter name', null),
               ],
 
@@ -298,7 +281,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 
+  Widget _label(BuildContext context, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      );
+
   Widget _bankField(
+    BuildContext context,
     String label,
     TextEditingController controller,
     String hint,
@@ -307,15 +303,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
+        _label(context, label),
         PremiumTextField(
           controller: controller,
           hint: hint,

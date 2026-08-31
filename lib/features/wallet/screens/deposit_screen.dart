@@ -109,10 +109,29 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     }
   }
 
+  Widget _label(BuildContext context, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final surfaceAlt =
+        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Deposit',
         showBack: true,
@@ -126,15 +145,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Amount input ──────────────────────────────────────────
-              const Text(
-                'Amount',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+              _label(context, 'Amount'),
               PremiumTextField(
                 controller: _amountController,
                 hint: '0.00',
@@ -171,11 +182,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryBg,
+                              color: AppColors.primary
+                                  .withOpacity(isDark ? 0.16 : 0.10),
                               borderRadius: AppRadius.pillAll,
-                              border: Border.all(
-                                  color: AppColors.primary
-                                      .withOpacity(0.3)),
                             ),
                             child: Text(
                               '₹$amt',
@@ -193,15 +202,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
               const SizedBox(height: 24),
 
               // ── Payment method ────────────────────────────────────────
-              const Text(
-                'Payment Method',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+              _label(context, 'Payment Method'),
               Wrap(
                 spacing: 8,
                 children: _paymentMethods
@@ -214,13 +215,14 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                 horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
                               color: _paymentMethod == m
-                                  ? AppColors.primaryBg
-                                  : Colors.white,
+                                  ? AppColors.primary
+                                      .withOpacity(isDark ? 0.16 : 0.10)
+                                  : cardBg,
                               borderRadius: AppRadius.allMd,
                               border: Border.all(
                                 color: _paymentMethod == m
                                     ? AppColors.primary
-                                    : AppColors.border,
+                                    : borderColor,
                                 width: _paymentMethod == m ? 1.5 : 1,
                               ),
                             ),
@@ -231,7 +233,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: _paymentMethod == m
                                     ? AppColors.primary
-                                    : AppColors.textSecondary,
+                                    : cs.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -242,15 +244,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
               const SizedBox(height: 24),
 
               // ── Transaction ref ───────────────────────────────────────
-              const Text(
-                'Transaction Reference',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+              _label(context, 'Transaction Reference'),
               PremiumTextField(
                 controller: _transactionRefController,
                 hint: 'Enter transaction ID or reference',
@@ -265,24 +259,16 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
               const SizedBox(height: 24),
 
               // ── Upload proof ──────────────────────────────────────────
-              const Text(
-                'Payment Proof (optional)',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+              _label(context, 'Payment Proof (optional)'),
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceAlt,
+                    color: surfaceAlt,
                     borderRadius: AppRadius.allMd,
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: borderColor),
                   ),
                   child: _proofFile != null
                       ? ClipRRect(
@@ -292,17 +278,17 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : const Column(
+                      : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Iconsax.image,
-                                size: 30, color: AppColors.textHint),
-                            SizedBox(height: 8),
+                                size: 30, color: cs.onSurfaceVariant),
+                            const SizedBox(height: 8),
                             Text(
                               'Tap to upload screenshot',
                               style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textSecondary),
+                                  color: cs.onSurfaceVariant),
                             ),
                           ],
                         ),
