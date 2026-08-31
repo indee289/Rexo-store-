@@ -142,74 +142,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 64),
 
-                // Logo
+                // ── Logo + brand ────────────────────────────────────────────
                 Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: AppRadius.allLg,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: AppRadius.allLg,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.45),
+                              blurRadius: 28,
+                              spreadRadius: 4,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        'R',
-                        style: AppTextStyles.h2.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
+                        child: const Center(
+                          child: Icon(
+                            Iconsax.crown_1,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Rexo',
+                        style: AppTextStyles.h2.copyWith(
+                          color: AppColors.darkTextPrimary,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Creator Marketing Platform',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.darkTextSecondary,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 48),
+                const SizedBox(height: 56),
 
-                // Welcome text
-                Text(
-                  'Welcome Back',
-                  style: AppTextStyles.h2.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Sign in to continue to Rexo',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.xxl),
-
-                // Email field
-                PremiumTextField(
+                // ── Email ───────────────────────────────────────────────────
+                _DarkField(
                   controller: _emailController,
                   label: 'Email',
                   hint: 'Enter your email',
-                  prefixIcon: Iconsax.sms,
+                  icon: Iconsax.sms,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (value) {
@@ -223,28 +225,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 16),
 
-                // Password field
-                PremiumTextField(
+                // ── Password ────────────────────────────────────────────────
+                _DarkField(
                   controller: _passwordController,
                   label: 'Password',
                   hint: 'Enter your password',
-                  prefixIcon: Iconsax.lock,
+                  icon: Iconsax.lock,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  suffix: IconButton(
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                    icon: Icon(
-                      _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
-                      size: 20,
-                    ),
-                  ),
                   onSubmitted: (_) {
                     if (!authState.isLoading) _handleSignIn();
                   },
+                  suffixIcon: GestureDetector(
+                    onTap: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    child: Icon(
+                      _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
+                      color: AppColors.darkTextSecondary,
+                      size: 20,
+                    ),
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
@@ -256,32 +258,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 10),
 
-                // Forgot password
+                // ── Forgot password ─────────────────────────────────────────
                 Align(
                   alignment: Alignment.centerRight,
-                  child: PremiumButton(
-                    label: 'Forgot Password?',
-                    variant: PremiumButtonVariant.ghost,
-                    expand: false,
-                    onPressed: _handleForgotPassword,
+                  child: GestureDetector(
+                    onTap: _handleForgotPassword,
+                    child: Text(
+                      'Forgot Password?',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 28),
 
-                // Sign In button
-                PremiumButton(
-                  label: 'Sign In',
-                  gradient: true,
+                // ── Sign In CTA ─────────────────────────────────────────────
+                _GradientButton(
+                  label: authState.isLoading ? 'Signing In...' : 'Sign In',
                   loading: authState.isLoading,
                   onPressed: authState.isLoading ? null : _handleSignIn,
                 ),
 
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: 28),
 
-                // Register link
+                // ── Divider ─────────────────────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.darkBorder,
+                        thickness: 1,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.darkTextHint,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.darkBorder,
+                        thickness: 1,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Register link ───────────────────────────────────────────
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -289,7 +323,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Text(
                         "Don't have an account? ",
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: AppColors.darkTextSecondary,
                         ),
                       ),
                       GestureDetector(
@@ -297,7 +331,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           'Sign Up',
                           style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.primary,
                           ),
                         ),
@@ -306,10 +340,171 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: 40),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared dark-premium field widget used by auth screens.
+// ─────────────────────────────────────────────────────────────────────────────
+class _DarkField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final bool obscureText;
+  final Widget? suffixIcon;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
+  final String? Function(String?)? validator;
+
+  const _DarkField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.obscureText = false,
+    this.suffixIcon,
+    this.keyboardType,
+    this.textInputAction,
+    this.onSubmitted,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.darkTextPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onSubmitted,
+          validator: validator,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.darkTextPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.darkTextHint,
+            ),
+            filled: true,
+            fillColor: AppColors.darkCard,
+            prefixIcon: Icon(icon, color: AppColors.darkTextSecondary, size: 20),
+            suffixIcon: suffixIcon,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Full-width gradient CTA button used by auth screens.
+// ─────────────────────────────────────────────────────────────────────────────
+class _GradientButton extends StatelessWidget {
+  final String label;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  const _GradientButton({
+    required this.label,
+    required this.onPressed,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: onPressed != null
+              ? AppColors.primaryGradient
+              : const LinearGradient(
+                  colors: [Color(0xFF4B4D72), Color(0xFF4B4D72)],
+                ),
+          borderRadius: AppRadius.allMd,
+          boxShadow: onPressed != null
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  )
+                ]
+              : null,
+        ),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.allMd,
+            ),
+          ),
+          child: loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
         ),
       ),
     );

@@ -25,7 +25,7 @@ class WalletScreen extends ConsumerWidget {
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       appBar: const PremiumAppBar(title: 'Wallet'),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -213,9 +213,9 @@ class WalletScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md + 2),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.darkCard,
         borderRadius: AppRadius.allMd,
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: AppColors.darkBorder),
       ),
       child: Row(
         children: [

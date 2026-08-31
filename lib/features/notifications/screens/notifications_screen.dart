@@ -21,7 +21,7 @@ class NotificationsScreen extends ConsumerWidget {
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       appBar: PremiumAppBar(
         title: 'Notifications',
         actions: [
@@ -189,7 +189,7 @@ class _NotificationTile extends ConsumerWidget {
               horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
           padding: const EdgeInsets.all(AppSpacing.md + 2),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: AppColors.darkCard,
             borderRadius: AppRadius.allMd,
             border: Border(
               left: BorderSide(
@@ -197,14 +197,6 @@ class _NotificationTile extends ConsumerWidget {
                 width: isRead ? 0 : 3,
               ),
             ),
-            boxShadow: [
-              if (!isRead)
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-            ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

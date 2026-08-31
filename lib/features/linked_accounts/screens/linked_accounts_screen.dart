@@ -46,7 +46,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     final accountsAsync = ref.watch(linkedAccountsProvider);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       appBar: PremiumAppBar(
         title: 'Linked Accounts',
         showBack: true,
@@ -259,13 +259,9 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEFF6FF), Color(0xFFF0FDF4)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.darkCard,
         borderRadius: AppRadius.allLg,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.darkBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +270,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withOpacity(0.12),
               borderRadius: AppRadius.allSm,
             ),
             child: const Icon(Iconsax.link_2,
@@ -289,14 +285,14 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
                   'Connect Your Socials',
                   style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.darkTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Showcase your reach to brands and unlock higher-value campaigns.',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: AppColors.darkTextSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -331,24 +327,14 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.darkCard,
         borderRadius: AppRadius.allLg,
         border: Border.all(
           color: isConnected
               ? color.withOpacity(0.3)
-              : theme.dividerColor,
-          width: isConnected ? 1.5 : 0.5,
+              : AppColors.darkBorder,
+          width: isConnected ? 1.5 : 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isConnected
-                ? color.withOpacity(0.08)
-                : Colors.black.withOpacity(
-                    theme.brightness == Brightness.dark ? 0.2 : 0.03),
-            blurRadius: isConnected ? 12 : 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         children: [

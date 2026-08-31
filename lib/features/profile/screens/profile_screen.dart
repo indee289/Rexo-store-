@@ -8,10 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/role_badge.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../admin/providers/is_admin_provider.dart';
@@ -24,23 +21,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentUserProfileProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Profile',
-        actions: [
-          IconButton(
-            tooltip: 'Settings',
-            onPressed: () => context.push('/settings'),
-            icon: Icon(
-              Iconsax.menu_1,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.darkBackground,
       body: profileAsync.when(
         data: (profileState) =>
             _buildProfileContent(context, ref, profileState),
@@ -49,16 +32,16 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Iconsax.warning_2,
                 size: 48,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                color: AppColors.darkTextSecondary,
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 'Failed to load profile',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: AppColors.darkTextSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -88,10 +71,7 @@ class ProfileScreen extends ConsumerWidget {
       return const Center(child: Text('No profile data'));
     }
 
-    // Admin Center entry is shown ONLY to admins (role == 'admin' or the
-    // hardcoded admin email). Gated via isAdminProvider.
     final isAdmin = ref.watch(isAdminProvider);
-
     final name = profile['name'] ?? 'User';
     final handle = profile['handle'] ?? '';
     final role = profile['role'] ?? 'creator';
@@ -99,101 +79,234 @@ class ProfileScreen extends ConsumerWidget {
     final bio = (profile['bio'] ?? '').toString();
     final isVerified = (profile['is_verified'] == true);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-      child: Column(
-        children: [
-          // Avatar
-          _buildAvatarSection(context, avatarUrl, name),
-          const SizedBox(height: AppSpacing.lg),
-          // Name + verified badge (badge sits right after the username)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
+    return CustomScrollView(
+      slivers: [
+        // ── Custom stack-based header ──────────────────────────────────────
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 260,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                Flexible(
-                  child: Text(
-                    name,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.h4.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
+                // Gradient banner
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 180,
+                    decoration: const BoxDecoration(
+                      gradient: AppColors.heroGradient,
                     ),
                   ),
                 ),
-                if (isVerified) const VerifiedBadge(size: 20),
+
+                // Top bar: settings icon
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Profile',
+                            style: AppTextStyles.h5.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => context.push('/settings'),
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: AppRadius.allMd,
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.2)),
+                              ),
+                              child: const Icon(
+                                Iconsax.menu_1,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Avatar floating on banner edge
+                Positioned(
+                  top: 130,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _buildAvatarSection(context, avatarUrl, name),
+                  ),
+                ),
               ],
             ),
           ),
-          // Handle
-          if (handle.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(
-              '@$handle',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.sm),
-          // Role badge (token-driven)
-          RoleBadge.fromString(role),
-          // Bio
-          if (bio.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-              child: Text(
-                bio,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        ),
+
+        // ── Name, handle, role ─────────────────────────────────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.h4.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkTextPrimary,
+                        ),
+                      ),
+                    ),
+                    if (isVerified) ...[
+                      const SizedBox(width: 4),
+                      const VerifiedBadge(size: 20),
+                    ],
+                  ],
                 ),
+                if (handle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '@$handle',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.darkTextSecondary,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                // Role pill
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: AppRadius.pillAll,
+                    border: Border.all(
+                        color: AppColors.primary.withOpacity(0.4)),
+                  ),
+                  child: Text(
+                    role.toUpperCase(),
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Stats row ─────────────────────────────────────────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: _buildFollowStats(context, ref),
+          ),
+        ),
+
+        // ── Bio ────────────────────────────────────────────────────────────
+        if (bio.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'About',
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: AppColors.darkTextPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    bio,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.darkTextSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-          const SizedBox(height: AppSpacing.xl),
-          // Followers / Following stats (only these two — no post/campaign count)
-          _buildFollowStats(context, ref),
-          const SizedBox(height: AppSpacing.xl),
-          // Edit Profile + Share Profile buttons
-          _buildProfileButtons(context, handle),
-          const SizedBox(height: AppSpacing.lg),
-          Divider(color: Theme.of(context).dividerColor, height: 1),
-          const SizedBox(height: AppSpacing.sm),
-          // Quick action menu items
-          _buildMenuItem(
-            icon: Iconsax.wallet_1,
-            title: 'Wallet',
-            onTap: () => context.push('/wallet'),
           ),
-          _buildMenuItem(
-            icon: Iconsax.bag_2,
-            title: 'My Orders',
-            onTap: () => context.push('/orders'),
+
+        // ── Action buttons ─────────────────────────────────────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: _buildProfileButtons(context, handle),
           ),
-          _buildMenuItem(
-            icon: Iconsax.crown_1,
-            title: 'Subscriptions',
-            onTap: () => context.push('/subscriptions'),
-          ),
-          // Admin Center — visible only to admins.
-          if (isAdmin)
-            _buildMenuItem(
-              icon: Iconsax.shield_tick,
-              title: 'Admin Center',
-              onTap: () => context.push('/admin'),
+        ),
+
+        // ── Divider ────────────────────────────────────────────────────────
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(0, 20, 0, 4),
+            child: Divider(
+              color: AppColors.darkBorder,
+              thickness: 1,
+              height: 1,
             ),
-          const SizedBox(height: 40),
-        ],
-      ),
+          ),
+        ),
+
+        // ── Menu items ─────────────────────────────────────────────────────
+        SliverToBoxAdapter(
+          child: Column(
+            children: [
+              _buildMenuItem(
+                icon: Iconsax.wallet_1,
+                title: 'Wallet',
+                onTap: () => context.push('/wallet'),
+              ),
+              _buildMenuItem(
+                icon: Iconsax.bag_2,
+                title: 'My Orders',
+                onTap: () => context.push('/orders'),
+              ),
+              _buildMenuItem(
+                icon: Iconsax.crown_1,
+                title: 'Subscriptions',
+                onTap: () => context.push('/subscriptions'),
+              ),
+              if (isAdmin)
+                _buildMenuItem(
+                  icon: Iconsax.shield_tick,
+                  title: 'Admin Center',
+                  onTap: () => context.push('/admin'),
+                ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  /// Instagram-style stats row: only Followers and Following.
   Widget _buildFollowStats(BuildContext context, WidgetRef ref) {
     final followersAsync = ref.watch(currentUserFollowersCountProvider);
     final followingAsync = ref.watch(currentUserFollowingCountProvider);
@@ -204,18 +317,19 @@ class ProfileScreen extends ConsumerWidget {
           error: (_, __) => '0',
         );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.darkCard,
+        borderRadius: AppRadius.allLg,
+        border: Border.all(color: AppColors.darkBorder),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          StatPill(label: 'Followers', value: fmt(followersAsync)),
-          Container(
-            width: 1,
-            height: 36,
-            color: Theme.of(context).dividerColor,
-          ),
-          StatPill(label: 'Following', value: fmt(followingAsync)),
+          _StatPill(label: 'Followers', value: fmt(followersAsync)),
+          Container(width: 1, height: 36, color: AppColors.darkBorder),
+          _StatPill(label: 'Following', value: fmt(followingAsync)),
         ],
       ),
     );
@@ -227,41 +341,33 @@ class ProfileScreen extends ConsumerWidget {
     return count.toString();
   }
 
-  /// Edit Profile + Share Profile buttons (side by side, Instagram style).
   Widget _buildProfileButtons(BuildContext context, String handle) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Row(
-        children: [
-          Expanded(
-            child: PremiumButton(
-              label: 'Edit Profile',
-              variant: PremiumButtonVariant.outline,
-              icon: Iconsax.edit,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const EditProfileScreen(),
-                  ),
-                );
-              },
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: _OutlineBtn(
+            label: 'Edit Profile',
+            icon: Iconsax.edit,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const EditProfileScreen()),
+              );
+            },
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: PremiumButton(
-              label: 'Share Profile',
-              variant: PremiumButtonVariant.outline,
-              icon: Iconsax.share,
-              onPressed: () => _shareProfile(context, handle),
-            ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _OutlineBtn(
+            label: 'Share',
+            icon: Iconsax.share,
+            onPressed: () => _shareProfile(context, handle),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  /// Copies the public profile link to the clipboard so it can be shared.
   void _shareProfile(BuildContext context, String handle) {
     if (handle.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -279,41 +385,44 @@ class ProfileScreen extends ConsumerWidget {
         content: Text('Profile link copied: $link'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.allMd,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
     );
   }
 
   Widget _buildAvatarSection(
       BuildContext context, String? avatarUrl, String name) {
-    final theme = Theme.of(context);
     return Stack(
+      clipBehavior: Clip.none,
       children: [
-        PremiumAvatar(
-          imageUrl: avatarUrl,
-          name: name,
-          size: 100,
-          showRing: true,
-          ringColor: AppColors.primary,
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.darkBackground,
+              width: 4,
+            ),
+          ),
+          child: PremiumAvatar(
+            imageUrl: avatarUrl,
+            name: name,
+            size: 88,
+            showRing: true,
+            ringColor: AppColors.primary,
+          ),
         ),
         Positioned(
           bottom: 0,
           right: 0,
           child: Container(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              gradient: AppColors.primaryGradient,
               shape: BoxShape.circle,
-              border: Border.all(color: theme.colorScheme.surface, width: 2),
+              border: Border.all(color: AppColors.darkBackground, width: 2),
             ),
-            child: const Icon(
-              Iconsax.camera,
-              size: 16,
-              color: Colors.white,
-            ),
+            child: const Icon(Iconsax.camera, size: 14, color: Colors.white),
           ),
         ),
       ],
@@ -325,27 +434,100 @@ class ProfileScreen extends ConsumerWidget {
     required String title,
     required VoidCallback onTap,
   }) {
-    return Builder(
-      builder: (context) {
-        final theme = Theme.of(context);
-        return ListTile(
-          leading: Icon(icon,
-              color: theme.colorScheme.onSurface.withOpacity(0.6), size: 22),
-          title: Text(
-            title,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: AppColors.primary.withOpacity(0.06),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.darkCard,
+                  borderRadius: AppRadius.allSm,
+                  border: Border.all(color: AppColors.darkBorder),
+                ),
+                child: Icon(icon,
+                    color: AppColors.darkTextSecondary, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.darkTextPrimary,
+                  ),
+                ),
+              ),
+              Icon(
+                Iconsax.arrow_right_3,
+                size: 16,
+                color: AppColors.darkTextHint,
+              ),
+            ],
           ),
-          trailing: Icon(
-            Iconsax.arrow_right_3,
-            size: 18,
-            color: theme.colorScheme.onSurface.withOpacity(0.5),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatPill({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: AppTextStyles.h5.copyWith(
+            color: AppColors.darkTextPrimary,
+            fontWeight: FontWeight.w800,
           ),
-          onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        );
-      },
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.darkTextSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OutlineBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  const _OutlineBtn(
+      {required this.label, required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 16, color: AppColors.darkTextPrimary),
+        label: Text(label,
+            style: AppTextStyles.labelMedium
+                .copyWith(color: AppColors.darkTextPrimary)),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.darkBorder),
+          shape:
+              RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+          backgroundColor: AppColors.darkCard,
+        ),
+      ),
     );
   }
 }

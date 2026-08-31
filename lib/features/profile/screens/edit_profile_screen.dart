@@ -12,10 +12,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -73,8 +70,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+        decoration: const BoxDecoration(
+          color: AppColors.darkSurface,
           borderRadius: AppRadius.topXl,
         ),
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -86,8 +83,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).dividerColor,
+                decoration: const BoxDecoration(
+                  color: AppColors.darkBorder,
                   borderRadius: AppRadius.pillAll,
                 ),
               ),
@@ -95,7 +92,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               Text(
                 'Change Profile Photo',
                 style: AppTextStyles.h6.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: AppColors.darkTextPrimary,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -236,130 +233,210 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Edit Profile',
-        showBack: true,
-        onBack: () => Navigator.of(context).pop(),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : TextButton(
-                    onPressed: _saveProfile,
-                    child: Text(
-                      'Save',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+      backgroundColor: AppColors.darkBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Custom dark top bar ─────────────────────────────────────────
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: const BoxDecoration(
+                color: AppColors.darkSurface,
+                border: Border(
+                  bottom: BorderSide(color: AppColors.darkBorder, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.darkCard,
+                        borderRadius: AppRadius.allSm,
+                        border: Border.all(color: AppColors.darkBorder),
+                      ),
+                      child: const Icon(
+                        Iconsax.arrow_left,
+                        size: 18,
+                        color: AppColors.darkTextPrimary,
                       ),
                     ),
                   ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Avatar section with upload indicator
-              _buildAvatarSection(theme),
-              const SizedBox(height: AppSpacing.xxl),
+                  Expanded(
+                    child: Text(
+                      'Edit Profile',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.h5.copyWith(
+                        color: AppColors.darkTextPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isSaving ? null : _saveProfile,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Save',
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
 
-              // Fields
-              _buildField(
-                controller: _nameController,
-                label: 'Full Name',
-                hint: 'Enter your full name',
-                icon: Iconsax.user,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name is required';
-                  }
-                  return null;
-                },
-              )
-                  .animate()
-                  .fadeIn(
-                      delay: const Duration(milliseconds: 50),
-                      duration: AppMotion.base)
-                  .slideX(begin: 0.02, end: 0),
-              const SizedBox(height: AppSpacing.lg),
+            // ── Body ────────────────────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // Avatar section
+                      _buildAvatarSection(),
+                      const SizedBox(height: AppSpacing.xxl),
 
-              _buildField(
-                controller: _handleController,
-                label: 'Username',
-                hint: '@your_handle',
-                icon: Iconsax.user_tag,
-              )
-                  .animate()
-                  .fadeIn(
-                      delay: const Duration(milliseconds: 100),
-                      duration: AppMotion.base)
-                  .slideX(begin: 0.02, end: 0),
-              const SizedBox(height: AppSpacing.lg),
+                      // Form fields on dark cards
+                      _buildDarkField(
+                        controller: _nameController,
+                        label: 'Full Name',
+                        hint: 'Enter your full name',
+                        icon: Iconsax.user,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Name is required';
+                          }
+                          return null;
+                        },
+                      )
+                          .animate()
+                          .fadeIn(
+                              delay: const Duration(milliseconds: 50),
+                              duration: AppMotion.base)
+                          .slideX(begin: 0.02, end: 0),
+                      const SizedBox(height: AppSpacing.lg),
 
-              _buildField(
-                controller: _bioController,
-                label: 'Bio',
-                hint: 'Tell the world about yourself...',
-                icon: Iconsax.document_text,
-                multiline: true,
-              )
-                  .animate()
-                  .fadeIn(
-                      delay: const Duration(milliseconds: 150),
-                      duration: AppMotion.base)
-                  .slideX(begin: 0.02, end: 0),
-              const SizedBox(height: AppSpacing.lg),
+                      _buildDarkField(
+                        controller: _handleController,
+                        label: 'Username',
+                        hint: '@your_handle',
+                        icon: Iconsax.user_tag,
+                      )
+                          .animate()
+                          .fadeIn(
+                              delay: const Duration(milliseconds: 100),
+                              duration: AppMotion.base)
+                          .slideX(begin: 0.02, end: 0),
+                      const SizedBox(height: AppSpacing.lg),
 
-              _buildField(
-                controller: _phoneController,
-                label: 'Phone',
-                hint: '+91 98765 43210',
-                icon: Iconsax.call,
-                keyboardType: TextInputType.phone,
-              )
-                  .animate()
-                  .fadeIn(
-                      delay: const Duration(milliseconds: 200),
-                      duration: AppMotion.base)
-                  .slideX(begin: 0.02, end: 0),
-              const SizedBox(height: AppSpacing.xxl),
+                      _buildDarkMultilineField(
+                        controller: _bioController,
+                        label: 'Bio',
+                        hint: 'Tell the world about yourself...',
+                      )
+                          .animate()
+                          .fadeIn(
+                              delay: const Duration(milliseconds: 150),
+                              duration: AppMotion.base)
+                          .slideX(begin: 0.02, end: 0),
+                      const SizedBox(height: AppSpacing.lg),
 
-              // Save button
-              PremiumButton(
-                label: 'Save Changes',
-                icon: Iconsax.save_2,
-                gradient: true,
-                loading: _isSaving,
-                onPressed: _isSaving ? null : _saveProfile,
-              )
-                  .animate()
-                  .fadeIn(
-                      delay: const Duration(milliseconds: 250),
-                      duration: AppMotion.base),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-          ),
+                      _buildDarkField(
+                        controller: _phoneController,
+                        label: 'Phone',
+                        hint: '+91 98765 43210',
+                        icon: Iconsax.call,
+                        keyboardType: TextInputType.phone,
+                      )
+                          .animate()
+                          .fadeIn(
+                              delay: const Duration(milliseconds: 200),
+                              duration: AppMotion.base)
+                          .slideX(begin: 0.02, end: 0),
+                      const SizedBox(height: AppSpacing.xxl),
+
+                      // Save Changes gradient button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: AppRadius.allMd,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _isSaving ? null : _saveProfile,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: AppRadius.allMd),
+                            ),
+                            icon: _isSaving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Icon(Iconsax.save_2,
+                                    color: Colors.white, size: 18),
+                            label: Text(
+                              'Save Changes',
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                          .animate()
+                          .fadeIn(
+                              delay: const Duration(milliseconds: 250),
+                              duration: AppMotion.base),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildAvatarSection(ThemeData theme) {
+  Widget _buildAvatarSection() {
     return Column(
       children: [
         GestureDetector(
@@ -367,7 +444,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // Avatar with upload overlay
               AnimatedContainer(
                 duration: AppMotion.base,
                 width: 108,
@@ -377,13 +453,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   border: Border.all(
                     color: _selectedImage != null
                         ? AppColors.primary
-                        : theme.dividerColor,
+                        : AppColors.darkBorder,
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primary.withOpacity(
-                          _selectedImage != null ? 0.2 : 0.05),
+                          _selectedImage != null ? 0.25 : 0.05),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -392,7 +468,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: ClipOval(
                   child: _isUploadingAvatar
                       ? Container(
-                          color: theme.colorScheme.surface,
+                          color: AppColors.darkCard,
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary,
@@ -415,8 +491,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             ),
                 ),
               ),
-
-              // Camera button overlay (bottom right)
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -430,7 +504,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: theme.colorScheme.surface, width: 2),
+                          color: AppColors.darkBackground, width: 2),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary.withOpacity(0.3),
@@ -465,50 +539,123 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           style: AppTextStyles.caption.copyWith(
             color: _isUploadingAvatar
                 ? AppColors.primary
-                : theme.colorScheme.onSurface.withOpacity(0.5),
+                : AppColors.darkTextSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildField({
+  Widget _buildDarkField({
     required TextEditingController controller,
     required String label,
     required String hint,
     required IconData icon,
-    bool multiline = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: AppTextStyles.labelLarge.copyWith(
-            color: theme.colorScheme.onSurface,
+            color: AppColors.darkTextPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        if (multiline)
-          PremiumTextField.multiline(
-            controller: controller,
-            hint: hint,
-            minLines: 3,
-            maxLines: 5,
-            validator: validator,
-          )
-        else
-          PremiumTextField(
-            controller: controller,
-            hint: hint,
-            prefixIcon: icon,
-            keyboardType: keyboardType,
-            validator: validator,
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          validator: validator,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.darkTextPrimary,
           ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.darkTextHint,
+            ),
+            filled: true,
+            fillColor: AppColors.darkCard,
+            prefixIcon:
+                Icon(icon, color: AppColors.darkTextSecondary, size: 20),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDarkMultilineField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.darkTextPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextFormField(
+          controller: controller,
+          maxLines: 4,
+          minLines: 3,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.darkTextPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.darkTextHint,
+            ),
+            filled: true,
+            fillColor: AppColors.darkCard,
+            contentPadding: const EdgeInsets.all(16),
+            border: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+          ),
+        ),
       ],
     );
   }

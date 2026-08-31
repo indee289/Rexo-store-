@@ -64,7 +64,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       appBar: PremiumAppBar(
         title: 'Messages',
         actions: [

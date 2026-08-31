@@ -118,7 +118,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
     Color? backgroundColor;
     switch (style) {
       case PremiumAppBarStyle.solid:
-        backgroundColor = theme.appBarTheme.backgroundColor;
+        backgroundColor = AppColors.darkSurface;
         break;
       case PremiumAppBarStyle.glass:
         backgroundColor = Colors.transparent;
@@ -169,24 +169,17 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
       );
     }
 
-    // Solid style: add a subtle bottom border
+    // Solid style: add a subtle bottom border using dark tokens
     if (style == PremiumAppBarStyle.solid) {
       return Container(
-        decoration: BoxDecoration(
-          color: theme.appBarTheme.backgroundColor,
+        decoration: const BoxDecoration(
+          color: AppColors.darkSurface,
           border: Border(
             bottom: BorderSide(
-              color: theme.dividerColor,
-              width: 0.5,
+              color: AppColors.darkBorder,
+              width: 1,
             ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-              offset: const Offset(0, 1),
-              blurRadius: 8,
-            ),
-          ],
         ),
         child: appBar,
       );
@@ -226,9 +219,12 @@ class _PremiumBackButtonState extends State<_PremiumBackButton> {
           width: 40,
           height: 40,
           margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: widget.color.withOpacity(0.08),
+          decoration: const BoxDecoration(
+            color: AppColors.darkCard,
             borderRadius: AppRadius.allMd,
+            border: BorderDirectional(
+              end: BorderSide(color: AppColors.darkBorder, width: 0),
+            ),
           ),
           child: Icon(
             Iconsax.arrow_left,

@@ -34,7 +34,7 @@ class CampaignDetailScreen extends ConsumerWidget {
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       body: campaignAsync.when(
         data: (campaign) {
           if (campaign == null) {
@@ -200,9 +200,9 @@ class CampaignDetailScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
+                      color: AppColors.darkCard,
                       borderRadius: AppRadius.allMd,
-                      border: Border.all(color: theme.dividerColor),
+                      border: Border.all(color: AppColors.darkBorder),
                     ),
                     child: Text(
                       guidelines,
@@ -321,9 +321,9 @@ class CampaignDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.darkCard,
         borderRadius: AppRadius.allMd,
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: AppColors.darkBorder),
       ),
       child: Row(
         children: [
@@ -401,9 +401,9 @@ class CampaignDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.darkCard,
         borderRadius: AppRadius.allMd,
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: AppColors.darkBorder),
       ),
       child: Column(
         children: [
@@ -559,14 +559,10 @@ class CampaignDetailBottomBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        color: AppColors.darkSurface,
+        border: const Border(
+          top: BorderSide(color: AppColors.darkBorder, width: 1),
+        ),
       ),
       child: SafeArea(
         top: false,

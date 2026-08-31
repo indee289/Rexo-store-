@@ -131,9 +131,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final displayName = otherUserName.isEmpty ? 'User' : otherUserName;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.darkBackground,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -269,9 +269,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: AppColors.darkSurface,
               border: Border(
-                top: BorderSide(color: theme.dividerColor),
+                top: BorderSide(color: AppColors.darkBorder),
               ),
             ),
             child: SafeArea(
@@ -282,9 +282,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: theme.brightness == Brightness.dark
-                            ? AppColors.darkSurfaceAlt
-                            : AppColors.surfaceAlt,
+                        color: AppColors.darkCard,
                         borderRadius: AppRadius.pillAll,
                       ),
                       child: TextField(

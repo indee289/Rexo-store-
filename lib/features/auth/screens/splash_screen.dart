@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -116,25 +117,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
+      backgroundColor: AppColors.darkBackground,
       body: SizedBox.expand(
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            // Brand gradient backdrop sourced from the color tokens.
-            gradient: RadialGradient(
-              center: Alignment(0, -0.2),
-              radius: 1.2,
-              colors: [
-                AppColors.primaryLight,
-                AppColors.primary,
-                AppColors.primaryDark,
-              ],
-              stops: [0.0, 0.55, 1.0],
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Radial glow behind logo
+            Positioned(
+              top: screenHeight * 0.25,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.25),
+                      AppColors.primary.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-            // Single, centered brand mark.
+
+            // Logo + wordmark
             FadeTransition(
               opacity: _logoFade,
               child: ScaleTransition(
@@ -143,32 +149,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 104,
-                      height: 104,
+                      width: 96,
+                      height: 96,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        gradient: AppColors.primaryGradient,
                         borderRadius: AppRadius.allXl,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 24,
+                            color: AppColors.primary.withOpacity(0.5),
+                            blurRadius: 36,
+                            spreadRadius: 6,
                             offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       alignment: Alignment.center,
                       child: Padding(
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.all(16),
                         child: Image.asset(
                           'assets/logo.png',
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Text(
-                            'R',
-                            style: AppTextStyles.h1.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 48,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Iconsax.crown_1,
+                            color: Colors.white,
+                            size: 40,
                           ),
                         ),
                       ),
@@ -177,8 +181,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     Text(
                       'Rexo',
                       style: AppTextStyles.h2.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                        color: AppColors.darkTextPrimary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -187,8 +192,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       child: Text(
                         'Connect. Create. Earn.',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                          letterSpacing: 0.2,
+                          color: AppColors.darkTextSecondary,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ),
@@ -197,13 +202,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               ),
             ),
 
-              // Subtle loading dots near the bottom.
-              Positioned(
-                bottom: screenHeight * 0.08,
-                child: const _PulsingDots(),
-              ),
-            ],
-          ),
+            // Pulsing dots at the bottom
+            Positioned(
+              bottom: screenHeight * 0.08,
+              child: const _PulsingDots(),
+            ),
+          ],
         ),
       ),
     );
@@ -258,7 +262,7 @@ class _PulsingDotsState extends State<_PulsingDots>
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.darkTextSecondary,
                     shape: BoxShape.circle,
                   ),
                 ),

@@ -28,7 +28,7 @@ class ShopScreen extends ConsumerWidget {
     final cartCount = ref.watch(cartItemCountProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       appBar: PremiumAppBar(
         title: 'Shop',
         actions: [

@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -35,241 +35,290 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Settings',
-        showBack: true,
-        onBack: () => context.pop(),
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: AppColors.darkBackground,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User header card
-            profileAsync.whenOrNull(
-              data: (profileState) => _buildUserCard(context, profileState),
-            ) ?? const SizedBox(height: AppSpacing.lg),
-
-            // Search bar
-            _buildSearchBar(theme),
-
-            // Content filtered by search
-            if (_searchQuery.isEmpty) ...[
-              _buildSection(
-                context,
-                title: 'Appearance',
-                icon: Iconsax.brush_2,
-                iconColor: AppColors.accentPurple,
-                children: [
-                  _buildThemeSelector(context, ref, settings),
-                ],
+            // ── Custom dark header ──────────────────────────────────────────
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: const BoxDecoration(
+                color: AppColors.darkSurface,
+                border: Border(
+                  bottom: BorderSide(color: AppColors.darkBorder, width: 1),
+                ),
               ),
-              _buildSection(
-                context,
-                title: 'Account',
-                icon: Iconsax.user,
-                iconColor: AppColors.primary,
+              child: Row(
                 children: [
-                  _buildItem(
-                    context,
-                    icon: Iconsax.edit,
-                    iconColor: AppColors.primary,
-                    title: 'Edit Profile',
-                    subtitle: 'Update name, photo, bio',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.darkCard,
+                        borderRadius: AppRadius.allSm,
+                        border: Border.all(color: AppColors.darkBorder),
+                      ),
+                      child: const Icon(
+                        Iconsax.arrow_left,
+                        size: 18,
+                        color: AppColors.darkTextPrimary,
+                      ),
                     ),
                   ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.link_2,
-                    iconColor: AppColors.accentTeal,
-                    title: 'Linked Accounts',
-                    subtitle: 'Instagram, YouTube, TikTok',
-                    onTap: () => context.push('/linked-accounts'),
+                  Expanded(
+                    child: Text(
+                      'Settings',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.h5.copyWith(
+                        color: AppColors.darkTextPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.verify,
-                    iconColor: AppColors.success,
-                    title: 'KYC Verification',
-                    subtitle: 'Verify your identity',
-                    onTap: () => context.push('/kyc'),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.crown_1,
-                    iconColor: AppColors.accentAmber,
-                    title: 'Rexo Program',
-                    subtitle: 'Apply to sell on marketplace',
-                    onTap: () => _showRexoProgramInfo(context),
-                  ),
+                  const SizedBox(width: 36), // balance
                 ],
               ),
-              _buildSection(
-                context,
-                title: 'Security',
-                icon: Iconsax.shield_tick,
-                iconColor: AppColors.accentIndigo,
-                children: [
-                  _buildItem(
-                    context,
-                    icon: Iconsax.mobile,
-                    iconColor: AppColors.accentIndigo,
-                    title: 'Sessions & Devices',
-                    subtitle: 'Manage active sessions',
-                    onTap: () => context.push('/sessions'),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.shield_tick,
-                    iconColor: AppColors.success,
-                    title: 'Two-Factor Authentication',
-                    subtitle: 'Secure your account with TOTP',
-                    trailing: _buildStatusBadge('Recommended', AppColors.success),
-                    onTap: () => context.push('/two-factor-auth'),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.lock_1,
-                    iconColor: AppColors.warning,
-                    title: 'Change Password',
-                    subtitle: 'Send password reset email',
-                    onTap: () => _handleChangePassword(context),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.document_text,
-                    iconColor: AppColors.error,
-                    title: 'Security Logs',
-                    subtitle: 'View account activity',
-                    onTap: () => context.push('/security-logs'),
-                  ),
-                ],
-              ),
-              _buildSection(
-                context,
-                title: 'Notifications',
-                icon: Iconsax.notification,
-                iconColor: AppColors.accentOrange,
-                children: [
-                  _buildSwitchItem(
-                    context,
-                    icon: Iconsax.notification,
-                    iconColor: AppColors.accentOrange,
-                    title: 'Push Notifications',
-                    subtitle: 'Receive push notifications',
-                    value: settings.notificationsEnabled,
-                    onChanged: (v) => ref
-                        .read(settingsProvider.notifier)
-                        .setNotificationsEnabled(v),
-                  ),
-                  _buildSwitchItem(
-                    context,
-                    icon: Iconsax.sms,
-                    iconColor: AppColors.primary,
-                    title: 'Email Notifications',
-                    subtitle: 'Receive email updates',
-                    value: settings.emailNotificationsEnabled,
-                    onChanged: (v) => ref
-                        .read(settingsProvider.notifier)
-                        .setEmailNotificationsEnabled(v),
-                  ),
-                  _buildSwitchItem(
-                    context,
-                    icon: Iconsax.briefcase,
-                    iconColor: AppColors.accentTeal,
-                    title: 'Campaign Updates',
-                    subtitle: 'New campaigns & deadlines',
-                    value: true,
-                    onChanged: (_) {},
-                  ),
-                  _buildSwitchItem(
-                    context,
-                    icon: Iconsax.wallet_1,
-                    iconColor: AppColors.success,
-                    title: 'Wallet Alerts',
-                    subtitle: 'Deposits & withdrawals',
-                    value: true,
-                    onChanged: (_) {},
-                  ),
-                ],
-              ),
-              _buildSection(
-                context,
-                title: 'Privacy',
-                icon: Iconsax.eye_slash,
-                iconColor: AppColors.neutral,
-                children: [
-                  _buildSwitchItem(
-                    context,
-                    icon: Iconsax.eye,
-                    iconColor: AppColors.neutral,
-                    title: 'Public Profile',
-                    subtitle: 'Allow others to find your profile',
-                    value: true,
-                    onChanged: (_) {},
-                  ),
-                  _buildSwitchItem(
-                    context,
-                    icon: Iconsax.chart_square,
-                    iconColor: AppColors.accentIndigo,
-                    title: 'Analytics Sharing',
-                    subtitle: 'Share anonymised usage data',
-                    value: false,
-                    onChanged: (_) {},
-                  ),
-                ],
-              ),
-              _buildSection(
-                context,
-                title: 'Support',
-                icon: Iconsax.message_question,
-                iconColor: AppColors.accentTeal,
-                children: [
-                  _buildItem(
-                    context,
-                    icon: Iconsax.message_question,
-                    iconColor: AppColors.accentTeal,
-                    title: 'Help & Support',
-                    subtitle: 'FAQs and contact',
-                    onTap: () => context.push('/help-support'),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.shield_tick,
-                    iconColor: AppColors.textSecondary,
-                    title: 'Privacy Policy',
-                    onTap: () => context.push('/privacy-policy'),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.document_text,
-                    iconColor: AppColors.textSecondary,
-                    title: 'Terms of Service',
-                    onTap: () => context.push('/terms-of-service'),
-                  ),
-                  _buildItem(
-                    context,
-                    icon: Iconsax.info_circle,
-                    iconColor: AppColors.textSecondary,
-                    title: 'About Rexo',
-                    subtitle: 'Version 1.0.0',
-                    onTap: () => _showAbout(context),
-                  ),
-                ],
-              ),
-              // Danger zone
-              _buildDangerZone(context, ref),
-            ] else
-              _buildFilteredResults(context, ref, settings),
+            ),
 
-            const SizedBox(height: 80),
+            // ── Content ─────────────────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // User card
+                    profileAsync.whenOrNull(
+                      data: (profileState) =>
+                          _buildUserCard(context, profileState),
+                    ) ?? const SizedBox(height: AppSpacing.lg),
+
+                    // Search bar
+                    _buildSearchBar(),
+
+                    // Settings sections
+                    if (_searchQuery.isEmpty) ...[
+                      _buildSection(
+                        context,
+                        title: 'APPEARANCE',
+                        icon: Iconsax.brush_2,
+                        iconColor: AppColors.accentPurple,
+                        children: [
+                          _buildThemeSelector(context, ref, settings),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'ACCOUNT',
+                        icon: Iconsax.user,
+                        iconColor: AppColors.primary,
+                        children: [
+                          _buildItem(
+                            context,
+                            icon: Iconsax.edit,
+                            iconColor: AppColors.primary,
+                            title: 'Edit Profile',
+                            subtitle: 'Update name, photo, bio',
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const EditProfileScreen()),
+                            ),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.link_2,
+                            iconColor: AppColors.accentTeal,
+                            title: 'Linked Accounts',
+                            subtitle: 'Instagram, YouTube, TikTok',
+                            onTap: () => context.push('/linked-accounts'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.verify,
+                            iconColor: AppColors.success,
+                            title: 'KYC Verification',
+                            subtitle: 'Verify your identity',
+                            onTap: () => context.push('/kyc'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.crown_1,
+                            iconColor: AppColors.accentAmber,
+                            title: 'Rexo Program',
+                            subtitle: 'Apply to sell on marketplace',
+                            onTap: () => _showRexoProgramInfo(context),
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'SECURITY',
+                        icon: Iconsax.shield_tick,
+                        iconColor: AppColors.accentIndigo,
+                        children: [
+                          _buildItem(
+                            context,
+                            icon: Iconsax.mobile,
+                            iconColor: AppColors.accentIndigo,
+                            title: 'Sessions & Devices',
+                            subtitle: 'Manage active sessions',
+                            onTap: () => context.push('/sessions'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.shield_tick,
+                            iconColor: AppColors.success,
+                            title: 'Two-Factor Authentication',
+                            subtitle: 'Secure your account with TOTP',
+                            trailing: _buildStatusBadge(
+                                'Recommended', AppColors.success),
+                            onTap: () => context.push('/two-factor-auth'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.lock_1,
+                            iconColor: AppColors.warning,
+                            title: 'Change Password',
+                            subtitle: 'Send password reset email',
+                            onTap: () => _handleChangePassword(context),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.document_text,
+                            iconColor: AppColors.error,
+                            title: 'Security Logs',
+                            subtitle: 'View account activity',
+                            onTap: () => context.push('/security-logs'),
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'NOTIFICATIONS',
+                        icon: Iconsax.notification,
+                        iconColor: AppColors.accentOrange,
+                        children: [
+                          _buildSwitchItem(
+                            context,
+                            icon: Iconsax.notification,
+                            iconColor: AppColors.accentOrange,
+                            title: 'Push Notifications',
+                            subtitle: 'Receive push notifications',
+                            value: settings.notificationsEnabled,
+                            onChanged: (v) => ref
+                                .read(settingsProvider.notifier)
+                                .setNotificationsEnabled(v),
+                          ),
+                          _buildSwitchItem(
+                            context,
+                            icon: Iconsax.sms,
+                            iconColor: AppColors.primary,
+                            title: 'Email Notifications',
+                            subtitle: 'Receive email updates',
+                            value: settings.emailNotificationsEnabled,
+                            onChanged: (v) => ref
+                                .read(settingsProvider.notifier)
+                                .setEmailNotificationsEnabled(v),
+                          ),
+                          _buildSwitchItem(
+                            context,
+                            icon: Iconsax.briefcase,
+                            iconColor: AppColors.accentTeal,
+                            title: 'Campaign Updates',
+                            subtitle: 'New campaigns & deadlines',
+                            value: true,
+                            onChanged: (_) {},
+                          ),
+                          _buildSwitchItem(
+                            context,
+                            icon: Iconsax.wallet_1,
+                            iconColor: AppColors.success,
+                            title: 'Wallet Alerts',
+                            subtitle: 'Deposits & withdrawals',
+                            value: true,
+                            onChanged: (_) {},
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'PRIVACY',
+                        icon: Iconsax.eye_slash,
+                        iconColor: AppColors.neutral,
+                        children: [
+                          _buildSwitchItem(
+                            context,
+                            icon: Iconsax.eye,
+                            iconColor: AppColors.neutral,
+                            title: 'Public Profile',
+                            subtitle: 'Allow others to find your profile',
+                            value: true,
+                            onChanged: (_) {},
+                          ),
+                          _buildSwitchItem(
+                            context,
+                            icon: Iconsax.chart_square,
+                            iconColor: AppColors.accentIndigo,
+                            title: 'Analytics Sharing',
+                            subtitle: 'Share anonymised usage data',
+                            value: false,
+                            onChanged: (_) {},
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'SUPPORT',
+                        icon: Iconsax.message_question,
+                        iconColor: AppColors.accentTeal,
+                        children: [
+                          _buildItem(
+                            context,
+                            icon: Iconsax.message_question,
+                            iconColor: AppColors.accentTeal,
+                            title: 'Help & Support',
+                            subtitle: 'FAQs and contact',
+                            onTap: () => context.push('/help-support'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.shield_tick,
+                            iconColor: AppColors.darkTextSecondary,
+                            title: 'Privacy Policy',
+                            onTap: () => context.push('/privacy-policy'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.document_text,
+                            iconColor: AppColors.darkTextSecondary,
+                            title: 'Terms of Service',
+                            onTap: () => context.push('/terms-of-service'),
+                          ),
+                          _buildItem(
+                            context,
+                            icon: Iconsax.info_circle,
+                            iconColor: AppColors.darkTextSecondary,
+                            title: 'About Rexo',
+                            subtitle: 'Version 1.0.0',
+                            onTap: () => _showAbout(context),
+                          ),
+                        ],
+                      ),
+                      _buildDangerZone(context, ref),
+                    ] else
+                      _buildFilteredResults(context, ref, settings),
+
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -277,7 +326,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildUserCard(BuildContext context, ProfileState profileState) {
-    final theme = Theme.of(context);
     final profile = profileState.profile;
     if (profile == null) return const SizedBox(height: AppSpacing.lg);
 
@@ -359,7 +407,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         .slideY(begin: -0.1, end: 0, curve: AppMotion.standard);
   }
 
-  Widget _buildSearchBar(ThemeData theme) {
+  Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -368,16 +416,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+        style: AppTextStyles.bodyMedium
+            .copyWith(color: AppColors.darkTextPrimary),
         decoration: InputDecoration(
           hintText: 'Search settings...',
-          prefixIcon: Icon(
+          hintStyle: AppTextStyles.bodyMedium
+              .copyWith(color: AppColors.darkTextHint),
+          filled: true,
+          fillColor: AppColors.darkCard,
+          prefixIcon: const Icon(
             Iconsax.search_normal,
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
+            color: AppColors.darkTextSecondary,
             size: 20,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Iconsax.close_circle, size: 18),
+                  icon: const Icon(Iconsax.close_circle,
+                      size: 18, color: AppColors.darkTextSecondary),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -385,8 +440,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 )
               : null,
           isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: AppRadius.allMd,
+            borderSide: const BorderSide(color: AppColors.darkBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppRadius.allMd,
+            borderSide: const BorderSide(color: AppColors.darkBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppRadius.allMd,
+            borderSide:
+                const BorderSide(color: AppColors.primary, width: 1.5),
+          ),
         ),
       ),
     );
@@ -399,7 +467,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required Color iconColor,
     required List<Widget> children,
   }) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -415,35 +482,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   color: iconColor.withOpacity(0.12),
                   borderRadius: AppRadius.allSm,
                 ),
-                child: Icon(icon, size: 16, color: iconColor),
+                child: Icon(icon, size: 14, color: iconColor),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 title,
-                style: AppTextStyles.labelLarge.copyWith(
+                style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  letterSpacing: 0.5,
+                  color: AppColors.darkTextSecondary,
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
           ),
         ),
         Container(
-          margin:
-              const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: AppColors.darkCard,
             borderRadius: AppRadius.allLg,
-            border: Border.all(color: theme.dividerColor, width: 0.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(
-                    theme.brightness == Brightness.dark ? 0.2 : 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: Border.all(color: AppColors.darkBorder, width: 1),
           ),
           child: Column(children: children),
         ),
@@ -460,12 +518,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     Widget? trailing,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppRadius.allMd,
+        splashColor: AppColors.primary.withOpacity(0.06),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
@@ -477,7 +535,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withOpacity(0.12),
                   borderRadius: AppRadius.allSm,
                 ),
                 child: Icon(icon, size: 18, color: iconColor),
@@ -490,26 +548,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Text(
                       title,
                       style: AppTextStyles.labelLarge.copyWith(
-                        color: theme.colorScheme.onSurface,
+                        color: AppColors.darkTextPrimary,
                       ),
                     ),
                     if (subtitle != null)
                       Text(
                         subtitle,
                         style: AppTextStyles.caption.copyWith(
-                          color:
-                              theme.colorScheme.onSurface.withOpacity(0.5),
+                          color: AppColors.darkTextSecondary,
                         ),
                       ),
                   ],
                 ),
               ),
               trailing ??
-                  Icon(
+                  const Icon(
                     Iconsax.arrow_right_3,
                     size: 16,
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.3),
+                    color: AppColors.darkTextHint,
                   ),
             ],
           ),
@@ -527,7 +583,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -539,7 +594,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withOpacity(0.12),
               borderRadius: AppRadius.allSm,
             ),
             child: Icon(icon, size: 18, color: iconColor),
@@ -552,13 +607,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Text(
                   title,
                   style: AppTextStyles.labelLarge.copyWith(
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.darkTextPrimary,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: AppTextStyles.caption.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: AppColors.darkTextSecondary,
                   ),
                 ),
               ],
@@ -579,7 +634,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding:
           const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.12),
         borderRadius: AppRadius.pillAll,
         border: Border.all(color: color.withOpacity(0.3)),
       ),
@@ -595,7 +650,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildThemeSelector(
       BuildContext context, WidgetRef ref, SettingsState settings) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -604,40 +658,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Text(
             'App Theme',
             style: AppTextStyles.labelLarge.copyWith(
-              color: theme.colorScheme.onSurface,
+              color: AppColors.darkTextPrimary,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: AppColors.darkSurface,
               borderRadius: AppRadius.allMd,
-              border: Border.all(color: theme.dividerColor),
+              border: Border.all(color: AppColors.darkBorder),
             ),
             child: Row(
               children: [
-                _buildThemeOption(
-                  context, ref,
-                  label: 'Light',
-                  icon: Iconsax.sun_1,
-                  mode: ThemeMode.light,
-                  isSelected: settings.themeMode == ThemeMode.light,
-                ),
-                _buildThemeOption(
-                  context, ref,
-                  label: 'Dark',
-                  icon: Iconsax.moon,
-                  mode: ThemeMode.dark,
-                  isSelected: settings.themeMode == ThemeMode.dark,
-                ),
-                _buildThemeOption(
-                  context, ref,
-                  label: 'System',
-                  icon: Iconsax.mobile,
-                  mode: ThemeMode.system,
-                  isSelected: settings.themeMode == ThemeMode.system,
-                ),
+                _buildThemeOption(context, ref,
+                    label: 'Light',
+                    icon: Iconsax.sun_1,
+                    mode: ThemeMode.light,
+                    isSelected: settings.themeMode == ThemeMode.light),
+                _buildThemeOption(context, ref,
+                    label: 'Dark',
+                    icon: Iconsax.moon,
+                    mode: ThemeMode.dark,
+                    isSelected: settings.themeMode == ThemeMode.dark),
+                _buildThemeOption(context, ref,
+                    label: 'System',
+                    icon: Iconsax.mobile,
+                    mode: ThemeMode.system,
+                    isSelected: settings.themeMode == ThemeMode.system),
               ],
             ),
           ),
@@ -662,7 +710,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.1)
+                ? AppColors.primary.withOpacity(0.12)
                 : Colors.transparent,
             borderRadius: AppRadius.allSm,
             border: isSelected
@@ -676,10 +724,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 size: 20,
                 color: isSelected
                     ? AppColors.primary
-                    : Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.4),
+                    : AppColors.darkTextHint,
               ),
               const SizedBox(height: 4),
               Text(
@@ -689,10 +734,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       isSelected ? FontWeight.w700 : FontWeight.w400,
                   color: isSelected
                       ? AppColors.primary
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.5),
+                      : AppColors.darkTextHint,
                 ),
               ),
             ],
@@ -703,7 +745,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildDangerZone(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -720,15 +761,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   borderRadius: AppRadius.allSm,
                 ),
                 child: const Icon(Iconsax.warning_2,
-                    size: 16, color: AppColors.error),
+                    size: 14, color: AppColors.error),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'DANGER ZONE',
-                style: AppTextStyles.labelLarge.copyWith(
+                style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.error.withOpacity(0.7),
-                  letterSpacing: 0.5,
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
@@ -737,10 +778,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: AppColors.darkCard,
             borderRadius: AppRadius.allLg,
             border: Border.all(
-                color: AppColors.error.withOpacity(0.15), width: 0.5),
+                color: AppColors.error.withOpacity(0.2), width: 1),
           ),
           child: Column(
             children: [
@@ -752,7 +793,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Sign out of your account',
                 onTap: () => _handleLogout(context, ref),
               ),
-              Divider(height: 1, color: theme.dividerColor),
+              Divider(
+                  height: 1, color: AppColors.error.withOpacity(0.1)),
               _buildItem(
                 context,
                 icon: Iconsax.trash,
@@ -770,18 +812,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildFilteredResults(
       BuildContext context, WidgetRef ref, SettingsState settings) {
-    // Simple filtered list based on search query
     final allItems = [
-      ('Edit Profile', Iconsax.edit, AppColors.primary, () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditProfileScreen()))),
-      ('Linked Accounts', Iconsax.link_2, AppColors.accentTeal, () => context.push('/linked-accounts')),
-      ('KYC Verification', Iconsax.verify, AppColors.success, () => context.push('/kyc')),
-      ('Two-Factor Authentication', Iconsax.shield_tick, AppColors.success, () => context.push('/two-factor-auth')),
-      ('Sessions & Devices', Iconsax.mobile, AppColors.accentIndigo, () => context.push('/sessions')),
-      ('Change Password', Iconsax.lock_1, AppColors.warning, () => _handleChangePassword(context)),
-      ('Privacy Policy', Iconsax.shield_tick, AppColors.textSecondary, () => context.push('/privacy-policy')),
-      ('Terms of Service', Iconsax.document_text, AppColors.textSecondary, () => context.push('/terms-of-service')),
-      ('Help & Support', Iconsax.message_question, AppColors.accentTeal, () => context.push('/help-support')),
-      ('About Rexo', Iconsax.info_circle, AppColors.textSecondary, () => _showAbout(context)),
+      ('Edit Profile', Iconsax.edit, AppColors.primary,
+          () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()))),
+      ('Linked Accounts', Iconsax.link_2, AppColors.accentTeal,
+          () => context.push('/linked-accounts')),
+      ('KYC Verification', Iconsax.verify, AppColors.success,
+          () => context.push('/kyc')),
+      ('Two-Factor Authentication', Iconsax.shield_tick, AppColors.success,
+          () => context.push('/two-factor-auth')),
+      ('Sessions & Devices', Iconsax.mobile, AppColors.accentIndigo,
+          () => context.push('/sessions')),
+      ('Change Password', Iconsax.lock_1, AppColors.warning,
+          () => _handleChangePassword(context)),
+      ('Privacy Policy', Iconsax.shield_tick, AppColors.darkTextSecondary,
+          () => context.push('/privacy-policy')),
+      ('Terms of Service', Iconsax.document_text, AppColors.darkTextSecondary,
+          () => context.push('/terms-of-service')),
+      ('Help & Support', Iconsax.message_question, AppColors.accentTeal,
+          () => context.push('/help-support')),
+      ('About Rexo', Iconsax.info_circle, AppColors.darkTextSecondary,
+          () => _showAbout(context)),
     ];
 
     final filtered = allItems
@@ -794,20 +846,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Center(
           child: Column(
             children: [
-              Icon(Iconsax.search_normal,
-                  size: 48,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.3)),
+              const Icon(Iconsax.search_normal,
+                  size: 48, color: AppColors.darkTextHint),
               const SizedBox(height: AppSpacing.md),
               Text(
                 'No results for "$_searchQuery"',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.5),
+                  color: AppColors.darkTextSecondary,
                 ),
               ),
             ],
@@ -821,10 +866,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: AppColors.darkCard,
           borderRadius: AppRadius.allLg,
-          border: Border.all(
-              color: Theme.of(context).dividerColor, width: 0.5),
+          border: Border.all(color: AppColors.darkBorder, width: 1),
         ),
         child: Column(
           children: filtered
@@ -996,14 +1040,4 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
-}
-
-// Local stub so settings_screen doesn't need to import app_motion.dart directly.
-const AppMotion = _AppMotionConst();
-
-class _AppMotionConst {
-  const _AppMotionConst();
-  Duration get base => const Duration(milliseconds: 250);
-  Duration get fast => const Duration(milliseconds: 150);
-  Curve get standard => Curves.easeInOut;
 }

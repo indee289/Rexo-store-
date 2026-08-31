@@ -82,65 +82,65 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: 24),
 
-                // Back button
+                // ── Back button ─────────────────────────────────────────────
                 GestureDetector(
                   onTap: () => context.go(AppRoutes.login),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
+                      color: AppColors.darkCard,
                       borderRadius: AppRadius.allMd,
-                      border: Border.all(color: theme.dividerColor),
+                      border: Border.all(color: AppColors.darkBorder),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Iconsax.arrow_left,
                       size: 20,
-                      color: theme.colorScheme.onSurface,
+                      color: AppColors.darkTextPrimary,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: 28),
 
-                // Create Account heading
+                // ── Heading ─────────────────────────────────────────────────
                 Text(
                   'Create Account',
                   style: AppTextStyles.h2.copyWith(
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.darkTextPrimary,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: 6),
                 Text(
                   'Join Rexo and start your journey',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: AppColors.darkTextSecondary,
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: 32),
 
-                // Full name field
-                PremiumTextField(
+                // ── Full Name ───────────────────────────────────────────────
+                _RegDarkField(
                   controller: _nameController,
                   label: 'Full Name',
                   hint: 'Enter your full name',
-                  prefixIcon: Iconsax.user,
+                  icon: Iconsax.user,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
@@ -153,20 +153,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
 
-                const SizedBox(height: AppSpacing.lg),
-
-                // Username (handle) field
-                PremiumTextField(
+                // ── Username ────────────────────────────────────────────────
+                _RegDarkField(
                   controller: _usernameController,
                   label: 'Username',
                   hint: 'e.g. jane_doe',
-                  prefixIcon: Iconsax.user_tag,
+                  icon: Iconsax.user_tag,
                   textInputAction: TextInputAction.next,
-                  keyboardType: TextInputType.text,
                   inputFormatters: [
-                    // Keep input to the allowed handle charset (plus a leading
-                    // '@' which we strip on submit) and force lowercase.
                     FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_@]')),
                     TextInputFormatter.withFunction((oldValue, newValue) {
                       return newValue.copyWith(
@@ -175,9 +171,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                   validator: (value) {
                     final handle = _normalizeHandle(value ?? '');
-                    if (handle.isEmpty) {
-                      return 'Please choose a username';
-                    }
+                    if (handle.isEmpty) return 'Please choose a username';
                     if (handle.length < 3 || handle.length > 20) {
                       return 'Username must be 3-20 characters';
                     }
@@ -190,15 +184,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
 
-                const SizedBox(height: AppSpacing.lg),
-
-                // Email field
-                PremiumTextField(
+                // ── Email ───────────────────────────────────────────────────
+                _RegDarkField(
                   controller: _emailController,
                   label: 'Email',
                   hint: 'Enter your email',
-                  prefixIcon: Iconsax.sms,
+                  icon: Iconsax.sms,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (value) {
@@ -211,23 +204,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
 
-                const SizedBox(height: AppSpacing.lg),
-
-                // Password field
-                PremiumTextField(
+                // ── Password ────────────────────────────────────────────────
+                _RegDarkField(
                   controller: _passwordController,
                   label: 'Password',
                   hint: 'Create a password',
-                  prefixIcon: Iconsax.lock,
+                  icon: Iconsax.lock,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
-                  suffix: IconButton(
-                    onPressed: () =>
+                  suffixIcon: GestureDetector(
+                    onTap: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
-                    icon: Icon(
+                    child: Icon(
                       _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                      color: AppColors.darkTextSecondary,
                       size: 20,
                     ),
                   ),
@@ -247,25 +239,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
 
-                const SizedBox(height: AppSpacing.lg),
-
-                // Confirm password field
-                PremiumTextField(
+                // ── Confirm Password ────────────────────────────────────────
+                _RegDarkField(
                   controller: _confirmPasswordController,
                   label: 'Confirm Password',
                   hint: 'Re-enter your password',
-                  prefixIcon: Iconsax.lock,
+                  icon: Iconsax.lock,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
-                  suffix: IconButton(
-                    onPressed: () => setState(() =>
-                        _obscureConfirmPassword = !_obscureConfirmPassword),
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Iconsax.eye_slash
-                          : Iconsax.eye,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  suffixIcon: GestureDetector(
+                    onTap: () => setState(
+                        () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    child: Icon(
+                      _obscureConfirmPassword ? Iconsax.eye_slash : Iconsax.eye,
+                      color: AppColors.darkTextSecondary,
                       size: 20,
                     ),
                   ),
@@ -280,29 +269,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                 ),
 
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 28),
 
-                // Role selection
+                // ── Role selector ───────────────────────────────────────────
                 Text(
                   'I am a',
                   style: AppTextStyles.labelLarge.copyWith(
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.darkTextPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: _RoleCard(
                         title: 'Creator',
-                        icon: Iconsax.video_play,
+                        icon: Iconsax.user,
                         description: 'Content creator or influencer',
                         isSelected: _selectedRole == 'creator',
-                        onTap: () =>
-                            setState(() => _selectedRole = 'creator'),
+                        onTap: () => setState(() => _selectedRole = 'creator'),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: _RoleCard(
                         title: 'Brand',
@@ -315,19 +304,62 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
 
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 28),
 
-                // Sign Up button
-                PremiumButton(
-                  label: 'Sign Up',
-                  gradient: true,
-                  loading: authState.isLoading,
-                  onPressed: authState.isLoading ? null : _handleSignUp,
+                // ── Sign Up CTA ─────────────────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: !authState.isLoading
+                          ? AppColors.primaryGradient
+                          : const LinearGradient(
+                              colors: [Color(0xFF4B4D72), Color(0xFF4B4D72)]),
+                      borderRadius: AppRadius.allMd,
+                      boxShadow: !authState.isLoading
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: authState.isLoading ? null : _handleSignUp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.allMd,
+                        ),
+                      ),
+                      child: authState.isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Text(
+                              'Sign Up',
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
 
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 28),
 
-                // Login link
+                // ── Login link ──────────────────────────────────────────────
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -335,7 +367,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Text(
                         'Already have an account? ',
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: AppColors.darkTextSecondary,
                         ),
                       ),
                       GestureDetector(
@@ -343,7 +375,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: Text(
                           'Sign In',
                           style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.primary,
                           ),
                         ),
@@ -352,7 +384,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -362,7 +394,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-/// Role selection card widget (token-driven).
+/// Role selection card widget (dark premium).
 class _RoleCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -380,53 +412,153 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: AppMotion.base,
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.05)
-              : theme.colorScheme.surface,
+              ? AppColors.primary.withOpacity(0.12)
+              : AppColors.darkCard,
           borderRadius: AppRadius.allMd,
           border: Border.all(
-            color: isSelected ? AppColors.primary : theme.dividerColor,
+            color: isSelected ? AppColors.primary : AppColors.darkBorder,
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? AppColors.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.4),
-              size: 28,
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withOpacity(0.2)
+                    : AppColors.darkSurfaceAlt,
+                borderRadius: AppRadius.allSm,
+              ),
+              child: Icon(
+                icon,
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.darkTextSecondary,
+                size: 24,
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 10),
             Text(
               title,
               style: AppTextStyles.labelLarge.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: isSelected
                     ? AppColors.primary
-                    : theme.colorScheme.onSurface,
+                    : AppColors.darkTextPrimary,
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: 4),
             Text(
               description,
               textAlign: TextAlign.center,
               style: AppTextStyles.caption.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: AppColors.darkTextSecondary,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Dark field variant for register screen (same style as login _DarkField but
+/// with extra inputFormatters support).
+class _RegDarkField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final bool obscureText;
+  final Widget? suffixIcon;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? Function(String?)? validator;
+
+  const _RegDarkField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.obscureText = false,
+    this.suffixIcon,
+    this.keyboardType,
+    this.textInputAction,
+    this.textCapitalization = TextCapitalization.none,
+    this.inputFormatters,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.darkTextPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          textCapitalization: textCapitalization,
+          inputFormatters: inputFormatters,
+          validator: validator,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.darkTextPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.darkTextHint,
+            ),
+            filled: true,
+            fillColor: AppColors.darkCard,
+            prefixIcon: Icon(icon, color: AppColors.darkTextSecondary, size: 20),
+            suffixIcon: suffixIcon,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.darkBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: AppRadius.allMd,
+              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
