@@ -23,7 +23,7 @@ class CampaignsScreen extends ConsumerWidget {
     final applied = ref.watch(appliedCampaignsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const PremiumAppBar(title: 'Campaigns'),
       body: RefreshIndicator(
         color: AppColors.primary,

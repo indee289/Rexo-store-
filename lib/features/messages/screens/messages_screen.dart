@@ -49,7 +49,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'Messages',
         actions: [
@@ -155,17 +155,19 @@ class _ConversationTile extends StatelessWidget {
     final isUnread = !isRead;
     final timeStr =
         lastMessageAt != null ? _formatTime(lastMessageAt) : '';
+    final cs = Theme.of(context).colorScheme;
 
     return Material(
-      color: Colors.white,
+      color: Colors.transparent,
       child: InkWell(
         onTap: () => context.push('/messages/$otherUserId'),
         child: Container(
           height: 72,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(color: AppColors.divider, width: 1)),
+                bottom: BorderSide(
+                    color: Theme.of(context).dividerColor, width: 1)),
           ),
           child: Row(
             children: [
@@ -193,7 +195,7 @@ class _ConversationTile extends StatelessWidget {
                               fontWeight: isUnread
                                   ? FontWeight.w700
                                   : FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -205,7 +207,7 @@ class _ConversationTile extends StatelessWidget {
                             fontSize: 12,
                             color: isUnread
                                 ? AppColors.primary
-                                : AppColors.textHint,
+                                : cs.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -219,8 +221,8 @@ class _ConversationTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               color: isUnread
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
+                                  ? cs.onSurface
+                                  : cs.onSurfaceVariant,
                               fontWeight: isUnread
                                   ? FontWeight.w500
                                   : FontWeight.w400,
@@ -281,6 +283,7 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
   @override
   Widget build(BuildContext context) {
     final resultsAsync = ref.watch(userSearchProvider(_query));
+    final cs = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
@@ -295,29 +298,30 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: _query.trim().isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'Search for people to start a conversation',
                       style: TextStyle(
-                          fontSize: 14, color: AppColors.textHint),
+                          fontSize: 14, color: cs.onSurfaceVariant),
                       textAlign: TextAlign.center,
                     ),
                   )
                 : resultsAsync.when(
                     data: (users) {
                       if (users.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text('No users found',
                               style: TextStyle(
-                                  color: AppColors.textSecondary)),
+                                  color: cs.onSurfaceVariant)),
                         );
                       }
                       return ListView.separated(
                         padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.xs),
                         itemCount: users.length,
-                        separatorBuilder: (_, __) => const Divider(
-                            height: 1, color: AppColors.divider),
+                        separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: Theme.of(context).dividerColor),
                         itemBuilder: (context, index) {
                           final user = users[index];
                           final userId =
@@ -334,15 +338,15 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                               size: 44,
                             ),
                             title: Text(name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary)),
+                                    color: cs.onSurface)),
                             subtitle: handle.isNotEmpty
                                 ? Text('@$handle',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 13,
-                                        color: AppColors.textSecondary))
+                                        color: cs.onSurfaceVariant))
                                 : null,
                             onTap: () {
                               Navigator.pop(context);
@@ -359,8 +363,8 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                     error: (e, _) => Center(
                       child: Text(
                         'Error: ${ErrorUtils.sanitize(e)}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary),
+                        style: TextStyle(
+                            color: cs.onSurfaceVariant),
                       ),
                     ),
                   ),
