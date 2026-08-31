@@ -33,6 +33,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isUploadingAvatar = false;
   String? _currentAvatarUrl;
 
+  // ── Theme-aware color helpers ────────────────────────────────────────────
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+  Color get _pageBg =>
+      _isDark ? AppColors.darkBackground : AppColors.background;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _surfaceAlt =>
+      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+
   @override
   void initState() {
     super.initState();
@@ -68,8 +79,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: _cardBg,
           borderRadius: AppRadius.topXl,
         ),
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -81,18 +92,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               Container(
                 width: 36,
                 height: 4,
-                decoration: const BoxDecoration(
-                  color: AppColors.border,
+                decoration: BoxDecoration(
+                  color: _borderColor,
                   borderRadius: AppRadius.pillAll,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              const Text(
+              Text(
                 'Change Profile Photo',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  color: _cs.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -230,7 +241,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _pageBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -238,30 +249,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.border, width: 1),
-                ),
-              ),
+              color: _pageBg,
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chevron_left,
                       size: 28,
-                      color: AppColors.textPrimary,
+                      color: _cs.onSurface,
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Edit Profile',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        color: _cs.onSurface,
                       ),
                     ),
                   ),
@@ -380,7 +386,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: ClipOval(
                   child: _isUploadingAvatar
                       ? Container(
-                          color: AppColors.surfaceAlt,
+                          color: _surfaceAlt,
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary,
@@ -411,7 +417,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: _pageBg, width: 2),
                   ),
                   child: const Icon(
                     Iconsax.camera,
@@ -426,9 +432,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         const SizedBox(height: 8),
         Text(
           _isUploadingAvatar ? 'Uploading...' : 'Tap to change photo',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: AppColors.textSecondary,
+            color: _cs.onSurfaceVariant,
           ),
         ),
       ],
@@ -443,15 +449,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
+          borderRadius: AppRadius.allMd,
+          borderSide: c == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: c, width: w),
+        );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -459,40 +471,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
-          style: const TextStyle(
-              fontSize: 14, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 14, color: _cs.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-                fontSize: 14, color: AppColors.textHint),
+            hintStyle: TextStyle(
+                fontSize: 14,
+                color: _isDark ? AppColors.darkTextHint : AppColors.textHint),
             filled: true,
-            fillColor: AppColors.surfaceAlt,
-            prefixIcon:
-                Icon(icon, color: AppColors.textHint, size: 20),
+            fillColor: _surfaceAlt,
+            prefixIcon: Icon(icon,
+                color: _isDark ? AppColors.darkTextHint : AppColors.textHint,
+                size: 20),
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide:
-                  const BorderSide(color: AppColors.error, width: 2),
-            ),
+            border: border(Colors.transparent),
+            enabledBorder: border(Colors.transparent),
+            focusedBorder: border(AppColors.primary, 1.5),
+            errorBorder: border(AppColors.error),
+            focusedErrorBorder: border(AppColors.error, 1.5),
           ),
         ),
       ],
@@ -504,15 +500,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required String label,
     required String hint,
   }) {
+    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
+          borderRadius: AppRadius.allMd,
+          borderSide: c == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: c, width: w),
+        );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -520,28 +522,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           controller: controller,
           maxLines: 4,
           minLines: 3,
-          style: const TextStyle(
-              fontSize: 14, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 14, color: _cs.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-                fontSize: 14, color: AppColors.textHint),
+            hintStyle: TextStyle(
+                fontSize: 14,
+                color: _isDark ? AppColors.darkTextHint : AppColors.textHint),
             filled: true,
-            fillColor: AppColors.surfaceAlt,
+            fillColor: _surfaceAlt,
             contentPadding: const EdgeInsets.all(16),
-            border: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppRadius.allMd,
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
-            ),
+            border: border(Colors.transparent),
+            enabledBorder: border(Colors.transparent),
+            focusedBorder: border(AppColors.primary, 1.5),
           ),
         ),
       ],
@@ -582,9 +574,9 @@ class _AvatarOption extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
