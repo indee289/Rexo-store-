@@ -143,7 +143,7 @@ class _ProductsTab extends ConsumerWidget {
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: (isDigital
-                                          ? AppColors.secondary
+                                          ? AppColors.darkSurface
                                           : AppColors.primary)
                                       .withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(6),
@@ -154,7 +154,7 @@ class _ProductsTab extends ConsumerWidget {
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                     color: isDigital
-                                        ? AppColors.secondary
+                                        ? AppColors.darkSurface
                                         : AppColors.primary,
                                   ),
                                 ),

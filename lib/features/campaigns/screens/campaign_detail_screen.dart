@@ -223,7 +223,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                       if (platform.isNotEmpty && category.isNotEmpty)
                         const SizedBox(width: AppSpacing.sm),
                       if (category.isNotEmpty)
-                        _buildBadge(category, AppColors.secondary),
+                        _buildBadge(category, AppColors.darkSurface),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
