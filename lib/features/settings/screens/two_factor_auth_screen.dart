@@ -39,6 +39,18 @@ class _TwoFactorAuthScreenState
 
   final _otpController = TextEditingController();
 
+  // ── Theme-aware helpers ──────────────────────────────────────────────────
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+  Color get _pageBg =>
+      _isDark ? AppColors.darkBackground : AppColors.background;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _surfaceAlt =>
+      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+  Color get _textHint => _isDark ? AppColors.darkTextHint : AppColors.textHint;
+
   @override
   void initState() {
     super.initState();
@@ -252,7 +264,7 @@ class _TwoFactorAuthScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _pageBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -260,27 +272,22 @@ class _TwoFactorAuthScreenState
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.border, width: 1),
-                ),
-              ),
+              color: _pageBg,
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(Icons.chevron_left,
-                        size: 28, color: AppColors.textPrimary),
+                    icon: Icon(Icons.chevron_left,
+                        size: 28, color: _cs.onSurface),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Two-Factor Auth',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        color: _cs.onSurface,
                       ),
                     ),
                   ),
@@ -305,9 +312,9 @@ class _TwoFactorAuthScreenState
                           Container(
                             padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: _cardBg,
                               borderRadius: AppRadius.allLg,
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: _borderColor),
                             ),
                             child: Row(
                               children: [
@@ -316,8 +323,8 @@ class _TwoFactorAuthScreenState
                                   height: 44,
                                   decoration: BoxDecoration(
                                     color: _isMfaEnabled
-                                        ? AppColors.success.withOpacity(0.1)
-                                        : AppColors.primaryBg,
+                                        ? AppColors.success.withOpacity(0.12)
+                                        : AppColors.primary.withOpacity(0.12),
                                     borderRadius: AppRadius.allSm,
                                   ),
                                   child: Icon(
@@ -336,19 +343,19 @@ class _TwoFactorAuthScreenState
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Two-Factor Auth',
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
+                                          color: _cs.onSurface,
                                         ),
                                       ),
-                                      const Text(
+                                      Text(
                                         'Protect your account',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: AppColors.textSecondary,
+                                          color: _cs.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -359,14 +366,9 @@ class _TwoFactorAuthScreenState
                                       horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: _isMfaEnabled
-                                        ? AppColors.success.withOpacity(0.1)
-                                        : AppColors.surfaceAlt,
+                                        ? AppColors.success.withOpacity(0.12)
+                                        : _surfaceAlt,
                                     borderRadius: AppRadius.pillAll,
-                                    border: Border.all(
-                                      color: _isMfaEnabled
-                                          ? AppColors.success.withOpacity(0.3)
-                                          : AppColors.border,
-                                    ),
                                   ),
                                   child: Text(
                                     _isMfaEnabled ? 'Enabled' : 'Disabled',
@@ -375,7 +377,7 @@ class _TwoFactorAuthScreenState
                                       fontWeight: FontWeight.w600,
                                       color: _isMfaEnabled
                                           ? AppColors.success
-                                          : AppColors.textSecondary,
+                                          : _cs.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
@@ -499,7 +501,7 @@ class _TwoFactorAuthScreenState
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.primaryBg,
+              color: AppColors.primary.withOpacity(0.12),
               borderRadius: AppRadius.allSm,
             ),
             child: Icon(icon, size: 18, color: AppColors.primary),
@@ -511,17 +513,17 @@ class _TwoFactorAuthScreenState
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: _cs.onSurface,
                   ),
                 ),
                 Text(
                   desc,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: _cs.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -537,22 +539,22 @@ class _TwoFactorAuthScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Step 1: Scan QR Code',
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            color: _cs.onSurface,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Open your authenticator app and scan this QR code:',
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 14, color: _cs.onSurfaceVariant),
         ),
         const SizedBox(height: 16),
 
-        // QR code
+        // QR code — kept on a white card so it always scans (even in dark mode)
         Center(
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -580,10 +582,10 @@ class _TwoFactorAuthScreenState
                     width: 200,
                     height: 200,
                     child: Center(
-                      child: Text(
+                      child: const Text(
                         'QR unavailable\nUse the manual key below',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
@@ -598,18 +600,17 @@ class _TwoFactorAuthScreenState
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.surfaceAlt,
+              color: _surfaceAlt,
               borderRadius: AppRadius.allSm,
-              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Manual entry key:',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: _cs.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -618,7 +619,7 @@ class _TwoFactorAuthScreenState
                   style: GoogleFonts.robotoMono(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: _cs.onSurface,
                   ),
                 ),
               ],
@@ -627,18 +628,18 @@ class _TwoFactorAuthScreenState
         ],
 
         const SizedBox(height: AppSpacing.xl),
-        const Text(
+        Text(
           'Step 2: Enter Verification Code',
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            color: _cs.onSurface,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Enter the 6-digit code from your authenticator app:',
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 14, color: _cs.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -650,30 +651,30 @@ class _TwoFactorAuthScreenState
             fontSize: 28,
             fontWeight: FontWeight.w700,
             letterSpacing: 10,
-            color: AppColors.textPrimary,
+            color: _cs.onSurface,
           ),
           decoration: InputDecoration(
             counterText: '',
             hintText: '000000',
             hintStyle: GoogleFonts.robotoMono(
               fontSize: 28,
-              color: AppColors.textHint,
+              color: _textHint,
               letterSpacing: 10,
             ),
             filled: true,
-            fillColor: AppColors.surfaceAlt,
-            border: OutlineInputBorder(
+            fillColor: _surfaceAlt,
+            border: const OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: AppRadius.allMd,
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: const OutlineInputBorder(
               borderRadius: AppRadius.allMd,
               borderSide:
-                  BorderSide(color: AppColors.primary, width: 2),
+                  BorderSide(color: AppColors.primary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16, vertical: 16),
@@ -720,8 +721,8 @@ class _TwoFactorAuthScreenState
               _otpController.clear();
             },
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              side: const BorderSide(color: AppColors.border),
+              foregroundColor: _cs.onSurfaceVariant,
+              side: BorderSide(color: _borderColor),
               shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.allMd),
             ),
@@ -745,15 +746,15 @@ class _TwoFactorAuthScreenState
                 color: AppColors.success.withOpacity(0.3)),
           ),
           child: Row(
-            children: const [
-              Icon(Iconsax.shield_tick,
+            children: [
+              const Icon(Iconsax.shield_tick,
                   color: AppColors.success, size: 22),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Two-Factor Authentication is Active',
                       style: TextStyle(
                         fontSize: 14,
@@ -761,12 +762,12 @@ class _TwoFactorAuthScreenState
                         color: AppColors.success,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Your account is protected with an additional layer.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: _cs.onSurfaceVariant,
                       ),
                     ),
                   ],
