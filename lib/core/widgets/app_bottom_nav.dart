@@ -4,27 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_glass.dart';
-import '../theme/app_motion.dart';
-import '../theme/app_radius.dart';
-import '../theme/app_spacing.dart';
-import '../theme/app_text_styles.dart';
 
-/// The premium, transparent/frosted-glass floating bottom navigation dock.
+/// Premium floating bottom navigation bar with pill indicator.
 ///
-/// The dock reads as a translucent, blurred iOS-style bar so the content
-/// scrolling behind it shows through the frost (the host [Scaffold] must set
-/// `extendBody: true` — see `AppShell`). The frosted treatment is built from
-/// the [AppGlass] tokens:
-///   * a [ClipRRect] + [BackdropFilter] blur of [AppGlass.blurSigma] over the
-///     translucent [AppGlass.dock] fill,
-///   * a subtle light top rim via [AppGlass.border],
-///   * a soft raised shadow so the dock floats above the content.
-///
-/// The active destination is tinted with [AppColors.primary], gets a soft
-/// tonal pill indicator, an animated label, and a subtle press-scale. Branch
-/// state preservation (indexed stack) is unchanged — this widget only reports
-/// taps via [onTap].
+/// The active destination expands into a filled indigo pill showing the icon
+/// and label side-by-side. Inactive destinations show only their icon in a
+/// muted colour. The bar itself floats on a frosted-glass card with a subtle
+/// indigo-tinted shadow so it never competes with page content.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -35,67 +21,57 @@ class AppBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  static const List<_NavDestination> _destinations = [
-    _NavDestination(icon: Iconsax.home_2, label: 'Home'),
-    _NavDestination(icon: Iconsax.briefcase, label: 'Campaigns'),
-    _NavDestination(icon: Iconsax.shop, label: 'Shop'),
-    _NavDestination(icon: Iconsax.messages_2, label: 'Inbox'),
-    _NavDestination(icon: Iconsax.user, label: 'Profile'),
+  static const _items = [
+    _Item(Iconsax.home_2,     Iconsax.home_2,      'Home'),
+    _Item(Iconsax.briefcase,  Iconsax.briefcase,   'Campaigns'),
+    _Item(Iconsax.shop,       Iconsax.shop,        'Shop'),
+    _Item(Iconsax.messages_2, Iconsax.messages_2,  'Inbox'),
+    _Item(Iconsax.user,       Iconsax.user,        'Profile'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          AppSpacing.md,
-        ),
-        child: DecoratedBox(
-          // Raised shadow lives outside the clip so it isn't blurred away.
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.allXl,
-            boxShadow: AppElevation.raised(isDark),
-          ),
-          child: ClipRRect(
-            borderRadius: AppRadius.allXl,
-            child: BackdropFilter(
-              // Frosted glass: blur whatever content sits behind the dock.
-              filter: ui.ImageFilter.blur(
-                sigmaX: AppGlass.blurSigma,
-                sigmaY: AppGlass.blurSigma,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppGlass.dock(isDark),
-                  borderRadius: AppRadius.allXl,
-                  // Subtle light top rim for the glass edge.
-                  border: Border.all(
-                    color: AppGlass.border(isDark),
-                    width: 1,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkCard.withOpacity(0.85)
+                    : Colors.white.withOpacity(0.90),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.darkBorder.withOpacity(0.6)
+                      : AppColors.border.withOpacity(0.6),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary
+                        .withOpacity(isDark ? 0.15 : 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.md,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    for (int i = 0; i < _destinations.length; i++)
-                      _NavItem(
-                        icon: _destinations[i].icon,
-                        label: _destinations[i].label,
-                        isActive: currentIndex == i,
-                        onTap: () => onTap(i),
-                      ),
-                  ],
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(
+                  _items.length,
+                  (i) => _NavItem(
+                    item: _items[i],
+                    active: currentIndex == i,
+                    onTap: () => onTap(i),
+                    isDark: isDark,
+                  ),
                 ),
               ),
             ),
@@ -106,79 +82,67 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
-/// Immutable description of a single dock destination.
-class _NavDestination {
+class _Item {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
 
-  const _NavDestination({required this.icon, required this.label});
+  const _Item(this.icon, this.activeIcon, this.label);
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
+  final _Item item;
+  final bool active;
   final VoidCallback onTap;
+  final bool isDark;
 
   const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
+    required this.item,
+    required this.active,
     required this.onTap,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final Color inactive = theme.colorScheme.onSurface.withOpacity(0.5);
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: AppMotion.base,
-        curve: AppMotion.standard,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isActive ? AppSpacing.lg : AppSpacing.md,
-          vertical: AppSpacing.sm,
+          horizontal: active ? 18 : 12,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
-          // Soft tonal pill indicator behind the active destination.
-          color: isActive
-              ? AppColors.primary.withOpacity(0.12)
-              : Colors.transparent,
-          borderRadius: AppRadius.allLg,
+          color: active ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedScale(
-              scale: isActive ? 1.1 : 1.0,
-              duration: AppMotion.base,
-              curve: AppMotion.standard,
-              child: Icon(
-                icon,
-                color: isActive ? AppColors.primary : inactive,
-                size: 22,
+            Icon(
+              active ? item.activeIcon : item.icon,
+              size: 22,
+              color: active
+                  ? Colors.white
+                  : (isDark
+                      ? AppColors.darkTextHint
+                      : AppColors.textHint),
+            ),
+            if (active) ...[
+              const SizedBox(width: 6),
+              Text(
+                item.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: -0.2,
+                ),
               ),
-            ),
-            // Animated label only for the active item (keeps the dock compact).
-            AnimatedSize(
-              duration: AppMotion.base,
-              curve: AppMotion.standard,
-              child: isActive
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: AppSpacing.xs),
-                      child: Text(
-                        label,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
+            ],
           ],
         ),
       ),

@@ -27,11 +27,12 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedTabIndex = 0;
+  int _tab = 0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -47,19 +48,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           child: CustomScrollView(
             slivers: [
-              _buildSliverAppBar(),
+              // ── App Bar ──────────────────────────────────────────────────
+              SliverAppBar(
+                floating: true,
+                snap: true,
+                backgroundColor: theme.scaffoldBackgroundColor,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                surfaceTintColor: Colors.transparent,
+                centerTitle: false,
+                titleSpacing: 20,
+                title: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Iconsax.crown_1,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ShaderMask(
+                      shaderCallback: (bounds) =>
+                          AppColors.primaryGradient.createShader(bounds),
+                      child: Text(
+                        'Rexo',
+                        style: AppTextStyles.h4.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  _buildNavActions(isDark),
+                ],
+              ),
+
               SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildEmailVerificationBanner(),
-                    const SizedBox(height: AppSpacing.sm),
+                    _buildEmailBanner(),
+                    const SizedBox(height: 4),
                     const CategoryChips(),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildToggleTabs(),
-                    const SizedBox(height: AppSpacing.md),
-                    if (_selectedTabIndex == 0) _buildCampaignsContent(),
-                    if (_selectedTabIndex == 1) _buildCreatorsContent(),
+                    const SizedBox(height: 16),
+                    _buildSegmentedTabs(isDark),
+                    const SizedBox(height: 16),
+                    if (_tab == 0) _buildCampaigns(),
+                    if (_tab == 1) _buildCreators(),
                     const SizedBox(height: 120),
                   ],
                 ),
@@ -71,136 +116,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildSliverAppBar() {
-    final theme = Theme.of(context);
-
-    return SliverAppBar(
-      floating: true,
-      snap: true,
-      backgroundColor: theme.colorScheme.surface,
-      elevation: 0,
-      scrolledUnderElevation: 0.5,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: false,
-      titleSpacing: AppSpacing.lg,
-      title: Row(
+  Widget _buildNavActions(bool isDark) {
+    final profileAsync = ref.watch(homeUserProfileProvider);
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Row(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: AppRadius.allSm,
+          // Notification bell
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.notifications),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurfaceAlt
+                    : AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : AppColors.border,
+                ),
+              ),
+              child: Icon(
+                Iconsax.notification,
+                size: 20,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
             ),
-            child: const Icon(Iconsax.crown_1, color: Colors.white, size: 18),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            'Rexo',
-            style: AppTextStyles.h4.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w800,
+          const SizedBox(width: 8),
+          // Avatar
+          profileAsync.maybeWhen(
+            data: (p) => GestureDetector(
+              onTap: () => context.push(AppRoutes.profile),
+              child: PremiumAvatar(
+                imageUrl: p?['avatar_url'],
+                name: p?['name'] ?? '',
+                size: 38,
+              ),
             ),
+            orElse: () => const SizedBox(width: 38, height: 38),
           ),
         ],
       ),
-      actions: [
-        Consumer(
-          builder: (context, ref, _) {
-            final profileAsync = ref.watch(homeUserProfileProvider);
-            return profileAsync.when(
-              data: (profile) {
-                final name = profile?['name'] ?? '';
-                final avatarUrl = profile?['avatar_url'];
-                return Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.md),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => context.push(AppRoutes.notifications),
-                        icon: Icon(Iconsax.notification,
-                            color: theme.colorScheme.onSurface, size: 22),
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      GestureDetector(
-                        onTap: () => context.push(AppRoutes.profile),
-                        child: PremiumAvatar(
-                            imageUrl: avatarUrl, name: name, size: 32),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              loading: () => const SizedBox(width: 36, height: 36),
-              error: (_, __) => const SizedBox.shrink(),
-            );
-          },
-        ),
-      ],
     );
   }
 
-  /// Equal-width segmented control — both tabs always same size.
-  Widget _buildToggleTabs() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
+  /// Equal-width segmented control — both tabs always same width.
+  Widget _buildSegmentedTabs(bool isDark) {
     return Padding(
-      padding: AppSpacing.screenPadding,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        height: 44,
+        height: 46,
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.darkSurfaceAlt
-              : AppColors.surfaceAlt,
-          borderRadius: AppRadius.allLg,
-          border: Border.all(color: theme.dividerColor, width: 0.5),
+          color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
+          ),
         ),
         child: Row(
           children: [
-            _buildTab(
-              index: 0,
-              icon: Iconsax.briefcase,
-              label: 'Campaigns',
-            ),
-            _buildTab(
-              index: 1,
-              icon: Iconsax.people,
-              label: 'Top Creators',
-            ),
+            _segTab(0, Iconsax.briefcase, 'Campaigns', isDark),
+            _segTab(1, Iconsax.people, 'Top Creators', isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTab({
-    required int index,
-    required IconData icon,
-    required String label,
-  }) {
-    final isSelected = _selectedTabIndex == index;
-    final theme = Theme.of(context);
-
+  Widget _segTab(int idx, IconData icon, String label, bool isDark) {
+    final active = _tab == idx;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedTabIndex = index),
+        onTap: () => setState(() => _tab = idx),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.all(3),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: AppRadius.allMd,
-            boxShadow: isSelected
+            gradient: active ? AppColors.primaryGradient : null,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: active
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ]
                 : null,
@@ -210,20 +216,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(
                 icon,
-                size: 16,
-                color: isSelected
+                size: 15,
+                color: active
                     ? Colors.white
-                    : theme.colorScheme.onSurface.withOpacity(0.5),
+                    : (isDark
+                        ? AppColors.darkTextHint
+                        : AppColors.textHint),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 label,
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : theme.colorScheme.onSurface.withOpacity(0.5),
+                style: TextStyle(
+                  fontSize: 13,
                   fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                      active ? FontWeight.w600 : FontWeight.w500,
+                  color: active
+                      ? Colors.white
+                      : (isDark
+                          ? AppColors.darkTextHint
+                          : AppColors.textHint),
+                  letterSpacing: -0.2,
                 ),
               ),
             ],
@@ -233,162 +245,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCampaignsContent() {
-    final campaignsAsync = ref.watch(recentCampaignsProvider);
-
-    return campaignsAsync.when(
-      data: (campaigns) {
-        if (campaigns.isEmpty) {
-          return const EmptyState(
-            icon: Iconsax.document,
-            title: 'No campaigns available',
-            subtitle: 'Pull to refresh or check back later.',
-          );
-        }
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: AppSpacing.screenPadding,
-          itemCount: campaigns.length,
-          itemBuilder: (context, index) {
-            final campaign = campaigns[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: CampaignCard(
-                campaign: campaign,
-                onTap: () => _openCampaign(campaign),
-              ).staggeredEntrance(index),
-            );
-          },
-        );
-      },
+  Widget _buildCampaigns() {
+    final async = ref.watch(recentCampaignsProvider);
+    return async.when(
+      data: (list) => list.isEmpty
+          ? const EmptyState(
+              icon: Iconsax.document,
+              title: 'No campaigns yet',
+              subtitle: 'Pull down to refresh.',
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: list.length,
+              itemBuilder: (_, i) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: CampaignCard(
+                  campaign: list[i],
+                  onTap: () {
+                    final id = list[i]['id']?.toString();
+                    if (id != null) context.push('/campaigns/$id');
+                  },
+                ).staggeredEntrance(i),
+              ),
+            ),
       loading: () => Padding(
-        padding: AppSpacing.screenPadding,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: List.generate(
             3,
-            (index) => const ShimmerCampaignCardCompact(),
+            (_) => const ShimmerCampaignCardCompact(),
           ),
         ),
       ),
-      error: (_, __) => _buildErrorState('Failed to load campaigns'),
+      error: (_, __) => _errorState('Failed to load campaigns'),
     );
   }
 
-  Widget _buildCreatorsContent() {
-    final creatorsAsync = ref.watch(trendingCreatorsProvider);
-
-    return creatorsAsync.when(
-      data: (creators) {
-        if (creators.isEmpty) {
-          return const EmptyState(
-            icon: Iconsax.people,
-            title: 'No creators found',
-            subtitle: 'Pull to refresh or check back later.',
-          );
-        }
-        return Padding(
-          padding: AppSpacing.screenPadding,
-          child: Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              for (int i = 0; i < creators.length; i++)
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width -
-                          (AppSpacing.lg * 2) -
-                          AppSpacing.md) /
-                      2,
-                  child: CreatorCard(
-                    creator: creators[i],
-                    onTap: () {
-                      final userId = creators[i]['user_id']?.toString();
-                      if (userId != null) {
-                        context.push('/creators/$userId');
-                      }
-                    },
-                  ).staggeredEntrance(i),
-                ),
-            ],
-          ),
-        );
-      },
+  Widget _buildCreators() {
+    final async = ref.watch(trendingCreatorsProvider);
+    return async.when(
+      data: (list) => list.isEmpty
+          ? const EmptyState(
+              icon: Iconsax.people,
+              title: 'No creators found',
+              subtitle: 'Pull down to refresh.',
+            )
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (int i = 0; i < list.length; i++)
+                    SizedBox(
+                      width:
+                          (MediaQuery.of(context).size.width - 40 - 12) / 2,
+                      child: CreatorCard(
+                        creator: list[i],
+                        onTap: () {
+                          final id = list[i]['user_id']?.toString();
+                          if (id != null) context.push('/creators/$id');
+                        },
+                      ).staggeredEntrance(i),
+                    ),
+                ],
+              ),
+            ),
       loading: () => Padding(
-        padding: AppSpacing.screenPadding,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
-          children: List.generate(
-            4,
-            (index) => const ShimmerCreatorCard(),
-          ),
+          spacing: 12,
+          runSpacing: 12,
+          children: List.generate(4, (_) => const ShimmerCreatorCard()),
         ),
       ),
-      error: (_, __) => _buildErrorState('Failed to load creators'),
+      error: (_, __) => _errorState('Failed to load creators'),
     );
   }
 
-  void _openCampaign(Map<String, dynamic> campaign) {
-    final id = campaign['id']?.toString();
-    if (id != null) {
-      context.push('/campaigns/$id');
-    }
-  }
-
-  Widget _buildEmailVerificationBanner() {
-    final theme = Theme.of(context);
-
+  Widget _buildEmailBanner() {
     try {
       final user = SupabaseService.currentUser;
-      if (user == null) return const SizedBox.shrink();
-      if (user.emailConfirmedAt != null) return const SizedBox.shrink();
-
-      return Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-        child: Container(
-          margin: AppSpacing.screenPadding,
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.08),
-            borderRadius: AppRadius.allMd,
-            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.15),
-                  borderRadius: AppRadius.allSm,
-                ),
-                child: const Icon(Iconsax.sms,
-                    color: AppColors.warning, size: 20),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Verify your email',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Check your inbox to verify your email address.',
-                      style: AppTextStyles.caption.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
+      if (user == null || user.emailConfirmedAt != null) {
+        return const SizedBox.shrink();
+      }
+      return Container(
+        margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Iconsax.sms, color: AppColors.warning, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Please verify your email to unlock all features.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     } catch (_) {
@@ -396,23 +361,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Widget _buildErrorState(String message) {
-    return EmptyState(
-      icon: Iconsax.warning_2,
-      title: message,
-      subtitle: 'Please try again.',
-      cta: PremiumButton(
-        label: 'Retry',
-        icon: Iconsax.refresh,
-        variant: PremiumButtonVariant.tonal,
-        expand: false,
-        onPressed: () {
-          ref.invalidate(featuredCampaignsProvider);
-          ref.invalidate(trendingCreatorsProvider);
-          ref.invalidate(recentCampaignsProvider);
-          ref.invalidate(homeUserProfileProvider);
-        },
-      ),
-    );
-  }
+  Widget _errorState(String msg) => EmptyState(
+        icon: Iconsax.warning_2,
+        title: msg,
+        subtitle: 'Please try again.',
+        cta: PremiumButton(
+          label: 'Retry',
+          icon: Iconsax.refresh,
+          variant: PremiumButtonVariant.tonal,
+          expand: false,
+          onPressed: () {
+            ref.invalidate(featuredCampaignsProvider);
+            ref.invalidate(trendingCreatorsProvider);
+            ref.invalidate(recentCampaignsProvider);
+            ref.invalidate(homeUserProfileProvider);
+          },
+        ),
+      );
 }

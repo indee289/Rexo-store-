@@ -7,7 +7,7 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Central app theme — premium Material 3 with iOS-style polish.
+/// Central app theme — premium Material 3 with bold indigo design system.
 class AppTheme {
   AppTheme._();
 
@@ -24,7 +24,7 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         primaryContainer: AppColors.surfaceAlt,
-        secondary: AppColors.accent,
+        secondary: AppColors.accentPurple,
         surface: AppColors.surface,
         error: AppColors.error,
         onPrimary: Colors.white,
@@ -40,7 +40,7 @@ class AppTheme {
         hint: AppColors.textHint,
       ),
       appBarTheme: _appBarTheme(
-        background: AppColors.surface,
+        background: AppColors.background,
         foreground: AppColors.textPrimary,
         overlay: SystemUiOverlayStyle.dark,
       ),
@@ -82,7 +82,7 @@ class AppTheme {
         title: AppColors.textPrimary,
       ),
       snackBarTheme: _snackBarTheme(
-        background: AppColors.secondary,
+        background: AppColors.textPrimary,
         content: Colors.white,
       ),
       listTileTheme: ListTileThemeData(
@@ -118,7 +118,7 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         primaryContainer: AppColors.darkSurfaceAlt,
-        secondary: AppColors.accent,
+        secondary: AppColors.accentPurple,
         surface: AppColors.darkSurface,
         error: AppColors.error,
         onPrimary: Colors.white,
@@ -134,7 +134,7 @@ class AppTheme {
         hint: AppColors.darkTextHint,
       ),
       appBarTheme: _appBarTheme(
-        background: AppColors.darkSurface,
+        background: AppColors.darkBackground,
         foreground: AppColors.darkTextPrimary,
         overlay: SystemUiOverlayStyle.light,
       ),
@@ -235,10 +235,10 @@ class AppTheme {
       backgroundColor: background,
       foregroundColor: foreground,
       elevation: 0,
-      scrolledUnderElevation: 0.5,
+      scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.black.withOpacity(0.08),
-      centerTitle: true,
+      shadowColor: Colors.transparent,
+      centerTitle: false,
       titleSpacing: AppSpacing.lg,
       iconTheme: IconThemeData(color: foreground, size: 22),
       actionsIconTheme: IconThemeData(color: foreground, size: 22),
