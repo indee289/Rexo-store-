@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
@@ -20,7 +19,6 @@ import '../widgets/chat_bubble.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String otherUserId;
-
   const ChatScreen({super.key, required this.otherUserId});
 
   @override
@@ -66,37 +64,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               content: content,
             );
 
-    if (success) {
-      _scrollToBottom();
-    }
-
-    if (mounted) {
-      setState(() => _isSending = false);
-    }
+    if (success) _scrollToBottom();
+    if (mounted) setState(() => _isSending = false);
   }
 
-  /// Surfaces a "coming soon" notice for the header call/video actions. The app
-  /// has no calling backend, so these deliberately do not attempt any call
-  /// flow — they only inform the user (matches the reference header visually).
   void _showComingSoon(String kind) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$kind calls coming soon',
-          style: AppTextStyles.bodyMedium,
-        ),
-      ),
+      SnackBar(content: Text('$kind calls coming soon')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final messagesAsync = ref.watch(chatMessagesProvider(widget.otherUserId));
+    final messagesAsync =
+        ref.watch(chatMessagesProvider(widget.otherUserId));
     final conversationsAsync = ref.watch(conversationsProvider);
 
-    // Resolve the header name/avatar. First try the conversations list, which
-    // is already loaded for existing threads.
+    // Resolve header name/avatar
     String otherUserName = '';
     String? otherUserAvatar;
     conversationsAsync.whenData((conversations) {
@@ -104,17 +88,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         (c) => c['other_user_id'] == widget.otherUserId,
       );
       if (conv.isNotEmpty) {
-        otherUserName = (conv.first['other_user_name'] ?? '').toString();
-        otherUserAvatar = conv.first['other_user_avatar'] as String?;
+        otherUserName =
+            (conv.first['other_user_name'] ?? '').toString();
+        otherUserAvatar =
+            conv.first['other_user_avatar'] as String?;
       }
     });
 
-    // Fallback: a chat opened straight from search is a brand-new conversation
-    // with no messages, so it is absent from conversationsProvider and the name
-    // resolves to empty/"User". Look up the peer's public profile row so the
-    // header shows the real name (or handle) instead of the generic "User".
     if (otherUserName.isEmpty || otherUserName == 'User') {
-      final peer = ref.watch(chatPeerProvider(widget.otherUserId)).asData?.value;
+      final peer =
+          ref.watch(chatPeerProvider(widget.otherUserId)).asData?.value;
       if (peer != null) {
         final peerName = (peer['name'] ?? '').toString().trim();
         final peerHandle = (peer['handle'] ?? '').toString().trim();
@@ -127,48 +110,70 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     }
 
-    // Display fallback only when nothing has resolved yet (still loading).
-    final displayName = otherUserName.isEmpty ? 'User' : otherUserName;
+    final displayName =
+        otherUserName.isEmpty ? 'User' : otherUserName;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Colors.white,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 1,
+        shadowColor: AppColors.border,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        titleSpacing: AppSpacing.sm,
+        titleSpacing: 0,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: AppColors.border),
+        ),
         title: Row(
           children: [
-            PremiumIconButton(
-              icon: Iconsax.arrow_left,
-              tooltip: 'Back',
+            IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.chevron_left,
+                  size: 28, color: AppColors.textPrimary),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            _HeaderAvatar(
+            PremiumAvatar(
               imageUrl: otherUserAvatar,
               name: displayName,
+              size: 40,
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     displayName,
-                    style: AppTextStyles.labelLarge
-                        .copyWith(fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    'Online',
-                    style: AppTextStyles.caption
-                        .copyWith(color: AppColors.success),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'online',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -176,9 +181,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
         actions: [
-          // The app has no calling backend; these match the reference header
-          // visually and surface a "coming soon" notice rather than faking a
-          // call flow.
           PremiumIconButton(
             icon: Iconsax.call,
             tooltip: 'Voice call',
@@ -194,28 +196,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
-          // Messages list
+          // ── Messages ──────────────────────────────────────────────────
           Expanded(
             child: messagesAsync.when(
               data: (messages) {
-                if (messages.isEmpty) {
-                  return _buildEmptyState(theme);
-                }
+                if (messages.isEmpty) return _buildEmptyState();
 
-                // Parse rows into the typed view model and filter out any
-                // messages the current user deleted for themselves (Req 6.5).
-                final currentUserId = SupabaseService.currentUser?.id ?? '';
+                final currentUserId =
+                    SupabaseService.currentUser?.id ?? '';
                 final views = messages
                     .map((m) => MessageView.fromMap(m))
                     .toList(growable: false);
-                final visible = visibleMessages(views, currentUserId);
+                final visible =
+                    visibleMessages(views, currentUserId);
 
-                if (visible.isEmpty) {
-                  return _buildEmptyState(theme);
-                }
+                if (visible.isEmpty) return _buildEmptyState();
 
-                // Build the flattened list of date separators + grouped
-                // bubbles (Req 13.4).
                 final items = _buildChatItems(visible, currentUserId);
 
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -225,9 +221,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -235,8 +230,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       return _DateSeparator(date: item.date);
                     }
                     final msgItem = item as _MessageItem;
-                    // Expose the actions hook only for the current user's own,
-                    // non-unsent messages (the sheet is wired in task 9.3).
                     final onLongPress =
                         (msgItem.isMine && !msgItem.message.isUnsent)
                             ? () => _onMessageLongPress(msgItem.message)
@@ -251,27 +244,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 );
               },
               loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+                child: CircularProgressIndicator(
+                    color: AppColors.primary),
               ),
-              error: (e, _) => Center(
+              error: (e, _) => const Center(
                 child: Text('Failed to load messages',
-                    style: AppTextStyles.bodyMedium),
+                    style: TextStyle(color: AppColors.textSecondary)),
               ),
             ),
           ),
 
-          // Message input — rounded pill field + blue circular send button.
+          // ── Input bar ──────────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-              AppSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
               border: Border(
-                top: BorderSide(color: AppColors.darkBorder),
+                top: BorderSide(color: AppColors.border, width: 1),
               ),
             ),
             child: SafeArea(
@@ -282,45 +271,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.darkCard,
-                        borderRadius: AppRadius.pillAll,
+                        color: AppColors.surfaceAlt,
+                        borderRadius: AppRadius.allMd,
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: TextField(
                         controller: _messageController,
-                        textCapitalization: TextCapitalization.sentences,
+                        textCapitalization:
+                            TextCapitalization.sentences,
                         maxLines: 4,
                         minLines: 1,
-                        style: AppTextStyles.bodyMedium,
-                        decoration: InputDecoration(
-                          hintText: 'Message',
-                          hintStyle: AppTextStyles.bodyMedium.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.4),
-                          ),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          hintText: 'Message...',
+                          hintStyle: TextStyle(
+                              fontSize: 14, color: AppColors.textHint),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.md,
-                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
                         ),
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        _isSending ? Iconsax.timer : Iconsax.send_1,
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isSending ? Iconsax.timer : Icons.arrow_upward,
                         color: Colors.white,
                         size: 20,
                       ),
-                      onPressed: _sendMessage,
                     ),
                   ),
                 ],
@@ -332,38 +322,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  /// Shared "no messages" empty state.
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
+  Widget _buildEmptyState() {
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Iconsax.message_text,
-            size: 48,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'No messages yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6)),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text('Say hello!', style: AppTextStyles.bodySmall),
+          Icon(Iconsax.message_text, size: 48, color: AppColors.textHint),
+          SizedBox(height: 12),
+          Text('No messages yet',
+              style: TextStyle(color: AppColors.textSecondary)),
+          SizedBox(height: 4),
+          Text('Say hello!',
+              style: TextStyle(fontSize: 13, color: AppColors.textHint)),
         ],
       ),
     );
   }
 
-  /// Opens the long-press message actions sheet (Requirements 4.1, 5.2, 6.1).
-  ///
-  /// Presents a [showPremiumSheet] titled "Message" containing the Edit /
-  /// Unsend / Delete-for-me / Copy actions. Authorization mirrors the design's
-  /// `onMessageAction` dispatch: Edit/Unsend are only offered for the current
-  /// user's own, non-unsent message; Copy and Delete-for-me are always
-  /// available. The sheet closes itself on a successful action and surfaces a
-  /// snackbar on failure.
   void _onMessageLongPress(MessageView message) {
     final currentUserId = SupabaseService.currentUser?.id ?? '';
     final isMine = message.senderId == currentUserId;
@@ -378,31 +353,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  /// Flattens [visible] (ascending by createdAt) into a render list of date
-  /// separators and message items.
-  ///
-  /// - A [_DateSeparatorItem] is inserted before the first message and whenever
-  ///   the calendar day changes between consecutive messages (Req 13.4).
-  /// - Each [_MessageItem] carries a `showTail` flag that is `true` only for the
-  ///   last message in a run of consecutive same-sender messages within the
-  ///   same day, so grouped bubbles render a single tail.
   List<_ChatItem> _buildChatItems(
-    List<MessageView> visible,
-    String currentUserId,
-  ) {
+      List<MessageView> visible, String currentUserId) {
     final items = <_ChatItem>[];
     for (var i = 0; i < visible.length; i++) {
       final message = visible[i];
       final prev = i > 0 ? visible[i - 1] : null;
 
-      final isNewDay =
-          prev == null || !_isSameDay(prev.createdAt, message.createdAt);
-      if (isNewDay) {
-        items.add(_DateSeparatorItem(message.createdAt));
-      }
+      final isNewDay = prev == null ||
+          !_isSameDay(prev.createdAt, message.createdAt);
+      if (isNewDay) items.add(_DateSeparatorItem(message.createdAt));
 
       final next = i < visible.length - 1 ? visible[i + 1] : null;
-      // Tail on the last message of a same-sender, same-day group.
       final showTail = next == null ||
           next.senderId != message.senderId ||
           !_isSameDay(next.createdAt, message.createdAt);
@@ -420,18 +382,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-/// Base type for entries rendered in the chat list.
 abstract class _ChatItem {
   const _ChatItem();
 }
 
-/// A day divider inserted between messages on different days.
 class _DateSeparatorItem extends _ChatItem {
   final DateTime date;
   const _DateSeparatorItem(this.date);
 }
 
-/// A single message bubble entry with its computed grouping metadata.
 class _MessageItem extends _ChatItem {
   final MessageView message;
   final bool isMine;
@@ -443,22 +402,27 @@ class _MessageItem extends _ChatItem {
   });
 }
 
-/// Centered day label separating messages from different days.
 class _DateSeparator extends StatelessWidget {
   final DateTime date;
-
   const _DateSeparator({required this.date});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(
-        child: Text(
-          _label(date),
-          style: AppTextStyles.caption.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.5),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            borderRadius: AppRadius.pillAll,
+          ),
+          child: Text(
+            _label(date),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -477,29 +441,7 @@ class _DateSeparator extends StatelessWidget {
   }
 }
 
-
-/// Bottom-sheet body for the long-press message actions (task 9.3).
-///
-/// Presents the Edit / Unsend / Delete-for-me / Copy actions and, when Edit is
-/// chosen, swaps to an inline editor (a prefilled [PremiumTextField] plus a
-/// Save [PremiumButton]). Dispatch and authorization follow the design's
-/// `onMessageAction` algorithm:
-///
-/// - **Copy**: copies [MessageView.content] to the clipboard, shows a snackbar,
-///   and closes.
-/// - **Delete for me**: appends the caller to the message's deleted-for set
-///   (any participant) via [MessageActionsNotifier.deleteForMe].
-/// - **Edit**: offered only when [isMine] and the message is not unsent; save
-///   is rejected when the trimmed text is empty, otherwise calls
-///   [MessageActionsNotifier.editMessage].
-/// - **Unsend**: offered only when [isMine]; calls
-///   [MessageActionsNotifier.unsendMessage].
-///
-/// On success the sheet closes and the conversation is refreshed (the notifier
-/// already invalidates `chatMessagesProvider(otherUserId)`; we invalidate it
-/// again defensively). On failure a snackbar is shown and the sheet stays open.
-///
-/// Requirements: 4.1, 5.2, 6.1.
+/// Message long-press actions sheet.
 class _MessageActionsSheet extends ConsumerStatefulWidget {
   final MessageView message;
   final bool isMine;
@@ -516,7 +458,8 @@ class _MessageActionsSheet extends ConsumerStatefulWidget {
       _MessageActionsSheetState();
 }
 
-class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
+class _MessageActionsSheetState
+    extends ConsumerState<_MessageActionsSheet> {
   late final TextEditingController _editController;
   bool _editing = false;
   bool _busy = false;
@@ -524,7 +467,8 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
   @override
   void initState() {
     super.initState();
-    _editController = TextEditingController(text: widget.message.content);
+    _editController =
+        TextEditingController(text: widget.message.content);
   }
 
   @override
@@ -535,32 +479,27 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, style: AppTextStyles.bodyMedium)),
+      SnackBar(content: Text(message)),
     );
   }
 
-  /// Closes the sheet and defensively refreshes the conversation. The notifier
-  /// already invalidates `chatMessagesProvider(otherUserId)` on success; this
-  /// second invalidation is a lightweight safety net (Req 13.5).
   void _closeOnSuccess() {
     ref.invalidate(chatMessagesProvider(widget.otherUserId));
     Navigator.of(context).maybePop();
   }
 
   Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: widget.message.content));
+    await Clipboard.setData(
+        ClipboardData(text: widget.message.content));
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).maybePop();
     messenger.showSnackBar(
-      SnackBar(
-        content: Text('Message copied', style: AppTextStyles.bodyMedium),
-      ),
+      const SnackBar(content: Text('Message copied')),
     );
   }
 
   Future<void> _unsend() async {
-    // Authorization: only the sender may unsend.
     if (!widget.isMine) {
       _showSnack('Only the sender can do that.');
       return;
@@ -593,12 +532,10 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
   }
 
   Future<void> _saveEdit() async {
-    // Authorization: edit only for own, non-unsent messages.
     if (!widget.isMine || widget.message.isUnsent) {
       _showSnack('Only the sender can do that.');
       return;
     }
-    // Reject empty-trimmed input.
     final trimmed = _editController.text.trim();
     if (trimmed.isEmpty) {
       _showSnack("Message can't be empty.");
@@ -607,7 +544,8 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
     setState(() => _busy = true);
     final ok = await ref
         .read(messageActionsProvider.notifier)
-        .editMessage(messageId: widget.message.id, newContent: trimmed);
+        .editMessage(
+            messageId: widget.message.id, newContent: trimmed);
     if (!mounted) return;
     if (ok) {
       _closeOnSuccess();
@@ -619,15 +557,11 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    if (_editing) {
-      return _buildEditor();
-    }
+    if (_editing) return _buildEditor();
     return _buildActions();
   }
 
   Widget _buildActions() {
-    // Edit is offered only for the current user's own, non-unsent message;
-    // Unsend only for own messages; Copy and Delete-for-me are always shown.
     final canEdit = widget.isMine && !widget.message.isUnsent;
     final canUnsend = widget.isMine;
 
@@ -639,7 +573,8 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
           _ActionRow(
             icon: Iconsax.edit_2,
             label: 'Edit',
-            onTap: _busy ? null : () => setState(() => _editing = true),
+            onTap:
+                _busy ? null : () => setState(() => _editing = true),
           ),
         if (canUnsend)
           _ActionRow(
@@ -685,11 +620,6 @@ class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
   }
 }
 
-/// A single tappable row in the message actions sheet (icon + label).
-///
-/// Token-driven only: colors come from [AppColors]/the theme, spacing from
-/// [AppSpacing], and the corner radius from [AppRadius]. A `null` [onTap]
-/// renders a dimmed, non-interactive row.
 class _ActionRow extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -705,9 +635,7 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color =
-        destructive ? AppColors.error : theme.colorScheme.onSurface;
+    final color = destructive ? AppColors.error : AppColors.textPrimary;
     return Opacity(
       opacity: onTap == null ? 0.5 : 1.0,
       child: InkWell(
@@ -715,60 +643,22 @@ class _ActionRow extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.md,
-          ),
+              horizontal: AppSpacing.sm, vertical: AppSpacing.md),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: color),
+              Icon(icon, size: 20, color: color),
               const SizedBox(width: AppSpacing.md),
-              Text(label, style: AppTextStyles.bodyLarge.copyWith(color: color)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-
-/// Small chat-header avatar with a subtle green presence dot in the
-/// bottom-right corner, matching the reference's "online" affordance.
-///
-/// The dot is decorative (the app has no presence backend) and uses the
-/// [AppColors.success] token with a surface-colored rim so it reads cleanly.
-class _HeaderAvatar extends StatelessWidget {
-  final String? imageUrl;
-  final String name;
-
-  const _HeaderAvatar({required this.imageUrl, required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final surface = Theme.of(context).colorScheme.surface;
-    const size = PremiumAvatar.sizeSm;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          PremiumAvatar(imageUrl: imageUrl, name: name, size: size),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-                border: Border.all(color: surface, width: 2),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

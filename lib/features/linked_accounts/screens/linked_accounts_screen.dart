@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
@@ -22,7 +19,8 @@ class LinkedAccountsScreen extends ConsumerStatefulWidget {
       _LinkedAccountsScreenState();
 }
 
-class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
+class _LinkedAccountsScreenState
+    extends ConsumerState<LinkedAccountsScreen> {
   final _instagramController = TextEditingController();
   final _youtubeController = TextEditingController();
   final _tiktokController = TextEditingController();
@@ -46,7 +44,7 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     final accountsAsync = ref.watch(linkedAccountsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: PremiumAppBar(
         title: 'Linked Accounts',
         showBack: true,
@@ -100,19 +98,11 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     }
   }
 
-  bool _isConnected(List<Map<String, dynamic>> accounts, String platform) {
+  bool _isConnected(
+      List<Map<String, dynamic>> accounts, String platform) {
     return accounts.any((a) =>
         a['platform'] == platform &&
         (a['handle'] ?? '').toString().isNotEmpty);
-  }
-
-  Map<String, dynamic>? _getAccount(
-      List<Map<String, dynamic>> accounts, String platform) {
-    try {
-      return accounts.firstWhere((a) => a['platform'] == platform);
-    } catch (_) {
-      return null;
-    }
   }
 
   Widget _buildContent(
@@ -122,111 +112,106 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header description
-          _buildHeader(context),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Platform cards grid
-          Text(
-            'Your Platforms',
-            style: AppTextStyles.h6.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+          // Header info card
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.primaryBg,
+              borderRadius: AppRadius.allMd,
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.12),
+                    borderRadius: AppRadius.allSm,
+                  ),
+                  child: const Icon(Iconsax.link_2,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Connect your social accounts',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Link platforms to boost your campaign reach',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
 
-          // Instagram
-          _buildPlatformCard(
-            context,
-            index: 0,
+          const SizedBox(height: AppSpacing.xl),
+
+          _platformCard(
             accounts: accounts,
             platform: 'instagram',
             displayName: 'Instagram',
             icon: Iconsax.instagram,
             color: AppColors.socialInstagram,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFE1306C), Color(0xFFF77737)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
             hint: '@your_handle',
             controller: _instagramController,
-            followers: '1.2M',
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // YouTube
-          _buildPlatformCard(
-            context,
-            index: 1,
+          _platformCard(
             accounts: accounts,
             platform: 'youtube',
             displayName: 'YouTube',
             icon: Iconsax.video_play,
             color: AppColors.socialYoutube,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF0000), Color(0xFFCC0000)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            hint: 'Channel name or URL',
+            hint: 'channel name',
             controller: _youtubeController,
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // TikTok
-          _buildPlatformCard(
-            context,
-            index: 2,
+          _platformCard(
             accounts: accounts,
             platform: 'tiktok',
             displayName: 'TikTok',
-            icon: Iconsax.music,
+            icon: Iconsax.video_tick,
             color: AppColors.socialTiktok,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF010101), Color(0xFF333333)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
             hint: '@your_handle',
             controller: _tiktokController,
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Twitter/X
-          _buildPlatformCard(
-            context,
-            index: 3,
+          _platformCard(
             accounts: accounts,
             platform: 'twitter',
             displayName: 'Twitter / X',
-            icon: Iconsax.message,
+            icon: Iconsax.message_text,
             color: AppColors.socialTwitter,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1DA1F2), Color(0xFF0D8BD9)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
             hint: '@your_handle',
             controller: _twitterController,
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Facebook
-          _buildPlatformCard(
-            context,
-            index: 4,
+          _platformCard(
             accounts: accounts,
             platform: 'facebook',
             displayName: 'Facebook',
             icon: Iconsax.global,
             color: AppColors.socialFacebook,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1877F2), Color(0xFF0C5FD1)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            hint: 'Profile URL or name',
+            hint: 'page or profile name',
             controller: _facebookController,
           ),
 
@@ -234,363 +219,125 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
 
           // Save button
           PremiumButton(
-            label: 'Save All Accounts',
-            icon: Iconsax.save_2,
-            gradient: true,
+            label: _isSaving ? 'Saving...' : 'Save Changes',
             loading: _isSaving,
-            onPressed: _isSaving ? null : () => _saveAccounts(context),
+            onPressed: _isSaving ? null : () => _save(context, accounts),
           ),
 
           const SizedBox(height: AppSpacing.xl),
-
-          // Summary stats row
-          if (accounts.isNotEmpty) ...[
-            _buildSummaryRow(context, accounts),
-          ],
-
-          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.darkCard,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: AppColors.darkBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: const Icon(Iconsax.link_2,
-                color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Connect Your Socials',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.darkTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Showcase your reach to brands and unlock higher-value campaigns.',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.darkTextSecondary,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    )
-        .animate()
-        .fadeIn(duration: AppMotion.base)
-        .slideY(begin: -0.05, end: 0, curve: AppMotion.standard);
-  }
-
-  Widget _buildPlatformCard(
-    BuildContext context, {
-    required int index,
+  Widget _platformCard({
     required List<Map<String, dynamic>> accounts,
     required String platform,
     required String displayName,
     required IconData icon,
     required Color color,
-    required Gradient gradient,
     required String hint,
     required TextEditingController controller,
-    String? followers,
   }) {
-    final theme = Theme.of(context);
-    final isConnected = _isConnected(accounts, platform);
-    final account = _getAccount(accounts, platform);
-    final isVerified = account?['verified'] == true;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.darkCard,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(
-          color: isConnected
-              ? color.withOpacity(0.3)
-              : AppColors.darkBorder,
-          width: isConnected ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Platform header
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Row(
-              children: [
-                // Platform icon with gradient background
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: gradient,
-                    borderRadius: AppRadius.allMd,
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            displayName,
-                            style: AppTextStyles.labelLarge.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          if (isVerified) ...[
-                            const SizedBox(width: AppSpacing.xs),
-                            Icon(Iconsax.verify,
-                                size: 14,
-                                color: AppColors.success),
-                          ],
-                        ],
-                      ),
-                      if (isConnected &&
-                          controller.text.isNotEmpty)
-                        Text(
-                          controller.text,
-                          style: AppTextStyles.caption.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        )
-                      else
-                        Text(
-                          'Not connected',
-                          style: AppTextStyles.caption.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withOpacity(0.4),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                // Status chip
-                AnimatedContainer(
-                  duration: AppMotion.base,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isConnected
-                        ? color.withOpacity(0.1)
-                        : theme.colorScheme.onSurface.withOpacity(0.05),
-                    borderRadius: AppRadius.pillAll,
-                    border: Border.all(
-                      color: isConnected
-                          ? color.withOpacity(0.3)
-                          : theme.colorScheme.onSurface.withOpacity(0.1),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isConnected
-                              ? AppColors.success
-                              : theme.colorScheme.onSurface
-                                  .withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isConnected ? 'Connected' : 'Connect',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: isConnected
-                              ? AppColors.success
-                              : theme.colorScheme.onSurface
-                                  .withOpacity(0.5),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Input field
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: TextField(
-              controller: controller,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.35),
-                ),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                filled: true,
-                fillColor: theme.brightness == Brightness.dark
-                    ? AppColors.darkSurfaceAlt
-                    : AppColors.surfaceAlt,
-                border: OutlineInputBorder(
-                  borderRadius: AppRadius.allMd,
-                  borderSide:
-                      BorderSide(color: theme.dividerColor, width: 0.5),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppRadius.allMd,
-                  borderSide:
-                      BorderSide(color: theme.dividerColor, width: 0.5),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: AppRadius.allMd,
-                  borderSide:
-                      BorderSide(color: color, width: 1.5),
-                ),
-                prefixIcon: Icon(icon, size: 16, color: color),
-                suffixIcon: controller.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Iconsax.close_circle,
-                            size: 16,
-                            color: theme.colorScheme.onSurface
-                                .withOpacity(0.4)),
-                        onPressed: () {
-                          controller.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
-              ),
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-
-          // Verification status (if connected)
-          if (isConnected) ...[
-            Divider(
-                height: 1,
-                color: color.withOpacity(0.1)),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isVerified
-                        ? Iconsax.tick_circle
-                        : Iconsax.clock,
-                    size: 14,
-                    color: isVerified
-                        ? AppColors.success
-                        : AppColors.warning,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    isVerified
-                        ? 'Account verified'
-                        : 'Pending verification',
-                    style: AppTextStyles.caption.copyWith(
-                      color: isVerified
-                          ? AppColors.success
-                          : AppColors.warning,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    )
-        .animate(delay: Duration(milliseconds: index * 60))
-        .fadeIn(duration: AppMotion.base)
-        .slideX(begin: 0.02, end: 0, curve: AppMotion.standard);
-  }
-
-  Widget _buildSummaryRow(
-      BuildContext context, List<Map<String, dynamic>> accounts) {
-    final theme = Theme.of(context);
-    final connected = accounts.length;
-    final verified = accounts.where((a) => a['verified'] == true).length;
+    final connected = _isConnected(accounts, platform);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: Colors.white,
         borderRadius: AppRadius.allLg,
-        border: Border.all(color: theme.dividerColor, width: 0.5),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
         children: [
-          _SummaryStat(
-              value: '$connected',
-              label: 'Connected',
-              color: AppColors.primary),
-          Container(
-              width: 1,
-              height: 36,
-              color: theme.dividerColor),
-          _SummaryStat(
-              value: '$verified',
-              label: 'Verified',
-              color: AppColors.success),
-          Container(
-              width: 1,
-              height: 36,
-              color: theme.dividerColor),
-          _SummaryStat(
-              value: '${5 - connected}',
-              label: 'Pending',
-              color: AppColors.warning),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: AppRadius.allSm,
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: connected
+                                ? AppColors.success
+                                : AppColors.textHint,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          connected ? 'Connected' : 'Not connected',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: connected
+                                ? AppColors.success
+                                : AppColors.textHint,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: controller,
+            style: const TextStyle(
+                fontSize: 14, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(
+                  fontSize: 14, color: AppColors.textHint),
+              filled: true,
+              fillColor: AppColors.surfaceAlt,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.allMd,
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadius.allMd,
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadius.allMd,
+                borderSide: BorderSide(color: color, width: 2),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -602,11 +349,11 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Iconsax.warning_2,
-              size: 48, color: AppColors.error),
-          const SizedBox(height: AppSpacing.lg),
-          Text('Failed to load accounts',
-              style: AppTextStyles.bodyMedium),
-          const SizedBox(height: AppSpacing.md),
+              size: 48, color: AppColors.textHint),
+          const SizedBox(height: 12),
+          const Text('Failed to load accounts',
+              style: TextStyle(color: AppColors.textSecondary)),
+          const SizedBox(height: 12),
           TextButton(
             onPressed: () => ref.invalidate(linkedAccountsProvider),
             child: const Text('Retry'),
@@ -616,79 +363,41 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     );
   }
 
-  Future<void> _saveAccounts(BuildContext context) async {
+  Future<void> _save(
+      BuildContext context, List<Map<String, dynamic>> accounts) async {
     setState(() => _isSaving = true);
 
-    final notifier = ref.read(linkedAccountsActionsProvider.notifier);
-    int saved = 0;
+    try {
+      final notifier = ref.read(linkedAccountsProvider.notifier);
+      final updates = [
+        {'platform': 'instagram', 'handle': _instagramController.text.trim()},
+        {'platform': 'youtube', 'handle': _youtubeController.text.trim()},
+        {'platform': 'tiktok', 'handle': _tiktokController.text.trim()},
+        {'platform': 'twitter', 'handle': _twitterController.text.trim()},
+        {'platform': 'facebook', 'handle': _facebookController.text.trim()},
+      ];
 
-    final platformData = {
-      'instagram': _instagramController.text.trim(),
-      'youtube': _youtubeController.text.trim(),
-      'tiktok': _tiktokController.text.trim(),
-      'twitter': _twitterController.text.trim(),
-      'facebook': _facebookController.text.trim(),
-    };
+      await notifier.saveAccounts(updates);
 
-    for (final entry in platformData.entries) {
-      if (entry.value.isNotEmpty) {
-        await notifier.saveAccount(
-            platform: entry.key, handle: entry.value);
-        saved++;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Accounts saved successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-
-    setState(() => _isSaving = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            saved > 0
-                ? '$saved account${saved > 1 ? 's' : ''} saved successfully'
-                : 'No accounts to save',
-            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
-          ),
-          backgroundColor:
-              saved > 0 ? AppColors.success : AppColors.warning,
-          behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-              borderRadius: AppRadius.allMd),
-        ),
-      );
-    }
-  }
-}
-
-class _SummaryStat extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-
-  const _SummaryStat({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: AppTextStyles.h5.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          label,
-          style: AppTextStyles.caption.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-          ),
-        ),
-      ],
-    );
   }
 }

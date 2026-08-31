@@ -6,7 +6,6 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/campaign_card.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -16,13 +15,6 @@ import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 
-/// Campaigns tab — the current user's **applied** campaigns (Requirement 3).
-///
-/// This tab no longer browses all active campaigns. It watches
-/// [appliedCampaignsProvider] and renders one compact [CampaignCard] per
-/// campaign the signed-in user has applied to (newest application first), each
-/// overlaid with its application-status chip. Browsing all campaigns lives on
-/// Home; the empty-state CTA routes there.
 class CampaignsScreen extends ConsumerWidget {
   const CampaignsScreen({super.key});
 
@@ -31,7 +23,7 @@ class CampaignsScreen extends ConsumerWidget {
     final applied = ref.watch(appliedCampaignsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: const PremiumAppBar(title: 'Campaigns'),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -49,10 +41,9 @@ class CampaignsScreen extends ConsumerWidget {
     );
   }
 
-  /// Applied-campaigns list, or the empty-state (Req 3.6) when there are none.
-  Widget _buildList(BuildContext context, List<Map<String, dynamic>> campaigns) {
+  Widget _buildList(
+      BuildContext context, List<Map<String, dynamic>> campaigns) {
     if (campaigns.isEmpty) {
-      // AlwaysScrollable so pull-to-refresh still works over the empty state.
       return CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -62,8 +53,7 @@ class CampaignsScreen extends ConsumerWidget {
               icon: Iconsax.document,
               title: 'No applied campaigns yet',
               subtitle:
-                  'Campaigns you apply to will show up here so you can track '
-                  'their status.',
+                  'Campaigns you apply to will show up here.',
               cta: PremiumButton(
                 label: 'Browse campaigns',
                 icon: Iconsax.search_normal,
@@ -85,21 +75,24 @@ class CampaignsScreen extends ConsumerWidget {
         AppSpacing.xxl,
       ),
       itemCount: campaigns.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+      separatorBuilder: (_, __) =>
+          const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
         final campaign = campaigns[index];
         final id = campaign['id']?.toString();
         return CampaignCard(
           campaign: campaign,
           layout: CampaignCardLayout.compact,
-          applicationStatus: campaign['application_status']?.toString(),
-          onTap: id == null ? null : () => context.push('/campaigns/$id'),
+          applicationStatus:
+              campaign['application_status']?.toString(),
+          onTap: id == null
+              ? null
+              : () => context.push('/campaigns/$id'),
         ).staggeredEntrance(index);
       },
     );
   }
 
-  /// Shimmer skeletons matching the compact card footprint (Req 12.1).
   Widget _buildLoading() {
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -110,12 +103,13 @@ class CampaignsScreen extends ConsumerWidget {
         AppSpacing.xxl,
       ),
       itemCount: 5,
-      itemBuilder: (context, index) => const ShimmerCampaignCardCompact(),
+      itemBuilder: (context, index) =>
+          const ShimmerCampaignCardCompact(),
     );
   }
 
-  /// Sanitized error message + retry control (Req 3.7).
-  Widget _buildError(BuildContext context, WidgetRef ref, String message) {
+  Widget _buildError(
+      BuildContext context, WidgetRef ref, String message) {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -130,7 +124,8 @@ class CampaignsScreen extends ConsumerWidget {
               icon: Iconsax.refresh,
               variant: PremiumButtonVariant.tonal,
               expand: false,
-              onPressed: () => ref.invalidate(appliedCampaignsProvider),
+              onPressed: () =>
+                  ref.invalidate(appliedCampaignsProvider),
             ),
           ),
         ),

@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
@@ -18,20 +17,6 @@ import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/messages_provider.dart';
 
-/// Premium iOS-style messaging inbox (Screen Inventory #8).
-///
-/// Matches the reference messaging UI: a light-blue canvas, a left-aligned bold
-/// "Messages" title, a frosted search field directly beneath it, and airy
-/// conversation rows built from a plain [PremiumAvatar], the counterpart name,
-/// a message preview, a timestamp, and an unread indicator (Requirements
-/// 13.1, 13.2). Tapping a row navigates to the Chat screen for that user
-/// (Requirement 13.3). Loading uses shimmer skeletons that match the final row
-/// layout; the empty state uses the shared [EmptyState] primitive.
-///
-/// The search field filters the loaded conversations client-side by the
-/// counterpart's name (a simple case-insensitive contains on
-/// `other_user_name`) so the inbox reads like the reference without needing a
-/// new backend query.
 class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
@@ -49,13 +34,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     super.dispose();
   }
 
-  /// Case-insensitive contains filter on the counterpart name.
   List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> items) {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return items;
     return items
-        .where((c) =>
-            (c['other_user_name'] as String? ?? '').toLowerCase().contains(q))
+        .where((c) => (c['other_user_name'] as String? ?? '')
+            .toLowerCase()
+            .contains(q))
         .toList(growable: false);
   }
 
@@ -64,7 +49,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: PremiumAppBar(
         title: 'Messages',
         actions: [
@@ -82,20 +67,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       ),
       body: Column(
         children: [
-          // Search field directly under the title (reference layout).
+          // ── Search bar ──────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: PremiumTextField.search(
               controller: _searchController,
               hint: 'Search',
               onChanged: (value) => setState(() => _query = value),
             ),
           ),
+
+          // ── Conversation list ───────────────────────────────────────────
           Expanded(
             child: conversationsAsync.when(
               data: (conversations) {
@@ -103,7 +85,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   return const EmptyState(
                     icon: Iconsax.message,
                     title: 'No messages yet',
-                    subtitle: 'Start a conversation with brands or creators',
+                    subtitle: 'Start a conversation',
                   );
                 }
 
@@ -121,14 +103,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   onRefresh: () async {
                     ref.invalidate(conversationsProvider);
                   },
-                  child: ListView.separated(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: ListView.builder(
                     itemCount: filtered.length,
-                    // No divider — the reference uses airy spacing between rows
-                    // rather than hairlines.
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSpacing.xs),
                     itemBuilder: (context, index) {
                       final conversation = filtered[index];
                       return _ConversationTile(conversation: conversation)
@@ -138,7 +114,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 );
               },
               loading: () => ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 itemCount: 8,
                 itemBuilder: (_, __) => const ShimmerConversationRow(),
               ),
@@ -163,15 +138,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   }
 }
 
-/// A single premium conversation row.
+/// Single conversation row — Instagram-style.
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
-
   const _ConversationTile({required this.conversation});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final otherUserId = conversation['other_user_id'] as String;
     final name = conversation['other_user_name'] as String? ?? 'User';
     final avatarUrl = conversation['other_user_avatar'] as String?;
@@ -180,99 +153,114 @@ class _ConversationTile extends StatelessWidget {
         DateTime.tryParse(conversation['last_message_at'] ?? '');
     final isRead = conversation['is_read'] == true;
     final isUnread = !isRead;
-    final timeStr = lastMessageAt != null ? _formatTime(lastMessageAt) : '';
+    final timeStr =
+        lastMessageAt != null ? _formatTime(lastMessageAt) : '';
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      leading: PremiumAvatar(
-        imageUrl: avatarUrl,
-        name: name,
-        size: 52,
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              name,
-              style: AppTextStyles.labelLarge.copyWith(
-                fontWeight: isUnread ? FontWeight.w700 : FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => context.push('/messages/$otherUserId'),
+        child: Container(
+          height: 72,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: const BoxDecoration(
+            border: Border(
+                bottom: BorderSide(color: AppColors.divider, width: 1)),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            timeStr,
-            style: AppTextStyles.caption.copyWith(
-              color: isUnread
-                  ? AppColors.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.5),
-              fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.xs),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                lastMessage,
-                style: AppTextStyles.bodySmall.copyWith(
-                  fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
-                  color: isUnread
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              // Avatar
+              PremiumAvatar(
+                imageUrl: avatarUrl,
+                name: name,
+                size: 48,
               ),
-            ),
-            if (isUnread) ...[
-              const SizedBox(width: AppSpacing.sm),
-              Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+              const SizedBox(width: 12),
+
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isUnread
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isUnread
+                                ? AppColors.primary
+                                : AppColors.textHint,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            lastMessage,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isUnread
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                              fontWeight: isUnread
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isUnread)
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
-      onTap: () => context.push('/messages/$otherUserId'),
     );
   }
 
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final diff = now.difference(dateTime);
-
-    if (diff.inDays == 0) {
-      return DateFormat('hh:mm a').format(dateTime);
-    } else if (diff.inDays == 1) {
-      return 'Yesterday';
-    } else if (diff.inDays < 7) {
-      return DateFormat('EEE').format(dateTime);
-    } else {
-      return DateFormat('dd/MM').format(dateTime);
-    }
+    if (diff.inDays == 0) return DateFormat('hh:mm a').format(dateTime);
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return DateFormat('EEE').format(dateTime);
+    return DateFormat('dd/MM').format(dateTime);
   }
 }
 
-/// A premium "new chat" search sheet. Lets the user search public users by
-/// handle or name and tap a result to open the existing Chat screen.
-///
-/// Rendered inside [showPremiumSheet], which supplies the grab handle, title
-/// row (with a close button) and safe-area padding — so this widget only owns
-/// the search field and the results list.
+/// New chat search sheet.
 class _NewChatSheet extends ConsumerStatefulWidget {
   const _NewChatSheet();
 
@@ -292,7 +280,6 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final resultsAsync = ref.watch(userSearchProvider(_query));
 
     return SizedBox(
@@ -308,96 +295,78 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: _query.trim().isEmpty
-                ? _hint(theme, 'Search for people to start a conversation')
+                ? const Center(
+                    child: Text(
+                      'Search for people to start a conversation',
+                      style: TextStyle(
+                          fontSize: 14, color: AppColors.textHint),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
                 : resultsAsync.when(
                     data: (users) {
                       if (users.isEmpty) {
-                        return _hint(theme, 'No users found');
+                        return const Center(
+                          child: Text('No users found',
+                              style: TextStyle(
+                                  color: AppColors.textSecondary)),
+                        );
                       }
                       return ListView.separated(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs),
                         itemCount: users.length,
-                        separatorBuilder: (_, __) => Divider(
-                          height: 1,
-                          thickness: 0.5,
-                          indent: 72,
-                          color: theme.dividerColor,
-                        ),
+                        separatorBuilder: (_, __) => const Divider(
+                            height: 1, color: AppColors.divider),
                         itemBuilder: (context, index) {
-                          return _UserResultTile(user: users[index]);
+                          final user = users[index];
+                          final userId =
+                              user['user_id'] as String? ?? '';
+                          final name = user['name'] as String? ?? 'User';
+                          final handle =
+                              user['handle'] as String? ?? '';
+                          final avatarUrl =
+                              user['avatar_url'] as String?;
+                          return ListTile(
+                            leading: PremiumAvatar(
+                              imageUrl: avatarUrl,
+                              name: name,
+                              size: 44,
+                            ),
+                            title: Text(name,
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary)),
+                            subtitle: handle.isNotEmpty
+                                ? Text('@$handle',
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary))
+                                : null,
+                            onTap: () {
+                              Navigator.pop(context);
+                              context.push('/messages/$userId');
+                            },
+                          );
                         },
                       );
                     },
                     loading: () => const Center(
-                      child:
-                          CircularProgressIndicator(color: AppColors.primary),
+                      child: CircularProgressIndicator(
+                          color: AppColors.primary),
                     ),
-                    error: (e, _) => _hint(theme, ErrorUtils.sanitize(e)),
+                    error: (e, _) => Center(
+                      child: Text(
+                        'Error: ${ErrorUtils.sanitize(e)}',
+                        style: const TextStyle(
+                            color: AppColors.textSecondary),
+                      ),
+                    ),
                   ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _hint(ThemeData theme, String text) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UserResultTile extends StatelessWidget {
-  final Map<String, dynamic> user;
-
-  const _UserResultTile({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final id = user['id'] as String;
-    final name = (user['name'] ?? 'User').toString();
-    final handle = (user['handle'] ?? '').toString();
-    final avatarUrl = user['avatar_url'] as String?;
-    final isVerified = user['is_verified'] == true;
-
-    return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 0, vertical: AppSpacing.xs),
-      leading: PremiumAvatar(
-        imageUrl: avatarUrl,
-        name: name,
-        size: 46,
-        isVerified: isVerified,
-      ),
-      title: Text(
-        name,
-        style: AppTextStyles.labelLarge,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: handle.isNotEmpty
-          ? Text(
-              '@$handle',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            )
-          : null,
-      onTap: () {
-        Navigator.of(context).pop();
-        context.push('/messages/$id');
-      },
     );
   }
 }
