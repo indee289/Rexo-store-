@@ -93,12 +93,12 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return Colors.white;
+        thumbColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return Colors.white;
           return Colors.white;
         }),
-        trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+        trackColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return AppColors.primary;
           return AppColors.border;
         }),
       ),
@@ -187,12 +187,12 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return Colors.white;
+        thumbColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return Colors.white;
           return AppColors.darkTextHint;
         }),
-        trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+        trackColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return AppColors.primary;
           return AppColors.darkBorder;
         }),
       ),

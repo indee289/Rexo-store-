@@ -998,10 +998,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-// Import this to avoid circular dependency
+// Local stub so settings_screen doesn't need to import app_motion.dart directly.
 const AppMotion = _AppMotionConst();
 
 class _AppMotionConst {
   const _AppMotionConst();
   Duration get base => const Duration(milliseconds: 250);
+  Duration get fast => const Duration(milliseconds: 150);
+  Curve get standard => Curves.easeInOut;
 }

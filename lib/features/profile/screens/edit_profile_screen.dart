@@ -280,7 +280,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               // Fields
               _buildField(
-                context,
                 controller: _nameController,
                 label: 'Full Name',
                 hint: 'Enter your full name',
@@ -300,7 +299,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: AppSpacing.lg),
 
               _buildField(
-                context,
                 controller: _handleController,
                 label: 'Username',
                 hint: '@your_handle',
@@ -314,7 +312,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: AppSpacing.lg),
 
               _buildField(
-                context,
                 controller: _bioController,
                 label: 'Bio',
                 hint: 'Tell the world about yourself...',
@@ -329,7 +326,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: AppSpacing.lg),
 
               _buildField(
-                context,
                 controller: _phoneController,
                 label: 'Phone',
                 hint: '+91 98765 43210',
@@ -477,7 +473,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildField({
-    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required String hint,
