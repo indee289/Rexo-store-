@@ -9,6 +9,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/campaign_card.dart';
+import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_button.dart';
@@ -53,6 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildEmailVerificationBanner(),
+                    _buildGreetingSection(),
                     const SizedBox(height: AppSpacing.sm),
                     const CategoryChips(),
                     const SizedBox(height: AppSpacing.lg),
@@ -81,24 +83,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: theme.colorScheme.surface,
       elevation: 0,
       scrolledUnderElevation: 0.5,
-      centerTitle: true,
-      title: Text(
-        'Rexo',
-        style: AppTextStyles.h4.copyWith(
-          color: AppColors.primary,
-          fontWeight: FontWeight.w700,
-        ),
+      surfaceTintColor: Colors.transparent,
+      centerTitle: false,
+      titleSpacing: AppSpacing.lg,
+      title: Row(
+        children: [
+          // App logo/icon
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: AppRadius.allSm,
+            ),
+            child: const Icon(Iconsax.crown_1, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            'Rexo',
+            style: AppTextStyles.h4.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
       actions: [
-        IconButton(
-          onPressed: () => context.push(AppRoutes.notifications),
-          icon: Icon(
-            Iconsax.notification,
-            color: theme.colorScheme.onSurface,
-          ),
+        Consumer(
+          builder: (context, ref, _) {
+            final profileAsync = ref.watch(homeUserProfileProvider);
+            return profileAsync.when(
+              data: (profile) {
+                final name = profile?['name'] ?? '';
+                final avatarUrl = profile?['avatar_url'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.md),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => context.push(AppRoutes.notifications),
+                        icon: Icon(Iconsax.notification, color: theme.colorScheme.onSurface, size: 22),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      GestureDetector(
+                        onTap: () => context.push(AppRoutes.profile),
+                        child: PremiumAvatar(imageUrl: avatarUrl, name: name, size: 32),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const SizedBox(width: 36, height: 36),
+              error: (_, __) => const SizedBox.shrink(),
+            );
+          },
         ),
-        const SizedBox(width: AppSpacing.xs),
       ],
+    );
+  }
+
+  Widget _buildGreetingSection() {
+    final profileAsync = ref.watch(homeUserProfileProvider);
+    return profileAsync.maybeWhen(
+      data: (profile) {
+        final name = (profile?['name'] ?? '').toString().split(' ').first;
+        if (name.isEmpty) return const SizedBox.shrink();
+        final hour = DateTime.now().hour;
+        final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$greeting, $name 👋',
+                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                'Find your next campaign',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
