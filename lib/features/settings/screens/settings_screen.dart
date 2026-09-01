@@ -8,6 +8,7 @@ import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_toggle.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -648,11 +649,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primary,
-          ),
+          AppToggle(value: value, onChanged: onChanged),
         ],
       ),
     );

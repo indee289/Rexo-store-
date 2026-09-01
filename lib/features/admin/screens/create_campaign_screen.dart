@@ -21,7 +21,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   final _campaignNameController = TextEditingController();
   final _slotsController = TextEditingController();
   final _budgetController = TextEditingController();
+  final _perCreatorController = TextEditingController();
   final _companyNameController = TextEditingController();
+  DateTime? _deadline;
 
   String _selectedCategory = 'Logo';
   String _selectedPlatform = 'Instagram';
@@ -66,12 +68,23 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     _campaignNameController.dispose();
     _slotsController.dispose();
     _budgetController.dispose();
+    _perCreatorController.dispose();
     _companyNameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_deadline == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a campaign deadline'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -83,6 +96,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'platform': _selectedPlatform,
         'total_slots': int.parse(_slotsController.text.trim()),
         'budget': double.parse(_budgetController.text.trim()),
+        'per_creator_payout':
+            double.tryParse(_perCreatorController.text.trim()) ?? 0,
+        'deadline': _deadline?.toIso8601String(),
         'company_name': _companyNameController.text.trim(),
         'gender': _selectedGender,
         'page_profile_category': _selectedPageProfileCategory,
@@ -251,6 +267,37 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: 20),
 
+              // Per Creator Budget
+              _buildLabel('Per Creator Budget'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _perCreatorController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(
+                  hint: 'Payout per creator',
+                  icon: Iconsax.money_recive,
+                  prefix: '\u20B9 ',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Per-creator budget is required';
+                  }
+                  if (double.tryParse(value.trim()) == null) {
+                    return 'Enter a valid amount';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Deadline
+              _buildLabel('Deadline'),
+              const SizedBox(height: 8),
+              _buildDeadlineField(),
+
+              const SizedBox(height: 20),
+
               // Company Name
               _buildLabel('Company Name'),
               const SizedBox(height: 8),
@@ -363,6 +410,57 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       text,
       style: AppTextStyles.labelMedium.copyWith(
         color: Theme.of(context).colorScheme.onSurface,
+      ),
+    );
+  }
+
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _deadline ?? now.add(const Duration(days: 7)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _deadline = picked);
+  }
+
+  Widget _buildDeadlineField() {
+    final theme = Theme.of(context);
+    final selected = _deadline != null;
+    final label = selected
+        ? '${_deadline!.day.toString().padLeft(2, '0')}/'
+            '${_deadline!.month.toString().padLeft(2, '0')}/${_deadline!.year}'
+        : 'Select deadline date';
+    return GestureDetector(
+      onTap: _pickDeadline,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Row(
+          children: [
+            Icon(Iconsax.calendar_1,
+                size: 20, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: selected
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Icon(Iconsax.arrow_down_1,
+                size: 18, color: theme.colorScheme.onSurfaceVariant),
+          ],
+        ),
       ),
     );
   }

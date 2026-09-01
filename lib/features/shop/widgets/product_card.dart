@@ -1,134 +1,194 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/cached_image.dart';
-import '../../../core/widgets/overlay_badge.dart';
-import '../../../core/widgets/premium_card.dart';
 
-/// Product card for grid display in the shop.
-///
-/// Routes its container through [PremiumCard] and reuses the shared
-/// [OverlayBadge] so its surface, border, shadow and badges match the campaign
-/// cards in both light and dark themes. Cover art loads through [CachedImage]
-/// for caching, decode-at-size, and a token-driven fallback.
+/// Modern shop product card: rounded cover with a category badge + stock dot,
+/// a floating "+" action, then title and price. Compact + theme-aware.
 class ProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
 
-  const ProductCard({
-    super.key,
-    required this.product,
-  });
+  const ProductCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+
     final title = product['title'] ?? 'Untitled Product';
     final price = (product['price'] as num?)?.toDouble() ?? 0.0;
     final originalPrice = (product['original_price'] as num?)?.toDouble();
-    final category = product['category'] ?? '';
+    final category = (product['category'] ?? '').toString();
     final stock = product['stock'] as int? ?? 0;
     final images = product['images'] as List<dynamic>?;
-    final imageUrl = (images != null && images.isNotEmpty)
-        ? images[0] as String
-        : null;
+    final imageUrl =
+        (images != null && images.isNotEmpty) ? images[0] as String : null;
 
-    return PremiumCard(
-      onTap: () {
-        context.push('/shop/${product['id']}');
-      },
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Product image
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CachedImage(imageUrl: imageUrl),
-                // Stock indicator dot
-                Positioned(
-                  top: AppSpacing.sm,
-                  right: AppSpacing.sm,
-                  child: _buildStockDot(stock),
-                ),
-                // Category badge (on-media variant — sits on the image).
-                if (category.isNotEmpty)
-                  Positioned(
-                    top: AppSpacing.sm,
-                    left: AppSpacing.sm,
-                    child: OverlayBadge.onMedia(label: category),
-                  ),
-              ],
+    void openDetail() => context.push('/shop/${product['id']}');
+
+    return GestureDetector(
+      onTap: openDetail,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.28 : 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+              spreadRadius: -3,
             ),
-          ),
-
-          // Product info
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w600,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedImage(
+                    imageUrl: imageUrl,
+                    errorBuilder: (_) => _imgFallback(),
+                    placeholderBuilder: (_) => _imgFallback(),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: [
-                    Text(
-                      '\u20B9${price.toStringAsFixed(0)}',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+                  if (category.isNotEmpty)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.45),
+                          borderRadius: AppRadius.pillAll,
+                        ),
+                        child: Text(
+                          category,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
-                    if (originalPrice != null && originalPrice > price) ...[
-                      const SizedBox(width: AppSpacing.xs + 2),
-                      Text(
-                        '\u20B9${originalPrice.toStringAsFixed(0)}',
-                        style: AppTextStyles.caption.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.4),
+                  Positioned(top: 8, right: 8, child: _stockDot(stock)),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '\u20B9${price.toStringAsFixed(0)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            if (originalPrice != null &&
+                                originalPrice > price) ...[
+                              const SizedBox(width: 5),
+                              Text(
+                                '\u20B9${originalPrice.toStringAsFixed(0)}',
+                                style: AppTextStyles.caption.copyWith(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: openDetail,
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: const BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Iconsax.add,
+                              size: 18, color: Colors.white),
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStockDot(int stock) {
-    Color dotColor;
-    if (stock <= 0) {
-      dotColor = AppColors.error;
-    } else if (stock <= 5) {
-      dotColor = AppColors.warning;
-    } else {
-      dotColor = AppColors.success;
-    }
+  Widget _imgFallback() => Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFEDE7FF), Color(0xFFF6F2FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Center(
+          child: Icon(Iconsax.gallery, size: 28, color: AppColors.primaryLight),
+        ),
+      );
 
+  Widget _stockDot(int stock) {
+    Color c;
+    if (stock <= 0) {
+      c = AppColors.error;
+    } else if (stock <= 5) {
+      c = AppColors.warning;
+    } else {
+      c = AppColors.success;
+    }
     return Container(
-      width: 10,
-      height: 10,
+      width: 11,
+      height: 11,
       decoration: BoxDecoration(
-        color: dotColor,
+        color: c,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.surface, width: 1.5),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
     );
   }

@@ -126,32 +126,33 @@ class ProfileScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            color: cs.onSurface,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ),
-                      if (isVerified) ...[
-                        const SizedBox(width: 5),
-                        const VerifiedBadge(size: 18),
-                      ],
-                    ],
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                   if (handle.toString().isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text('@$handle',
-                        style: TextStyle(
-                            fontSize: 13.5, color: cs.onSurfaceVariant)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '@$handle',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 13.5, color: cs.onSurfaceVariant),
+                          ),
+                        ),
+                        if (isVerified) const VerifiedBadge(size: 16),
+                      ],
+                    ),
                   ],
                   if (bio.isNotEmpty) ...[
                     const SizedBox(height: 8),
