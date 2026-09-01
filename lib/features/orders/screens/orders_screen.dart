@@ -11,6 +11,7 @@ import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/ui_components.dart';
 import '../providers/orders_provider.dart';
 
 class OrdersScreen extends ConsumerWidget {
@@ -146,21 +147,9 @@ class OrdersScreen extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.10),
-                    borderRadius: AppRadius.pillAll,
-                  ),
-                  child: Text(
-                    OrderStatus.getLabel(status),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
+                StatusChip(
+                  label: OrderStatus.getLabel(status),
+                  color: statusColor,
                 ),
                 const SizedBox(height: 4),
                 Text(
