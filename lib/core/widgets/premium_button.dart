@@ -92,6 +92,17 @@ class _PremiumButtonState extends State<PremiumButton> {
         gradient: style.gradientDecoration,
         borderRadius: AppRadius.allMd,
         border: style.border,
+        boxShadow:
+            (widget.variant == PremiumButtonVariant.filled && _enabled)
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.30),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : null,
       ),
       child: content,
     );
@@ -121,9 +132,9 @@ class _PremiumButtonState extends State<PremiumButton> {
   _ButtonStyle _resolveStyle(bool isDark) {
     switch (widget.variant) {
       case PremiumButtonVariant.filled:
-        return _ButtonStyle(
-          fill: widget.gradient ? null : AppColors.primary,
-          gradientDecoration: widget.gradient ? AppColors.primaryGradient : null,
+        return const _ButtonStyle(
+          fill: null,
+          gradientDecoration: AppColors.primaryGradient,
           foreground: Colors.white,
         );
       case PremiumButtonVariant.tonal:
