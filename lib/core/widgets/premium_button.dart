@@ -35,7 +35,7 @@ class PremiumButton extends StatefulWidget {
 class _PremiumButtonState extends State<PremiumButton> {
   bool _pressed = false;
 
-  static const double _height = 52;
+  static const double _height = 46;
 
   bool get _enabled => widget.onPressed != null && !widget.loading;
 

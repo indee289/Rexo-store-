@@ -492,100 +492,81 @@ class _FeaturedList extends ConsumerWidget {
 
 // ── Mapping + sample data ─────────────────────────────────────────────────
 FeaturedCampaignData _mapCampaign(Map<String, dynamic> c) {
-  final users = c['users'];
-  final brand = (users is Map && users['name'] != null)
-      ? users['name'].toString()
-      : (c['brand_name'] ?? '').toString();
-  final verified = users is Map && users['is_verified'] == true;
-
   int asInt(dynamic v) =>
       v is int ? v : (v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0);
 
-  final reward = c['per_creator_payout'] ?? c['budget'];
-  final platformRaw = (c['content_type'] ?? c['platform'] ?? '').toString();
+  final filled = asInt(c['filled_slots']);
+  final total = asInt(c['total_slots']);
+  final pct = total > 0 ? ((filled / total) * 100).round().clamp(0, 100) : 0;
+  final platform = (c['platform'] ?? '').toString();
+  final perCreator = c['per_creator_payout'];
 
   return FeaturedCampaignData(
     id: (c['id'] ?? '').toString(),
     title: (c['title'] ?? 'Untitled Campaign').toString(),
-    brand: brand,
-    verified: verified,
-    description: (c['description'] ?? '').toString(),
+    category: (c['category'] ?? 'Campaign').toString(),
     imageUrl: (c['cover_image_url'] ?? '').toString(),
-    reward: _formatReward(reward),
-    platform: _prettyPlatform(platformRaw),
-    applied: asInt(c['filled_slots']),
-    total: asInt(c['total_slots']),
-    daysLeft: _daysLeft(c['deadline']),
+    private: c['is_private'] == true,
+    platforms: platform.isEmpty ? const [] : [platform],
+    paidOutPercent: pct,
+    budgetText: _money(c['budget']),
+    rateText: _rate(perCreator),
   );
 }
 
-String _formatReward(dynamic value) {
-  final v = double.tryParse('${value ?? ''}') ?? 0;
-  if (v <= 0) return '₹0';
+String _grouped(double v) {
   final s = v.toStringAsFixed(0);
-  // Add simple thousands separators.
   final buf = StringBuffer();
   for (int i = 0; i < s.length; i++) {
     if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
     buf.write(s[i]);
   }
-  return '₹$buf';
+  return buf.toString();
 }
 
-String _prettyPlatform(String raw) {
-  if (raw.trim().isEmpty) return 'Campaign';
-  return raw
-      .split(RegExp(r'[_\s]+'))
-      .where((w) => w.isNotEmpty)
-      .map((w) => w[0].toUpperCase() + w.substring(1))
-      .join(' ');
+String _money(dynamic value) {
+  final v = double.tryParse('${value ?? ''}') ?? 0;
+  return '₹${_grouped(v)}';
 }
 
-int _daysLeft(dynamic deadline) {
-  final d = DateTime.tryParse('${deadline ?? ''}');
-  if (d == null) return 0;
-  final diff = d.difference(DateTime.now()).inDays;
-  return diff < 0 ? 0 : diff;
+String _rate(dynamic value) {
+  final v = double.tryParse('${value ?? ''}') ?? 0;
+  if (v <= 0) return '—';
+  return '₹${_grouped(v)}';
 }
 
 const List<FeaturedCampaignData> _sampleCampaigns = [
   FeaturedCampaignData(
     id: 'sample-1',
-    title: 'Summer Sneaker Drop',
-    brand: 'UrbanStride',
-    verified: true,
-    description: 'Show off your style with our new summer collection.',
+    title: 'OhnePixel [CLIPPING] 5',
+    category: 'Clipping',
     imageUrl: '',
-    reward: '₹8,000',
-    platform: 'Instagram Post',
-    applied: 124,
-    total: 500,
-    daysLeft: 3,
+    private: true,
+    platforms: ['instagram', 'tiktok'],
+    paidOutPercent: 0,
+    budgetText: '\$10,000',
+    rateText: '\$100 / 1M',
   ),
   FeaturedCampaignData(
     id: 'sample-2',
-    title: 'Glow Naturally',
-    brand: 'PureSkin',
-    verified: true,
-    description: 'Share your skincare routine using our organic products.',
+    title: 'Duel [MONARCH CLIPPING]',
+    category: 'Clipping',
     imageUrl: '',
-    reward: '₹6,000',
-    platform: 'Instagram Reel',
-    applied: 98,
-    total: 300,
-    daysLeft: 5,
+    private: false,
+    platforms: ['tiktok', 'youtube'],
+    paidOutPercent: 46,
+    budgetText: '\$5,000',
+    rateText: '\$2,500 / 1M',
   ),
   FeaturedCampaignData(
     id: 'sample-3',
-    title: 'Next Gen Smartwatch',
-    brand: 'TechNova',
-    verified: true,
-    description: 'Unbox and review our latest smartwatch.',
+    title: 'Roobet [CLIPPING] 3',
+    category: 'Clipping',
     imageUrl: '',
-    reward: '₹10,000',
-    platform: 'YouTube Review',
-    applied: 76,
-    total: 200,
-    daysLeft: 7,
+    private: false,
+    platforms: ['instagram', 'tiktok', 'youtube', 'x'],
+    paidOutPercent: 84,
+    budgetText: '\$4,800',
+    rateText: '\$2,500 / 1M',
   ),
 ];

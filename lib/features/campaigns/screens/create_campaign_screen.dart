@@ -28,7 +28,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   final _campaignNameController = TextEditingController();
   final _slotsController = TextEditingController();
   final _budgetController = TextEditingController();
+  final _perCreatorController = TextEditingController();
   final _companyNameController = TextEditingController();
+  DateTime? _deadline;
 
   String _selectedCategory = 'Logo';
   String _selectedPlatform = 'Instagram';
@@ -73,12 +75,25 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     _campaignNameController.dispose();
     _slotsController.dispose();
     _budgetController.dispose();
+    _perCreatorController.dispose();
     _companyNameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_deadline == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a campaign deadline'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -97,6 +112,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'total_slots': int.tryParse(_slotsController.text.trim()) ?? 1,
         'filled_slots': 0,
         'budget': double.tryParse(_budgetController.text.trim()) ?? 0,
+        'per_creator_payout':
+            double.tryParse(_perCreatorController.text.trim()) ?? 0,
+        'deadline': _deadline?.toIso8601String(),
         'company_name': _companyNameController.text.trim(),
         'cover_image_url': _coverImageUrl,
         'gender': _selectedGender,
@@ -249,7 +267,35 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: AppSpacing.lg),
 
-              // 6. Company Name
+              // 6. Per Creator Budget
+              _buildLabel('Per Creator Budget (\u20B9)'),
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField(
+                controller: _perCreatorController,
+                hint: 'Payout per creator',
+                prefixIcon: Iconsax.money_recive,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter per-creator budget';
+                  }
+                  if (double.tryParse(value.trim()) == null) {
+                    return 'Please enter a valid amount';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // 7. Deadline
+              _buildLabel('Deadline'),
+              const SizedBox(height: AppSpacing.sm),
+              _buildDeadlineField(),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // 8. Company Name
               _buildLabel('Company Name'),
               const SizedBox(height: AppSpacing.sm),
               PremiumTextField(
@@ -327,6 +373,57 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
   Widget _buildLabel(String text) {
     return Text(text, style: AppTextStyles.labelLarge);
+  }
+
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _deadline ?? now.add(const Duration(days: 7)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _deadline = picked);
+  }
+
+  Widget _buildDeadlineField() {
+    final theme = Theme.of(context);
+    final selected = _deadline != null;
+    final label = selected
+        ? '${_deadline!.day.toString().padLeft(2, '0')}/'
+            '${_deadline!.month.toString().padLeft(2, '0')}/${_deadline!.year}'
+        : 'Select deadline date';
+    return GestureDetector(
+      onTap: _pickDeadline,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: AppRadius.allMd,
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Row(
+          children: [
+            Icon(Iconsax.calendar_1,
+                size: 20, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: selected
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Icon(Iconsax.arrow_down_1,
+                size: 18, color: theme.colorScheme.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildDropdown({
