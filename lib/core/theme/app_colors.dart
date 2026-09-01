@@ -9,12 +9,12 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ── Brand — Purple ─────────────────────────────────────────────────────────
-  static const Color primary       = Color(0xFF7C3AED); // Violet 600
-  static const Color primaryLight  = Color(0xFFA78BFA); // Violet 400
-  static const Color primaryDark   = Color(0xFF6D28D9); // Violet 700
-  static const Color primaryDeep   = Color(0xFF5B21B6); // Violet 800
-  static const Color primaryBg     = Color(0xFFF1EBFF); // Tinted violet wash
+  // ── Brand — Red ──────────────────────────────────────────────────────────
+  static const Color primary       = Color(0xFFF5334F); // Vibrant red
+  static const Color primaryLight  = Color(0xFFFF6B82); // Light red
+  static const Color primaryDark   = Color(0xFFD41E3C); // Deep red
+  static const Color primaryDeep   = Color(0xFFB01732); // Deepest red
+  static const Color primaryBg     = Color(0xFFFFECEF); // Tinted red wash
 
   // ── Secondary (compatibility) ──────────────────────────────────────────────
   static const Color secondary     = Color(0xFF0B0B12); // Near-black
@@ -83,12 +83,12 @@ class AppColors {
 
   // ── Gradients ──────────────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+    colors: [Color(0xFFFF5C72), Color(0xFFF5334F)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+    colors: [Color(0xFFF5334F), Color(0xFFB01732)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

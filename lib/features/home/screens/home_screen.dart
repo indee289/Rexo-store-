@@ -323,7 +323,7 @@ class _BannerSlide extends StatelessWidget {
                   ),
                   // Explore button
                   GestureDetector(
-                    onTap: () => context.push(AppRoutes.campaigns),
+                    onTap: () => context.go(AppRoutes.campaigns),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
@@ -424,7 +424,7 @@ class _FeaturedHeader extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () => context.push(AppRoutes.campaigns),
+            onTap: () => context.go(AppRoutes.campaigns),
             behavior: HitTestBehavior.opaque,
             child: const Row(
               children: [
@@ -478,7 +478,7 @@ class _FeaturedList extends ConsumerWidget {
               },
               onTap: () {
                 if (data.id.startsWith('sample-')) {
-                  context.push(AppRoutes.campaigns);
+                  context.go(AppRoutes.campaigns);
                 } else {
                   context.push('/campaigns/${data.id}');
                 }

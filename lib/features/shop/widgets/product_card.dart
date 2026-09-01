@@ -163,7 +163,7 @@ class ProductCard extends StatelessWidget {
   Widget _imgFallback() => Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEDE7FF), Color(0xFFF6F2FF)],
+            colors: [Color(0xFFFFE9EE), Color(0xFFFFF4F6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

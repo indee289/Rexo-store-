@@ -93,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: AppRadius.allXl,
@@ -115,8 +115,7 @@ class ProfileScreen extends ConsumerWidget {
                       PremiumAvatar(
                         imageUrl: avatarUrl,
                         name: name,
-                        size: 72,
-                        isVerified: isVerified,
+                        size: 64,
                         showRing: true,
                       ),
                       const SizedBox(width: 16),
@@ -125,7 +124,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Text(
                     name,
                     maxLines: 1,
@@ -178,7 +177,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(
@@ -210,7 +209,7 @@ class ProfileScreen extends ConsumerWidget {
         // ── Menu group card ────────────────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
