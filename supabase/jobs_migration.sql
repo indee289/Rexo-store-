@@ -1,5 +1,5 @@
 -- ============================================================
--- Jobs Feature Migration
+-- Jobs Feature Migration  
 -- Run this in Supabase SQL Editor (Dashboard → SQL Editor)
 -- ============================================================
 
@@ -40,6 +40,14 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
 ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first (safe re-run)
+DROP POLICY IF EXISTS "Everyone can view active jobs, admins see all" ON public.jobs;
+DROP POLICY IF EXISTS "Admins manage all jobs" ON public.jobs;
+DROP POLICY IF EXISTS "Users view own applications" ON public.job_applications;
+DROP POLICY IF EXISTS "Users insert own applications" ON public.job_applications;
+DROP POLICY IF EXISTS "Users update own applications" ON public.job_applications;
+DROP POLICY IF EXISTS "Admins manage all applications" ON public.job_applications;
+
 -- Jobs policies
 CREATE POLICY "Everyone can view active jobs, admins see all" ON public.jobs
   FOR SELECT USING (status = 'active' OR is_admin());
@@ -47,12 +55,13 @@ CREATE POLICY "Admins manage all jobs" ON public.jobs
   FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 
 -- Job applications policies
+-- Explicit ::uuid cast on auth.uid() to avoid operator type mismatch
 CREATE POLICY "Users view own applications" ON public.job_applications
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT USING (auth.uid()::uuid = user_id);
 CREATE POLICY "Users insert own applications" ON public.job_applications
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  FOR INSERT WITH CHECK (auth.uid()::uuid = user_id);
 CREATE POLICY "Users update own applications" ON public.job_applications
-  FOR UPDATE USING (auth.uid() = user_id AND status = 'applied');
+  FOR UPDATE USING (auth.uid()::uuid = user_id AND status = 'applied');
 CREATE POLICY "Admins manage all applications" ON public.job_applications
   FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 
@@ -109,18 +118,3 @@ CREATE INDEX IF NOT EXISTS jobs_created_at_idx ON public.jobs(created_at DESC);
 CREATE INDEX IF NOT EXISTS job_applications_user_id_idx ON public.job_applications(user_id);
 CREATE INDEX IF NOT EXISTS job_applications_job_id_idx ON public.job_applications(job_id);
 CREATE INDEX IF NOT EXISTS job_applications_status_idx ON public.job_applications(status);
-
--- ─── 7. VERIFICATION QUERY ────────────────────────────────────────────────────
--- Run this after the migration to confirm all policies were created:
---
--- SELECT tablename, policyname, cmd FROM pg_policies
--- WHERE schemaname = 'public' AND tablename IN ('jobs','job_applications')
--- ORDER BY tablename;
---
--- Expected 5 rows:
---   job_applications | Admins manage all applications | ALL
---   job_applications | Users insert own applications  | INSERT
---   job_applications | Users update own applications  | UPDATE
---   job_applications | Users view own applications    | SELECT
---   jobs             | Admins manage all jobs         | ALL
---   jobs             | Everyone can view active jobs, admins see all | SELECT
