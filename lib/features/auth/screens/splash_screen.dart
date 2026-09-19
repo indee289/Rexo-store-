@@ -108,12 +108,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   scale: _scaleIn,
                   child: Column(
                     children: [
-                      // Glassy logo badge
+                      // Logo badge — real Rexo logo
                       Container(
                         width: 96,
                         height: 96,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.16),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(28),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.35),
@@ -121,10 +121,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: const Icon(
-                          Iconsax.crown_1,
-                          color: Colors.white,
-                          size: 48,
+                        padding: const EdgeInsets.all(16),
+                        child: Image.asset(
+                          'assets/logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(height: 24),
