@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'services/onesignal_service.dart';
@@ -28,6 +29,29 @@ void main() async {
   }
 
   await SupabaseService.initialize();
+
+  // SECURITY: Detect a fresh install and clear any auth session that survived
+  // an uninstall (e.g. via Android cloud backup). Without this, a reinstalled
+  // app could auto-login as the previous user — including the admin account.
+  //
+  // We store a flag in SharedPreferences. SharedPreferences is wiped on a true
+  // uninstall, so if the flag is missing but a Supabase session exists, the
+  // session was restored from backup and must be invalidated.
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    const installedFlag = 'rexo_installed_flag_v1';
+    final hasFlag = prefs.getBool(installedFlag) ?? false;
+    if (!hasFlag) {
+      // Fresh install (or first launch after this fix). If a session was
+      // restored from backup, sign it out so the user must log in explicitly.
+      if (SupabaseService.isAuthenticated) {
+        await SupabaseService.signOut();
+      }
+      await prefs.setBool(installedFlag, true);
+    }
+  } catch (_) {
+    // Never block startup on this guard.
+  }
 
   runApp(
     const ProviderScope(

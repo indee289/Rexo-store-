@@ -23,7 +23,7 @@ final availableJobsProvider =
 
   var query = SupabaseService.client
       .from('jobs')
-      .select('*, users!created_by(id, name, avatar_url)')
+      .select()
       .eq('status', 'active');
 
   if (category != 'All') {
@@ -77,7 +77,7 @@ final jobDetailProvider =
         (ref, jobId) async {
   final response = await SupabaseService.client
       .from('jobs')
-      .select('*, users!created_by(id, name, avatar_url)')
+      .select()
       .eq('id', jobId)
       .maybeSingle();
   return response;
@@ -112,8 +112,7 @@ final myJobApplicationsProvider =
 
   var query = SupabaseService.client
       .from('job_applications')
-      .select(
-          '*, jobs(id, title, description, category, payment_amount, max_slots, deadline, cover_image_url, status)')
+      .select()
       .eq('user_id', user.id);
 
   if (statusFilter != 'all') {
@@ -121,7 +120,25 @@ final myJobApplicationsProvider =
   }
 
   final response = await query.order('applied_at', ascending: false);
-  return List<Map<String, dynamic>>.from(response);
+  final rows = List<Map<String, dynamic>>.from(response);
+
+  // Fetch each job separately (avoids embedded-join RLS/PGRST issues)
+  final enriched = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final jobId = row['job_id'] as String?;
+    Map<String, dynamic>? jobRow;
+    if (jobId != null) {
+      try {
+        jobRow = await SupabaseService.client
+            .from('jobs')
+            .select()
+            .eq('id', jobId)
+            .maybeSingle();
+      } catch (_) {}
+    }
+    enriched.add({...row, 'jobs': jobRow ?? {}});
+  }
+  return enriched;
 });
 
 // ─── Admin Providers ──────────────────────────────────────────────────────────
@@ -154,17 +171,19 @@ final adminJobSubmissionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await SupabaseService.client
       .from('job_applications')
-      .select('*, jobs(id, title, payment_amount)')
+      .select()
       .eq('status', 'submitted')
       .order('submitted_at', ascending: false)
       .limit(200);
   final rows = List<Map<String, dynamic>>.from(response);
 
-  // Fetch user details separately to avoid RLS join failures
+  // Fetch job + user details separately to avoid embedded-join failures
   final enriched = <Map<String, dynamic>>[];
   for (final row in rows) {
     final userId = row['user_id'] as String?;
+    final jobId = row['job_id'] as String?;
     Map<String, dynamic>? userRow;
+    Map<String, dynamic>? jobRow;
     if (userId != null) {
       try {
         userRow = await SupabaseService.client
@@ -174,7 +193,16 @@ final adminJobSubmissionsProvider =
             .maybeSingle();
       } catch (_) {}
     }
-    enriched.add({...row, 'users': userRow ?? {}});
+    if (jobId != null) {
+      try {
+        jobRow = await SupabaseService.client
+            .from('jobs')
+            .select('id, title, payment_amount')
+            .eq('id', jobId)
+            .maybeSingle();
+      } catch (_) {}
+    }
+    enriched.add({...row, 'users': userRow ?? {}, 'jobs': jobRow ?? {}});
   }
   return enriched;
 });
@@ -328,10 +356,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application to get user_id and payment_amount
+      // Fetch application, then job separately (no embedded join)
       final app = await SupabaseService.client
           .from('job_applications')
-          .select('user_id, job_id, jobs(title, payment_amount)')
+          .select('user_id, job_id')
           .eq('id', applicationId)
           .maybeSingle();
 
@@ -341,10 +369,15 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       final userId = app['user_id'] as String;
-      final job = app['jobs'] as Map<String, dynamic>? ?? {};
-      final jobTitle = job['title'] as String? ?? 'Job';
+      final jobId = app['job_id'] as String;
+      final job = await SupabaseService.client
+          .from('jobs')
+          .select('title, payment_amount')
+          .eq('id', jobId)
+          .maybeSingle();
+      final jobTitle = job?['title'] as String? ?? 'Job';
       final paymentAmount =
-          (job['payment_amount'] as num?)?.toDouble() ?? 0.0;
+          (job?['payment_amount'] as num?)?.toDouble() ?? 0.0;
 
       final now = DateTime.now().toIso8601String();
 
@@ -398,10 +431,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application to get user_id and job title
+      // Fetch application, then job title separately (no embedded join)
       final app = await SupabaseService.client
           .from('job_applications')
-          .select('user_id, job_id, jobs(title)')
+          .select('user_id, job_id')
           .eq('id', applicationId)
           .maybeSingle();
 
@@ -411,8 +444,13 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       final userId = app['user_id'] as String;
-      final job = app['jobs'] as Map<String, dynamic>? ?? {};
-      final jobTitle = job['title'] as String? ?? 'Job';
+      final jobId = app['job_id'] as String;
+      final job = await SupabaseService.client
+          .from('jobs')
+          .select('title')
+          .eq('id', jobId)
+          .maybeSingle();
+      final jobTitle = job?['title'] as String? ?? 'Job';
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status + rejection reason
