@@ -6,8 +6,10 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../../notifications/providers/notifications_provider.dart';
 import '../../messages/providers/messages_provider.dart';
+import '../providers/banners_provider.dart';
 import '../providers/home_provider.dart';
 import '../widgets/featured_campaign_card.dart';
 
@@ -70,17 +72,6 @@ class _HomeHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
-              borderRadius: AppRadius.allMd,
-            ),
-            child: const Icon(Icons.home_rounded,
-                color: AppColors.primary, size: 22),
-          ),
-          const SizedBox(width: 10),
           Text(
             'Home',
             style: TextStyle(
@@ -186,7 +177,7 @@ class _HeaderIconButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Banner carousel
+// Banner carousel — uses live DB banners with static fallback
 // ─────────────────────────────────────────────────────────────────────────
 class _BannerSlideData {
   final String title;
@@ -194,30 +185,24 @@ class _BannerSlideData {
   const _BannerSlideData(this.title, this.subtitle);
 }
 
-class _BannerCarousel extends StatefulWidget {
+class _BannerCarousel extends ConsumerStatefulWidget {
   const _BannerCarousel();
 
   @override
-  State<_BannerCarousel> createState() => _BannerCarouselState();
+  ConsumerState<_BannerCarousel> createState() => _BannerCarouselState();
 }
 
-class _BannerCarouselState extends State<_BannerCarousel> {
+class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
   final _controller = PageController();
   int _page = 0;
 
-  static const _slides = [
-    _BannerSlideData(
-      'Create Content.\nEarn Rewards.',
-      'Collaborate with top brands\nand grow your influence.',
-    ),
-    _BannerSlideData(
-      'Top Brands\nAwait You.',
-      'Join campaigns from leading\nbrands and start earning.',
-    ),
-    _BannerSlideData(
-      'Grow Your\nInfluence.',
-      'Turn your creativity into\nreal, rewarding collaborations.',
-    ),
+  static const _fallbackSlides = [
+    _BannerSlideData('Create Content.\nEarn Rewards.',
+        'Collaborate with top brands\nand grow your influence.'),
+    _BannerSlideData('Top Brands\nAwait You.',
+        'Join campaigns from leading\nbrands and start earning.'),
+    _BannerSlideData('Grow Your\nInfluence.',
+        'Turn your creativity into\nreal, rewarding collaborations.'),
   ];
 
   @override
@@ -228,10 +213,16 @@ class _BannerCarouselState extends State<_BannerCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    // Height scales gently with width but is clamped so it stays compact and
-    // never overflows on small or large Android phones.
+    // Height reduced by 15% from original
     final width = MediaQuery.of(context).size.width;
-    final bannerHeight = (width * 0.46).clamp(178.0, 208.0);
+    final bannerHeight = (width * 0.391).clamp(151.0, 177.0);
+
+    // Use live DB banners if available, else fallback to static slides
+    final liveBanners = ref.watch(bannersProvider);
+    final useDbBanners = liveBanners.value != null &&
+        liveBanners.value!.isNotEmpty;
+    final dbBanners = liveBanners.value ?? [];
+    final slideCount = useDbBanners ? dbBanners.length : _fallbackSlides.length;
 
     return Column(
       children: [
@@ -239,11 +230,13 @@ class _BannerCarouselState extends State<_BannerCarousel> {
           height: bannerHeight,
           child: PageView.builder(
             controller: _controller,
-            itemCount: _slides.length,
+            itemCount: slideCount,
             onPageChanged: (i) => setState(() => _page = i),
             itemBuilder: (_, i) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _BannerSlide(data: _slides[i]),
+              child: useDbBanners
+                  ? _DbBannerSlide(banner: dbBanners[i])
+                  : _BannerSlide(data: _fallbackSlides[i]),
             ),
           ),
         ),
@@ -251,7 +244,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            _slides.length,
+            slideCount,
             (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -359,7 +352,48 @@ class _BannerSlide extends StatelessWidget {
   }
 }
 
-/// Lightweight decorative artwork (gift + megaphone-ish speaker + badges) built
+/// A DB banner slide — shows the uploaded image and handles tap navigation.
+class _DbBannerSlide extends StatelessWidget {
+  final Map<String, dynamic> banner;
+  const _DbBannerSlide({required this.banner});
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = banner['image_url'] as String? ?? '';
+    final linkType = banner['link_type'] as String? ?? 'none';
+    final campaignId = banner['link_campaign_id'] as String?;
+    final page = banner['link_page'] as String?;
+
+    void onTap() {
+      if (linkType == 'campaign' && campaignId != null) {
+        context.push('/campaigns/$campaignId');
+      } else if (linkType == 'page' && page != null && page.isNotEmpty) {
+        context.push(page);
+      }
+    }
+
+    return GestureDetector(
+      onTap: linkType != 'none' ? onTap : null,
+      child: ClipRRect(
+        borderRadius: AppRadius.allLg,
+        child: imageUrl.isNotEmpty
+            ? Image.network(
+                imageUrl,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackContainer(),
+              )
+            : _fallbackContainer(),
+      ),
+    );
+  }
+
+  Widget _fallbackContainer() => Container(
+        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+      );
+}
+
+/// Lightweight decorative artwork (gift + megaphone-ish speaker + badges)
 /// from icons so it needs no image asset while keeping the campaign vibe.
 class _BannerArt extends StatelessWidget {
   @override
@@ -453,39 +487,50 @@ class _FeaturedList extends ConsumerWidget {
     final async = ref.watch(featuredCampaignsProvider);
     final saved = ref.watch(savedCampaignsProvider);
 
-    // Prefer real campaigns; fall back to sample data so the UI is always
-    // populated and testable (loading/error/empty all show samples).
-    final List<FeaturedCampaignData> items = async.maybeWhen(
-      data: (rows) => rows.isEmpty
-          ? _sampleCampaigns
-          : rows.map(_mapCampaign).toList(),
-      orElse: () => _sampleCampaigns,
-    );
-
-    return Column(
-      children: [
-        for (final data in items)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: FeaturedCampaignCard(
-              data: data,
-              saved: saved.contains(data.id),
-              onToggleSave: () {
-                final notifier = ref.read(savedCampaignsProvider.notifier);
-                final next = Set<String>.from(notifier.state);
-                if (!next.add(data.id)) next.remove(data.id);
-                notifier.state = next;
-              },
-              onTap: () {
-                if (data.id.startsWith('sample-')) {
-                  context.go(AppRoutes.campaigns);
-                } else {
-                  context.push('/campaigns/${data.id}');
-                }
-              },
+    return async.when(
+      loading: () => Column(
+        children: [
+          for (int i = 0; i < 3; i++)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: ShimmerCard(height: 90),
             ),
-          ),
-      ],
+        ],
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (rows) {
+        final items = rows.map(_mapCampaign).toList();
+        if (items.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Center(
+              child: Text(
+                'No campaigns yet',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+            ),
+          );
+        }
+        return Column(
+          children: [
+            for (final data in items)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: FeaturedCampaignCard(
+                  data: data,
+                  saved: saved.contains(data.id),
+                  onToggleSave: () {
+                    final notifier = ref.read(savedCampaignsProvider.notifier);
+                    final next = Set<String>.from(notifier.state);
+                    if (!next.add(data.id)) next.remove(data.id);
+                    notifier.state = next;
+                  },
+                  onTap: () => context.push('/campaigns/${data.id}'),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -535,38 +580,4 @@ String _rate(dynamic value) {
   return '₹${_grouped(v)}';
 }
 
-const List<FeaturedCampaignData> _sampleCampaigns = [
-  FeaturedCampaignData(
-    id: 'sample-1',
-    title: 'OhnePixel [CLIPPING] 5',
-    category: 'Clipping',
-    imageUrl: '',
-    private: true,
-    platforms: ['instagram', 'tiktok'],
-    paidOutPercent: 0,
-    budgetText: '\$10,000',
-    rateText: '\$100 / 1M',
-  ),
-  FeaturedCampaignData(
-    id: 'sample-2',
-    title: 'Duel [MONARCH CLIPPING]',
-    category: 'Clipping',
-    imageUrl: '',
-    private: false,
-    platforms: ['tiktok', 'youtube'],
-    paidOutPercent: 46,
-    budgetText: '\$5,000',
-    rateText: '\$2,500 / 1M',
-  ),
-  FeaturedCampaignData(
-    id: 'sample-3',
-    title: 'Roobet [CLIPPING] 3',
-    category: 'Clipping',
-    imageUrl: '',
-    private: false,
-    platforms: ['instagram', 'tiktok', 'youtube', 'x'],
-    paidOutPercent: 84,
-    budgetText: '\$4,800',
-    rateText: '\$2,500 / 1M',
-  ),
-];
+// ── Mapping helpers ───────────────────────────────────────────────────────

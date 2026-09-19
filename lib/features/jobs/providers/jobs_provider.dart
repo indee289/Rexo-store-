@@ -127,10 +127,12 @@ final myJobApplicationsProvider =
 // ─── Admin Providers ──────────────────────────────────────────────────────────
 
 /// All jobs for the admin manage list (all statuses).
+/// No user join — the foreign-key join on created_by can fail RLS on some
+/// Supabase configs; the admin list only needs the core job fields.
 final adminJobsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await SupabaseService.client
       .from('jobs')
-      .select('*, users!created_by(id, name, avatar_url)')
+      .select()
       .order('created_at', ascending: false)
       .limit(200);
   return List<Map<String, dynamic>>.from(response);
@@ -147,17 +149,34 @@ final adminJobApplicantCountProvider =
 });
 
 /// All submitted (pending review) job applications for admin review.
-/// Joins job title and user profile.
+/// Simple join — no nested user join to avoid RLS issues.
 final adminJobSubmissionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await SupabaseService.client
       .from('job_applications')
-      .select(
-          '*, jobs(id, title, payment_amount), users:user_id(id, name, handle, avatar_url)')
+      .select('*, jobs(id, title, payment_amount)')
       .eq('status', 'submitted')
       .order('submitted_at', ascending: false)
       .limit(200);
-  return List<Map<String, dynamic>>.from(response);
+  final rows = List<Map<String, dynamic>>.from(response);
+
+  // Fetch user details separately to avoid RLS join failures
+  final enriched = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final userId = row['user_id'] as String?;
+    Map<String, dynamic>? userRow;
+    if (userId != null) {
+      try {
+        userRow = await SupabaseService.client
+            .from('users')
+            .select('id, name, handle, avatar_url')
+            .eq('id', userId)
+            .maybeSingle();
+      } catch (_) {}
+    }
+    enriched.add({...row, 'users': userRow ?? {}});
+  }
+  return enriched;
 });
 
 // ─── Jobs Actions Notifier ────────────────────────────────────────────────────

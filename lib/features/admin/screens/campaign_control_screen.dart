@@ -166,7 +166,22 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                       Row(
                         children: [
                           _ActionButton(
-                            label: 'Pause',
+                            label: 'Edit',
+                            icon: Iconsax.edit,
+                            color: AppColors.primary,
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CreateCampaignScreen(
+                                    existingCampaign: campaign,
+                                  ),
+                                ),
+                              );
+                              ref.invalidate(adminCampaignsProvider);
+                            },
+                          ),
+                          const SizedBox(width: 8),
                             icon: Iconsax.pause,
                             color: AppColors.warning,
                             onTap: () => ref

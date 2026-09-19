@@ -9,7 +9,8 @@ import '../../../services/supabase_service.dart';
 import '../providers/admin_provider.dart';
 
 class CreateCampaignScreen extends ConsumerStatefulWidget {
-  const CreateCampaignScreen({super.key});
+  final Map<String, dynamic>? existingCampaign;
+  const CreateCampaignScreen({super.key, this.existingCampaign});
 
   @override
   ConsumerState<CreateCampaignScreen> createState() =>
@@ -31,6 +32,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   String _selectedPageProfileCategory = 'Comedy';
   String? _coverImageUrl;
   bool _isSubmitting = false;
+
+  bool get _isEdit => widget.existingCampaign != null;
 
   static const List<String> _categories = [
     'Logo',
@@ -64,6 +67,40 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final e = widget.existingCampaign;
+    if (e != null) {
+      _campaignNameController.text = e['title'] as String? ?? '';
+      _slotsController.text = (e['total_slots'] ?? '').toString();
+      _budgetController.text = (e['budget'] ?? '').toString();
+      _perCreatorController.text = (e['per_creator_payout'] ?? '').toString();
+      _companyNameController.text = e['company_name'] as String? ?? '';
+      _coverImageUrl = e['cover_image_url'] as String?;
+      if (e['category'] != null && _categories.contains(e['category'])) {
+        _selectedCategory = e['category'] as String;
+      }
+      if (e['platform'] != null) {
+        final p = (e['platform'] as String).toLowerCase();
+        _selectedPlatform = _platforms.firstWhere(
+          (x) => x.toLowerCase() == p,
+          orElse: () => _platforms.first,
+        );
+      }
+      if (e['gender'] != null && _genders.contains(e['gender'])) {
+        _selectedGender = e['gender'] as String;
+      }
+      if (e['page_profile_category'] != null &&
+          _pageProfileCategories.contains(e['page_profile_category'])) {
+        _selectedPageProfileCategory = e['page_profile_category'] as String;
+      }
+      if (e['deadline'] != null) {
+        _deadline = DateTime.tryParse(e['deadline'].toString());
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _campaignNameController.dispose();
     _slotsController.dispose();
@@ -90,7 +127,6 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
     try {
       final data = <String, dynamic>{
-        'brand_id': SupabaseService.currentUser?.id,
         'title': _campaignNameController.text.trim(),
         'category': _selectedCategory,
         'platform': _selectedPlatform,
@@ -102,38 +138,46 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'company_name': _companyNameController.text.trim(),
         'gender': _selectedGender,
         'page_profile_category': _selectedPageProfileCategory,
-        'status': 'active',
       };
 
       if (_coverImageUrl != null && _coverImageUrl!.isNotEmpty) {
         data['cover_image_url'] = _coverImageUrl;
       }
 
-      await SupabaseService.client.from('campaigns').insert(data);
+      if (_isEdit) {
+        await SupabaseService.client
+            .from('campaigns')
+            .update(data)
+            .eq('id', widget.existingCampaign!['id'] as String);
+      } else {
+        data['brand_id'] = SupabaseService.currentUser?.id;
+        data['status'] = 'active';
+        await SupabaseService.client.from('campaigns').insert(data);
+      }
+
       ref.invalidate(adminCampaignsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Campaign created successfully!'),
+          SnackBar(
+            content: Text(
+                _isEdit ? 'Campaign updated!' : 'Campaign created successfully!'),
             backgroundColor: AppColors.success,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create campaign: ${e.toString()}'),
+            content: Text('Failed: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -144,7 +188,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Create Campaign', style: AppTextStyles.h5),
+        title: Text(_isEdit ? 'Edit Campaign' : 'Create Campaign',
+            style: AppTextStyles.h5),
         elevation: 0,
         scrolledUnderElevation: 0.5,
         leading: IconButton(
@@ -393,7 +438,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : Text('Submit Campaign', style: AppTextStyles.button),
+                      : Text(_isEdit ? 'Save Changes' : 'Submit Campaign',
+                          style: AppTextStyles.button),
                 ),
               ),
 

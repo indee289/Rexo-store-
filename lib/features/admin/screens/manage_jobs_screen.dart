@@ -121,6 +121,8 @@ class _JobAdminCard extends ConsumerWidget {
 
   const _JobAdminCard({required this.job});
 
+  static const _statusValues = ['active', 'closed', 'draft'];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -136,6 +138,7 @@ class _JobAdminCard extends ConsumerWidget {
     final applicantCount = ref.watch(adminJobApplicantCountProvider(jobId));
 
     final isActive = status == 'active';
+    final isHidden = status == 'draft'; // draft = hidden from users
 
     return PremiumCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -183,7 +186,6 @@ class _JobAdminCard extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.sm),
 
-          // Meta row: payment, slots, deadline, applicants
           Wrap(
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.xs,
@@ -225,7 +227,7 @@ class _JobAdminCard extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.md),
 
-          // Action buttons
+          // Action buttons: Edit | Hide/Show | Close/Open | Delete
           Row(
             children: [
               // Edit
@@ -245,21 +247,41 @@ class _JobAdminCard extends ConsumerWidget {
                   },
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
+              // Hide / Show (draft = hidden)
+              Expanded(
+                child: _OutlineActionButton(
+                  icon: isHidden ? Iconsax.eye : Iconsax.eye_slash,
+                  label: isHidden ? 'Show' : 'Hide',
+                  color: AppColors.accentPurple,
+                  onTap: () => _setStatus(
+                    context,
+                    ref,
+                    jobId,
+                    isHidden ? 'active' : 'draft',
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
               // Close / Reopen
               Expanded(
                 child: _OutlineActionButton(
                   icon: isActive ? Iconsax.pause : Iconsax.play,
-                  label: isActive ? 'Close' : 'Reopen',
+                  label: isActive ? 'Close' : 'Open',
                   color: isActive ? AppColors.warning : AppColors.success,
-                  onTap: () => _toggleStatus(context, ref, jobId, status),
+                  onTap: () => _setStatus(
+                    context,
+                    ref,
+                    jobId,
+                    isActive ? 'closed' : 'active',
+                  ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
               // Delete
               _OutlineActionButton(
                 icon: Iconsax.trash,
-                label: 'Delete',
+                label: 'Del',
                 color: AppColors.error,
                 onTap: () => _confirmDelete(context, ref, jobId, title),
               ),
@@ -270,23 +292,21 @@ class _JobAdminCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _toggleStatus(
+  Future<void> _setStatus(
     BuildContext context,
     WidgetRef ref,
     String jobId,
-    String currentStatus,
+    String newStatus,
   ) async {
     final ok = await ref
         .read(jobsActionsProvider.notifier)
-        .toggleJobStatus(jobId, currentStatus);
+        .updateJob(jobId, {'status': newStatus});
     if (!context.mounted) return;
     if (!ok) {
-      final err = ref.read(jobsActionsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(err.hasError
-              ? ErrorUtils.sanitize(err.error)
-              : 'Could not update job status.'),
+          content: Text(ErrorUtils.sanitize(
+              ref.read(jobsActionsProvider).error)),
           backgroundColor: AppColors.error,
         ),
       );
@@ -363,16 +383,22 @@ class _StatusChip extends StatelessWidget {
         bg = AppColors.error.withOpacity(0.12);
         fg = AppColors.error;
         break;
+      case 'draft':
+        bg = AppColors.accentPurple.withOpacity(0.12);
+        fg = AppColors.accentPurple;
+        break;
       default:
         bg = isDark ? AppColors.darkSurfaceAlt : const Color(0xFFF3F4F6);
         fg = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     }
 
+    final label = status == 'draft' ? 'Hidden' : status[0].toUpperCase() + status.substring(1);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: AppRadius.allSm),
       child: Text(
-        status[0].toUpperCase() + status.substring(1),
+        label,
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
       ),
     );

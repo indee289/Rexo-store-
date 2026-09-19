@@ -9,6 +9,7 @@ import 'disputes_screen.dart';
 import 'kyc_verification_screen.dart';
 import 'push_broadcast_screen.dart';
 import 'rexo_program_screen.dart';
+import 'manage_banners_screen.dart';
 import 'manage_jobs_screen.dart';
 import 'review_job_submissions_screen.dart';
 import 'submission_review_screen.dart';
@@ -50,6 +51,17 @@ class ActionsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+            _ActionTile(
+              icon: Iconsax.image,
+              title: 'Manage Banners',
+              subtitle: 'Upload, edit and control home banners',
+              color: AppColors.accentIndigo,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ManageBannersScreen()),
+              ),
+            ),
             _ActionTile(
               icon: Iconsax.briefcase,
               title: 'Campaign Control',
