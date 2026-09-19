@@ -1,19 +1,15 @@
 -- ============================================================================
--- FIX: is_admin() returned false even for users whose role was 'ADMIN'
--- (uppercase) because the function compared against lowercase 'admin'.
+-- FIX: is_admin() returned false even for the 'ADMIN' user because the
+-- function compared against lowercase 'admin'.
 --
--- Two-part fix:
---   1. Normalize any existing role values to lowercase.
---   2. Make is_admin() case-insensitive so it never breaks again.
+-- NOTE: We do NOT bulk-lowercase every row (a previous attempt hit
+-- users_role_check because some rows hold values outside the allowed set).
+-- Instead we make is_admin() itself case-insensitive, which is all that's
+-- needed, and fix ONLY the known admin account.
 -- Idempotent: safe to run multiple times.
 -- ============================================================================
 
--- 1) Normalize existing role values to the lowercase form the CHECK expects
-UPDATE public.users
-SET role = lower(role)
-WHERE role <> lower(role);
-
--- 2) Case-insensitive admin check
+-- 1) Case-insensitive admin check (the real fix — no table-wide update needed)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE sql
@@ -29,16 +25,21 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 
+-- 2) Ensure the admin account's role is the canonical lowercase 'admin'.
+--    Scoped to the single admin email so it can't trip the role CHECK for
+--    any other row.
+UPDATE public.users
+SET role = 'admin'
+WHERE email = 'rexoagency.in@gmail.com'
+  AND role <> 'admin';
+
 -- ============================================================================
--- NOTE ON TESTING is_admin():
--- Running "SELECT public.is_admin();" in the Supabase SQL Editor will return
--- FALSE even for an admin — because the SQL Editor runs as the postgres role,
--- NOT as your app-authenticated user, so auth.uid() is NULL there.
+-- TESTING:
+-- "SELECT public.is_admin();" in the SQL Editor returns FALSE for everyone
+-- (auth.uid() is NULL there). The real test is inside the app: log in with the
+-- admin email; Jobs / Manage Jobs / Post Job / Banners should now work.
 --
--- The REAL test is inside the app: log in with the admin email and the Jobs /
--- Manage Jobs / Post Job / Banners screens should now load and work.
---
--- To verify the role value in the DB directly:
+-- Verify the admin row directly:
 --   SELECT email, role FROM public.users WHERE email = 'rexoagency.in@gmail.com';
---   -- role must be lowercase 'admin'
+--   -- role must be 'admin'
 -- ============================================================================
