@@ -41,10 +41,8 @@ import '../../features/services/screens/services_screen.dart';
 import '../../features/sessions/screens/sessions_screen.dart';
 import '../../features/settings/screens/help_support_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
-import '../../features/shop/screens/cart_screen.dart';
-import '../../features/shop/screens/checkout_screen.dart';
-import '../../features/shop/screens/product_detail_screen.dart';
-import '../../features/shop/screens/shop_screen.dart';
+import '../../features/jobs/screens/job_detail_screen.dart';
+import '../../features/jobs/screens/jobs_screen.dart';
 import '../../features/subscriptions/screens/subscriptions_screen.dart';
 import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
@@ -70,10 +68,8 @@ class AppRoutes {
   static const String campaigns = '/campaigns';
   static const String campaignDetail = '/campaigns/:id';
   static const String campaignApply = '/campaigns/:id/apply';
-  static const String shop = '/shop';
-  static const String productDetail = '/shop/:id';
-  static const String cart = '/cart';
-  static const String checkout = '/checkout';
+  static const String jobs = '/jobs';
+  static const String jobDetail = '/jobs/:id';
   static const String profile = '/profile';
   static const String wallet = '/wallet';
   static const String walletDeposit = '/wallet/deposit';
@@ -245,12 +241,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          /// Shop branch
+          /// Jobs branch
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.shop,
-                builder: (context, state) => const ShopScreen(),
+                path: AppRoutes.jobs,
+                builder: (context, state) => const JobsScreen(),
               ),
             ],
           ),
@@ -285,25 +281,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      /// Product detail screen (pushed on top of bottom nav)
+      /// Job detail screen (pushed on top of bottom nav)
       GoRoute(
-        path: AppRoutes.productDetail,
+        path: AppRoutes.jobDetail,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return ProductDetailScreen(productId: id);
+          return JobDetailScreen(jobId: id);
         },
-      ),
-
-      /// Cart screen
-      GoRoute(
-        path: AppRoutes.cart,
-        builder: (context, state) => const CartScreen(),
-      ),
-
-      /// Checkout screen
-      GoRoute(
-        path: AppRoutes.checkout,
-        builder: (context, state) => const CheckoutScreen(),
       ),
 
       /// Wallet screen

@@ -9,7 +9,8 @@ import 'disputes_screen.dart';
 import 'kyc_verification_screen.dart';
 import 'push_broadcast_screen.dart';
 import 'rexo_program_screen.dart';
-import 'shop_admin_screen.dart';
+import 'manage_jobs_screen.dart';
+import 'review_job_submissions_screen.dart';
 import 'submission_review_screen.dart';
 import 'subscription_requests_screen.dart';
 import 'wallets_escrow_screen.dart';
@@ -105,13 +106,24 @@ class ActionsScreen extends StatelessWidget {
               ),
             ),
             _ActionTile(
-              icon: Iconsax.shop,
-              title: 'Shop Admin',
-              subtitle: 'Manage products and orders',
+              icon: Iconsax.briefcase,
+              title: 'Manage Jobs',
+              subtitle: 'Post, edit, close and delete jobs',
               color: AppColors.accentTeal,
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ShopAdminScreen()),
+                MaterialPageRoute(builder: (context) => const ManageJobsScreen()),
+              ),
+            ),
+            _ActionTile(
+              icon: Iconsax.task_square,
+              title: 'Review Job Submissions',
+              subtitle: 'Approve or reject submitted tasks',
+              color: AppColors.accentOrange,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ReviewJobSubmissionsScreen()),
               ),
             ),
             _ActionTile(

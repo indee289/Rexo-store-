@@ -6,7 +6,7 @@ import '../theme/app_radius.dart';
 
 /// Fixed bottom navigation bar (matches the Home reference).
 ///
-/// Exactly four tabs — Home, Campaigns, Shop, Profile — each with an icon and
+/// Exactly four tabs — Home, Campaigns, Jobs, Profile — each with an icon and
 /// a label. The active tab shows a soft violet rounded chip behind its icon
 /// plus a violet label; inactive tabs show a muted icon + label. Theme-aware.
 class AppBottomNav extends StatelessWidget {
@@ -22,7 +22,7 @@ class AppBottomNav extends StatelessWidget {
   static const _items = [
     _Item(Iconsax.home_2, 'Home'),
     _Item(Iconsax.send_2, 'Campaigns'),
-    _Item(Iconsax.shop, 'Shop'),
+    _Item(Iconsax.briefcase, 'Jobs'),
     _Item(Iconsax.user, 'Profile'),
   ];
 
