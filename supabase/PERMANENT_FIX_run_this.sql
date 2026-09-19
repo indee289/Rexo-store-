@@ -1,37 +1,27 @@
 -- ============================================================================
--- PERMANENT FIX — run this ONE script. Copy the WHOLE thing.
+-- PERMANENT FIX (v2) — bulletproof. Copy the WHOLE thing, run once.
 --
--- Fixes for good:
---   * ERROR 42883 (uuid = text) — via a current_uid() helper that ALWAYS
---     returns uuid, so no policy ever needs a manual ::uuid cast again.
---   * duplicate/conflicting policies — drops ALL and recreates the correct 8.
---   * is_admin() case-insensitivity.
+-- Previous attempts failed with 42883 (uuid = text) no matter which side we
+-- cast. The bulletproof approach: cast BOTH sides to text. text = text always
+-- works regardless of whether the columns are uuid or text.
 --
 -- Idempotent: safe to run any number of times.
 -- ============================================================================
 
--- 1) Helper: current user id, ALWAYS typed as uuid.
-CREATE OR REPLACE FUNCTION public.current_uid()
-RETURNS uuid
-LANGUAGE sql STABLE
-AS $$
-  SELECT auth.uid()::uuid;
-$$;
-GRANT EXECUTE ON FUNCTION public.current_uid() TO authenticated;
-
--- 2) is_admin() — case-insensitive, uses the uuid helper.
+-- is_admin() — case-insensitive. Compares users.id (text-cast) with auth.uid()
+-- (text-cast) so it can never hit a uuid/text mismatch.
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.users
-    WHERE id = public.current_uid() AND lower(role) = 'admin'
+    WHERE id::text = auth.uid()::text AND lower(role) = 'admin'
   );
 $$;
 GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 
--- 3) Drop EVERY existing policy on the three tables (kills all duplicates).
+-- Drop EVERY existing policy on the three tables (removes all duplicates).
 DO $$
 DECLARE r record;
 BEGIN
@@ -44,8 +34,8 @@ BEGIN
   END LOOP;
 END $$;
 
--- 4) Recreate exactly the correct 8 policies.
---    All user-id comparisons use current_uid() (uuid) — no cast headaches.
+-- Recreate the correct 8 policies. All user-id comparisons cast BOTH sides to
+-- text so no uuid/text operator error is possible.
 
 -- JOBS
 CREATE POLICY "jobs_select" ON public.jobs
@@ -60,16 +50,16 @@ CREATE POLICY "jobs_admin_all" ON public.jobs
 -- JOB APPLICATIONS
 CREATE POLICY "japp_select" ON public.job_applications
   FOR SELECT TO authenticated
-  USING (public.current_uid() = user_id OR public.is_admin());
+  USING (auth.uid()::text = user_id::text OR public.is_admin());
 
 CREATE POLICY "japp_insert" ON public.job_applications
   FOR INSERT TO authenticated
-  WITH CHECK (public.current_uid() = user_id);
+  WITH CHECK (auth.uid()::text = user_id::text);
 
 CREATE POLICY "japp_update" ON public.job_applications
   FOR UPDATE TO authenticated
-  USING ((public.current_uid() = user_id AND status = 'applied') OR public.is_admin())
-  WITH CHECK ((public.current_uid() = user_id) OR public.is_admin());
+  USING ((auth.uid()::text = user_id::text AND status = 'applied') OR public.is_admin())
+  WITH CHECK ((auth.uid()::text = user_id::text) OR public.is_admin());
 
 CREATE POLICY "japp_admin_all" ON public.job_applications
   FOR ALL TO authenticated
@@ -86,7 +76,7 @@ CREATE POLICY "banners_admin_all" ON public.banners
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- 5) Verify — must show EXACTLY 8 rows.
+-- Verify — must show EXACTLY 8 rows.
 SELECT tablename, policyname, cmd FROM pg_policies
 WHERE schemaname='public' AND tablename IN ('jobs','job_applications','banners')
 ORDER BY tablename, cmd;
