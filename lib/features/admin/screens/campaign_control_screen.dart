@@ -182,6 +182,8 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                             },
                           ),
                           const SizedBox(width: 8),
+                          _ActionButton(
+                            label: 'Pause',
                             icon: Iconsax.pause,
                             color: AppColors.warning,
                             onTap: () => ref
