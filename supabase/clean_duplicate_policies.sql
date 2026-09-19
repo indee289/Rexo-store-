@@ -1,12 +1,9 @@
 -- ============================================================================
 -- CLEAN UP DUPLICATE / CONFLICTING POLICIES on jobs, job_applications, banners
 --
--- The pg_policies list showed 14 policies including old duplicates like
--- "Manage jobs policy", "Public view jobs", "Insert applications policy",
--- "View applications policy", "Update applications policy",
--- "Delete applications policy". These were created by an earlier run and may
--- carry conditions that block access. This script removes ALL policies on the
--- three tables and recreates exactly the correct set.
+-- Also fixes: ERROR 42883 "operator does not exist: uuid = text".
+-- In this Supabase project auth.uid() resolves to text, while user_id is uuid,
+-- so a bare `auth.uid() = user_id` fails. We cast auth.uid()::uuid.
 --
 -- Run the WHOLE script in Supabase SQL Editor. Idempotent.
 -- ============================================================================
@@ -48,19 +45,19 @@ CREATE POLICY "jobs_admin_all" ON public.jobs
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- JOB APPLICATIONS
+-- JOB APPLICATIONS  (auth.uid()::uuid cast avoids uuid = text error)
 CREATE POLICY "japp_select" ON public.job_applications
   FOR SELECT TO authenticated
-  USING (auth.uid() = user_id OR public.is_admin());
+  USING (auth.uid()::uuid = user_id OR public.is_admin());
 
 CREATE POLICY "japp_insert" ON public.job_applications
   FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid()::uuid = user_id);
 
 CREATE POLICY "japp_update" ON public.job_applications
   FOR UPDATE TO authenticated
-  USING ((auth.uid() = user_id AND status = 'applied') OR public.is_admin())
-  WITH CHECK ((auth.uid() = user_id) OR public.is_admin());
+  USING ((auth.uid()::uuid = user_id AND status = 'applied') OR public.is_admin())
+  WITH CHECK ((auth.uid()::uuid = user_id) OR public.is_admin());
 
 CREATE POLICY "japp_admin_all" ON public.job_applications
   FOR ALL TO authenticated
@@ -81,14 +78,4 @@ CREATE POLICY "banners_admin_all" ON public.banners
 -- SELECT tablename, policyname, cmd FROM pg_policies
 -- WHERE schemaname='public' AND tablename IN ('jobs','job_applications','banners')
 -- ORDER BY tablename, cmd;
---
--- Expected:
---   banners          | banners_admin_all | ALL
---   banners          | banners_select    | SELECT
---   job_applications | japp_admin_all    | ALL
---   job_applications | japp_insert       | INSERT
---   job_applications | japp_select       | SELECT
---   job_applications | japp_update       | UPDATE
---   jobs             | jobs_admin_all    | ALL
---   jobs             | jobs_select       | SELECT
 -- ============================================================================
