@@ -16,6 +16,10 @@ class ErrorUtils {
 
     final message = error.toString().toLowerCase();
 
+    // TEMP DEBUG (v4): raw error for jobs (campaigns is_job query). Remove after fix.
+    return 'DBG4: ${error.toString()}';
+
+    // ignore: dead_code
     // Network/connection errors
     if (message.contains('socketexception') ||
         message.contains('connection refused') ||
