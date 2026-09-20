@@ -404,10 +404,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         // PostgREST's schema cache refuses to serve.
         'payout_model': 'job',
         'brand_id': user.id,
-        // brandName is NOT NULL with no default on the live campaigns table,
-        // so every insert must supply it. Jobs are platform-posted, so use a
-        // fixed label (the job title also carries the real name).
-        'brandName': 'Rexo',
+        // NOTE: brandName is intentionally NOT written here. PostgREST's schema
+        // cache does not expose a 'brandName' column (PGRST204), so referencing
+        // it in an insert fails. POST_JOB_FIX.sql drops the NOT NULL on any such
+        // legacy column so this minimal insert succeeds without it.
         'status': 'active',
         // Valid positive number (not 0) to survive any budget CHECK constraint.
         'budget': budget,
