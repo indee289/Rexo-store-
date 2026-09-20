@@ -17,7 +17,7 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
       .eq('status', 'active')
-      .eq('is_job', false);
+      .neq('payout_model', 'job');
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -39,7 +39,7 @@ final campaignDetailProvider =
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
       .eq('id', id)
-      .eq('is_job', false)
+      .neq('payout_model', 'job')
       .maybeSingle();
 
   return response;
@@ -52,7 +52,7 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
 
   final response = await SupabaseService.client
       .from('applications')
-      .select('*, campaigns(id, title, status, cover_image_url, is_job)')
+      .select('*, campaigns(id, title, status, cover_image_url, payout_model)')
       .eq('creator_id', user.id)
       .order('created_at', ascending: false);
 
@@ -65,7 +65,7 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
   final result = <Map<String, dynamic>>[];
   for (final row in rows) {
     final campaign = row['campaigns'] as Map<String, dynamic>?;
-    if (campaign != null && campaign['is_job'] == true) continue;
+    if (campaign != null && campaign['payout_model'] == 'job') continue;
     result.add(row);
   }
   return result;
@@ -108,7 +108,7 @@ final appliedCampaignsProvider =
     // applications whose campaign_id points at an is_job=true campaign. The
     // embedded `campaigns(*)` projection includes is_job, so drop those rows
     // (they belong in My Jobs, not the Campaigns tab).
-    if (campaign['is_job'] == true) continue;
+    if (campaign['payout_model'] == 'job') continue;
 
     // Flatten: the campaign object augmented with the application fields.
     result.add({

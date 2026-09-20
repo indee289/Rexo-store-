@@ -11,7 +11,7 @@ final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((re
       .from('campaigns')
       .select()
       .eq('status', 'active')
-      .eq('is_job', false)
+      .neq('payout_model', 'job')
       .order('created_at', ascending: false)
       .limit(10);
 
@@ -59,7 +59,7 @@ final filteredCampaignsProvider = FutureProvider.autoDispose.family<List<Map<Str
       .from('campaigns')
       .select()
       .eq('status', 'active')
-      .eq('is_job', false);
+      .neq('payout_model', 'job');
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -78,7 +78,7 @@ final recentCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
       .from('campaigns')
       .select()
       .eq('status', 'active')
-      .eq('is_job', false);
+      .neq('payout_model', 'job');
 
   if (category != 'All') {
     query = query.eq('category', category);

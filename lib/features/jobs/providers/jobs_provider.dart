@@ -55,7 +55,7 @@ final availableJobsProvider =
   var query = SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('is_job', true)
+      .eq('payout_model', 'job')
       .eq('status', 'active');
 
   if (category != 'All') {
@@ -77,7 +77,7 @@ final jobCategoriesProvider = FutureProvider<List<String>>((ref) async {
   final jobs = await SupabaseService.client
       .from('campaigns')
       .select('category')
-      .eq('is_job', true)
+      .eq('payout_model', 'job')
       .eq('status', 'active');
 
   final cats = <String>{};
@@ -113,7 +113,7 @@ final jobDetailProvider =
       .from('campaigns')
       .select()
       .eq('id', jobId)
-      .eq('is_job', true)
+      .eq('payout_model', 'job')
       .maybeSingle();
   if (response == null) return null;
   return _mapCampaignToJob(Map<String, dynamic>.from(response));
@@ -169,7 +169,7 @@ final myJobApplicationsProvider =
             .from('campaigns')
             .select()
             .eq('id', campaignId)
-            .eq('is_job', true)
+            .eq('payout_model', 'job')
             .maybeSingle();
         if (campaign != null) {
           jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
@@ -203,7 +203,7 @@ final adminJobsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async
   final response = await SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('is_job', true)
+      .eq('payout_model', 'job')
       .order('created_at', ascending: false)
       .limit(200);
   return List<Map<String, dynamic>>.from(response)
@@ -246,10 +246,10 @@ final adminJobSubmissionsProvider =
       try {
         final campaign = await SupabaseService.client
             .from('campaigns')
-            .select('id, title, payout_per_creator, is_job')
+            .select('id, title, payout_per_creator, payout_model')
             .eq('id', campaignId)
             .maybeSingle();
-        if (campaign != null && campaign['is_job'] == true) {
+        if (campaign != null && campaign['payout_model'] == 'job') {
           jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
         }
       } catch (_) {}
@@ -375,7 +375,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'slots': data['max_slots'] ?? 0,
         'deadline': data['deadline'],
         'cover_image': data['cover_image_url'],
-        'is_job': true,
+        // Mark this campaign row as a JOB using the existing (already-cached)
+        // payout_model column, so we never depend on a newly-added column that
+        // PostgREST's schema cache refuses to serve.
+        'payout_model': 'job',
         'brand_id': user.id,
         // brandName is NOT NULL with no default on the live campaigns table,
         // so every insert must supply it. Jobs are platform-posted, so use a
@@ -457,7 +460,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('campaigns')
           .delete()
           .eq('id', jobId)
-          .eq('is_job', true);
+          .eq('payout_model', 'job');
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);
