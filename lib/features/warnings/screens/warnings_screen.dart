@@ -149,7 +149,7 @@ class WarningsScreen extends ConsumerWidget {
                 borderRadius: AppRadius.allSm,
               ),
               child: Text(
-                'Appeal: ${appealStatus.toUpperCase()}',
+                'Appeal: ${appealStatus[0].toUpperCase()}${appealStatus.substring(1).toLowerCase()}',
                 style: AppTextStyles.labelSmall.copyWith(
                   fontWeight: FontWeight.w600,
                   color: _getAppealStatusColor(appealStatus),
@@ -233,7 +233,7 @@ class WarningsScreen extends ConsumerWidget {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        severity.toUpperCase(),
+        severity[0].toUpperCase() + severity.substring(1).toLowerCase(),
         style: AppTextStyles.labelSmall.copyWith(
           fontWeight: FontWeight.w700,
           color: color,

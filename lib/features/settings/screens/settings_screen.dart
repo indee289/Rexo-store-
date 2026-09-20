@@ -179,8 +179,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           iconColor: AppColors.accentTeal,
                           title: 'Campaign Updates',
                           subtitle: 'New campaigns & deadlines',
-                          value: true,
-                          onChanged: (_) {}),
+                          value: settings.campaignUpdatesEnabled,
+                          onChanged: (v) => ref
+                              .read(settingsProvider.notifier)
+                              .setCampaignUpdatesEnabled(v)),
                     ]),
 
                     // PRIVACY section
@@ -191,8 +193,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           iconColor: _textSecondary,
                           title: 'Public Profile',
                           subtitle: 'Allow others to find your profile',
-                          value: true,
-                          onChanged: (_) {}),
+                          value: settings.publicProfileEnabled,
+                          onChanged: (v) => ref
+                              .read(settingsProvider.notifier)
+                              .setPublicProfileEnabled(v)),
                     ]),
 
                     // SUPPORT section
@@ -368,7 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       borderRadius: AppRadius.pillAll,
                     ),
                     child: Text(
-                      role.toUpperCase(),
+                      _formatRole(role),
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -764,6 +768,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  /// Converts a role string to sentence case (e.g. "creator" → "Creator").
+  String _formatRole(String role) {
+    if (role.isEmpty) return 'Creator';
+    return role[0].toUpperCase() + role.substring(1).toLowerCase();
   }
 }
 

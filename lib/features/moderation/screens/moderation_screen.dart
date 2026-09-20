@@ -140,7 +140,7 @@ class ModerationScreen extends ConsumerWidget {
                   borderRadius: AppRadius.allSm,
                 ),
                 child: Text(
-                  contentType.toUpperCase(),
+                  contentType[0].toUpperCase() + contentType.substring(1).toLowerCase(),
                   style: AppTextStyles.labelSmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,

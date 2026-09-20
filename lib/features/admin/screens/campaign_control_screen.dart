@@ -269,7 +269,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        status.toUpperCase(),
+        status[0].toUpperCase() + status.substring(1).toLowerCase(),
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,

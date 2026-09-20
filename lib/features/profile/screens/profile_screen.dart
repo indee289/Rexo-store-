@@ -11,6 +11,7 @@ import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../admin/providers/is_admin_provider.dart';
 import '../providers/profile_provider.dart';
+import '../../campaigns/providers/campaigns_provider.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -168,7 +169,7 @@ class ProfileScreen extends ConsumerWidget {
                       borderRadius: AppRadius.pillAll,
                     ),
                     child: Text(
-                      role.toUpperCase(),
+                      _formatRole(role),
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -264,6 +265,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildFollowStats(BuildContext context, WidgetRef ref) {
+    final campaignsAsync = ref.watch(currentUserCampaignsCountProvider);
     final followersAsync = ref.watch(currentUserFollowersCountProvider);
     final followingAsync = ref.watch(currentUserFollowingCountProvider);
 
@@ -282,7 +284,7 @@ class ProfileScreen extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const Expanded(child: _StatCol(label: 'Campaigns', value: '0')),
+        Expanded(child: _StatCol(label: 'Campaigns', value: fmt(campaignsAsync))),
         divider,
         Expanded(child: _StatCol(label: 'Followers', value: fmt(followersAsync))),
         divider,
@@ -295,6 +297,12 @@ class ProfileScreen extends ConsumerWidget {
     if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
     return count.toString();
+  }
+
+  /// Converts a role string to sentence case label (e.g. "creator" → "Creator").
+  String _formatRole(String role) {
+    if (role.isEmpty) return 'Creator';
+    return role[0].toUpperCase() + role.substring(1).toLowerCase();
   }
 
   void _shareProfile(BuildContext context, String handle) {

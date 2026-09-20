@@ -215,7 +215,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: AppRadius.allSm,
       ),
       child: Text(
-        status.toUpperCase(),
+        status[0].toUpperCase() + status.substring(1).toLowerCase(),
         style: AppTextStyles.labelSmall.copyWith(
           color: color,
           fontWeight: FontWeight.w600,

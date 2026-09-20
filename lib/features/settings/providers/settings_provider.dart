@@ -8,12 +8,16 @@ class SettingsState {
   final String language;
   final bool notificationsEnabled;
   final bool emailNotificationsEnabled;
+  final bool campaignUpdatesEnabled;
+  final bool publicProfileEnabled;
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.language = 'en',
     this.notificationsEnabled = true,
     this.emailNotificationsEnabled = true,
+    this.campaignUpdatesEnabled = true,
+    this.publicProfileEnabled = true,
   });
 
   SettingsState copyWith({
@@ -21,6 +25,8 @@ class SettingsState {
     String? language,
     bool? notificationsEnabled,
     bool? emailNotificationsEnabled,
+    bool? campaignUpdatesEnabled,
+    bool? publicProfileEnabled,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -28,6 +34,9 @@ class SettingsState {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       emailNotificationsEnabled:
           emailNotificationsEnabled ?? this.emailNotificationsEnabled,
+      campaignUpdatesEnabled:
+          campaignUpdatesEnabled ?? this.campaignUpdatesEnabled,
+      publicProfileEnabled: publicProfileEnabled ?? this.publicProfileEnabled,
     );
   }
 }
@@ -42,6 +51,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   static const _languageKey = 'settings_language';
   static const _notificationsKey = 'settings_notifications';
   static const _emailNotificationsKey = 'settings_email_notifications';
+  static const _campaignUpdatesKey = 'settings_campaign_updates';
+  static const _publicProfileKey = 'settings_public_profile';
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -49,12 +60,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final language = prefs.getString(_languageKey) ?? 'en';
     final notifications = prefs.getBool(_notificationsKey) ?? true;
     final emailNotifications = prefs.getBool(_emailNotificationsKey) ?? true;
+    final campaignUpdates = prefs.getBool(_campaignUpdatesKey) ?? true;
+    final publicProfile = prefs.getBool(_publicProfileKey) ?? true;
 
     state = SettingsState(
       themeMode: _themeModeFromString(themeString),
       language: language,
       notificationsEnabled: notifications,
       emailNotificationsEnabled: emailNotifications,
+      campaignUpdatesEnabled: campaignUpdates,
+      publicProfileEnabled: publicProfile,
     );
   }
 
@@ -80,6 +95,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(emailNotificationsEnabled: enabled);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_emailNotificationsKey, enabled);
+  }
+
+  Future<void> setCampaignUpdatesEnabled(bool enabled) async {
+    state = state.copyWith(campaignUpdatesEnabled: enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_campaignUpdatesKey, enabled);
+  }
+
+  Future<void> setPublicProfileEnabled(bool enabled) async {
+    state = state.copyWith(publicProfileEnabled: enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_publicProfileKey, enabled);
   }
 
   ThemeMode _themeModeFromString(String value) {

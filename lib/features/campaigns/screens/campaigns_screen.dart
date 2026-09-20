@@ -24,7 +24,24 @@ class CampaignsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const PremiumAppBar(title: 'Campaigns'),
+      appBar: PremiumAppBar(
+        title: 'My campaigns',
+        actions: [
+          TextButton.icon(
+            onPressed: () => context.go(AppRoutes.home),
+            icon: const Icon(Iconsax.search_normal,
+                size: 16, color: AppColors.primary),
+            label: const Text(
+              'Browse',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
@@ -51,7 +68,7 @@ class CampaignsScreen extends ConsumerWidget {
             hasScrollBody: false,
             child: EmptyState(
               icon: Iconsax.document,
-              title: 'No applied campaigns yet',
+              title: "You haven't applied yet",
               subtitle:
                   'Campaigns you apply to will show up here.',
               cta: PremiumButton(

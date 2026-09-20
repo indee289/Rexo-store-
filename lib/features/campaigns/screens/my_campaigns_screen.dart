@@ -373,7 +373,7 @@ class _StatusPill extends StatelessWidget {
         borderRadius: AppRadius.allSm,
       ),
       child: Text(
-        label.toUpperCase(),
+        label[0].toUpperCase() + label.substring(1).toLowerCase(),
         style: AppTextStyles.labelSmall.copyWith(
           color: color,
           fontWeight: FontWeight.w600,

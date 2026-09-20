@@ -91,6 +91,17 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
   );
 });
 
+/// Number of campaigns the current user has applied to (approved or otherwise).
+final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return 0;
+  final response = await SupabaseService.client
+      .from('applications')
+      .select('id')
+      .eq('creator_id', user.id);
+  return (response as List).length;
+});
+
 /// Number of users following the current user (their followers).
 final currentUserFollowersCountProvider = FutureProvider<int>((ref) async {
   final user = SupabaseService.currentUser;
