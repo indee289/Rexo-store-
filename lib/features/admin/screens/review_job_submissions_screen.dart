@@ -111,8 +111,8 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
     final job = sub['jobs'] as Map<String, dynamic>? ?? {};
 
     final userName = user['name'] as String? ?? 'Unknown User';
-    final userHandle = user['handle'] as String?;
-    final userAvatar = user['avatar_url'] as String?;
+    final userHandle = user['username'] as String?;           // live: username
+    final userAvatar = user['profileImage'] as String?;       // live: profileImage
     final jobTitle = job['title'] as String? ?? 'Untitled Job';
     final paymentAmount = (job['payment_amount'] as num?)?.toDouble() ?? 0.0;
 

@@ -18,8 +18,7 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   // fails on this project's schema cache.
   var query = SupabaseService.client
       .from('campaigns')
-      .select('*, users!brand_id(id, name, avatar_url)')
-      .eq('status', 'active');
+      .select('*, users!brand_id(id, name, profileImage)') // live: profileImage
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -42,7 +41,7 @@ final campaignDetailProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, id) async {
   final response = await SupabaseService.client
       .from('campaigns')
-      .select('*, users!brand_id(id, name, avatar_url)')
+      .select('*, users!brand_id(id, name, profileImage)') // live: profileImage
       .eq('id', id)
       .maybeSingle();
 
@@ -100,7 +99,7 @@ final appliedCampaignsProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select(
-          'status, created_at, campaigns(*, users!brand_id(id, name, avatar_url))')
+          'status, created_at, campaigns(*, users!brand_id(id, name, profileImage))') // live
       .eq('creator_id', user.id)
       .order('created_at', ascending: false);
 
@@ -212,7 +211,7 @@ final campaignApplicantsProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select(
-          '*, creator:users!creator_id(id, name, handle, avatar_url, is_verified)')
+          '*, creator:users!creator_id(id, name, username, profileImage, isVerified)') // live columns
       .eq('campaign_id', campaignId)
       .order('created_at', ascending: false);
 

@@ -28,8 +28,8 @@ class CreatorCard extends StatelessWidget {
     final theme = Theme.of(context);
     final userData = creator['users'] as Map<String, dynamic>?;
     final name = (userData?['name'] ?? 'Creator').toString();
-    final avatarUrl = (userData?['avatar_url'] ?? '').toString();
-    final isVerified = (userData?['is_verified'] == true);
+    final avatarUrl = (userData?['profileImage'] ?? '').toString(); // live: profileImage
+    final isVerified = (userData?['isVerified'] == true);
     final category = (creator['category'] ?? '').toString();
     final followers = creator['followers'] ?? 0;
     final rating = creator['rating'] ?? 0.0;

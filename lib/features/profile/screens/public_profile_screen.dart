@@ -13,13 +13,14 @@ import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../../services/supabase_service.dart';
 
-/// Provider to fetch a public profile by handle
+/// Provider to fetch a public profile by username.
+/// Live users table uses `username` column (not `handle`).
 final publicProfileProvider =
     FutureProvider.family<Map<String, dynamic>?, String>((ref, handle) async {
   final response = await SupabaseService.client
       .from('users')
       .select()
-      .eq('handle', handle)
+      .eq('username', handle)     // live column: username
       .maybeSingle();
 
   return response;
@@ -69,14 +70,15 @@ class PublicProfileScreen extends ConsumerWidget {
     );
   }
 
+  // live column: username (was handle); live column: profileImage (was avatar_url)
   Widget _buildProfileContent(
       BuildContext context, Map<String, dynamic> profile) {
     final name = profile['name'] ?? 'User';
-    final avatarUrl = profile['avatar_url'] as String?;
+    final avatarUrl = profile['profileImage'] as String?;  // live: profileImage
     final bio = profile['bio'] ?? '';
     final role = profile['role'] ?? 'creator';
-    final userHandle = profile['handle'] ?? handle;
-    final isVerified = (profile['is_verified'] == true);
+    final userHandle = profile['username'] ?? handle;      // live: username
+    final isVerified = (profile['isVerified'] == true);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -160,7 +162,7 @@ class PublicProfileScreen extends ConsumerWidget {
               width: 1, height: 32, color: Theme.of(context).dividerColor),
           StatPill(
             label: 'Joined',
-            value: _formatJoinDate(profile['created_at']),
+            value: _formatJoinDate(profile['createdAt']),  // live: createdAt
           ),
         ],
       ),

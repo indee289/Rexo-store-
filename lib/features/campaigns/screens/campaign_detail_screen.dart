@@ -199,7 +199,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
     final totalSlots = campaign['slots'];
     final brandInfo = campaign['users'] as Map<String, dynamic>?;
     final brandName = (brandInfo?['name'] ?? 'Unknown Brand').toString();
-    final brandAvatar = brandInfo?['avatar_url'] as String?;
+    final brandAvatar = brandInfo?['profileImage'] as String?; // live: profileImage
 
     // Optional keys — render ONLY when present on the map (do not invent DB
     // columns). These render conditionally per the spec.

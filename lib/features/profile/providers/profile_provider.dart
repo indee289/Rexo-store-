@@ -148,14 +148,16 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     _lastError = null;
 
     try {
-      // Only allow valid users table columns to be sent
+      // Only allow confirmed live users-table columns.
+      // Confirmed live schema: username, bio, phone, profileImage, name.
+      // Removed: handle (live column is username), avatar_url (live column is
+      // profileImage), updated_at (column does not exist in live DB).
       const validColumns = {
         'name',
-        'handle',
+        'username',    // live column — was 'handle'
         'bio',
         'phone',
-        'avatar_url',
-        'updated_at',
+        'profileImage', // live column — was 'avatar_url'
       };
 
       final filteredFields = <String, dynamic>{};
@@ -165,7 +167,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
         }
       }
 
-      filteredFields['updated_at'] = DateTime.now().toIso8601String();
+      // updated_at does not exist in the live users schema — not added.
 
       await SupabaseService.updateUserProfile(
         userId: user.id,
@@ -201,12 +203,12 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
         contentType,
       );
 
-      // Update user profile with new avatar URL
+      // Update user profile with new avatar URL.
+      // Live column is profileImage (not avatar_url).
       await SupabaseService.updateUserProfile(
         userId: user.id,
         data: {
-          'avatar_url': publicUrl,
-          'updated_at': DateTime.now().toIso8601String(),
+          'profileImage': publicUrl,  // live column name
         },
       );
 

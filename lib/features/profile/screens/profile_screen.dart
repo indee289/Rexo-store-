@@ -63,11 +63,11 @@ class ProfileScreen extends ConsumerWidget {
 
     final isAdmin = ref.watch(isAdminProvider);
     final name = profile['name'] ?? 'User';
-    final handle = profile['handle'] ?? '';
+    final handle = profile['username'] ?? ''; // live: username
     final role = (profile['role'] ?? 'creator').toString();
-    final avatarUrl = profile['avatar_url'];
+    final avatarUrl = profile['profileImage']; // live: profileImage
     final bio = (profile['bio'] ?? '').toString();
-    final isVerified = (profile['is_verified'] == true);
+    final isVerified = (profile['isVerified'] == true);
 
     return CustomScrollView(
       slivers: [

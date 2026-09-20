@@ -114,8 +114,9 @@ class NotificationsScreen extends ConsumerWidget {
 
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final notification in notifications) {
+      // Live column is "createdAt" (camelCase)
       final createdAt =
-          DateTime.tryParse(notification['created_at'] ?? '');
+          DateTime.tryParse(notification['createdAt']?.toString() ?? '');
       String label;
       if (createdAt != null) {
         final date = DateTime(
@@ -148,11 +149,14 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = notification['title'] as String? ?? '';
-    final body = notification['body'] as String? ?? '';
+    // Live column is 'message' (not 'body')
+    final body = notification['message'] as String? ?? '';
     final type = notification['type'] as String? ?? 'general';
-    final isRead = notification['is_read'] == true;
+    // Live column is 'read' (not 'is_read')
+    final isRead = notification['read'] == true;
+    // Live column is 'createdAt' (not 'created_at')
     final createdAt =
-        DateTime.tryParse(notification['created_at'] ?? '');
+        DateTime.tryParse(notification['createdAt']?.toString() ?? '');
     final timeStr = createdAt != null
         ? DateFormat('hh:mm a').format(createdAt)
         : '';

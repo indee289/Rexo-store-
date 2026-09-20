@@ -54,10 +54,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final user = SupabaseService.currentUser;
       if (user != null) {
         final profile = await SupabaseService.getUserProfile(user.id);
-        final status = (profile?['account_status'] as String?)?.toLowerCase();
-        if (status == 'banned' || status == 'suspended') {
+        // Live column is `isBanned` (boolean). There is no `account_status`
+        // column in the live users schema. `suspended` state does not exist
+        // as a separate flag — banned users are handled by `isBanned: true`.
+        final isBanned = profile?['isBanned'] == true;
+        if (isBanned) {
           await SupabaseService.signOut();
-          _blockedStatus = status;
+          _blockedStatus = 'banned';
           _target = AppRoutes.login;
           return;
         }
@@ -75,8 +78,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         SnackBar(
           content: Text(
             _blockedStatus == 'banned'
-                ? 'Your account has been banned. Please contact support.'
-                : 'Your account has been suspended. Please contact support.',
+                ? "Your account has been banned. Please contact support."
+                : "Your account has been restricted. Please contact support.",
           ),
           backgroundColor: AppColors.error,
         ),

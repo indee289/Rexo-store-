@@ -319,9 +319,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (profile == null) return const SizedBox(height: AppSpacing.lg);
 
     final name = profile['name'] ?? 'User';
-    final handle = profile['handle'] ?? '';
+    final handle = profile['username'] ?? ''; // live: username
     final role = profile['role'] ?? 'creator';
-    final avatarUrl = profile['avatar_url'];
+    final avatarUrl = profile['profileImage']; // live: profileImage
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),

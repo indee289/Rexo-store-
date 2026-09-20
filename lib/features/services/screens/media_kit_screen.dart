@@ -43,8 +43,8 @@ class MediaKitScreen extends ConsumerWidget {
     final profile = profileState.profile;
     final roleProfile = profileState.roleProfile;
     final name = profile?['name'] as String? ?? 'Creator';
-    final handle = profile?['handle'] as String? ?? '';
-    final isVerified = (profile?['is_verified'] == true);
+    final handle = profile?['username'] as String? ?? ''; // live: username
+    final isVerified = (profile?['isVerified'] == true);
     final completedCampaigns =
         roleProfile?['completed_campaigns'] as int? ?? 0;
     final rating = (roleProfile?['rating'] as num?)?.toDouble() ?? 0.0;

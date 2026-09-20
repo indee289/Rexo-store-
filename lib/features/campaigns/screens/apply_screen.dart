@@ -67,7 +67,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     if (name.isNotEmpty && _nameController.text.isEmpty) {
       _nameController.text = name;
     }
-    final handle = (profile['handle'] ?? '').toString();
+    final handle = (profile['username'] ?? '').toString(); // live: username
     if (handle.isNotEmpty && _instagramController.text.isEmpty) {
       _instagramController.text = handle;
     }

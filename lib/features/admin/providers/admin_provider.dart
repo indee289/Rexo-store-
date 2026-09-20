@@ -37,7 +37,7 @@ final adminUsersProvider =
   if (search.isNotEmpty) {
     query = query.or('name.ilike.%$search%,email.ilike.%$search%');
   }
-  final response = await query.order('created_at', ascending: false).limit(100);
+  final response = await query.order('createdAt', ascending: false).limit(100); // live: createdAt
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -211,12 +211,15 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   AdminActionsNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  Future<void> updateUserStatus(String userId, String status) async {
+  /// Ban or unban a user by setting the live `isBanned` boolean column.
+  /// There is no `account_status` column in the live users schema.
+  /// Identity column is `uid` (text), not `id` (uuid).
+  Future<void> updateUserBanStatus(String userUid, bool banned) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('users')
-          .update({'account_status': status}).eq('id', userId);
+          .update({'isBanned': banned}).eq('uid', userUid);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -224,12 +227,14 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> verifyUser(String userId) async {
+  /// Verify a user by setting the live `"isVerified"` boolean column to true.
+  /// Identity column is `uid` (text), not `id` (uuid).
+  Future<void> verifyUser(String userUid) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('users')
-          .update({'is_verified': true}).eq('id', userId);
+          .update({'isVerified': true}).eq('uid', userUid);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -237,12 +242,13 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> updateUserRole(String userId, String role) async {
+  /// Update a user's role. Identity column is `uid` (text), not `id` (uuid).
+  Future<void> updateUserRole(String userUid, String role) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('users')
-          .update({'role': role}).eq('id', userId);
+          .update({'role': role}).eq('uid', userUid);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {

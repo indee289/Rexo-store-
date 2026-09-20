@@ -14,7 +14,7 @@ final creatorProfileProvider =
         (ref, creatorUserId) async {
   final response = await SupabaseService.client
       .from('creator_profiles')
-      .select('*, users!inner(id, name, avatar_url, handle, email, is_verified)')
+      .select('*, users!inner(id, name, profileImage, username, email, isVerified)') // live columns
       .eq('user_id', creatorUserId)
       .maybeSingle();
 
@@ -41,7 +41,7 @@ Future<CreatorView?> resolveCreator(String creatorUserId) async {
   final profileRow = await SupabaseService.client
       .from('creator_profiles')
       .select(
-          '*, users!inner(id, name, avatar_url, handle, is_verified, bio)')
+          '*, users!inner(id, name, profileImage, username, isVerified, bio)') // live columns
       .eq('user_id', creatorUserId)
       .maybeSingle();
 
@@ -50,10 +50,13 @@ Future<CreatorView?> resolveCreator(String creatorUserId) async {
   }
 
   // Fallback: plain users row (fixes "creator not found").
+  // Live identity column is `uid` (text). The callers pass the auth UUID
+  // as a string, matching the `uid` column value. `id` uuid also exists
+  // but the live RLS filters on uid — .eq('uid', ...) is the safe approach.
   final userRow = await SupabaseService.client
       .from('users')
-      .select('id, name, avatar_url, handle, is_verified, bio')
-      .eq('id', creatorUserId)
+      .select('id, uid, name, profileImage, username, isVerified, bio') // live columns
+      .eq('uid', creatorUserId)
       .maybeSingle();
 
   if (userRow != null) {

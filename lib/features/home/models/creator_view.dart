@@ -52,9 +52,9 @@ class CreatorView {
     return CreatorView(
       userId: (user['id'] ?? row['user_id'] ?? '').toString(),
       name: (user['name'] ?? '').toString(),
-      avatarUrl: _asNullableString(user['avatar_url']),
-      handle: (user['handle'] ?? '').toString(),
-      isVerified: _parseBool(user['is_verified']),
+      avatarUrl: _asNullableString(user['profileImage']),  // live: profileImage
+      handle: (user['username'] ?? '').toString(),          // live: username
+      isVerified: _parseBool(user['isVerified']),
       category: (row['category'] ?? '').toString(),
       bio: (user['bio'] ?? '').toString(),
       rating: _parseDouble(row['rating']),
@@ -71,9 +71,9 @@ class CreatorView {
     return CreatorView(
       userId: (user['id'] ?? '').toString(),
       name: (user['name'] ?? '').toString(),
-      avatarUrl: _asNullableString(user['avatar_url']),
-      handle: (user['handle'] ?? '').toString(),
-      isVerified: _parseBool(user['is_verified']),
+      avatarUrl: _asNullableString(user['profileImage']),  // live: profileImage
+      handle: (user['username'] ?? '').toString(),          // live: username
+      isVerified: _parseBool(user['isVerified']),
       category: '',
       bio: (user['bio'] ?? '').toString(),
       rating: 0.0,

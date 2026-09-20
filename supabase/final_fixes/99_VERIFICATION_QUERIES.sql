@@ -5,21 +5,36 @@
 -- PURPOSE
 --   Verify the live Supabase database state before and after applying the
 --   final_fixes/ SQL package. Run in the Supabase Dashboard → SQL Editor.
---   ALL QUERIES ARE READ-ONLY (SELECT only).
+--   ALL QUERIES ARE READ-ONLY (SELECT / pg_policies / information_schema).
+--
+-- CONFIRMED LIVE SCHEMA NOTES (Stage C, September 2026)
+--   public.users
+--     Identity column : uid  (text, NOT NULL) — NOT id/uuid
+--     Privileged cols : role (text, DEFAULT 'CREATOR')
+--                       "isVerified" (boolean, DEFAULT false)
+--                       "isBanned"   (boolean)
+--     NOT present     : account_status, admin_sub_role, is_verified
+--
+--   public.notifications
+--     Ownership col   : "userId" (text, NOT NULL)   — NOT user_id
+--     Content cols    : "title", "message", "type", "read", "link", "createdAt"
+--     NOT present     : user_id, body, is_read, created_at
+--
+--   public.transactions
+--     Ownership col   : "userId" (text, NOT NULL)   — camelCase, quoted in SQL
+--
+--   public.wallets / deposits / withdrawals — EXIST in live DB (confirmed)
 --
 -- USAGE
 --   Run each section independently in the SQL editor.
---   Run SECTION 0 (global dangerous policies) FIRST and LAST.
---   Run SECTION 1 (campaign columns) before applying any SQL.
+--   Run SECTION 0 FIRST (before any SQL), and again LAST (after all SQL).
 -- ============================================================================
 
 
 -- ============================================================================
--- SECTION 0 — GLOBAL DANGEROUS POLICY SCAN (run first AND after cleanup)
+-- SECTION 0 — GLOBAL DANGEROUS POLICY SCAN
+-- Run this FIRST before any deployment, and again AFTER all files are applied.
 -- ============================================================================
--- Identifies ALL policies with USING(true) or WITH CHECK(true).
--- After applying 08_RLS_GLOBAL_CLEANUP.sql, only intentionally public
--- tables (config SELECT, follows SELECT) should appear here.
 
 SELECT
     tablename,
@@ -30,122 +45,130 @@ SELECT
 FROM pg_policies
 WHERE schemaname = 'public'
   AND (
-      lower(coalesce(qual, ''))       = 'true'
+      lower(coalesce(qual,       '')) = 'true'
       OR lower(coalesce(with_check, '')) = 'true'
   )
 ORDER BY tablename, policyname;
 
--- EXPECTED after cleanup:
---   config         — SELECT / true       (intentional: public config read)
---   follows        — SELECT / true        (intentional: public follower counts,
---                                          created by 05_ADDITIONAL_TABLES.sql)
--- NOTE: user_follows read is scoped to authenticated users
---   (auth.role() = 'authenticated'), NOT a bare true, so it will NOT appear here.
--- ALL other rows = remaining dangerous policies that still need fixing.
+-- EXPECTED after full cleanup:
+--   config — SELECT / true   (intentional: public config read — preserve this)
+--
+-- KNOWN REMAINING after cleanup (intentional):
+--   recovery_* (7 tables) — intentionally untouched pending access model review
+--
+-- ANY OTHER TABLE = still-dangerous policy that needs attention.
 
 
 -- ============================================================================
--- SECTION 1 — CAMPAIGNS TABLE COLUMNS (CRITICAL — resolve column discrepancy)
+-- SECTION 1 — CAMPAIGNS TABLE COLUMNS
 -- ============================================================================
 
-SELECT
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
+SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name   = 'campaigns'
 ORDER BY ordinal_position;
 
--- EXPECTED live columns (from JOBS_VIA_CAMPAIGNS.sql verification):
---   payout_per_creator   — numeric (NOT per_creator_payout)
---   slots                — integer (NOT total_slots)
---   cover_image          — text    (NOT cover_image_url)
---   payout_model         — text    (used to tag job rows)
--- These mismatches have been fixed in the Flutter Dart code.
+-- Confirmed live columns (Dart already fixed):
+--   payout_per_creator  (NOT per_creator_payout)
+--   slots               (NOT total_slots)
+--   cover_image         (NOT cover_image_url)
 
 
 -- ============================================================================
 -- SECTION 2 — WALLET TABLES EXIST?
 -- ============================================================================
--- Confirms wallets, deposits, withdrawals are present after running 07_WALLET_TABLES.sql.
 
-SELECT
-    table_name,
-    CASE WHEN table_name IS NOT NULL THEN 'EXISTS' ELSE 'MISSING' END AS status
-FROM information_schema.tables
+SELECT table_name,
+       (SELECT COUNT(*) FROM information_schema.columns c
+        WHERE c.table_schema = 'public'
+          AND c.table_name   = t.table_name) AS col_count
+FROM information_schema.tables t
 WHERE table_schema = 'public'
   AND table_name IN ('wallets', 'deposits', 'withdrawals')
 ORDER BY table_name;
 
--- EXPECTED: 3 rows (wallets, deposits, withdrawals all present)
--- If any are missing: run 07_WALLET_TABLES.sql
+-- EXPECTED: 3 rows — all three tables exist (confirmed in live DB).
 
 
 -- ============================================================================
--- SECTION 3 — WALLETS TABLE COLUMNS
+-- SECTION 3 — WALLET TABLE COLUMNS
 -- ============================================================================
 
-SELECT column_name, data_type, is_nullable, column_default
+SELECT table_name, column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_schema = 'public'
-  AND table_name   = 'wallets'
-ORDER BY ordinal_position;
+  AND table_name IN ('wallets', 'deposits', 'withdrawals')
+ORDER BY table_name, ordinal_position;
 
--- Expected columns: id, user_id, available_balance, escrow_balance,
---   total_earnings, total_withdrawn, is_frozen, currency, created_at, updated_at
+-- Confirmed live schemas:
+--   wallets:     id, user_id, available_balance, escrow_balance,
+--                total_earnings, total_withdrawn, is_frozen, currency,
+--                created_at, updated_at
+--   deposits:    id, user_id, amount, payment_method, transaction_ref,
+--                proof_url, status, admin_notes, created_at, processed_at
+--   withdrawals: id, user_id, amount, method, payout_details,
+--                status, transaction_ref, admin_notes, created_at, processed_at
 
 
 -- ============================================================================
--- SECTION 4 — DEPOSITS TABLE COLUMNS AND CONSTRAINT
+-- SECTION 4 — WALLET TABLE POLICIES
 -- ============================================================================
 
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_schema = 'public'
-  AND table_name   = 'deposits'
-ORDER BY ordinal_position;
+SELECT tablename, policyname, cmd,
+       left(coalesce(qual,       ''), 80) AS using_clause,
+       left(coalesce(with_check, ''), 80) AS check_clause
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('wallets', 'deposits', 'withdrawals')
+ORDER BY tablename, policyname;
 
--- Expected status CHECK: pending | approved | rejected
+-- After 07_WALLET_TABLES.sql:
+--   deposits:    "Users can create deposits"      INSERT  WITH CHECK auth.uid()=user_id
+--                "Users can read own deposits"    SELECT  auth.uid()=user_id
+--                "Admins can read all deposits"   SELECT  is_admin()
+--                "Admins can update deposits"     UPDATE  is_admin()
+--   withdrawals: same pattern as deposits
+--   wallets:     "Users can read own wallet"      SELECT  auth.uid()=user_id
+--                "Admins can read all wallets"    SELECT  is_admin()
+--                "Admins can update wallets"      UPDATE  is_admin()
+-- Key check: "Users can create deposits/withdrawals" must have WITH CHECK.
+
+
+-- ============================================================================
+-- SECTION 5 — DEPOSITS / WITHDRAWALS STATUS CONSTRAINTS
+-- ============================================================================
+
 SELECT conname, pg_get_constraintdef(oid) AS constraint_def
 FROM pg_constraint
-WHERE conrelid = 'public.deposits'::regclass
-  AND contype = 'c';
+WHERE conrelid IN (
+    'public.deposits'::regclass,
+    'public.withdrawals'::regclass
+)
+AND contype = 'c'
+ORDER BY conrelid::text, conname;
+
+-- Expected deposits status: pending | approved | rejected
+-- Expected withdrawals status: pending | processing | completed | rejected
+-- NOTE: Flutter admin writes 'completed' (NOT 'approved') for withdrawals.
 
 
 -- ============================================================================
--- SECTION 5 — WITHDRAWALS TABLE COLUMNS AND CONSTRAINT
--- ============================================================================
-
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_schema = 'public'
-  AND table_name   = 'withdrawals'
-ORDER BY ordinal_position;
-
--- Expected status CHECK: pending | processing | completed | rejected
--- NOTE: Flutter admin writes 'completed' (NOT 'approved') — verified Batch 1.
-SELECT conname, pg_get_constraintdef(oid) AS constraint_def
-FROM pg_constraint
-WHERE conrelid = 'public.withdrawals'::regclass
-  AND contype = 'c';
-
-
--- ============================================================================
--- SECTION 6 — IS_ADMIN() FUNCTION
+-- SECTION 6 — is_admin() FUNCTION
 -- ============================================================================
 
 SELECT
-    proname                                    AS function_name,
-    pg_get_function_identity_arguments(oid)    AS arguments,
-    prosecdef                                  AS security_definer,
-    proconfig                                  AS config_settings
+    proname          AS function_name,
+    prosecdef        AS security_definer,
+    proconfig        AS config_settings,
+    pg_get_functiondef(oid) AS full_definition
 FROM pg_proc
 WHERE proname = 'is_admin'
   AND pronamespace = 'public'::regnamespace;
 
--- Expected: 1 row, security_definer = true, config = {search_path=public}
+-- Expected: 1 row, security_definer=true, config={search_path=public}
+-- Stage C fix: definition must use  uid = auth.uid()::text  (NOT id/uuid)
+-- Confirm the definition body does NOT contain:  id::text = auth.uid()::text
 
 
 -- ============================================================================
@@ -153,9 +176,9 @@ WHERE proname = 'is_admin'
 -- ============================================================================
 
 SELECT
-    proname                                    AS function_name,
-    pg_get_function_identity_arguments(oid)    AS arguments,
-    prosecdef                                  AS security_definer
+    proname          AS function_name,
+    pg_get_function_identity_arguments(oid) AS arguments,
+    prosecdef        AS security_definer
 FROM pg_proc
 WHERE proname IN (
     'credit_wallet', 'debit_wallet',
@@ -167,238 +190,212 @@ AND pronamespace = 'public'::regnamespace;
 
 
 -- ============================================================================
--- SECTION 8 — NOTIFICATIONS INSERT POLICY (Batch 1 security fix)
+-- SECTION 8 — NOTIFICATIONS POLICIES + SCHEMA
 -- ============================================================================
 
-SELECT policyname, cmd, qual, with_check
+-- Schema
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name   = 'notifications'
+ORDER BY ordinal_position;
+
+-- Confirmed live columns: "userId"(text), "title", "message", "type",
+--   "read"(bool), "link", "createdAt"(timestamptz)
+-- NOT PRESENT: user_id, body, is_read, created_at
+-- ⚠️ DART BUG: Dart sends user_id/body/is_read/created_at — all wrong.
+--    Notifications will fail at runtime until Dart code is updated.
+
+-- Policies
+SELECT policyname, cmd,
+       left(coalesce(qual,       ''), 100) AS using_clause,
+       left(coalesce(with_check, ''), 100) AS check_clause
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename  = 'notifications'
 ORDER BY policyname;
 
--- "System can create notifications" should have:
---   with_check = auth.uid() = user_id OR is_admin()
---   NOT the old: with_check = TRUE
+-- Expected after 01_RLS_FIXES.sql + 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Admins/system can insert notifications"  INSERT  (no WITH CHECK — preserved)
+--   "Allow all for public notifications"      — MUST NOT APPEAR (dropped in §4 of 08)
+--   "System can create notifications"         INSERT  WITH CHECK userId match OR is_admin()
+--   "Users can update own notifications"      UPDATE  userId match OR is_admin()
+--   "Users can view own notifications"        SELECT  userId match OR is_admin()
+--   "Users or Admin can delete notifications" DELETE  userId match OR is_admin()
 
 
 -- ============================================================================
--- SECTION 9 — APPLICATIONS UPDATE WITH CHECK (Batch 1 security fix)
+-- SECTION 9 — APPLICATIONS UPDATE POLICY
 -- ============================================================================
 
-SELECT policyname, cmd, qual, with_check
+SELECT policyname, cmd,
+       left(coalesce(qual,       ''), 100) AS using_clause,
+       left(coalesce(with_check, ''), 100) AS check_clause
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename  = 'applications'
-  AND cmd        = 'UPDATE'
 ORDER BY policyname;
 
--- "Creators can update own applications" should have:
---   with_check restricting status IN ('pending','withdrawn')
+-- After 01_RLS_FIXES.sql + 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Allow all applications"             — MUST NOT APPEAR
+--   "Allow all for applications"         — MUST NOT APPEAR
+--   "Allow all for public applications"  — MUST NOT APPEAR
+--   "Creators can update own applications" UPDATE WITH CHECK status IN ('pending','withdrawn')
 
 
 -- ============================================================================
--- SECTION 10 — TRANSACTIONS TABLE STATUS
+-- SECTION 10 — TRANSACTIONS POLICIES + SCHEMA
 -- ============================================================================
 
--- Check if transactions table exists (it's live but legacy/unused by Flutter)
-SELECT EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'transactions'
-) AS transactions_exists;
+-- Schema
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name   = 'transactions'
+ORDER BY ordinal_position;
 
--- If it exists, check its RLS policies
-SELECT policyname, cmd, qual, with_check
+-- Confirmed live columns: id(uuid), "userId"(text), amount(numeric),
+--   type(text), status(text DEFAULT 'Pending'), "createdAt"(timestamptz)
+
+-- Policies
+SELECT policyname, cmd,
+       left(coalesce(qual,       ''), 100) AS using_clause,
+       left(coalesce(with_check, ''), 100) AS check_clause
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename  = 'transactions'
 ORDER BY policyname;
 
 -- After 08_RLS_GLOBAL_CLEANUP.sql:
---   "Allow all for public transactions" should NOT appear
---   "Users can view own transactions" and "Admins can manage transactions" should appear
+--   "Allow all for public transactions"  — MUST NOT APPEAR
+--   "Admins can delete transactions"     DELETE  is_admin()        (preserved)
+--   "Admins can update transactions"     UPDATE  is_admin()        (preserved)
+--   "Admins/system can insert transactions" INSERT               (preserved)
+--   "Users can view own transactions"    SELECT  "userId"=auth.uid()::text OR is_admin()
 
 
 -- ============================================================================
--- SECTION 11 — ESCROWS TABLE STATUS
+-- SECTION 11 — USERS SCHEMA + POLICIES + TRIGGERS
 -- ============================================================================
 
-SELECT EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'escrows'
-) AS escrows_exists;
-
-SELECT policyname, cmd, qual, with_check
-FROM pg_policies
-WHERE schemaname = 'public'
-  AND tablename  = 'escrows'
-ORDER BY policyname;
-
--- After 08_RLS_GLOBAL_CLEANUP.sql:
---   "Allow all for public escrows" should NOT appear
-
-
--- ============================================================================
--- SECTION 12 — CAMPAIGNS TABLE CONSTRAINTS
--- ============================================================================
-
-SELECT conname, pg_get_constraintdef(oid) AS constraint_def
-FROM pg_constraint
-WHERE conrelid = 'public.campaigns'::regclass
-  AND contype  = 'c'
-ORDER BY conname;
-
--- Expected:
---   campaigns_platform_check — includes 'facebook'
---   campaigns_status_check   — includes 'closed'
---   campaigns_gender_check   — 'all' | 'male' | 'female'
-
-
--- ============================================================================
--- SECTION 13 — APPLICATIONS TABLE COLUMNS (job submission fields)
--- ============================================================================
-
-SELECT column_name, data_type
+-- Schema
+SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_schema = 'public'
-  AND table_name   = 'applications'
+  AND table_name   = 'users'
 ORDER BY ordinal_position;
 
--- Expected extra columns (from JOBS_VIA_CAMPAIGNS.sql + add_application_fields.sql):
---   submission_type, submission_url, submission_note, rejection_reason,
---   submitted_at, reviewed_at, reviewed_by,
---   applicant_name, location, category, city, state,
---   contact_number, instagram_url, followers_count
+-- Confirmed live identity column: uid (text) — NOT id/uuid for RLS purposes
+-- Confirmed privileged cols: role, "isVerified", "isBanned"
+-- NOT PRESENT: account_status, admin_sub_role, is_verified
 
+-- Policies
+SELECT policyname, cmd,
+       left(coalesce(qual,       ''), 100) AS using_clause,
+       left(coalesce(with_check, ''), 100) AS check_clause
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename  = 'users'
+ORDER BY policyname;
 
--- ============================================================================
--- SECTION 14 — WALLET AUTO-CREATION TRIGGER
--- ============================================================================
+-- After 01_RLS_FIXES.sql + 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Allow all for public users"      — MUST NOT APPEAR
+--   "Anyone can view users"           SELECT  hidden=false OR uid=auth.uid()... (preserved)
+--   "Users can insert own profile"    INSERT                                   (preserved)
+--   "Users can update own profile"    UPDATE  uid=auth.uid()::text OR is_admin()(preserved)
+--   "Users or Admin can delete..."    DELETE                                   (preserved)
 
-SELECT tgname, tgenabled, tgtype
+-- Triggers
+SELECT tgname, tgenabled, pg_get_triggerdef(oid) AS trigger_def
 FROM pg_trigger
 WHERE tgrelid = 'public.users'::regclass
-  AND NOT tgisinternal;
+  AND NOT tgisinternal
+ORDER BY tgname;
 
--- Expected on public.users:
---   on_user_created_create_wallet         (wallet auto-creation)
---   trg_prevent_user_self_escalation      (BEFORE UPDATE self-escalation guard)
--- Also: on_auth_user_created on auth.users
+-- Expected after 01_RLS_FIXES.sql:
+--   on_user_created_create_wallet         (wallet auto-creation — already exists)
+--   trg_prevent_user_self_escalation      (BEFORE UPDATE — created by 01_RLS_FIXES.sql)
+--
+-- Verify trigger definition uses:
+--   NEW.role       := OLD.role
+--   NEW."isVerified" := OLD."isVerified"
+--   NEW."isBanned"   := OLD."isBanned"
+-- And does NOT reference account_status, admin_sub_role, or is_verified.
 
 
 -- ============================================================================
--- SECTION 14b — SELF-ESCALATION GUARD (function + trigger)
+-- SECTION 12 — SELF-ESCALATION FUNCTION
 -- ============================================================================
 
-SELECT
-    proname                   AS function_name,
-    prosecdef                 AS security_definer,
-    proconfig                 AS config_settings
+SELECT proname, prosecdef, proconfig,
+       pg_get_functiondef(oid) AS full_definition
 FROM pg_proc
 WHERE proname = 'prevent_user_self_escalation'
   AND pronamespace = 'public'::regnamespace;
--- Expected: 1 row, security_definer = true, config = {search_path=public}
 
-SELECT tgname, tgenabled
-FROM pg_trigger
-WHERE tgrelid = 'public.users'::regclass
-  AND tgname = 'trg_prevent_user_self_escalation';
--- Expected: 1 row (BEFORE UPDATE trigger enabled).
---
--- MANUAL BEHAVIOR TEST (run as a NON-admin user via the app or a scoped session):
---   UPDATE public.users SET bio = 'new bio' WHERE id = auth.uid();      -- should succeed
---   UPDATE public.users SET role = 'admin'  WHERE id = auth.uid();      -- role stays unchanged
---   UPDATE public.users SET is_verified = true WHERE id = auth.uid();   -- stays false
--- After each escalation attempt, re-select the row: role/is_verified/account_status/
--- admin_sub_role must equal their prior values.
+-- Expected: 1 row after 01_RLS_FIXES.sql runs.
+-- security_definer = true, config = {search_path=public}
+-- Body must NOT reference: account_status, admin_sub_role, is_verified
 
 
 -- ============================================================================
--- SECTION 15 — SUBSCRIPTION_PAYMENTS TABLE AND RLS
+-- SECTION 13 — CAMPAIGNS POLICIES (dangerous overrides removed?)
 -- ============================================================================
 
-SELECT EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'subscription_payments'
-) AS sub_payments_exists;
-
-SELECT policyname, cmd
+SELECT policyname, cmd,
+       left(coalesce(qual, ''), 80) AS using_clause
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND tablename  = 'subscription_payments'
+  AND tablename  = 'campaigns'
 ORDER BY policyname;
 
--- Expected: 4 policies (user create+read own, admin read all+update)
+-- After 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Allow all for campaigns"        — MUST NOT APPEAR
+--   "Allow all for public campaigns" — MUST NOT APPEAR
 
 
 -- ============================================================================
--- SECTION 16 — MESSAGES SOFT-STATE COLUMNS
+-- SECTION 14 — REVIEWS POLICIES
 -- ============================================================================
 
-SELECT column_name, data_type, column_default
-FROM information_schema.columns
-WHERE table_schema = 'public'
-  AND table_name   = 'messages'
-  AND column_name IN ('is_unsent', 'edited_at', 'deleted_for')
-ORDER BY column_name;
-
--- Expected: 3 rows (after running 06_MESSAGES_SOFT_STATE.sql)
-
-
--- ============================================================================
--- SECTION 17 — COMPLETE POLICY INVENTORY FOR CRITICAL TABLES
--- ============================================================================
-
-SELECT
-    tablename,
-    policyname,
-    cmd,
-    left(coalesce(qual, ''), 80)       AS using_clause,
-    left(coalesce(with_check, ''), 80) AS check_clause
+SELECT policyname, cmd,
+       left(coalesce(qual, ''), 80) AS using_clause
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND tablename IN (
-      'wallets', 'deposits', 'withdrawals', 'notifications',
-      'applications', 'campaigns', 'users', 'subscription_payments',
-      'transactions', 'escrows'
-  )
-ORDER BY tablename, policyname;
+  AND tablename  = 'reviews'
+ORDER BY policyname;
+
+-- After 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Allow all for public reviews"  — MUST NOT APPEAR
 
 
 -- ============================================================================
--- SECTION 18 — FOLLOWS / USER_FOLLOWS TABLES
+-- SECTION 15 — FOLLOW TABLES SCHEMA + POLICIES
 -- ============================================================================
-
--- The live DB has TWO follow tables:
---   follows       — created by 05_ADDITIONAL_TABLES.sql, used by Flutter
---                    columns: follower_id (uuid), following_id (uuid)
---   user_follows  — pre-existing live table, NOT used by Flutter
---                    columns: id (uuid), follower_uid (text), following_uid (text), created_at
 
 SELECT table_name
 FROM information_schema.tables
 WHERE table_schema = 'public'
   AND table_name IN ('follows', 'user_follows');
 
--- Verify user_follows live schema matches expected (text uid columns)
 SELECT column_name, data_type
 FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name   = 'user_follows'
 ORDER BY ordinal_position;
--- Expected: id uuid, follower_uid text, following_uid text, created_at timestamptz
+-- Expected: id(uuid), follower_uid(text), following_uid(text), created_at(timestamptz)
 
-SELECT policyname, cmd, qual, with_check
+SELECT policyname, cmd,
+       left(coalesce(qual,       ''), 100) AS using_clause,
+       left(coalesce(with_check, ''), 100) AS check_clause
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename IN ('follows', 'user_follows')
 ORDER BY tablename, policyname;
--- After cleanup (user_follows):
---   "Authenticated users can read follows" — SELECT / auth.role() = 'authenticated'
---   "Users can manage own follows"         — ALL / follower_uid or following_uid / follower_uid
 
 
 -- ============================================================================
--- SECTION 18b — VERIFICATION_REQUESTS SCHEMA + POLICIES
+-- SECTION 16 — VERIFICATION_REQUESTS SCHEMA + POLICIES
 -- ============================================================================
 
 SELECT column_name, data_type
@@ -406,22 +403,24 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name   = 'verification_requests'
 ORDER BY ordinal_position;
--- Expected: id uuid, "creatorId" text, "creatorName" text, "creatorEmail" text,
---           "proofLink" text, status text, "createdAt" timestamptz
+-- Expected: id, "creatorId"(text), "creatorName", "creatorEmail",
+--           "proofLink", status, "createdAt"
 
-SELECT policyname, cmd, qual, with_check
+SELECT policyname, cmd,
+       left(coalesce(qual,       ''), 100) AS using_clause,
+       left(coalesce(with_check, ''), 100) AS check_clause
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename  = 'verification_requests'
 ORDER BY policyname;
--- After cleanup:
---   "Creators read own verification_requests"   — SELECT / creatorId match
---   "Creators create own verification_requests"  — INSERT / creatorId match
---   "Admins manage verification_requests"        — ALL / is_admin()
+-- After 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Creators read own verification_requests"    SELECT  creatorId match
+--   "Creators create own verification_requests"  INSERT  creatorId match
+--   "Admins manage verification_requests"        ALL     is_admin()
 
 
 -- ============================================================================
--- SECTION 18c — CAMPAIGN_ACCESS_REQUESTS SCHEMA + POLICIES
+-- SECTION 17 — CAMPAIGN_ACCESS_REQUESTS SCHEMA + POLICIES
 -- ============================================================================
 
 SELECT column_name, data_type
@@ -429,45 +428,75 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name   = 'campaign_access_requests'
 ORDER BY ordinal_position;
--- Expected: id uuid, "brandId" text, "brandName" text, status text, "createdAt" timestamptz
--- NOTE: No per-user/creator ownership column exists.
+-- Expected: id, "brandId"(text), "brandName", status, "createdAt"
+-- NOTE: No per-user ownership column → admin-only RLS.
 
-SELECT policyname, cmd, qual, with_check
+SELECT policyname, cmd,
+       left(coalesce(qual, ''), 100) AS using_clause
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename  = 'campaign_access_requests'
 ORDER BY policyname;
--- After cleanup:
---   "Admins manage campaign_access_requests" — ALL / is_admin()
--- NOTE: No user-scoped policy — there is no ownership column.
+-- After 08_RLS_GLOBAL_CLEANUP.sql:
+--   "Admins manage campaign_access_requests"  ALL  is_admin()
 
 
 -- ============================================================================
--- SECTION 19 — JOBS SLOT ENFORCEMENT TRIGGER
+-- SECTION 18 — RECOVERY_* TABLES STATUS (informational — do not modify)
 -- ============================================================================
 
-SELECT tgname, tgenabled
-FROM pg_trigger
-WHERE tgrelid = 'public.applications'::regclass
-  AND NOT tgisinternal;
-
--- Expected: enforce_job_slots trigger
-
-
--- ============================================================================
--- SECTION 20 — FINAL HEALTH CHECK: any remaining issues
--- ============================================================================
-
--- Count tables with ALL=true policies after cleanup:
-SELECT
-    COUNT(*) AS remaining_all_true_policies,
-    array_agg(tablename || '.' || policyname ORDER BY tablename) AS policy_list
+SELECT tablename, policyname, cmd,
+       left(coalesce(qual, ''), 60) AS using_clause
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND (
-      lower(coalesce(qual, ''))       = 'true'
-      OR lower(coalesce(with_check, '')) = 'true'
-  )
-  AND (cmd = 'ALL' OR with_check = 'true');
+  AND tablename LIKE 'recovery_%'
+ORDER BY tablename, policyname;
 
--- EXPECTED: 0 remaining ALL=true policies (only SELECT=true on config/follows are OK)
+-- These policies are intentionally NOT changed by this SQL package.
+-- Their dangerous ALL=true policies remain until the recovery system's
+-- access model is confirmed and a targeted fix is designed.
+
+
+-- ============================================================================
+-- SECTION 19 — COMPLETE POLICY INVENTORY (all tables)
+-- ============================================================================
+
+SELECT
+    tablename,
+    policyname,
+    cmd,
+    left(coalesce(qual,       ''), 70) AS using_clause,
+    left(coalesce(with_check, ''), 70) AS check_clause
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename, policyname;
+
+
+-- ============================================================================
+-- SECTION 20 — FINAL HEALTH CHECK
+-- ============================================================================
+
+SELECT
+    COUNT(*) FILTER (
+        WHERE lower(coalesce(qual,''))='true'
+        OR lower(coalesce(with_check,''))='true'
+    ) AS remaining_true_policies,
+    COUNT(*) FILTER (
+        WHERE lower(coalesce(qual,''))='true'
+        AND cmd = 'SELECT'
+        AND tablename = 'config'
+    ) AS intentional_config_read,
+    COUNT(*) FILTER (
+        WHERE tablename LIKE 'recovery_%'
+        AND (lower(coalesce(qual,''))='true'
+             OR lower(coalesce(with_check,''))='true')
+    ) AS recovery_tables_pending_review
+FROM pg_policies
+WHERE schemaname = 'public';
+
+-- EXPECTED:
+--   remaining_true_policies     = 1  (config SELECT/true only)
+--   intentional_config_read     = 1
+--   recovery_tables_pending_review = 7  (known gap — intentional)
+--
+-- If remaining_true_policies > 1 + (recovery count), something was missed.

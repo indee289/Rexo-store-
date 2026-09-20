@@ -29,6 +29,8 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   };
 });
 
+/// All users, optionally filtered by search term.
+/// Live users table uses camelCase "createdAt" for the timestamp column.
 final adminUsersProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>(
         (ref, search) async {
@@ -37,7 +39,8 @@ final adminUsersProvider =
   if (search.isNotEmpty) {
     query = query.or('name.ilike.%$search%,email.ilike.%$search%');
   }
-  final response = await query.order('created_at', ascending: false);
+  // Live column is "createdAt" (camelCase), not created_at.
+  final response = await query.order('createdAt', ascending: false);
   return List<Map<String, dynamic>>.from(response);
 });
 
@@ -135,9 +138,8 @@ final adminProductsProvider =
   return List<Map<String, dynamic>>.from(response);
 });
 
-/// Product categories loaded from the DB (`product_categories`). This keeps the
-/// Add Product category dropdown in sync with the storefront category filter.
-/// Falls back to a sensible default list if the table is empty or unreachable.
+/// Product categories loaded from the DB (`product_categories`). Falls back to
+/// a sensible default list if the table is empty or unreachable.
 final adminCategoriesProvider = FutureProvider<List<String>>((ref) async {
   const fallback = <String>[
     'Electronics',
@@ -181,12 +183,17 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   AdminActionsNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  Future<void> updateUserStatus(String userId, String status) async {
+  // ── Users ──────────────────────────────────────────────────────────────────
+
+  /// Ban or unban a user. Live column: `isBanned` (boolean).
+  /// Identity column: `uid` (text) — NOT `id` (uuid).
+  /// There is no `account_status` column in the live users schema.
+  Future<void> updateUserBanStatus(String userUid, bool banned) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('users')
-          .update({'account_status': status}).eq('id', userId);
+          .update({'isBanned': banned}).eq('uid', userUid);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -194,12 +201,14 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> verifyUser(String userId) async {
+  /// Verify a user. Live column: `isVerified` (camelCase boolean).
+  /// Identity column: `uid` (text) — NOT `id` (uuid).
+  Future<void> verifyUser(String userUid) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('users')
-          .update({'is_verified': true}).eq('id', userId);
+          .update({'isVerified': true}).eq('uid', userUid);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -207,18 +216,21 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> updateUserRole(String userId, String role) async {
+  /// Change a user's role. Identity column: `uid` (text) — NOT `id` (uuid).
+  Future<void> updateUserRole(String userUid, String role) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('users')
-          .update({'role': role}).eq('id', userId);
+          .update({'role': role}).eq('uid', userUid);
       ref.invalidate(adminUsersProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
+
+  // ── Campaigns ──────────────────────────────────────────────────────────────
 
   Future<void> updateCampaignStatus(String campaignId, String status) async {
     state = const AsyncValue.loading();
@@ -232,6 +244,8 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  // ── Submissions ────────────────────────────────────────────────────────────
 
   Future<void> approveSubmission(String submissionId) async {
     state = const AsyncValue.loading();
@@ -263,8 +277,10 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       String submissionId, double amount) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('submissions').update(
-          {'status': 'paid', 'payout_amount': amount}).eq('id', submissionId);
+      await SupabaseService.client.from('submissions').update({
+        'status': 'paid',
+        'payout_amount': amount,
+      }).eq('id', submissionId);
       ref.invalidate(adminSubmissionsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -272,10 +288,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // ── Deposits ───────────────────────────────────────────────────────────────
+
   Future<void> approveDeposit(String depositId) async {
     state = const AsyncValue.loading();
     try {
-      // Fetch the deposit to get user_id and amount
       final deposit = await SupabaseService.client
           .from('deposits')
           .select('user_id, amount')
@@ -285,12 +302,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final userId = deposit['user_id'] as String;
       final amount = (deposit['amount'] as num).toDouble();
 
-      // Update deposit status to approved
       await SupabaseService.client
           .from('deposits')
           .update({'status': 'approved'}).eq('id', depositId);
 
-      // Credit the user's wallet using atomic RPC function
+      // Credit the user's wallet using atomic RPC (no race condition).
       await SupabaseService.client.rpc('credit_wallet', params: {
         'p_user_id': userId,
         'p_amount': amount,
@@ -317,10 +333,11 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // ── Withdrawals ────────────────────────────────────────────────────────────
+
   Future<void> approveWithdrawal(String withdrawalId) async {
     state = const AsyncValue.loading();
     try {
-      // Fetch the withdrawal to get user_id and amount
       final withdrawal = await SupabaseService.client
           .from('withdrawals')
           .select('user_id, amount')
@@ -330,12 +347,14 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final userId = withdrawal['user_id'] as String;
       final amount = (withdrawal['amount'] as num).toDouble();
 
-      // Update withdrawal status to approved
+      // Status must be 'completed' — the live CHECK constraint is:
+      // pending | processing | completed | rejected
+      // 'approved' is NOT a valid status and will be rejected by Postgres.
       await SupabaseService.client
           .from('withdrawals')
-          .update({'status': 'approved'}).eq('id', withdrawalId);
+          .update({'status': 'completed'}).eq('id', withdrawalId);
 
-      // Debit the user's wallet using atomic RPC function
+      // Debit the user's wallet using atomic RPC (no race condition).
       await SupabaseService.client.rpc('debit_wallet', params: {
         'p_user_id': userId,
         'p_amount': amount,
@@ -361,6 +380,8 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  // ── KYC ────────────────────────────────────────────────────────────────────
 
   Future<void> approveKyc(String kycId) async {
     state = const AsyncValue.loading();
@@ -388,19 +409,26 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // ── Wallets ────────────────────────────────────────────────────────────────
+
+  /// Credit a wallet by wallet row `id`.
+  /// Resolves to `user_id`, then uses the atomic `credit_wallet` RPC.
+  /// This avoids the race-prone read-then-write pattern.
   Future<void> creditWallet(String walletId, double amount) async {
     state = const AsyncValue.loading();
     try {
-      // RACE CONDITION NOTE: Same read-then-write limitation as approveDeposit.
-      // See supabase/wallet_balance_rpc.sql for the atomic RPC alternative.
       final wallet = await SupabaseService.client
           .from('wallets')
-          .select('available_balance')
+          .select('user_id')
           .eq('id', walletId)
           .single();
-      final currentBalance = (wallet['available_balance'] as num).toDouble();
-      await SupabaseService.client.from('wallets').update(
-          {'available_balance': currentBalance + amount}).eq('id', walletId);
+      final userId = wallet['user_id'] as String;
+
+      await SupabaseService.client.rpc('credit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
+
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -408,22 +436,24 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Debit a wallet by wallet row `id`.
+  /// Resolves to `user_id`, then uses the atomic `debit_wallet` RPC.
+  /// Server enforces the balance >= 0 floor.
   Future<void> debitWallet(String walletId, double amount) async {
     state = const AsyncValue.loading();
     try {
-      // RACE CONDITION NOTE: Same read-then-write limitation as approveWithdrawal.
-      // See supabase/wallet_balance_rpc.sql for the atomic RPC alternative.
       final wallet = await SupabaseService.client
           .from('wallets')
-          .select('available_balance')
+          .select('user_id')
           .eq('id', walletId)
           .single();
-      final currentBalance = (wallet['available_balance'] as num).toDouble();
-      if (currentBalance - amount < 0) {
-        throw Exception('Insufficient balance for this debit.');
-      }
-      await SupabaseService.client.from('wallets').update(
-          {'available_balance': currentBalance - amount}).eq('id', walletId);
+      final userId = wallet['user_id'] as String;
+
+      await SupabaseService.client.rpc('debit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
+
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -431,18 +461,37 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Freeze a wallet. Live column: `is_frozen` (boolean).
+  /// There is no `status` column on wallets — the previous
+  /// {'status': 'frozen'} update always errored silently.
   Future<void> freezeWallet(String walletId) async {
     state = const AsyncValue.loading();
     try {
       await SupabaseService.client
           .from('wallets')
-          .update({'status': 'frozen'}).eq('id', walletId);
+          .update({'is_frozen': true}).eq('id', walletId);
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
+
+  /// Unfreeze a wallet.
+  Future<void> unfreezeWallet(String walletId) async {
+    state = const AsyncValue.loading();
+    try {
+      await SupabaseService.client
+          .from('wallets')
+          .update({'is_frozen': false}).eq('id', walletId);
+      ref.invalidate(adminWalletsProvider);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  // ── Platform settings ──────────────────────────────────────────────────────
 
   Future<void> updatePlatformSetting(String key, dynamic value) async {
     state = const AsyncValue.loading();
@@ -457,20 +506,43 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // ── Broadcast ──────────────────────────────────────────────────────────────
+
+  /// Send an admin broadcast to ALL users via the `send-broadcast` Edge Function.
+  ///
+  /// The Edge Function inserts one in-app notification row per user (using
+  /// the live column names: "userId", message, "createdAt") AND delivers FCM
+  /// pushes server-side. Inserting rows here directly would:
+  ///   1. Duplicate rows the function already inserts.
+  ///   2. Fail the NOT NULL constraint on "userId" (no single userId for broadcast).
+  ///   3. Bypass FCM delivery entirely.
+  ///
+  /// The old direct INSERT approach (using 'created_at', no 'userId') was wrong
+  /// against the live schema and has been removed.
   Future<void> sendBroadcast(String title, String message) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('notifications').insert({
-        'title': title,
-        'message': message,
-        'type': 'broadcast',
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      final response = await SupabaseService.client.functions.invoke(
+        'send-broadcast',
+        body: {'title': title, 'message': message},
+      );
+
+      final status = response.status;
+      if (status < 200 || status >= 300) {
+        final data = response.data is Map
+            ? Map<String, dynamic>.from(response.data as Map)
+            : null;
+        final err = data?['error']?.toString() ?? 'status $status';
+        throw Exception('Broadcast failed: $err');
+      }
+
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
+
+  // ── Misc ───────────────────────────────────────────────────────────────────
 
   Future<void> createAuditLog(String action, String details) async {
     state = const AsyncValue.loading();
@@ -502,12 +574,6 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Insert a product into Supabase.
-  ///
-  /// Returns `true` only when the row was actually persisted (the insert
-  /// completed without throwing). Returns `false` on any error, and stores the
-  /// error in [state] so callers can surface a sanitized message. This lets the
-  /// Add Product screen show success ONLY after the real DB write succeeds.
   Future<bool> createProduct(Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
@@ -536,9 +602,6 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Hard-delete a product. The admin DELETE RLS policy in
-  /// supabase/fix_admin_rls.sql (is_admin()) authorizes this. Returns `true`
-  /// when the delete completed without error.
   Future<bool> deleteProduct(String productId) async {
     state = const AsyncValue.loading();
     try {

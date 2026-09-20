@@ -56,10 +56,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final profile = profileState.profile;
       if (profile != null) {
         _nameController.text = profile['name'] ?? '';
-        _handleController.text = profile['handle'] ?? '';
+        _handleController.text = profile['username'] ?? ''; // live: username
         _bioController.text = profile['bio'] ?? '';
         _phoneController.text = profile['phone'] ?? '';
-        _currentAvatarUrl = profile['avatar_url'];
+        _currentAvatarUrl = profile['profileImage']; // live: profileImage
         if (mounted) setState(() {});
       }
     });
@@ -207,12 +207,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final notifier = ref.read(profileNotifierProvider.notifier);
       final fields = <String, dynamic>{
         'name': _nameController.text.trim(),
-        'handle': _handleController.text.trim(),
+        'username': _handleController.text.trim(), // live: username
         'bio': _bioController.text.trim(),
         'phone': _phoneController.text.trim(),
       };
       if (_currentAvatarUrl != null) {
-        fields['avatar_url'] = _currentAvatarUrl;
+        fields['profileImage'] = _currentAvatarUrl; // live: profileImage
       }
 
       final success = await notifier.updateProfile(fields);

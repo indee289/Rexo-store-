@@ -14,14 +14,14 @@ final conversationsProvider =
   // Fetch all messages where user is sender or receiver
   final sentMessages = await SupabaseService.client
       .from('messages')
-      .select('*, receiver:users!receiver_id(id, name, avatar_url)')
+      .select('*, receiver:users!receiver_id(id, name, profileImage)') // live: profileImage
       .eq('sender_id', user.id)
       .order('created_at', ascending: false)
       .limit(200);
 
   final receivedMessages = await SupabaseService.client
       .from('messages')
-      .select('*, sender:users!sender_id(id, name, avatar_url)')
+      .select('*, sender:users!sender_id(id, name, profileImage)') // live: profileImage
       .eq('receiver_id', user.id)
       .order('created_at', ascending: false)
       .limit(200);
@@ -39,7 +39,7 @@ final conversationsProvider =
       conversationsMap[otherUserId] = {
         'other_user_id': otherUserId,
         'other_user_name': otherUser['name'] ?? 'User',
-        'other_user_avatar': otherUser['avatar_url'],
+        'other_user_avatar': otherUser['profileImage'],  // live: profileImage
         'last_message': msg['content'],
         'last_message_at': msg['created_at'],
         'is_read': true, // Sent messages are always "read" from our perspective
@@ -57,7 +57,7 @@ final conversationsProvider =
       conversationsMap[otherUserId] = {
         'other_user_id': otherUserId,
         'other_user_name': otherUser['name'] ?? 'User',
-        'other_user_avatar': otherUser['avatar_url'],
+        'other_user_avatar': otherUser['profileImage'],  // live: profileImage
         'last_message': msg['content'],
         'last_message_at': msg['created_at'],
         'is_read': msg['is_read'] ?? false,
@@ -75,7 +75,7 @@ final conversationsProvider =
         conversationsMap[otherUserId] = {
           'other_user_id': otherUserId,
           'other_user_name': otherUser['name'] ?? 'User',
-          'other_user_avatar': otherUser['avatar_url'],
+          'other_user_avatar': otherUser['profileImage'],  // live: profileImage
           'last_message': msg['content'],
           'last_message_at': msg['created_at'],
           'is_read': msg['is_read'] ?? false,
@@ -102,7 +102,7 @@ final conversationsProvider =
   return conversations;
 });
 
-/// Search public users by handle or name to start a new chat (WhatsApp-style).
+/// Search public users by username or name to start a new chat (WhatsApp-style).
 ///
 /// Excludes the current user and returns up to 20 matches. An empty/whitespace
 /// query returns an empty list so the UI can show a hint instead of everyone.
@@ -116,8 +116,8 @@ final userSearchProvider =
 
   var request = SupabaseService.client
       .from('users')
-      .select('id, name, handle, avatar_url, is_verified')
-      .or('handle.ilike.%$q%,name.ilike.%$q%');
+      .select('id, name, username, profileImage, isVerified') // live columns
+      .or('username.ilike.%$q%,name.ilike.%$q%');             // live: username
 
   if (currentUser != null) {
     request = request.neq('id', currentUser.id);
@@ -134,8 +134,8 @@ final userSearchProvider =
 /// [conversationsProvider]. Without this the header would fall back to the
 /// generic "User" label when a chat is opened straight from user search.
 ///
-/// Returns the peer's public columns (`id, name, handle, avatar_url,
-/// is_verified`) or `null` when no matching row exists.
+/// Returns the peer's public columns (`id, name, username, profileImage,
+/// isVerified`) or `null` when no matching row exists.
 final chatPeerProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
         (ref, userId) async {
@@ -143,7 +143,7 @@ final chatPeerProvider =
 
   final row = await SupabaseService.client
       .from('users')
-      .select('id, name, handle, avatar_url, is_verified')
+      .select('id, name, username, profileImage, isVerified') // live columns
       .eq('id', userId)
       .maybeSingle();
 

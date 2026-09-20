@@ -94,9 +94,9 @@ class _ApplicantTile extends StatelessWidget {
     final displayName =
         (application['applicant_name'] ?? creator?['name'] ?? 'Applicant')
             .toString();
-    final handle = (creator?['handle'] ?? '').toString();
-    final avatarUrl = creator?['avatar_url'] as String?;
-    final isVerified = creator?['is_verified'] == true;
+    final handle = (creator?['username'] ?? '').toString(); // live: username
+    final avatarUrl = creator?['profileImage'] as String?;  // live: profileImage
+    final isVerified = creator?['isVerified'] == true;
     final status = (application['status'] ?? 'pending').toString();
     final category = (application['category'] ?? '').toString();
     final followers = application['followers_count'];
@@ -260,9 +260,9 @@ class _ApplicantDetailSheet extends StatelessWidget {
     final displayName =
         (application['applicant_name'] ?? creator?['name'] ?? 'Applicant')
             .toString();
-    final handle = (creator?['handle'] ?? '').toString();
-    final avatarUrl = creator?['avatar_url'] as String?;
-    final isVerified = creator?['is_verified'] == true;
+    final handle = (creator?['username'] ?? '').toString(); // live: username
+    final avatarUrl = creator?['profileImage'] as String?;  // live: profileImage
+    final isVerified = creator?['isVerified'] == true;
     final instagram =
         _normalizeInstagram((application['instagram_url'] ?? '').toString());
     final pitch = (application['pitch'] ?? '').toString();

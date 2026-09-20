@@ -26,7 +26,7 @@ final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((re
 final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await SupabaseService.client
       .from('creator_profiles')
-      .select('*, users!inner(name, avatar_url, handle, is_verified)')
+      .select('*, users!inner(name, profileImage, username, isVerified)') // live columns
       .order('followers', ascending: false)
       .limit(10);
 
@@ -45,9 +45,9 @@ final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
     return fallbackRows.map((row) => <String, dynamic>{
       'users': {
         'name': row['name'],
-        'avatar_url': row['avatar_url'],
-        'handle': row['handle'],
-        'is_verified': row['is_verified'],
+        'profileImage': row['profileImage'],  // live: profileImage
+        'username': row['username'],           // live: username
+        'isVerified': row['isVerified'],
       },
       'followers': 0,
       'user_id': row['id'],

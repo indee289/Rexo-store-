@@ -94,13 +94,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ref.watch(chatPeerProvider(widget.otherUserId)).asData?.value;
       if (peer != null) {
         final peerName = (peer['name'] ?? '').toString().trim();
-        final peerHandle = (peer['handle'] ?? '').toString().trim();
+        final peerHandle = (peer['username'] ?? '').toString().trim(); // live: username
         if (peerName.isNotEmpty) {
           otherUserName = peerName;
         } else if (peerHandle.isNotEmpty) {
           otherUserName = '@$peerHandle';
         }
-        otherUserAvatar ??= peer['avatar_url'] as String?;
+        otherUserAvatar ??= peer['profileImage'] as String?; // live: profileImage
       }
     }
 

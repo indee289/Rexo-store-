@@ -275,7 +275,7 @@ final adminJobSubmissionsProvider =
       try {
         userRow = await SupabaseService.client
             .from('users')
-            .select('id, name, handle, avatar_url')
+            .select('id, name, username, profileImage') // live columns
             .eq('id', userId)
             .maybeSingle();
       } catch (_) {}
@@ -580,14 +580,15 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       // 3) In-app notification
+      // Live notifications columns: "userId", message (not body), read (not is_read), "createdAt"
       await SupabaseService.client.from('notifications').insert({
-        'user_id': userId,
+        'userId': userId,
         'title': '🎉 Job Approved!',
-        'body':
+        'message':
             'Your submission for "$jobTitle" has been approved. ₹${paymentAmount.toStringAsFixed(0)} has been credited to your wallet.',
         'type': 'job_approved',
-        'is_read': false,
-        'created_at': now,
+        'read': false,
+        'createdAt': now,
       });
 
       state = const AsyncValue.data(null);
@@ -646,17 +647,18 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }).eq('id', applicationId);
 
       // 2) In-app notification
-      final body = rejectionReason != null && rejectionReason.trim().isNotEmpty
+      // Live notifications columns: "userId", message (not body), read (not is_read), "createdAt"
+      final msgBody = rejectionReason != null && rejectionReason.trim().isNotEmpty
           ? 'Your submission for "$jobTitle" was not approved. Reason: $rejectionReason'
           : 'Your submission for "$jobTitle" was not approved.';
 
       await SupabaseService.client.from('notifications').insert({
-        'user_id': userId,
+        'userId': userId,
         'title': 'Submission Rejected',
-        'body': body,
+        'message': msgBody,
         'type': 'job_rejected',
-        'is_read': false,
-        'created_at': now,
+        'read': false,
+        'createdAt': now,
       });
 
       state = const AsyncValue.data(null);

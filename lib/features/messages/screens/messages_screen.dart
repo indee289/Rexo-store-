@@ -327,10 +327,10 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                           final userId =
                               user['user_id'] as String? ?? '';
                           final name = user['name'] as String? ?? 'User';
-                          final handle =
-                              user['handle'] as String? ?? '';
+                          final username =
+                              user['username'] as String? ?? ''; // live: username
                           final avatarUrl =
-                              user['avatar_url'] as String?;
+                              user['profileImage'] as String?; // live: profileImage
                           return ListTile(
                             leading: PremiumAvatar(
                               imageUrl: avatarUrl,
@@ -342,8 +342,8 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: cs.onSurface)),
-                            subtitle: handle.isNotEmpty
-                                ? Text('@$handle',
+                            subtitle: username.isNotEmpty
+                                ? Text('@$username',
                                     style: TextStyle(
                                         fontSize: 13,
                                         color: cs.onSurfaceVariant))

@@ -8,8 +8,17 @@ import '../../../services/supabase_service.dart';
 /// admin broadcast Edge Function inserts new `notifications` rows. The stream
 /// is ordered newest-first and filtered to the current user.
 ///
+/// LIVE SCHEMA COLUMNS (confirmed Stage C):
+///   "userId"    text NOT NULL   ← ownership/filter column
+///   title       text
+///   message     text            ← NOT 'body'
+///   type        text
+///   read        boolean         ← NOT 'is_read'
+///   link        text
+///   "createdAt" timestamptz     ← NOT 'created_at'
+///
 /// NEEDS-USER-ACTION: Realtime must be enabled for the `notifications` table
-/// in the Supabase dashboard (Database -> Replication / Realtime) for live
+/// in the Supabase dashboard (Database → Replication / Realtime) for live
 /// updates to arrive. Without it the initial snapshot still loads.
 final notificationsProvider =
     StreamProvider<List<Map<String, dynamic>>>((ref) {
@@ -21,16 +30,17 @@ final notificationsProvider =
   return SupabaseService.client
       .from('notifications')
       .stream(primaryKey: ['id'])
-      .eq('user_id', user.id)
-      .order('created_at', ascending: false)
+      .eq('userId', user.id)
+      .order('createdAt', ascending: false)
       .limit(100)
       .map((rows) => List<Map<String, dynamic>>.from(rows));
 });
 
 /// Unread notifications count derived from the realtime notifications stream.
+/// Live column is `read` (boolean), not `is_read`.
 final unreadNotificationsCountProvider = Provider<int>((ref) {
   final notifications = ref.watch(notificationsProvider).value ?? const [];
-  return notifications.where((n) => n['is_read'] == false).length;
+  return notifications.where((n) => n['read'] == false).length;
 });
 
 /// Notification actions notifier
@@ -39,12 +49,13 @@ class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   NotificationActionsNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  /// Mark a single notification as read
+  /// Mark a single notification as read.
+  /// Live column: `read` (boolean).
   Future<void> markAsRead(String id) async {
     try {
       await SupabaseService.client
           .from('notifications')
-          .update({'is_read': true}).eq('id', id);
+          .update({'read': true}).eq('id', id);
 
       ref.invalidate(notificationsProvider);
     } catch (e, st) {
@@ -52,7 +63,8 @@ class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Mark all notifications as read
+  /// Mark all of the current user's notifications as read.
+  /// Filter columns: `userId` (text), `read` (boolean).
   Future<void> markAllAsRead() async {
     try {
       final user = SupabaseService.currentUser;
@@ -60,9 +72,9 @@ class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       await SupabaseService.client
           .from('notifications')
-          .update({'is_read': true})
-          .eq('user_id', user.id)
-          .eq('is_read', false);
+          .update({'read': true})
+          .eq('userId', user.id)
+          .eq('read', false);
 
       ref.invalidate(notificationsProvider);
     } catch (e, st) {
@@ -70,7 +82,7 @@ class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Delete a notification
+  /// Delete a notification by its row id.
   Future<void> deleteNotification(String id) async {
     try {
       await SupabaseService.client
