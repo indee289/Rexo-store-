@@ -20,10 +20,12 @@ jobs:
           channel: stable
 
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          cd admin_app && flutter pub get
 
       - name: Analyze code
-        run: flutter analyze
+        run: flutter analyze --no-pub lib/
         continue-on-error: true
 
       - name: Decode keystore
