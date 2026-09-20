@@ -1,0 +1,62 @@
+{
+  "project_type": "Flutter + Riverpod mobile app with a Supabase (PostgREST) backend",
+  "language": "Dart (Flutter)",
+  "build_system": "Flutter/Dart pub. NOTE: Flutter/Dart is NOT installed in this sandbox, so `flutter analyze`/`flutter build` cannot run. Verification is by reading + grep + brace/paren balance only.",
+  "test_framework": "None relevant to this task (no Dart test runner available in sandbox).",
+  "build_command": "flutter build (NOT available in sandbox - skip)",
+  "test_command": "flutter test (NOT available in sandbox - skip)",
+  "verification_instructions": "1) grep for .from('jobs')/.from('job_applications')/.from('banners') across lib/ must return ZERO matches. 2) Confirm brace/paren balance in every changed Dart file (python or awk brace counter). 3) Confirm every provider name the screens import still exists with the same top-level declaration and return type. 4) Confirm home_provider.dart / campaigns_provider.dart campaign queries now exclude job rows (is_job filter). 5) Confirm error_utils.dart sanitize() no longer returns the DBG3 passthrough. 6) SQL file must be idempotent (ADD COLUMN IF NOT EXISTS, DROP POLICY IF EXISTS before CREATE) and end with NOTIFY pgrst 'reload schema'.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No build/setup possible in sandbox (no Flutter). Edit files in the working tree only. The orchestrator commits and pushes. DB changes ship as a .sql file the USER runs in the Supabase SQL Editor.",
+  "environment_constraints": "network=INTEGRATIONS_ONLY: cannot reach the live Supabase DB, cannot install Flutter, cannot run dart/flutter. No package pulls. Validate purely by reading code, grep, and brace/paren balance. DB migration is delivered as supabase/JOBS_VIA_CAMPAIGNS.sql for the user to run manually.",
+  "contribution_requirements": "Single branch 'Rexo-Kotlin'. Never create a branch or PR. Do not break campaigns, wallet, notifications. No mock/static data - empty state only when genuinely empty.",
+  "key_patterns": "Providers live in lib/features/<feature>/providers/*.dart. Data access via SupabaseService.client.from('<table>'). Current user via SupabaseService.currentUser (id is uuid string). Providers return List<Map<String,dynamic>> or Map<String,dynamic>? and the screens read raw string keys off those maps. Campaigns table reads work through PostgREST; jobs/job_applications/banners tables return PGRST205 and CANNOT be used.",
+  "relevant_files": [
+    "lib/features/jobs/providers/jobs_provider.dart (REWRITE - remove all .from('jobs')/.from('job_applications'))",
+    "lib/features/home/providers/banners_provider.dart (REWRITE - remove all .from('banners'))",
+    "lib/features/home/providers/home_provider.dart (UPDATE - add is_job exclusion to campaign queries)",
+    "lib/features/campaigns/providers/campaigns_provider.dart (UPDATE - add is_job exclusion to campaign queries)",
+    "lib/core/utils/error_utils.dart (REVERT DBG3 passthrough)",
+    "supabase/JOBS_VIA_CAMPAIGNS.sql (NEW deliverable)",
+    "supabase/schema.sql (reference: campaigns/applications/platform_settings definitions and RLS)",
+    "supabase/jobs_migration.sql (reference: original jobs/job_applications columns & statuses)",
+    "supabase/banners_migration.sql (reference: original banner columns)",
+    "lib/features/jobs/screens/jobs_screen.dart (contract: keys consumed)",
+    "lib/features/jobs/screens/job_detail_screen.dart (contract)",
+    "lib/features/jobs/screens/submit_task_screen.dart (contract)",
+    "lib/features/admin/screens/post_job_screen.dart (contract: createJob data map keys)",
+    "lib/features/admin/screens/manage_jobs_screen.dart (contract)",
+    "lib/features/admin/screens/review_job_submissions_screen.dart (contract: nested 'jobs' and 'users' maps)",
+    "lib/features/admin/screens/manage_banners_screen.dart (contract: banner data map keys, needs 'id' per banner)"
+  ],
+  "directory_structure": "lib/features/<feature>/{providers,screens}. lib/services/supabase_service.dart holds the client. lib/core/utils/error_utils.dart sanitizes errors. supabase/ holds schema.sql and ad-hoc .sql migrations the user runs manually.",
+  "column_mapping": {
+    "note": "Jobs are stored as rows in the already-cached campaigns table tagged is_job=true. Job applications reuse the already-cached applications table (its campaign_id points at a job/campaign row). Banners are stored as a JSON array inside a single already-cached platform_settings row (key='home_banners'). Providers MAP db columns back to the exact keys the screens expect, so NO screen changes are needed.",
+    "jobs_field_to_campaigns_column": {
+      "title": "title",
+      "description": "description",
+      "category": "category",
+      "payment_amount": "per_creator_payout (provider returns BOTH keys: also expose 'payment_amount')",
+      "max_slots": "total_slots (campaigns.total_slots is NOT NULL DEFAULT 1; when job max_slots is null store a sentinel and expose max_slots=null back; see steps)",
+      "deadline": "deadline",
+      "cover_image_url": "cover_image_url",
+      "status": "status (jobs use active/closed/draft; campaigns CHECK forbids 'closed' -> SQL must relax the campaigns status CHECK to also allow 'closed')",
+      "created_by": "brand_id (campaigns.brand_id is NOT NULL and FK->users; set to the admin/current user id)",
+      "is_job marker": "new column is_job boolean NOT NULL DEFAULT false"
+    },
+    "job_application_field_to_applications_column": {
+      "job_id": "campaign_id (points at the campaigns row that is_job=true)",
+      "user_id": "creator_id",
+      "status": "status (jobs use applied/submitted/approved/rejected; applications CHECK forbids applied/submitted -> SQL must relax applications status CHECK to also allow 'applied' and 'submitted')",
+      "submission_type": "new column submission_type text",
+      "submission_url": "new column submission_url text",
+      "submission_note": "new column submission_note text",
+      "rejection_reason": "new column rejection_reason text",
+      "applied_at": "created_at (provider maps created_at -> applied_at key)",
+      "submitted_at": "new column submitted_at timestamptz",
+      "reviewed_at": "new column reviewed_at timestamptz",
+      "reviewed_by": "new column reviewed_by uuid"
+    },
+    "banners_storage": "platform_settings row key='home_banners', value = JSON string of an array of banner objects. Each object keeps keys: id (generated uuid string), title, image_url, link_type, link_campaign_id, link_page, is_visible, sort_order, created_at, updated_at. Provider parses/serializes this JSON."
+  }
+}

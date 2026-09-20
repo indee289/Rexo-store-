@@ -1,0 +1,7 @@
+{
+  "task_id": "task-jobs-banners-via-campaigns",
+  "task_description": "Fix the persistent PGRST205 'table not in schema cache' for jobs/job_applications/banners by piggybacking their data on already-cached tables: store Jobs as campaigns rows tagged is_job=true, Job Applications as applications rows pointing at those campaigns, and Banners as a JSON array in a platform_settings row (key='home_banners'). Rewrite jobs_provider.dart and banners_provider.dart to use those cached tables (no .from('jobs')/.from('job_applications')/.from('banners')), keeping all provider names/return shapes so screens are unchanged. Exclude is_job rows from the real Campaigns/Home lists. Ship an idempotent supabase/JOBS_VIA_CAMPAIGNS.sql the user runs. Revert the temporary DBG3 passthrough in error_utils.dart. Do not break campaigns, wallet, or notifications; no mock data.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
