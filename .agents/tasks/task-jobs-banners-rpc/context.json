@@ -1,0 +1,25 @@
+{
+  "project_type": "Flutter mobile app (Dart) with Riverpod state management and Supabase (PostgREST + Postgres) backend",
+  "language": "Dart (Flutter) + PL/pgSQL for Supabase RPCs",
+  "build_system": "Flutter (pub). NOTE: Flutter/Dart is NOT installed in this sandbox, so `flutter analyze`/`flutter build` cannot run. Verification is by careful reading, brace/paren balance checks (grep -c), and matching existing patterns.",
+  "test_framework": "None relevant to this change; no unit tests exercise these providers.",
+  "build_command": "flutter build apk (NOT runnable in sandbox - Flutter not installed)",
+  "test_command": "flutter test (NOT runnable in sandbox - Flutter not installed)",
+  "verification_instructions": "1) grep for `.from('jobs')`, `.from('job_applications')`, `.from('banners')` across lib/ MUST return ZERO matches. 2) Every rpc('name', params:{...}) in the two Dart files must match a function name + parameter names defined in supabase/jobs_banners_rpc.sql. 3) Brace/paren balance in both Dart files: `grep -o '{' file | wc -l` == `grep -o '}' file | wc -l`, same for ( ). 4) No changes to lib/services/supabase_service.dart, notifications inserts, credit_wallet rpc, or users-table access.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed. Edit Dart files under lib/ and create one SQL file under supabase/. The SQL is applied manually by the user in the Supabase SQL Editor (out of scope for the coder to run).",
+  "environment_constraints": "Network mode INTEGRATIONS_ONLY: no external Supabase/DB access, cannot pull packages, cannot run Flutter toolchain. All verification is static (reading + grep counts). Only edit files under /projects/sandbox/Rexo-Kotlin (ignore the stale /projects/sandbox/Rexo-store- copy). Work only on the existing checked-out branch; do not create branches or PRs.",
+  "contribution_requirements": "Preserve existing provider names, return types, enrichment shape (rows still carry 'jobs' and 'users' sub-maps), ref.invalidate() calls, try/catch error handling. Do NOT touch supabase_service.dart, notifications provider/inserts, wallet provider, credit_wallet rpc, or the users table.",
+  "key_patterns": "Supabase client accessed as SupabaseService.client (lib/services/supabase_service.dart). Current user: SupabaseService.currentUser (user.id is a String). RPC call style already used elsewhere: SupabaseService.client.rpc('credit_wallet', params: {'p_user_id': userId, 'p_amount': amount}). Existing SECURITY DEFINER + case-insensitive helper public.is_admin() (users.id::text = auth.uid()::text AND lower(role)='admin'). Existing SECURITY DEFINER function credit_wallet(p_user_id uuid, p_amount numeric). job_applications.user_id is compared with auth.uid()::text in existing policies (both sides cast to text). rpc() returns dynamic; setof-returning functions are cast with List<Map<String,dynamic>>.from(response as List).",
+  "relevant_files": [
+    "lib/features/jobs/providers/jobs_provider.dart (22 .from() usages to convert - reads + writes)",
+    "lib/features/home/providers/banners_provider.dart (5 .from() usages to convert - reads + writes)",
+    "lib/core/utils/error_utils.dart (revert the TEMP DEBUG passthrough block)",
+    "supabase/jobs_migration.sql (authoritative schema for jobs + job_applications columns)",
+    "supabase/banners_migration.sql (authoritative schema for banners columns)",
+    "supabase/PERMANENT_FIX_run_this.sql (is_admin() definition + RLS policies pattern)",
+    "supabase/migrations/add_wallet_function_aliases.sql (credit_wallet signature - DO NOT modify)",
+    "supabase/wallet_balance_rpc.sql (SECURITY DEFINER + admin-check pattern to mirror)"
+  ],
+  "directory_structure": "lib/features/<feature>/providers/*.dart holds Riverpod providers that call Supabase. lib/services/supabase_service.dart wraps the client. lib/core/utils/error_utils.dart sanitizes errors. supabase/ holds SQL migrations run manually in the Supabase SQL Editor; the new RPC file goes there."
+}

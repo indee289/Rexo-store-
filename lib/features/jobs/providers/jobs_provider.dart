@@ -21,33 +21,23 @@ final availableJobsProvider =
   final category = ref.watch(jobCategoryFilterProvider);
   final search = ref.watch(jobSearchProvider);
 
-  var query = SupabaseService.client
-      .from('jobs')
-      .select()
-      .eq('status', 'active');
-
-  if (category != 'All') {
-    query = query.eq('category', category);
-  }
-
-  if (search.isNotEmpty) {
-    query = query.ilike('title', '%$search%');
-  }
-
-  final response = await query.order('created_at', ascending: false).limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  final response = await SupabaseService.client.rpc('get_active_jobs', params: {
+    'p_category': category == 'All' ? null : category,
+    'p_search': search.isEmpty ? null : search,
+  });
+  return List<Map<String, dynamic>>.from(response as List);
 });
 
 /// Distinct categories derived from existing active jobs (dynamic, no hardcode).
 final jobCategoriesProvider = FutureProvider<List<String>>((ref) async {
-  // Watch availableJobs so we only derive from what's actually showing
-  final jobs = await SupabaseService.client
-      .from('jobs')
-      .select('category')
-      .eq('status', 'active');
+  // Derive from all active jobs (no filters applied)
+  final response = await SupabaseService.client.rpc('get_active_jobs', params: {
+    'p_category': null,
+    'p_search': null,
+  });
 
   final cats = <String>{};
-  for (final row in List<Map<String, dynamic>>.from(jobs)) {
+  for (final row in List<Map<String, dynamic>>.from(response as List)) {
     final cat = row['category'] as String?;
     if (cat != null && cat.trim().isNotEmpty) cats.add(cat.trim());
   }
@@ -55,17 +45,14 @@ final jobCategoriesProvider = FutureProvider<List<String>>((ref) async {
   return ['All', ...sorted];
 });
 
-/// Slot counts for a single job: returns { filled: int, max: int? }.
+/// Slot counts for a single job: returns { filled: int }.
 final jobSlotCountProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
         (ref, jobId) async {
   final response = await SupabaseService.client
-      .from('job_applications')
-      .select('id')
-      .eq('job_id', jobId)
-      .inFilter('status', ['applied', 'submitted', 'approved']);
+      .rpc('get_job_slot_count', params: {'p_job_id': jobId});
 
-  final filled = (response as List).length;
+  final filled = (response as int?) ?? (response as num).toInt();
   return {'filled': filled};
 });
 
@@ -76,11 +63,9 @@ final jobDetailProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
         (ref, jobId) async {
   final response = await SupabaseService.client
-      .from('jobs')
-      .select()
-      .eq('id', jobId)
-      .maybeSingle();
-  return response;
+      .rpc('get_job_by_id', params: {'p_job_id': jobId});
+  final list = List<Map<String, dynamic>>.from(response as List);
+  return list.isEmpty ? null : list.first;
 });
 
 /// Whether the current user has already applied to a specific job.
@@ -89,14 +74,10 @@ final hasAppliedToJobProvider =
   final user = SupabaseService.currentUser;
   if (user == null) return false;
 
-  final response = await SupabaseService.client
-      .from('job_applications')
-      .select('id')
-      .eq('job_id', jobId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+  final response = await SupabaseService.client.rpc('has_applied_to_job',
+      params: {'p_job_id': jobId, 'p_user_id': user.id});
 
-  return response != null;
+  return response == true;
 });
 
 // ─── My Jobs ─────────────────────────────────────────────────────────────────
@@ -110,17 +91,14 @@ final myJobApplicationsProvider =
 
   final statusFilter = ref.watch(myJobsStatusFilterProvider);
 
-  var query = SupabaseService.client
-      .from('job_applications')
-      .select()
-      .eq('user_id', user.id);
+  final response = await SupabaseService.client
+      .rpc('get_job_applications', params: {'p_user_id': user.id});
+  var rows = List<Map<String, dynamic>>.from(response as List);
 
+  // Apply status filter client-side (RPC already orders by applied_at DESC).
   if (statusFilter != 'all') {
-    query = query.eq('status', statusFilter);
+    rows = rows.where((r) => r['status'] == statusFilter).toList();
   }
-
-  final response = await query.order('applied_at', ascending: false);
-  final rows = List<Map<String, dynamic>>.from(response);
 
   // Fetch each job separately (avoids embedded-join RLS/PGRST issues)
   final enriched = <Map<String, dynamic>>[];
@@ -129,11 +107,10 @@ final myJobApplicationsProvider =
     Map<String, dynamic>? jobRow;
     if (jobId != null) {
       try {
-        jobRow = await SupabaseService.client
-            .from('jobs')
-            .select()
-            .eq('id', jobId)
-            .maybeSingle();
+        final jobResponse = await SupabaseService.client
+            .rpc('get_job_by_id', params: {'p_job_id': jobId});
+        final jobList = List<Map<String, dynamic>>.from(jobResponse as List);
+        jobRow = jobList.isEmpty ? null : jobList.first;
       } catch (_) {}
     }
     enriched.add({...row, 'jobs': jobRow ?? {}});
@@ -147,35 +124,25 @@ final myJobApplicationsProvider =
 /// No user join — the foreign-key join on created_by can fail RLS on some
 /// Supabase configs; the admin list only needs the core job fields.
 final adminJobsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final response = await SupabaseService.client
-      .from('jobs')
-      .select()
-      .order('created_at', ascending: false)
-      .limit(200);
-  return List<Map<String, dynamic>>.from(response);
+  final response = await SupabaseService.client.rpc('get_jobs');
+  return List<Map<String, dynamic>>.from(response as List);
 });
 
 /// Applicant count per job (used in admin list).
 final adminJobApplicantCountProvider =
     FutureProvider.autoDispose.family<int, String>((ref, jobId) async {
   final response = await SupabaseService.client
-      .from('job_applications')
-      .select('id')
-      .eq('job_id', jobId);
-  return (response as List).length;
+      .rpc('get_job_applicant_count', params: {'p_job_id': jobId});
+  return (response as int?) ?? (response as num).toInt();
 });
 
 /// All submitted (pending review) job applications for admin review.
 /// Simple join — no nested user join to avoid RLS issues.
 final adminJobSubmissionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final response = await SupabaseService.client
-      .from('job_applications')
-      .select()
-      .eq('status', 'submitted')
-      .order('submitted_at', ascending: false)
-      .limit(200);
-  final rows = List<Map<String, dynamic>>.from(response);
+  final response =
+      await SupabaseService.client.rpc('get_submitted_applications');
+  final rows = List<Map<String, dynamic>>.from(response as List);
 
   // Fetch job + user details separately to avoid embedded-join failures
   final enriched = <Map<String, dynamic>>[];
@@ -195,11 +162,10 @@ final adminJobSubmissionsProvider =
     }
     if (jobId != null) {
       try {
-        jobRow = await SupabaseService.client
-            .from('jobs')
-            .select('id, title, payment_amount')
-            .eq('id', jobId)
-            .maybeSingle();
+        final jobResponse = await SupabaseService.client
+            .rpc('get_job_by_id', params: {'p_job_id': jobId});
+        final jobList = List<Map<String, dynamic>>.from(jobResponse as List);
+        jobRow = jobList.isEmpty ? null : jobList.first;
       } catch (_) {}
     }
     enriched.add({...row, 'users': userRow ?? {}, 'jobs': jobRow ?? {}});
@@ -226,12 +192,8 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      await SupabaseService.client.from('job_applications').insert({
-        'job_id': jobId,
-        'user_id': user.id,
-        'status': 'applied',
-        'applied_at': DateTime.now().toIso8601String(),
-      });
+      await SupabaseService.client
+          .rpc('apply_to_job', params: {'p_job_id': jobId});
 
       state = const AsyncValue.data(null);
       ref.invalidate(myJobApplicationsProvider);
@@ -253,13 +215,12 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('job_applications').update({
-        'status': 'submitted',
-        'submission_type': submissionType,
-        'submission_url': submissionUrl,
-        'submission_note': submissionNote,
-        'submitted_at': DateTime.now().toIso8601String(),
-      }).eq('id', applicationId);
+      await SupabaseService.client.rpc('submit_job_task', params: {
+        'p_application_id': applicationId,
+        'p_submission_type': submissionType,
+        'p_submission_url': submissionUrl,
+        'p_submission_note': submissionNote,
+      });
 
       state = const AsyncValue.data(null);
       ref.invalidate(myJobApplicationsProvider);
@@ -282,13 +243,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      await SupabaseService.client.from('jobs').insert({
-        ...data,
-        'created_by': user.id,
-        'status': 'active',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      await SupabaseService.client.rpc('create_job', params: {'p_data': data});
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);
@@ -305,10 +260,8 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateJob(String jobId, Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('jobs').update({
-        ...data,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', jobId);
+      await SupabaseService.client
+          .rpc('update_job', params: {'p_job_id': jobId, 'p_data': data});
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);
@@ -331,7 +284,8 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> deleteJob(String jobId) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('jobs').delete().eq('id', jobId);
+      await SupabaseService.client
+          .rpc('delete_job', params: {'p_job_id': jobId});
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);
@@ -356,37 +310,34 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application, then job separately (no embedded join)
-      final app = await SupabaseService.client
-          .from('job_applications')
-          .select('user_id, job_id')
-          .eq('id', applicationId)
-          .maybeSingle();
+      // Fetch application core ids, then job separately (no embedded join)
+      final appResponse = await SupabaseService.client
+          .rpc('get_application_core', params: {'p_application_id': applicationId});
+      final appRows = List<Map<String, dynamic>>.from(appResponse as List);
 
-      if (app == null) {
+      if (appRows.isEmpty) {
         state = AsyncValue.error('Application not found', StackTrace.current);
         return false;
       }
 
+      final app = appRows.first;
       final userId = app['user_id'] as String;
       final jobId = app['job_id'] as String;
-      final job = await SupabaseService.client
-          .from('jobs')
-          .select('title, payment_amount')
-          .eq('id', jobId)
-          .maybeSingle();
-      final jobTitle = job?['title'] as String? ?? 'Job';
+      final jobResponse = await SupabaseService.client
+          .rpc('get_job_by_id', params: {'p_job_id': jobId});
+      final jobList = List<Map<String, dynamic>>.from(jobResponse as List);
+      final job = jobList.isEmpty ? <String, dynamic>{} : jobList.first;
+      final jobTitle = job['title'] as String? ?? 'Job';
       final paymentAmount =
-          (job?['payment_amount'] as num?)?.toDouble() ?? 0.0;
+          (job['payment_amount'] as num?)?.toDouble() ?? 0.0;
 
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status
-      await SupabaseService.client.from('job_applications').update({
-        'status': 'approved',
-        'reviewed_at': now,
-        'reviewed_by': admin.id,
-      }).eq('id', applicationId);
+      await SupabaseService.client.rpc('update_application_status', params: {
+        'p_application_id': applicationId,
+        'p_status': 'approved',
+      });
 
       // 2) Credit wallet atomically
       if (paymentAmount > 0) {
@@ -431,35 +382,32 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application, then job title separately (no embedded join)
-      final app = await SupabaseService.client
-          .from('job_applications')
-          .select('user_id, job_id')
-          .eq('id', applicationId)
-          .maybeSingle();
+      // Fetch application core ids, then job title separately (no embedded join)
+      final appResponse = await SupabaseService.client
+          .rpc('get_application_core', params: {'p_application_id': applicationId});
+      final appRows = List<Map<String, dynamic>>.from(appResponse as List);
 
-      if (app == null) {
+      if (appRows.isEmpty) {
         state = AsyncValue.error('Application not found', StackTrace.current);
         return false;
       }
 
+      final app = appRows.first;
       final userId = app['user_id'] as String;
       final jobId = app['job_id'] as String;
-      final job = await SupabaseService.client
-          .from('jobs')
-          .select('title')
-          .eq('id', jobId)
-          .maybeSingle();
-      final jobTitle = job?['title'] as String? ?? 'Job';
+      final jobResponse = await SupabaseService.client
+          .rpc('get_job_by_id', params: {'p_job_id': jobId});
+      final jobList = List<Map<String, dynamic>>.from(jobResponse as List);
+      final job = jobList.isEmpty ? <String, dynamic>{} : jobList.first;
+      final jobTitle = job['title'] as String? ?? 'Job';
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status + rejection reason
-      await SupabaseService.client.from('job_applications').update({
-        'status': 'rejected',
-        'rejection_reason': rejectionReason,
-        'reviewed_at': now,
-        'reviewed_by': admin.id,
-      }).eq('id', applicationId);
+      await SupabaseService.client.rpc('update_application_status', params: {
+        'p_application_id': applicationId,
+        'p_status': 'rejected',
+        'p_rejection_reason': rejectionReason,
+      });
 
       // 2) In-app notification
       final body = rejectionReason != null && rejectionReason.trim().isNotEmpty

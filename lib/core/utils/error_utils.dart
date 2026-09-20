@@ -53,19 +53,6 @@ class ErrorUtils {
       return 'A server configuration issue occurred. Please contact support.';
     }
 
-    // TEMP DEBUG: surface the raw PostgREST error for jobs/banners so we can
-    // see the exact PGRST code (schema cache, missing column, RLS, etc.)
-    // instead of the generic "not found" message. Remove after diagnosis.
-    if (message.contains('jobs') ||
-        message.contains('job_applications') ||
-        message.contains('banners') ||
-        message.contains('pgrst') ||
-        message.contains('schema cache') ||
-        message.contains('column') ||
-        message.contains('relation')) {
-      return 'DEBUG: ${error.toString()}';
-    }
-
     // Not found
     if (message.contains('not found') || message.contains('no rows')) {
       return 'The requested data was not found.';
