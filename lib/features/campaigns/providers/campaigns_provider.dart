@@ -16,7 +16,8 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   var query = SupabaseService.client
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .eq('is_job', false);
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -38,6 +39,7 @@ final campaignDetailProvider =
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
       .eq('id', id)
+      .eq('is_job', false)
       .maybeSingle();
 
   return response;

@@ -11,6 +11,7 @@ final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((re
       .from('campaigns')
       .select()
       .eq('status', 'active')
+      .eq('is_job', false)
       .order('created_at', ascending: false)
       .limit(10);
 
@@ -57,7 +58,8 @@ final filteredCampaignsProvider = FutureProvider.autoDispose.family<List<Map<Str
   var query = SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .eq('is_job', false);
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -75,7 +77,8 @@ final recentCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
   var query = SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .eq('is_job', false);
 
   if (category != 'All') {
     query = query.eq('category', category);
