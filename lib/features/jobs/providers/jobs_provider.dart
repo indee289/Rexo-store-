@@ -42,9 +42,9 @@ Map<String, dynamic> _mapCampaignToJob(Map<String, dynamic> row) {
     'payment_amount': row['payout_per_creator'],
     'max_slots': maxSlots,
     // Expose the live cover_image column under the key the job cards read.
-    'cover_image_url': row['cover_image'],
-    // created_by mirrors the campaigns.brand_id used on create.
-    'created_by': row['brand_id'],
+    'cover_image_url': row['cover_image'] ?? row['coverImage'],
+    // created_by mirrors the campaigns.brandId (live camelCase FK column).
+    'created_by': row['brandId'] ?? row['brand_id'],
   };
 }
 
@@ -416,7 +416,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'rules': data['rules'],
         'demo_asset_type': data['demo_asset_type'],
         'demo_asset_url': data['demo_asset_url'],
-        'brand_id': user.id,
+        'brandId': user.id,           // live: brandId (camelCase)
         // NOTE: brandName is intentionally NOT written here. PostgREST's schema
         // cache does not expose a 'brandName' column (PGRST204), so referencing
         // it in an insert fails. POST_JOB_FIX.sql drops the NOT NULL on any such

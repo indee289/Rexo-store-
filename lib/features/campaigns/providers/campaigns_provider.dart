@@ -18,7 +18,7 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   // fails on this project's schema cache.
   var query = SupabaseService.client
       .from('campaigns')
-      .select('*, users!brand_id(id, name, profileImage)'); // live: profileImage
+      .select('*, users!brandId(id, name, profileImage)'); // live FK: brandId (camelCase)
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -28,7 +28,7 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
     query = query.ilike('title', '%$searchTerm%');
   }
 
-  final response = await query.order('created_at', ascending: false).limit(100);
+  final response = await query.order('createdAt', ascending: false).limit(100); // live: createdAt
 
   return List<Map<String, dynamic>>.from(response)
       .where((row) => row['payout_model'] != 'job')
@@ -41,7 +41,7 @@ final campaignDetailProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, id) async {
   final response = await SupabaseService.client
       .from('campaigns')
-      .select('*, users!brand_id(id, name, profileImage)') // live: profileImage
+      .select('*, users!brandId(id, name, profileImage)') // live FK: brandId (camelCase)
       .eq('id', id)
       .maybeSingle();
 
@@ -99,7 +99,7 @@ final appliedCampaignsProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select(
-          'status, created_at, campaigns(*, users!brand_id(id, name, profileImage))') // live
+          'status, created_at, campaigns(*, users!brandId(id, name, profileImage))') // live FK
       .eq('creatorId', user.id)        // live: camelCase
       .order('created_at', ascending: false);
 

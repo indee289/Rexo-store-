@@ -207,9 +207,11 @@ class _CampaignDetailScrollView extends StatelessWidget {
     final gender = (campaign['gender'] ?? '').toString();
     final location = (campaign['location'] ?? '').toString();
     final hashtags = _hashtagsFrom(campaign['hashtags']);
-    final createdAt = campaign['created_at'] != null
-        ? DateTime.tryParse(campaign['created_at'].toString())
-        : null;
+    final createdAt = campaign['createdAt'] != null
+        ? DateTime.tryParse(campaign['createdAt'].toString())
+        : (campaign['created_at'] != null                        // fallback snake_case
+            ? DateTime.tryParse(campaign['created_at'].toString())
+            : null);
     final deadlineDate =
         deadline != null ? DateTime.tryParse(deadline) : null;
 

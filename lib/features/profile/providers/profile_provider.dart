@@ -57,7 +57,7 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
     return const ProfileState(error: 'Profile not found');
   }
 
-  final role = profile['role'] ?? 'creator';
+  final role = (profile['role'] ?? 'creator').toString().toLowerCase();
 
   // Fetch role-specific profile
   Map<String, dynamic>? roleProfile;

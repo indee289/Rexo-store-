@@ -77,7 +77,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
     try {
       final data = <String, dynamic>{
-        'brand_id': SupabaseService.currentUser?.id,
+        'brandId': SupabaseService.currentUser?.id, // live: brandId (camelCase)
         'title': _campaignNameController.text.trim(),
         'category': _selectedCategory,
         'platform': _selectedPlatform,

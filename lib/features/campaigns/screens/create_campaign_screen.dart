@@ -105,7 +105,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       final platformForDb = _selectedPlatform.toLowerCase();
 
       await SupabaseService.client.from('campaigns').insert({
-        'brand_id': user.id,
+        'brandId': user.id,           // live: brandId (camelCase)
         'title': _campaignNameController.text.trim(),
         'category': _selectedCategory,
         'platform': platformForDb,

@@ -23,8 +23,8 @@ final myCampaignsListProvider =
   final response = await SupabaseService.client
       .from('campaigns')
       .select('*, applications(id)')
-      .eq('brand_id', user.id)
-      .order('created_at', ascending: false);
+      .eq('brandId', user.id)          // live: brandId (camelCase)
+      .order('createdAt', ascending: false); // live: createdAt
 
   return List<Map<String, dynamic>>.from(response);
 });
@@ -202,7 +202,8 @@ class _BrandCampaignCard extends StatelessWidget {
     final theme = Theme.of(context);
     final title = (campaign['title'] ?? 'Untitled Campaign').toString();
     final status = (campaign['status'] ?? 'draft').toString();
-    final createdAt = DateTime.tryParse(campaign['created_at'] ?? '');
+    final createdAt = DateTime.tryParse(
+        (campaign['createdAt'] ?? campaign['created_at'] ?? '').toString());
     final dateStr =
         createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
     final applications = campaign['applications'] as List? ?? [];

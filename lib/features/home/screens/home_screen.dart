@@ -545,17 +545,19 @@ FeaturedCampaignData _mapCampaign(Map<String, dynamic> c) {
       v is int ? v : (v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0);
 
   final filled = asInt(c['filled_slots']);
-  final total = asInt(c['total_slots']);
+  final total = asInt(c['slots'] ?? c['total_slots']); // live: slots
   final pct = total > 0 ? ((filled / total) * 100).round().clamp(0, 100) : 0;
   final platform = (c['platform'] ?? '').toString();
-  final perCreator = c['per_creator_payout'];
+  // payout_per_creator is the confirmed live column; payoutPerCreator also exists
+  final perCreator = c['payout_per_creator'] ?? c['payoutPerCreator'];
 
   return FeaturedCampaignData(
     id: (c['id'] ?? '').toString(),
     title: (c['title'] ?? 'Untitled Campaign').toString(),
     category: (c['category'] ?? 'Campaign').toString(),
-    imageUrl: (c['cover_image_url'] ?? '').toString(),
-    private: c['is_private'] == true,
+    // cover_image confirmed live; coverImage also exists as fallback
+    imageUrl: (c['cover_image'] ?? c['coverImage'] ?? c['cover_image_url'] ?? '').toString(),
+    private: c['is_private'] == true || c['hidden'] == true,
     platforms: platform.isEmpty ? const [] : [platform],
     paidOutPercent: pct,
     budgetText: _money(c['budget']),

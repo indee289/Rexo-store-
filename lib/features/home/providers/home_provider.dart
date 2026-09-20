@@ -13,7 +13,7 @@ final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((re
       .from('campaigns')
       .select()
       .eq('status', 'active')
-      .order('created_at', ascending: false)
+      .order('createdAt', ascending: false) // live: createdAt (camelCase)
       .limit(30);
 
   return List<Map<String, dynamic>>.from(response)
