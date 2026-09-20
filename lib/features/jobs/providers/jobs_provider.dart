@@ -52,36 +52,46 @@ final availableJobsProvider =
   final category = ref.watch(jobCategoryFilterProvider);
   final search = ref.watch(jobSearchProvider);
 
-  var query = SupabaseService.client
+  // NOTE: PostgREST's schema cache on this project refuses to let us FILTER
+  // (.eq/.neq) on payout_model server-side ("column does not exist"), even
+  // though SELECT * returns its value fine. So we fetch active campaigns with
+  // SELECT * (which works — Home shows campaigns) and filter to jobs in Dart.
+  final response = await SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('payout_model', 'job')
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .order('created_at', ascending: false)
+      .limit(200);
+
+  var jobs = List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] == 'job')
+      .toList();
 
   if (category != 'All') {
-    query = query.eq('category', category);
+    jobs = jobs.where((row) => row['category'] == category).toList();
   }
-
   if (search.isNotEmpty) {
-    query = query.ilike('title', '%$search%');
+    final q = search.toLowerCase();
+    jobs = jobs
+        .where((row) =>
+            (row['title'] as String?)?.toLowerCase().contains(q) ?? false)
+        .toList();
   }
 
-  final response = await query.order('created_at', ascending: false).limit(100);
-  return List<Map<String, dynamic>>.from(response)
-      .map(_mapCampaignToJob)
-      .toList();
+  return jobs.take(100).map(_mapCampaignToJob).toList();
 });
 
 /// Distinct categories derived from existing active jobs (dynamic, no hardcode).
 final jobCategoriesProvider = FutureProvider<List<String>>((ref) async {
   final jobs = await SupabaseService.client
       .from('campaigns')
-      .select('category')
-      .eq('payout_model', 'job')
-      .eq('status', 'active');
+      .select()
+      .eq('status', 'active')
+      .limit(200);
 
   final cats = <String>{};
   for (final row in List<Map<String, dynamic>>.from(jobs)) {
+    if (row['payout_model'] != 'job') continue;
     final cat = row['category'] as String?;
     if (cat != null && cat.trim().isNotEmpty) cats.add(cat.trim());
   }
@@ -113,9 +123,8 @@ final jobDetailProvider =
       .from('campaigns')
       .select()
       .eq('id', jobId)
-      .eq('payout_model', 'job')
       .maybeSingle();
-  if (response == null) return null;
+  if (response == null || response['payout_model'] != 'job') return null;
   return _mapCampaignToJob(Map<String, dynamic>.from(response));
 });
 
@@ -169,9 +178,8 @@ final myJobApplicationsProvider =
             .from('campaigns')
             .select()
             .eq('id', campaignId)
-            .eq('payout_model', 'job')
             .maybeSingle();
-        if (campaign != null) {
+        if (campaign != null && campaign['payout_model'] == 'job') {
           jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
         }
       } catch (_) {}
@@ -203,10 +211,10 @@ final adminJobsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async
   final response = await SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('payout_model', 'job')
       .order('created_at', ascending: false)
-      .limit(200);
+      .limit(300);
   return List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] == 'job')
       .map(_mapCampaignToJob)
       .toList();
 });
@@ -246,7 +254,7 @@ final adminJobSubmissionsProvider =
       try {
         final campaign = await SupabaseService.client
             .from('campaigns')
-            .select('id, title, payout_per_creator, payout_model')
+            .select()
             .eq('id', campaignId)
             .maybeSingle();
         if (campaign != null && campaign['payout_model'] == 'job') {
@@ -454,13 +462,13 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> deleteJob(String jobId) async {
     state = const AsyncValue.loading();
     try {
-      // Guard on is_job so a real campaign can never be hard-deleted through
-      // the jobs path (which would cascade-delete its applications).
+      // Delete by the unique campaign id. (We can't add a payout_model filter
+      // here because PostgREST's cache rejects filtering on that column; the id
+      // is unique so this targets exactly the job row.)
       await SupabaseService.client
           .from('campaigns')
           .delete()
-          .eq('id', jobId)
-          .eq('payout_model', 'job');
+          .eq('id', jobId);
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);

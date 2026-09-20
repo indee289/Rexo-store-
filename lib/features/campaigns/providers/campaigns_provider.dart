@@ -13,11 +13,13 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   final category = ref.watch(campaignFilterProvider);
   final searchTerm = ref.watch(campaignSearchProvider);
 
+  // Fetch active campaigns (SELECT * works through PostgREST). Job rows are
+  // excluded in Dart because filtering .neq('payout_model',...) server-side
+  // fails on this project's schema cache.
   var query = SupabaseService.client
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
-      .eq('status', 'active')
-      .neq('payout_model', 'job');
+      .eq('status', 'active');
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -27,9 +29,12 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
     query = query.ilike('title', '%$searchTerm%');
   }
 
-  final response = await query.order('created_at', ascending: false).limit(50);
+  final response = await query.order('created_at', ascending: false).limit(100);
 
-  return List<Map<String, dynamic>>.from(response);
+  return List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] != 'job')
+      .take(50)
+      .toList();
 });
 
 /// Provider for single campaign detail with brand info
@@ -39,9 +44,10 @@ final campaignDetailProvider =
       .from('campaigns')
       .select('*, users!brand_id(id, name, avatar_url)')
       .eq('id', id)
-      .neq('payout_model', 'job')
       .maybeSingle();
 
+  // Not a real campaign if it's a job row.
+  if (response != null && response['payout_model'] == 'job') return null;
   return response;
 });
 
@@ -50,9 +56,11 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
+  // Use campaigns(*) rather than naming payout_model explicitly — PostgREST's
+  // schema cache rejects referencing payout_model by name, but * returns it.
   final response = await SupabaseService.client
       .from('applications')
-      .select('*, campaigns(id, title, status, cover_image_url, payout_model)')
+      .select('*, campaigns(*)')
       .eq('creator_id', user.id)
       .order('created_at', ascending: false);
 

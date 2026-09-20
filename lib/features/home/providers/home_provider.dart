@@ -7,15 +7,19 @@ final selectedCategoryProvider = StateProvider<String>((ref) => 'All');
 
 /// Provider for featured campaigns (active, ordered by newest)
 final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  // SELECT * works; job rows filtered out in Dart (server-side .neq on
+  // payout_model fails on this project's schema cache).
   final response = await SupabaseService.client
       .from('campaigns')
       .select()
       .eq('status', 'active')
-      .neq('payout_model', 'job')
       .order('created_at', ascending: false)
-      .limit(10);
+      .limit(30);
 
-  return List<Map<String, dynamic>>.from(response);
+  return List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] != 'job')
+      .take(10)
+      .toList();
 });
 
 /// Provider for trending creators (ordered by followers desc)
@@ -58,16 +62,18 @@ final filteredCampaignsProvider = FutureProvider.autoDispose.family<List<Map<Str
   var query = SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('status', 'active')
-      .neq('payout_model', 'job');
+      .eq('status', 'active');
 
   if (category != 'All') {
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false).limit(20);
+  final response = await query.order('created_at', ascending: false).limit(40);
 
-  return List<Map<String, dynamic>>.from(response);
+  return List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] != 'job')
+      .take(20)
+      .toList();
 });
 
 /// Provider for recent campaigns (all active, paginated)
@@ -77,16 +83,18 @@ final recentCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
   var query = SupabaseService.client
       .from('campaigns')
       .select()
-      .eq('status', 'active')
-      .neq('payout_model', 'job');
+      .eq('status', 'active');
 
   if (category != 'All') {
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false).limit(20);
+  final response = await query.order('created_at', ascending: false).limit(40);
 
-  return List<Map<String, dynamic>>.from(response);
+  return List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] != 'job')
+      .take(20)
+      .toList();
 });
 
 /// Provider for current user profile data (for greeting)
