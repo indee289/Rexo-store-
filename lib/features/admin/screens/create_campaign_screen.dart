@@ -78,13 +78,13 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     final e = widget.existingCampaign;
     if (e != null) {
       _campaignNameController.text = e['title'] as String? ?? '';
-      _slotsController.text = (e['total_slots'] ?? '').toString();
+      _slotsController.text = (e['slots'] ?? '').toString();
       _budgetController.text = (e['budget'] ?? '').toString();
-      _perCreatorController.text = (e['per_creator_payout'] ?? '').toString();
+      _perCreatorController.text = (e['payout_per_creator'] ?? '').toString();
       _companyNameController.text = e['company_name'] as String? ?? '';
       _descriptionController.text = e['description'] as String? ?? '';
       _rulesController.text = e['rules'] as String? ?? '';
-      _coverImageUrl = e['cover_image_url'] as String?;
+      _coverImageUrl = e['cover_image'] as String?;
       if (e['category'] != null && _categories.contains(e['category'])) {
         _selectedCategory = e['category'] as String;
       }
@@ -153,9 +153,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
         'platform': _selectedPlatforms.join(','),
-        'total_slots': int.parse(_slotsController.text.trim()),
+        'slots': int.parse(_slotsController.text.trim()),
         'budget': double.parse(_budgetController.text.trim()),
-        'per_creator_payout':
+        'payout_per_creator':
             double.tryParse(_perCreatorController.text.trim()) ?? 0,
         'deadline': _deadline?.toIso8601String(),
         'company_name': _companyNameController.text.trim(),
@@ -164,7 +164,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       };
 
       if (_coverImageUrl != null && _coverImageUrl!.isNotEmpty) {
-        data['cover_image_url'] = _coverImageUrl;
+        data['cover_image'] = _coverImageUrl;
       }
 
       // Optional campaign rules (plain value; safe to write).

@@ -54,7 +54,7 @@ class CampaignDetailScreen extends ConsumerWidget {
           final status = (campaign['status'] as String? ?? '').toLowerCase();
           final isClosed = status == 'closed' || status == 'inactive';
           final filled = _asInt(campaign['filled_slots']) ?? 0;
-          final total = _asInt(campaign['total_slots']);
+          final total = _asInt(campaign['slots']);
           final isFull = total != null && total > 0 && filled >= total;
           return CampaignDetailBottomBar(
             campaignId: campaignId,
@@ -176,7 +176,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
 
     // ── Read the EXACT keys the screen already reads (unchanged). ──
     final title = (campaign['title'] ?? 'Untitled Campaign').toString();
-    final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
+    final coverImageUrl = (campaign['cover_image'] ?? '').toString();
     final description = (campaign['description'] ?? '').toString();
     final budget = campaign['budget'];
     final platform = (campaign['platform'] ?? '').toString();
@@ -196,7 +196,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
     final demoUrl = (campaign['demo_asset_url'] ?? '').toString();
     final minFollowers = campaign['min_followers'];
     final filledSlots = campaign['filled_slots'];
-    final totalSlots = campaign['total_slots'];
+    final totalSlots = campaign['slots'];
     final brandInfo = campaign['users'] as Map<String, dynamic>?;
     final brandName = (brandInfo?['name'] ?? 'Unknown Brand').toString();
     final brandAvatar = brandInfo?['avatar_url'] as String?;

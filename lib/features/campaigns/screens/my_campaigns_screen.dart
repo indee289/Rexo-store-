@@ -206,7 +206,7 @@ class _BrandCampaignCard extends StatelessWidget {
     final dateStr =
         createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
     final applications = campaign['applications'] as List? ?? [];
-    final totalSlots = campaign['total_slots'] ?? 0;
+    final totalSlots = campaign['slots'] ?? 0;
     final filledSlots = applications.length;
     final statusColor = status == 'draft'
         ? AppColors.textSecondary

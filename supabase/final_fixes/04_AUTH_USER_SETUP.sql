@@ -63,28 +63,10 @@ CREATE TRIGGER on_auth_user_created
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- STEP 3 — Trigger function: auto-create wallet for every new user
+-- STEP 3 — Wallet auto-creation is handled by 07_WALLET_TABLES.sql.
+--          That file defines handle_new_user_wallet() and the trigger.
+--          No duplicate definition here.
 -- ─────────────────────────────────────────────────────────────────────────────
-
-CREATE OR REPLACE FUNCTION public.handle_new_user_wallet()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-    INSERT INTO public.wallets (user_id)
-    VALUES (NEW.id)
-    ON CONFLICT (user_id) DO NOTHING;
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS on_user_created_create_wallet ON public.users;
-CREATE TRIGGER on_user_created_create_wallet
-    AFTER INSERT ON public.users
-    FOR EACH ROW
-    EXECUTE FUNCTION public.handle_new_user_wallet();
 
 
 -- ─────────────────────────────────────────────────────────────────────────────

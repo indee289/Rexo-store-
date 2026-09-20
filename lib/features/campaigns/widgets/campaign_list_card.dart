@@ -29,15 +29,15 @@ class CampaignListCard extends StatelessWidget {
     final title = campaign['title'] ?? 'Untitled Campaign';
     final description = campaign['description'] ?? '';
     final budget = campaign['budget'];
-    final perCreatorPayout = campaign['per_creator_payout'];
+    final perCreatorPayout = campaign['payout_per_creator'];
     final platform = campaign['platform'] ?? '';
     final category = campaign['category'] ?? '';
     final deadline = campaign['deadline'];
     final filledSlots = campaign['filled_slots'] ?? 0;
-    final totalSlots = campaign['total_slots'] ?? 0;
+    final totalSlots = campaign['slots'] ?? 0;
     final brandInfo = campaign['users'] as Map<String, dynamic>?;
     final brandName = brandInfo?['name'] ?? 'Unknown Brand';
-    final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
+    final coverImageUrl = (campaign['cover_image'] ?? '').toString();
 
     return PremiumCard(
       onTap: () {

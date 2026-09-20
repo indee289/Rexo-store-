@@ -109,14 +109,13 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'title': _campaignNameController.text.trim(),
         'category': _selectedCategory,
         'platform': platformForDb,
-        'total_slots': int.tryParse(_slotsController.text.trim()) ?? 1,
-        'filled_slots': 0,
+        'slots': int.tryParse(_slotsController.text.trim()) ?? 1,        'filled_slots': 0,
         'budget': double.tryParse(_budgetController.text.trim()) ?? 0,
-        'per_creator_payout':
+        'payout_per_creator':
             double.tryParse(_perCreatorController.text.trim()) ?? 0,
         'deadline': _deadline?.toIso8601String(),
         'company_name': _companyNameController.text.trim(),
-        'cover_image_url': _coverImageUrl,
+        'cover_image': _coverImageUrl,
         'gender': _selectedGender,
         'page_profile_category': _selectedPageProfileCategory,
         'status': 'active',
