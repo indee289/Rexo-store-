@@ -377,6 +377,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'cover_image': data['cover_image_url'],
         'is_job': true,
         'brand_id': user.id,
+        // brandName is NOT NULL with no default on the live campaigns table,
+        // so every insert must supply it. Jobs are platform-posted, so use a
+        // fixed label (the job title also carries the real name).
+        'brandName': 'Rexo',
         'status': 'active',
         'budget': 0,
         'created_at': now,
