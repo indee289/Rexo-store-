@@ -60,7 +60,7 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
   final response = await SupabaseService.client
       .from('applications')
       .select('*, campaigns(*)')
-      .eq('creator_id', user.id)
+      .eq('creatorId', user.id)        // live: camelCase
       .order('created_at', ascending: false);
 
   // Exclude JOB applications: the `applications` table is shared by real
@@ -100,7 +100,7 @@ final appliedCampaignsProvider =
       .from('applications')
       .select(
           'status, created_at, campaigns(*, users!brand_id(id, name, profileImage))') // live
-      .eq('creator_id', user.id)
+      .eq('creatorId', user.id)        // live: camelCase
       .order('created_at', ascending: false);
 
   final rows = List<Map<String, dynamic>>.from(response);
@@ -164,8 +164,8 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       await SupabaseService.client.from('applications').insert({
-        'campaign_id': campaignId,
-        'creator_id': user.id,
+        'campaignId': campaignId,    // live: camelCase
+        'creatorId': user.id,        // live: camelCase
         'pitch': pitch,
         'portfolio_url': portfolioUrl,
         'applicant_name': applicantName,
@@ -211,8 +211,8 @@ final campaignApplicantsProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select(
-          '*, creator:users!creator_id(id, name, username, profileImage, isVerified)') // live columns
-      .eq('campaign_id', campaignId)
+          '*, creator:users!creatorId(id, name, username, profileImage, isVerified)') // live columns
+      .eq('campaignId', campaignId)   // live: camelCase
       .order('created_at', ascending: false);
 
   return List<Map<String, dynamic>>.from(response);
@@ -236,8 +236,8 @@ final hasAppliedProvider = FutureProvider.family<bool, String>((ref, campaignId)
   final response = await SupabaseService.client
       .from('applications')
       .select('id')
-      .eq('campaign_id', campaignId)
-      .eq('creator_id', user.id)
+      .eq('campaignId', campaignId)   // live: camelCase
+      .eq('creatorId', user.id)       // live: camelCase
       .maybeSingle();
 
   return response != null;

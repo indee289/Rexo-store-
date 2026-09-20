@@ -98,7 +98,7 @@ final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
   final response = await SupabaseService.client
       .from('applications')
       .select('id')
-      .eq('creator_id', user.id);
+      .eq('creatorId', user.id);    // live: camelCase
   return (response as List).length;
 });
 

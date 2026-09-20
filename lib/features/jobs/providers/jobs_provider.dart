@@ -110,7 +110,7 @@ final jobSlotCountProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select('id')
-      .eq('campaign_id', jobId)
+      .eq('campaignId', jobId)        // live: camelCase
       .inFilter('status', ['applied', 'submitted', 'approved']);
 
   final filled = (response as List).length;
@@ -141,8 +141,8 @@ final hasAppliedToJobProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select('id')
-      .eq('campaign_id', jobId)
-      .eq('creator_id', user.id)
+      .eq('campaignId', jobId)        // live: camelCase
+      .eq('creatorId', user.id)       // live: camelCase
       .maybeSingle();
 
   return response != null;
@@ -162,7 +162,7 @@ final myJobApplicationsProvider =
   var query = SupabaseService.client
       .from('applications')
       .select()
-      .eq('creator_id', user.id);
+      .eq('creatorId', user.id);      // live: camelCase
 
   if (statusFilter != 'all') {
     query = query.eq('status', statusFilter);
@@ -174,7 +174,7 @@ final myJobApplicationsProvider =
   // Fetch each job (campaign) separately (avoids embedded-join RLS/PGRST issues)
   final enriched = <Map<String, dynamic>>[];
   for (final row in rows) {
-    final campaignId = row['campaign_id'] as String?;
+    final campaignId = row['campaignId'] as String?;  // live: camelCase
     Map<String, dynamic>? jobRow;
     if (campaignId != null) {
       try {
@@ -229,7 +229,7 @@ final adminJobApplicantCountProvider =
   final response = await SupabaseService.client
       .from('applications')
       .select('id')
-      .eq('campaign_id', jobId);
+      .eq('campaignId', jobId);       // live: camelCase
   return (response as List).length;
 });
 
@@ -250,8 +250,8 @@ final adminJobSubmissionsProvider =
   // whose parent campaign is not a job anyway.
   final enriched = <Map<String, dynamic>>[];
   for (final row in rows) {
-    final userId = row['creator_id'] as String?;
-    final campaignId = row['campaign_id'] as String?;
+    final userId = row['creatorId'] as String?;       // live: camelCase
+    final campaignId = row['campaignId'] as String?;  // live: camelCase
 
     Map<String, dynamic>? jobRow;
     if (campaignId != null) {
@@ -314,11 +314,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       final now = DateTime.now().toIso8601String();
       await SupabaseService.client.from('applications').insert({
-        'campaign_id': jobId,
-        'creator_id': user.id,
+        'campaignId': jobId,     // live: camelCase
+        'creatorId': user.id,    // live: camelCase
         'status': 'applied',
         'created_at': now,
-        'updated_at': now,
       });
 
       state = const AsyncValue.data(null);
@@ -348,7 +347,6 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'submission_url': submissionUrl,
         'submission_note': submissionNote,
         'submitted_at': now,
-        'updated_at': now,
       }).eq('id', applicationId);
 
       state = const AsyncValue.data(null);
@@ -538,11 +536,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application to get creator_id and campaign_id, then campaign
-      // (job) separately.
+      // Fetch application to get creatorId and campaignId, then campaign (job) separately.
       final app = await SupabaseService.client
           .from('applications')
-          .select('creator_id, campaign_id')
+          .select('creatorId, campaignId')    // live: camelCase
           .eq('id', applicationId)
           .maybeSingle();
 
@@ -551,8 +548,8 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      final userId = app['creator_id'] as String;
-      final jobId = app['campaign_id'] as String;
+      final userId = app['creatorId'] as String;    // live: camelCase
+      final jobId = app['campaignId'] as String;    // live: camelCase
       final job = await SupabaseService.client
           .from('campaigns')
           .select('title, payout_per_creator')
@@ -619,7 +616,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       // (job) title separately.
       final app = await SupabaseService.client
           .from('applications')
-          .select('creator_id, campaign_id')
+          .select('creatorId, campaignId')    // live: camelCase
           .eq('id', applicationId)
           .maybeSingle();
 
@@ -628,8 +625,8 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      final userId = app['creator_id'] as String;
-      final jobId = app['campaign_id'] as String;
+      final userId = app['creatorId'] as String;    // live: camelCase
+      final jobId = app['campaignId'] as String;    // live: camelCase
       final job = await SupabaseService.client
           .from('campaigns')
           .select('title')

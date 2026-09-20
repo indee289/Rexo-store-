@@ -116,14 +116,18 @@ CREATE POLICY "System can create notifications" ON public.notifications
 -- ─────────────────────────────────────────────────────────────────────────────
 -- C. Applications UPDATE — add WITH CHECK to prevent creators from modifying
 --    admin-only columns (admin_notes, rejection_reason, reviewed_by, etc.)
+--
+--    CONFIRMED LIVE applications SCHEMA:
+--      Live column is "creatorId" (camelCase text) — NOT creator_id (snake_case).
+--      auth.uid() is UUID; "creatorId" is text → must cast: auth.uid()::text
 -- ─────────────────────────────────────────────────────────────────────────────
 
 DROP POLICY IF EXISTS "Creators can update own applications" ON public.applications;
 CREATE POLICY "Creators can update own applications" ON public.applications
     FOR UPDATE
-    USING (auth.uid() = creator_id)
+    USING (auth.uid()::text = "creatorId"::text)
     WITH CHECK (
-        auth.uid() = creator_id
+        auth.uid()::text = "creatorId"::text
         AND status IN ('pending', 'withdrawn')
     );
 
