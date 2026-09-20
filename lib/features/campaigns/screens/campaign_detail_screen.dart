@@ -526,14 +526,18 @@ class _CoverHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
 
-    // Prefer status if available, else category, for the orange pill.
+    // Prefer status if available, else category, for the pill.
+    // Match the Job Details screen: orange for Active/open and the
+    // category-only case, neutral grey for the Closed state.
     String? pillText;
+    bool isClosed = false;
     if (status.isNotEmpty) {
       final s = status.toLowerCase();
       if (s == 'active' || s == 'open') {
         pillText = 'Active';
       } else if (s == 'closed' || s == 'inactive') {
         pillText = 'Closed';
+        isClosed = true;
       } else {
         pillText = status;
       }
@@ -616,7 +620,7 @@ class _CoverHeader extends StatelessWidget {
                 vertical: 6,
               ),
               decoration: BoxDecoration(
-                color: AppColors.accentOrange,
+                color: isClosed ? AppColors.neutral : AppColors.accentOrange,
                 borderRadius: AppRadius.pillAll,
                 boxShadow: [
                   BoxShadow(
