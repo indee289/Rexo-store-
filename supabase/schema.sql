@@ -376,8 +376,17 @@ CREATE POLICY "Admins can read all applications" ON applications
 CREATE POLICY "Creators can create applications" ON applications
     FOR INSERT WITH CHECK (auth.uid() = creator_id);
 
+-- SECURITY FIX (audit 2026-09-20): add WITH CHECK so creators can only set
+-- status to 'pending' (revert) or 'withdrawn'. Without this clause a creator
+-- could UPDATE admin_notes, rejection_reason, reviewed_by or any other field
+-- on their own application row, which is not the intent.
 CREATE POLICY "Creators can update own applications" ON applications
-    FOR UPDATE USING (auth.uid() = creator_id);
+    FOR UPDATE
+    USING (auth.uid() = creator_id)
+    WITH CHECK (
+        auth.uid() = creator_id
+        AND status IN ('pending', 'withdrawn')
+    );
 
 CREATE POLICY "Admins can update any application" ON applications
     FOR UPDATE USING (
@@ -499,8 +508,21 @@ CREATE POLICY "Users can read own notifications" ON notifications
 CREATE POLICY "Users can update own notifications" ON notifications
     FOR UPDATE USING (auth.uid() = user_id);
 
+-- SECURITY FIX (audit 2026-09-20): restrict notification INSERT so a user can
+-- only create a notification addressed to themselves; admins may create for any
+-- user (needed for admin broadcast + job-approval notifications from server
+-- logic). This closes the exploit where any authenticated user could call
+-- Supabase directly and spam/phish any other user's notification inbox.
+-- The is_admin() SECURITY DEFINER function is defined in
+-- supabase/PERMANENT_FIX_run_this.sql (run that file once if not already applied).
 CREATE POLICY "System can create notifications" ON notifications
-    FOR INSERT WITH CHECK (TRUE);
+    FOR INSERT WITH CHECK (
+        auth.uid() = user_id
+        OR (SELECT EXISTS (
+            SELECT 1 FROM public.users
+            WHERE id::text = auth.uid()::text AND lower(role) = 'admin'
+        ))
+    );
 
 CREATE POLICY "Users can delete own notifications" ON notifications
     FOR DELETE USING (auth.uid() = user_id);

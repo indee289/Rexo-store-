@@ -5,6 +5,7 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -16,7 +17,6 @@ import '../../../core/widgets/premium_card.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/subscriptions_provider.dart';
-import 'subscription_payment_screen.dart';
 
 class SubscriptionsScreen extends ConsumerWidget {
   const SubscriptionsScreen({super.key});
@@ -338,16 +338,14 @@ class SubscriptionsScreen extends ConsumerWidget {
                       // Open the manual payment flow. The subscription is NOT
                       // activated here — the user submits a payment proof that
                       // an admin must approve before it becomes active.
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SubscriptionPaymentScreen(
-                            planId: planId,
-                            planName: name,
-                            amount: price,
-                            durationDays: durationDays,
-                          ),
-                        ),
+                      context.push(
+                        AppRoutes.subscriptionPayment,
+                        extra: {
+                          'planId': planId,
+                          'planName': name,
+                          'amount': price,
+                          'durationDays': durationDays,
+                        },
                       );
                     },
             ),

@@ -488,10 +488,12 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final userId = withdrawal['user_id'] as String;
       final amount = (withdrawal['amount'] as num).toDouble();
 
-      // Update withdrawal status to approved
+      // Update withdrawal status to completed
+      // NOTE: schema CHECK allows: pending | processing | completed | rejected
+      // 'approved' is NOT a valid status and would be rejected by Postgres.
       await SupabaseService.client
           .from('withdrawals')
-          .update({'status': 'approved'}).eq('id', withdrawalId);
+          .update({'status': 'completed'}).eq('id', withdrawalId);
 
       // Debit the user's wallet using atomic RPC function
       await SupabaseService.client.rpc('debit_wallet', params: {
@@ -550,23 +552,29 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Credit a wallet by its row `id`. Uses the atomic `credit_wallet` RPC so
+  /// concurrent admin credits never produce a race-condition balance corruption.
   Future<void> creditWallet(String walletId, double amount) async {
     state = const AsyncValue.loading();
     try {
-      // RACE CONDITION NOTE: Same read-then-write limitation as approveDeposit.
-      // See supabase/wallet_balance_rpc.sql for the atomic RPC alternative.
+      // Resolve user_id from the wallet row (the RPC takes p_user_id, not wallet id).
       final wallet = await SupabaseService.client
           .from('wallets')
-          .select('available_balance')
+          .select('user_id')
           .eq('id', walletId)
           .maybeSingle();
       if (wallet == null) {
         state = AsyncValue.error('Wallet not found', StackTrace.current);
         return;
       }
-      final currentBalance = (wallet['available_balance'] as num).toDouble();
-      await SupabaseService.client.from('wallets').update(
-          {'available_balance': currentBalance + amount}).eq('id', walletId);
+      final userId = wallet['user_id'] as String;
+
+      // Atomic increment via SECURITY DEFINER RPC — no read-then-write race.
+      await SupabaseService.client.rpc('credit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
+
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -574,26 +582,30 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Debit a wallet by its row `id`. Uses the atomic `debit_wallet` RPC so
+  /// concurrent admin debits never produce a race-condition balance corruption.
+  /// The RPC enforces the balance-floor check server-side.
   Future<void> debitWallet(String walletId, double amount) async {
     state = const AsyncValue.loading();
     try {
-      // RACE CONDITION NOTE: Same read-then-write limitation as approveWithdrawal.
-      // See supabase/wallet_balance_rpc.sql for the atomic RPC alternative.
+      // Resolve user_id from the wallet row (the RPC takes p_user_id, not wallet id).
       final wallet = await SupabaseService.client
           .from('wallets')
-          .select('available_balance')
+          .select('user_id')
           .eq('id', walletId)
           .maybeSingle();
       if (wallet == null) {
         state = AsyncValue.error('Wallet not found', StackTrace.current);
         return;
       }
-      final currentBalance = (wallet['available_balance'] as num).toDouble();
-      if (currentBalance - amount < 0) {
-        throw Exception('Insufficient balance for this debit.');
-      }
-      await SupabaseService.client.from('wallets').update(
-          {'available_balance': currentBalance - amount}).eq('id', walletId);
+      final userId = wallet['user_id'] as String;
+
+      // Atomic decrement via SECURITY DEFINER RPC — server enforces balance >= 0.
+      await SupabaseService.client.rpc('debit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
+
       ref.invalidate(adminWalletsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
