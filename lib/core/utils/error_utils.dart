@@ -16,6 +16,12 @@ class ErrorUtils {
 
     final message = error.toString().toLowerCase();
 
+    // TEMP DEBUG (v3): show the FULL raw error for every failure so we can read
+    // the exact PostgREST/PGRST code after the DB rebuild + restart. Remove
+    // once the jobs/banners loading is confirmed working.
+    return 'DBG3: ${error.toString()}';
+
+    // ignore: dead_code
     // Network/connection errors
     if (message.contains('socketexception') ||
         message.contains('connection refused') ||
