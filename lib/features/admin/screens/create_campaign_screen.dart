@@ -4,6 +4,7 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/demo_asset_field.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/admin_provider.dart';
@@ -24,10 +25,14 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   final _budgetController = TextEditingController();
   final _perCreatorController = TextEditingController();
   final _companyNameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _rulesController = TextEditingController();
   DateTime? _deadline;
 
   String _selectedCategory = 'Logo';
-  String _selectedPlatform = 'Instagram';
+  List<String> _selectedPlatforms = ['Instagram'];
+  DemoAssetType _demoAssetType = DemoAssetType.none;
+  String? _demoAssetValue;
   String _selectedGender = 'all';
   String _selectedPageProfileCategory = 'Comedy';
   String? _coverImageUrl;
@@ -76,17 +81,31 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       _budgetController.text = (e['budget'] ?? '').toString();
       _perCreatorController.text = (e['per_creator_payout'] ?? '').toString();
       _companyNameController.text = e['company_name'] as String? ?? '';
+      _descriptionController.text = e['description'] as String? ?? '';
+      _rulesController.text = e['rules'] as String? ?? '';
       _coverImageUrl = e['cover_image_url'] as String?;
       if (e['category'] != null && _categories.contains(e['category'])) {
         _selectedCategory = e['category'] as String;
       }
-      if (e['platform'] != null) {
-        final p = (e['platform'] as String).toLowerCase();
-        _selectedPlatform = _platforms.firstWhere(
-          (x) => x.toLowerCase() == p,
-          orElse: () => _platforms.first,
-        );
+      if (e['platform'] != null &&
+          (e['platform'] as String).trim().isNotEmpty) {
+        final parsed = (e['platform'] as String)
+            .split(',')
+            .map((x) => x.trim())
+            .where((x) => x.isNotEmpty)
+            .map((x) => _platforms.firstWhere(
+                  (p) => p.toLowerCase() == x.toLowerCase(),
+                  orElse: () => '',
+                ))
+            .where((x) => x.isNotEmpty)
+            .toSet()
+            .toList();
+        if (parsed.isNotEmpty) {
+          _selectedPlatforms = parsed;
+        }
       }
+      _demoAssetType = demoAssetTypeFromKey(e['demo_asset_type'] as String?);
+      _demoAssetValue = e['demo_asset_url'] as String?;
       if (e['gender'] != null && _genders.contains(e['gender'])) {
         _selectedGender = e['gender'] as String;
       }
@@ -107,6 +126,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     _budgetController.dispose();
     _perCreatorController.dispose();
     _companyNameController.dispose();
+    _descriptionController.dispose();
+    _rulesController.dispose();
     super.dispose();
   }
 
@@ -128,8 +149,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     try {
       final data = <String, dynamic>{
         'title': _campaignNameController.text.trim(),
+        'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
-        'platform': _selectedPlatform,
+        'platform': _selectedPlatforms.join(','),
         'total_slots': int.parse(_slotsController.text.trim()),
         'budget': double.parse(_budgetController.text.trim()),
         'per_creator_payout':
@@ -142,6 +164,28 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
       if (_coverImageUrl != null && _coverImageUrl!.isNotEmpty) {
         data['cover_image_url'] = _coverImageUrl;
+      }
+
+      // Optional campaign rules (plain value; safe to write).
+      final rules = _rulesController.text.trim();
+      if (rules.isNotEmpty) {
+        data['rules'] = rules;
+      } else if (_isEdit) {
+        // On edit, clear rules if the admin emptied the field.
+        data['rules'] = null;
+      }
+
+      // Optional demo asset (plain values; safe to write).
+      final demoValue = _demoAssetValue?.trim();
+      if (_demoAssetType != DemoAssetType.none &&
+          demoValue != null &&
+          demoValue.isNotEmpty) {
+        data['demo_asset_type'] = demoAssetTypeToKey(_demoAssetType);
+        data['demo_asset_url'] = demoValue;
+      } else if (_isEdit) {
+        // On edit, clear the demo asset if it was removed.
+        data['demo_asset_type'] = null;
+        data['demo_asset_url'] = null;
       }
 
       if (_isEdit) {
@@ -223,6 +267,29 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: 20),
 
+              // Campaign Description
+              _buildLabel('Campaign Description'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _descriptionController,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
+                minLines: 3,
+                maxLines: 6,
+                decoration: _inputDecoration(
+                  hint: 'Describe the campaign, what creators should do…',
+                  icon: Iconsax.document_text,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Campaign description is required';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
               // Category Dropdown
               _buildLabel('Category'),
               const SizedBox(height: 8),
@@ -244,24 +311,10 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               const SizedBox(height: 20),
 
-              // Platform Dropdown
-              _buildLabel('Platform'),
+              // Platforms (multi-select)
+              _buildLabel('Platforms'),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedPlatform,
-                decoration: _inputDecoration(
-                  hint: 'Select platform',
-                  icon: Iconsax.global,
-                ),
-                items: _platforms
-                    .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedPlatform = value);
-                  }
-                },
-              ),
+              _buildPlatformChips(),
 
               const SizedBox(height: 20),
 
@@ -366,8 +419,43 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               ImageUploadField(
                 label: 'Campaign Cover Image',
                 storageFolder: 'campaign-images',
+                currentImageUrl: _coverImageUrl,
                 onImageUploaded: (url) {
                   setState(() => _coverImageUrl = url);
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Campaign Rules (Optional)
+              _buildLabel('Campaign Rules (Optional)'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _rulesController,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
+                minLines: 3,
+                maxLines: 6,
+                decoration: _inputDecoration(
+                  hint: 'Add any rules or guidelines for creators…',
+                  icon: Iconsax.task_square,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Demo Asset (Optional)
+              _buildLabel('Demo Asset (Optional)'),
+              const SizedBox(height: 8),
+              DemoAssetField(
+                storageFolder: 'campaign-demo-assets',
+                initialType: _demoAssetType,
+                initialValue: _demoAssetValue,
+                onChanged: (type, value) {
+                  setState(() {
+                    _demoAssetType = type;
+                    _demoAssetValue = value;
+                  });
                 },
               ),
 
@@ -457,6 +545,46 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       style: AppTextStyles.labelMedium.copyWith(
         color: Theme.of(context).colorScheme.onSurface,
       ),
+    );
+  }
+
+  Widget _buildPlatformChips() {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _platforms.map((platform) {
+        final isSelected = _selectedPlatforms.contains(platform);
+        return ChoiceChip(
+          label: Text(platform),
+          selected: isSelected,
+          showCheckmark: false,
+          onSelected: (_) {
+            setState(() {
+              if (isSelected) {
+                // Keep at least one platform selected.
+                if (_selectedPlatforms.length > 1) {
+                  _selectedPlatforms.remove(platform);
+                }
+              } else {
+                _selectedPlatforms.add(platform);
+              }
+            });
+          },
+          selectedColor: AppColors.primary,
+          backgroundColor: theme.colorScheme.surface,
+          side: BorderSide(
+            color: isSelected ? AppColors.primary : theme.dividerColor,
+          ),
+          labelStyle: AppTextStyles.bodyMedium.copyWith(
+            color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        );
+      }).toList(),
     );
   }
 

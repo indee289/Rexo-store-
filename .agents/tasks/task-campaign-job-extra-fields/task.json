@@ -1,0 +1,7 @@
+{
+  "task_id": "task-campaign-job-extra-fields",
+  "task_description": "Add Campaign Description, optional Campaign Rules, optional Demo Asset (image/video/pdf/link/text), and multi-select platforms to the Campaign create/edit form and the Post Job form; persist them into the legacy public.campaigns table (new columns via ADD COLUMN IF NOT EXISTS, written as plain VALUES, read from SELECT * maps); and render all filled fields on the campaign detail and job detail pages, each section shown only when its data exists. No mock/static data. Ships a hand-run SQL migration under supabase/.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
