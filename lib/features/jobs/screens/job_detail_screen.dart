@@ -10,6 +10,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/jobs_provider.dart';
 
@@ -39,10 +40,13 @@ class JobDetailScreen extends ConsumerWidget {
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            bottomNavigationBar:
-                (!hasAppliedVal && !isFull && !isClosed)
-                    ? _ApplyBar(jobId: jobId, job: job)
-                    : null,
+            bottomNavigationBar: _ApplyBar(
+              jobId: jobId,
+              job: job,
+              hasApplied: hasAppliedVal,
+              isFull: isFull,
+              isClosed: isClosed,
+            ),
             body: _JobDetailScrollView(
               job: job,
               jobId: jobId,
@@ -100,12 +104,13 @@ class _JobDetailScrollView extends StatelessWidget {
         : null;
     final coverUrl = job['cover_image_url'] as String?;
     final jobStatus = job['status'] as String? ?? 'active';
+    final createdAt = job['created_at'] != null
+        ? DateTime.tryParse(job['created_at'].toString())
+        : null;
 
-    final isClosed = jobStatus == 'closed';
+    final isActive = jobStatus == 'active';
     final isFull = maxSlots != null && slotFilled >= maxSlots;
 
-    final bgColor =
-        isDark ? AppColors.darkBackground : AppColors.background;
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary =
@@ -113,252 +118,397 @@ class _JobDetailScrollView extends StatelessWidget {
     final cardColor = isDark ? AppColors.darkCard : Colors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
-    return CustomScrollView(
-      slivers: [
-        // App bar with optional cover image
-        SliverAppBar(
-          expandedHeight:
-              (coverUrl != null && coverUrl.isNotEmpty) ? 220 : 0,
-          pinned: true,
-          backgroundColor: bgColor,
-          surfaceTintColor: Colors.transparent,
-          foregroundColor: textPrimary,
-          leading: IconButton(
-            icon: Icon(Icons.chevron_left, size: 28, color: textPrimary),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          flexibleSpace: (coverUrl != null && coverUrl.isNotEmpty)
-              ? FlexibleSpaceBar(
-                  background: Image.network(
-                    coverUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: bgColor),
-                  ),
-                )
-              : null,
-        ),
+    // Slots value string.
+    late final String slotsValue;
+    Color? slotsColor;
+    if (maxSlots == null) {
+      slotsValue = 'Unlimited';
+    } else if (isFull) {
+      slotsValue = 'Slots Full';
+      slotsColor = AppColors.error;
+    } else {
+      slotsValue = '${maxSlots - slotFilled} of $maxSlots slots left';
+    }
 
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title + category
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
+                // Cover header with overlaid app bar + status pill.
+                _CoverHeader(
+                  coverUrl: coverUrl,
+                  isActive: isActive,
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title
+                      Text(
                         title,
-                        style: AppTextStyles.h5.copyWith(
+                        style: AppTextStyles.h4.copyWith(
                           color: textPrimary,
                           fontWeight: FontWeight.w800,
+                          fontSize: 23,
                         ),
                       ),
-                    ),
-                    if (category != null && category.isNotEmpty) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      _CategoryBadge(category: category),
-                    ],
-                  ],
-                ),
 
-                const SizedBox(height: AppSpacing.md),
-
-                // Payment — hero number
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentOrange.withOpacity(0.10),
-                    borderRadius: AppRadius.allMd,
-                    border: Border.all(
-                        color: AppColors.accentOrange.withOpacity(0.20)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Iconsax.money,
-                          size: 22, color: AppColors.accentOrange),
-                      const SizedBox(width: 8),
-                      Text(
-                        '₹${_formatAmount(paymentAmount)}',
-                        style: AppTextStyles.h4.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.accentOrange,
-                          letterSpacing: -0.5,
+                      // Category pill
+                      if (category != null && category.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        _CategoryPill(
+                          category: category,
+                          isDark: isDark,
+                          textSecondary: textSecondary,
                         ),
+                      ],
+
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Payment card
+                      _PaymentCard(
+                        amount: paymentAmount,
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        textSecondary: textSecondary,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'payment',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.accentOrange.withOpacity(0.8),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
 
-                // Meta info cards row
-                if (deadline != null || maxSlots != null)
-                  Row(
-                    children: [
-                      if (deadline != null)
-                        Expanded(
-                          child: _MetaCard(
-                            icon: Iconsax.calendar,
-                            label: 'Deadline',
-                            value: DateFormat('d MMM y').format(deadline),
-                            isDark: isDark,
-                            cardColor: cardColor,
-                            borderColor: borderColor,
-                          ),
-                        ),
-                      if (deadline != null && maxSlots != null)
-                        const SizedBox(width: AppSpacing.sm),
-                      if (maxSlots != null)
-                        Expanded(
-                          child: _MetaCard(
+                      // Details card
+                      _DetailsCard(
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        rows: [
+                          if (deadline != null)
+                            _DetailRowData(
+                              icon: Iconsax.calendar,
+                              label: 'Deadline',
+                              value: DateFormat('d MMM y').format(deadline),
+                            ),
+                          _DetailRowData(
                             icon: Iconsax.people,
                             label: 'Slots',
-                            value: isFull
-                                ? 'Full'
-                                : '${maxSlots - slotFilled} of $maxSlots left',
-                            isDark: isDark,
-                            cardColor: cardColor,
-                            borderColor: borderColor,
-                            valueColor:
-                                isFull ? AppColors.error : null,
+                            value: slotsValue,
+                            valueColor: slotsColor,
                           ),
+                          if (createdAt != null)
+                            _DetailRowData(
+                              icon: Iconsax.clock,
+                              label: 'Posted',
+                              value: _relativeTime(createdAt),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Description & Instructions
+                      Text(
+                        'Description & Instructions',
+                        style: AppTextStyles.h6.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
                         ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _ExpandableText(
+                        text: description.isEmpty
+                            ? 'No description provided.'
+                            : description,
+                        textSecondary: textSecondary,
+                      ),
+
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // What to submit
+                      _WhatToSubmitCard(
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        isDark: isDark,
+                      ),
+
+                      // Bottom padding so content clears the sticky Apply bar.
+                      const SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
-
-                if (deadline != null || maxSlots != null)
-                  const SizedBox(height: AppSpacing.md),
-
-                // Closed banner
-                if (isClosed) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.08),
-                      borderRadius: AppRadius.allMd,
-                      border: Border.all(
-                          color: AppColors.error.withOpacity(0.20)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Iconsax.slash,
-                            size: 18, color: AppColors.error),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Expanded(
-                          child: Text(
-                            'This job is no longer accepting applications.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-
-                // Already applied banner
-                if (hasApplied) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.10),
-                      borderRadius: AppRadius.allMd,
-                      border: Border.all(
-                          color: AppColors.success.withOpacity(0.25)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Iconsax.tick_circle,
-                            size: 20, color: AppColors.success),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text(
-                          'Already Applied',
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.success),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-
-                // Slots full banner
-                if (isFull && !hasApplied) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.08),
-                      borderRadius: AppRadius.allMd,
-                      border: Border.all(
-                          color: AppColors.error.withOpacity(0.20)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Iconsax.slash, size: 20, color: AppColors.error),
-                        SizedBox(width: AppSpacing.sm),
-                        Text(
-                          'Slots Full',
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.error),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-
-                // Description
-                Text(
-                  'Description & Instructions',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: textPrimary,
-                  ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  description,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: textSecondary,
-                    height: 1.6,
-                  ),
-                ),
-
-                // Extra bottom padding so content clears the Apply bar
-                const SizedBox(height: 100),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Relative-time helper for the 'Posted' row.
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return 'just now';
+    if (diff.inMinutes < 60) {
+      final m = diff.inMinutes;
+      return '$m ${m == 1 ? 'minute' : 'minutes'} ago';
+    }
+    if (diff.inHours < 24) {
+      final h = diff.inHours;
+      return '$h ${h == 1 ? 'hour' : 'hours'} ago';
+    }
+    if (diff.inDays < 7) {
+      final d = diff.inDays;
+      return '$d ${d == 1 ? 'day' : 'days'} ago';
+    }
+    if (diff.inDays < 30) {
+      final w = (diff.inDays / 7).floor();
+      return '$w ${w == 1 ? 'week' : 'weeks'} ago';
+    }
+    final months = (diff.inDays / 30).floor();
+    return '$months ${months == 1 ? 'month' : 'months'} ago';
+  }
+}
+
+// ─── Cover Header ─────────────────────────────────────────────────────────────
+
+class _CoverHeader extends StatelessWidget {
+  final String? coverUrl;
+  final bool isActive;
+
+  const _CoverHeader({required this.coverUrl, required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final hasCover = coverUrl != null && coverUrl!.isNotEmpty;
+
+    return Stack(
+      children: [
+        // Cover image / gradient placeholder.
+        Container(
+          height: 200 + topPad,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(AppRadius.lg),
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: hasCover
+              ? Image.network(
+                  coverUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                )
+              : const Center(
+                  child: Icon(
+                    Iconsax.briefcase,
+                    size: 56,
+                    color: Colors.white70,
+                  ),
+                ),
+        ),
+
+        // Top overlay row: back, title, bookmark.
+        Positioned(
+          top: topPad + AppSpacing.sm,
+          left: AppSpacing.sm,
+          right: AppSpacing.sm,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              PremiumIconButton(
+                icon: Iconsax.arrow_left,
+                background: true,
+                color: Colors.white,
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              Text(
+                'Job Details',
+                style: AppTextStyles.h6.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              PremiumIconButton(
+                icon: Iconsax.save_2,
+                background: true,
+                color: Colors.white,
+                tooltip: 'Save',
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+
+        // Status pill (top-right, below the app bar row).
+        Positioned(
+          top: topPad + 64,
+          right: AppSpacing.lg,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: isActive ? AppColors.accentOrange : AppColors.neutral,
+              borderRadius: AppRadius.pillAll,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              isActive ? 'Active' : 'Closed',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Category Pill ────────────────────────────────────────────────────────────
+
+class _CategoryPill extends StatelessWidget {
+  final String category;
+  final bool isDark;
+  final Color textSecondary;
+
+  const _CategoryPill({
+    required this.category,
+    required this.isDark,
+    required this.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
+        borderRadius: AppRadius.pillAll,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Iconsax.category, size: 14, color: textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            category,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Payment Card ─────────────────────────────────────────────────────────────
+
+class _PaymentCard extends StatelessWidget {
+  final double amount;
+  final Color cardColor;
+  final Color borderColor;
+  final Color textSecondary;
+
+  const _PaymentCard({
+    required this.amount,
+    required this.cardColor,
+    required this.borderColor,
+    required this.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: AppRadius.allLg,
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.accentOrange.withOpacity(0.12),
+              borderRadius: AppRadius.allMd,
+            ),
+            child: const Icon(
+              Iconsax.wallet,
+              size: 24,
+              color: AppColors.accentOrange,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Payment',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '₹${_formatAmount(amount)}',
+                  style: AppTextStyles.h3.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.accentOrange,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Per approved submission',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -369,13 +519,274 @@ class _JobDetailScrollView extends StatelessWidget {
   }
 }
 
-// ─── Floating Apply Bar ───────────────────────────────────────────────────────
+// ─── Details Card ─────────────────────────────────────────────────────────────
+
+class _DetailRowData {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _DetailRowData({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+}
+
+class _DetailsCard extends StatelessWidget {
+  final Color cardColor;
+  final Color borderColor;
+  final Color textPrimary;
+  final Color textSecondary;
+  final List<_DetailRowData> rows;
+
+  const _DetailsCard({
+    required this.cardColor,
+    required this.borderColor,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.rows,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: AppRadius.allLg,
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < rows.length; i++) ...[
+            if (i > 0)
+              Divider(height: 1, color: borderColor),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Row(
+                children: [
+                  Icon(rows[i].icon, size: 18, color: textSecondary),
+                  const SizedBox(width: AppSpacing.md),
+                  Text(
+                    rows[i].label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    rows[i].value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: rows[i].valueColor ?? textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Expandable Description ───────────────────────────────────────────────────
+
+class _ExpandableText extends StatefulWidget {
+  final String text;
+  final Color textSecondary;
+
+  const _ExpandableText({required this.text, required this.textSecondary});
+
+  @override
+  State<_ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<_ExpandableText> {
+  bool _expanded = false;
+
+  static const int _collapsedLines = 4;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = AppTextStyles.bodyMedium.copyWith(
+      color: widget.textSecondary,
+      height: 1.6,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final tp = TextPainter(
+              text: TextSpan(text: widget.text, style: style),
+              maxLines: _collapsedLines,
+              textDirection: Directionality.of(context),
+            )..layout(maxWidth: constraints.maxWidth);
+            final overflows = tp.didExceedMaxLines;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.text,
+                  style: style,
+                  maxLines: _expanded ? null : _collapsedLines,
+                  overflow: _expanded
+                      ? TextOverflow.visible
+                      : TextOverflow.ellipsis,
+                ),
+                if (overflows) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => setState(() => _expanded = !_expanded),
+                    child: Text(
+                      _expanded ? 'Read less' : 'Read more',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accentOrange,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ─── What To Submit Card ──────────────────────────────────────────────────────
+
+class _WhatToSubmitCard extends StatelessWidget {
+  final Color cardColor;
+  final Color borderColor;
+  final Color textPrimary;
+  final Color textSecondary;
+  final bool isDark;
+
+  const _WhatToSubmitCard({
+    required this.cardColor,
+    required this.borderColor,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: AppRadius.allLg,
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What to submit',
+            style: AppTextStyles.h6.copyWith(
+              fontWeight: FontWeight.w700,
+              color: textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Submit your work in any of the following formats:',
+            style: TextStyle(fontSize: 13, color: textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: const [
+              _SubmitChip(icon: Iconsax.link, label: 'Link'),
+              _SubmitChip(icon: Iconsax.gallery, label: 'Photo'),
+              _SubmitChip(icon: Iconsax.document, label: 'PDF'),
+              _SubmitChip(icon: Iconsax.video, label: 'Video'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubmitChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SubmitChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.accentOrange),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Sticky Apply Bar ─────────────────────────────────────────────────────────
 
 class _ApplyBar extends ConsumerStatefulWidget {
   final String jobId;
   final Map<String, dynamic> job;
+  final bool hasApplied;
+  final bool isFull;
+  final bool isClosed;
 
-  const _ApplyBar({required this.jobId, required this.job});
+  const _ApplyBar({
+    required this.jobId,
+    required this.job,
+    required this.hasApplied,
+    required this.isFull,
+    required this.isClosed,
+  });
 
   @override
   ConsumerState<_ApplyBar> createState() => _ApplyBarState();
@@ -410,13 +821,37 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
           ),
         ],
       ),
-      child: PremiumButton(
-        label: 'Apply Now',
-        icon: Iconsax.briefcase,
-        loading: _applying,
-        onPressed: _apply,
-      ),
+      child: _buildButton(),
     );
+  }
+
+  Widget _buildButton() {
+    // Already applied — disabled green state.
+    if (widget.hasApplied) {
+      return _StatusButton(
+        label: 'Already Applied',
+        icon: Iconsax.tick_circle,
+        color: AppColors.success,
+      );
+    }
+    // Slots full — disabled red state.
+    if (widget.isFull) {
+      return _StatusButton(
+        label: 'Slots Full',
+        icon: Iconsax.slash,
+        color: AppColors.error,
+      );
+    }
+    // Closed — disabled neutral state.
+    if (widget.isClosed) {
+      return _StatusButton(
+        label: 'Closed',
+        icon: Iconsax.slash,
+        color: AppColors.neutral,
+      );
+    }
+    // Active — orange Apply Now CTA.
+    return _ApplyNowButton(loading: _applying, onPressed: _apply);
   }
 
   Future<void> _apply() async {
@@ -449,88 +884,97 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
   }
 }
 
-// ─── Supporting Widgets ───────────────────────────────────────────────────────
+/// The orange "Apply Now" CTA with paper-plane icon and loading state.
+class _ApplyNowButton extends StatelessWidget {
+  final bool loading;
+  final VoidCallback onPressed;
 
-class _CategoryBadge extends StatelessWidget {
-  final String category;
-  const _CategoryBadge({required this.category});
+  const _ApplyNowButton({required this.loading, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.10),
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(
-        category,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: loading ? null : onPressed,
+      child: Container(
+        height: 52,
+        width: double.infinity,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.accentOrange,
+          borderRadius: AppRadius.allMd,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accentOrange.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+              spreadRadius: -2,
+            ),
+          ],
         ),
+        child: loading
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Iconsax.send_1, size: 20, color: Colors.white),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Apply Now',
+                    style: AppTextStyles.button.copyWith(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
 }
 
-class _MetaCard extends StatelessWidget {
-  final IconData icon;
+/// A disabled, tinted status button (Already Applied / Slots Full / Closed).
+class _StatusButton extends StatelessWidget {
   final String label;
-  final String value;
-  final bool isDark;
-  final Color cardColor;
-  final Color borderColor;
-  final Color? valueColor;
+  final IconData icon;
+  final Color color;
 
-  const _MetaCard({
-    required this.icon,
+  const _StatusButton({
     required this.label,
-    required this.value,
-    required this.isDark,
-    required this.cardColor,
-    required this.borderColor,
-    this.valueColor,
+    required this.icon,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fg =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final hint =
-        isDark ? AppColors.darkTextHint : AppColors.textHint;
-
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      height: 52,
+      width: double.infinity,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: cardColor,
+        color: color.withOpacity(0.12),
         borderRadius: AppRadius.allMd,
-        border: Border.all(color: borderColor),
+        border: Border.all(color: color.withOpacity(0.30)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Icon(icon, size: 20, color: color),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: hint,
-                        fontWeight: FontWeight.w500)),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: valueColor ?? fg,
-                  ),
-                ),
-              ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: color,
             ),
           ),
         ],
