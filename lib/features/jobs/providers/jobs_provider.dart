@@ -34,6 +34,10 @@ Map<String, dynamic> _mapCampaignToJob(Map<String, dynamic> row) {
       : totalSlots;
 
   return {
+    // The `...row` spread carries EVERY raw campaigns column through, so the
+    // optional extra fields (platform / rules / demo_asset_type /
+    // demo_asset_url) reach jobDetailProvider automatically without ever being
+    // named in a .select(...) projection.
     ...row,
     'payment_amount': row['payout_per_creator'],
     'max_slots': maxSlots,
@@ -403,6 +407,17 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         // payout_model column, so we never depend on a newly-added column that
         // PostgREST's schema cache refuses to serve.
         'payout_model': 'job',
+        // Optional extra fields (multi-platform / rules / demo asset). These
+        // are plain INSERT VALUES, exactly the same safe category as the
+        // `payout_model: 'job'` value above. They must NEVER be used in a
+        // .eq/.neq/.filter query filter, and must NEVER be named inside a
+        // .select('...') projection (PostgREST's schema cache rejects that for
+        // newly-added columns). They are read back only from SELECT * result
+        // maps via the `...row` spread in _mapCampaignToJob.
+        'platform': data['platform'],
+        'rules': data['rules'],
+        'demo_asset_type': data['demo_asset_type'],
+        'demo_asset_url': data['demo_asset_url'],
         'brand_id': user.id,
         // NOTE: brandName is intentionally NOT written here. PostgREST's schema
         // cache does not expose a 'brandName' column (PGRST204), so referencing
@@ -453,6 +468,17 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       if (data.containsKey('max_slots')) {
         // Convention: null max_slots -> total_slots = 0 ("unlimited").
         update['slots'] = data['max_slots'] ?? 0;
+      }
+      // Optional extra fields: guarded pass-through as plain UPDATE VALUES
+      // (same safe category as the keys above). Never used in a filter or a
+      // .select projection.
+      if (data.containsKey('platform')) update['platform'] = data['platform'];
+      if (data.containsKey('rules')) update['rules'] = data['rules'];
+      if (data.containsKey('demo_asset_type')) {
+        update['demo_asset_type'] = data['demo_asset_type'];
+      }
+      if (data.containsKey('demo_asset_url')) {
+        update['demo_asset_url'] = data['demo_asset_url'];
       }
 
       await SupabaseService.client

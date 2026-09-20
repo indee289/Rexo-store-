@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/demo_asset_view.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
@@ -108,6 +109,18 @@ class _JobDetailScrollView extends StatelessWidget {
         ? DateTime.tryParse(job['created_at'].toString())
         : null;
 
+    // New optional fields: read straight off the SELECT * job map by key.
+    // The stored platform value is a comma-joined string; split into pills.
+    final platforms = (job['platform'] ?? '')
+        .toString()
+        .split(',')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+    final rules = (job['rules'] ?? '').toString();
+    final demoType = (job['demo_asset_type'] ?? '').toString();
+    final demoUrl = (job['demo_asset_url'] ?? '').toString();
+
     final isActive = jobStatus == 'active';
     final isFull = maxSlots != null && slotFilled >= maxSlots;
 
@@ -165,13 +178,27 @@ class _JobDetailScrollView extends StatelessWidget {
                         ),
                       ),
 
-                      // Category pill
-                      if (category != null && category.isNotEmpty) ...[
+                      // Category + platform pills
+                      if ((category != null && category.isNotEmpty) ||
+                          platforms.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.md),
-                        _CategoryPill(
-                          category: category,
-                          isDark: isDark,
-                          textSecondary: textSecondary,
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            if (category != null && category.isNotEmpty)
+                              _CategoryPill(
+                                category: category,
+                                isDark: isDark,
+                                textSecondary: textSecondary,
+                              ),
+                            for (final p in platforms)
+                              _PlatformPill(
+                                platform: p,
+                                isDark: isDark,
+                                textSecondary: textSecondary,
+                              ),
+                          ],
                         ),
                       ],
 
@@ -243,6 +270,50 @@ class _JobDetailScrollView extends StatelessWidget {
                         textSecondary: textSecondary,
                         isDark: isDark,
                       ),
+
+                      // Rules — new optional field. Render only when present.
+                      if (rules.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'Rules',
+                          style: AppTextStyles.h6.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: AppRadius.allLg,
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Text(
+                            rules,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // Demo Asset — new optional field. Render only when both
+                      // the type and the value are present.
+                      if (demoType.isNotEmpty && demoUrl.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'Demo Asset',
+                          style: AppTextStyles.h6.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        DemoAssetView(type: demoType, value: demoUrl),
+                      ],
 
                       // Bottom padding so content clears the sticky Apply bar.
                       const SizedBox(height: AppSpacing.xxl),
@@ -422,6 +493,57 @@ class _CategoryPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             category,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Platform Pill ────────────────────────────────────────────────────────────
+
+class _PlatformPill extends StatelessWidget {
+  final String platform;
+  final bool isDark;
+  final Color textSecondary;
+
+  const _PlatformPill({
+    required this.platform,
+    required this.isDark,
+    required this.textSecondary,
+  });
+
+  IconData get _icon {
+    final p = platform.toLowerCase();
+    if (p.contains('insta')) return Iconsax.instagram;
+    if (p.contains('face')) return Iconsax.facebook;
+    if (p.contains('you')) return Iconsax.youtube;
+    return Iconsax.global;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
+        borderRadius: AppRadius.pillAll,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_icon, size: 14, color: textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            platform,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

@@ -1,7 +1,20 @@
 {
   "task_id": "task-campaign-job-extra-fields",
   "task_description": "Add Campaign Description, optional Campaign Rules, optional Demo Asset (image/video/pdf/link/text), and multi-select platforms to the Campaign create/edit form and the Post Job form; persist them into the legacy public.campaigns table (new columns via ADD COLUMN IF NOT EXISTS, written as plain VALUES, read from SELECT * maps); and render all filled fields on the campaign detail and job detail pages, each section shown only when its data exists. No mock/static data. Ships a hand-run SQL migration under supabase/.",
-  "status": "in_progress",
+  "status": "completed",
   "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
-  "blocked_reason": null
+  "blocked_reason": null,
+  "review": {
+    "v1": ".agents/tasks/task-campaign-job-extra-fields/2026-09-20-113251-review.md (NEEDS_CHANGES: 3 issues)",
+    "v2": ".agents/tasks/task-campaign-job-extra-fields/2026-09-20-113946-review.md (APPROVED)",
+    "iterations": 2,
+    "outcome": "APPROVED after fixing description consistency check, un-split platform string in campaign detail, and Facebook/YouTube platform icons"
+  },
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Flutter/Dart SDK not installed and network is INTEGRATIONS_ONLY, so flutter build/analyze/test and Docker are not runnable and there is no test suite. Static verification passed: (1) supabase/CAMPAIGN_JOB_EXTRA_FIELDS.sql has the three ADD COLUMN IF NOT EXISTS (rules/demo_asset_type/demo_asset_url) and trailing NOTIFY pgrst 'reload schema'/'reload config'; (2) no server-side .eq/.neq/.filter on payout_model anywhere in lib/ (only descriptive comments); (3) no new column (rules/demo_asset_type/demo_asset_url) named inside any .select() projection; (4) brace/paren balance clean in all changed files except jobs_provider.dart parens (342/347) whose 5-paren imbalance is entirely pre-existing comment prose (HEAD was 328/333; the +14/+14 delta from this change is perfectly balanced). Demo-asset upload reuses R2StorageService like submit_task_screen.dart; detail sections are all isNotEmpty-guarded; colors are dark-mode-safe."
+  }
 }

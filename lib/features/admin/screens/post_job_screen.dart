@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/demo_asset_field.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
@@ -32,18 +33,32 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   final _categoryCtrl = TextEditingController();
   final _paymentCtrl = TextEditingController();
   final _maxSlotsCtrl = TextEditingController();
+  final _rulesCtrl = TextEditingController();
 
   DateTime? _deadline;
   String? _coverImageUrl;
+  List<String> _selectedPlatforms = ['Instagram'];
+  DemoAssetType _demoAssetType = DemoAssetType.none;
+  String? _demoAssetValue;
   bool _saving = false;
 
   bool get _isEdit => widget.existingJob != null;
+
+  // Match the platform list values used on the campaign create form.
+  static const List<String> _platforms = [
+    'Instagram',
+    'Facebook',
+    'YouTube',
+  ];
 
   @override
   void initState() {
     super.initState();
     final j = widget.existingJob;
     if (j != null) {
+      // The job map is a SELECT * campaigns row passed through
+      // _mapCampaignToJob, so raw columns (rules/platform/demo_asset_*) are
+      // present on the map by key.
       _titleCtrl.text = j['title'] as String? ?? '';
       _descCtrl.text = j['description'] as String? ?? '';
       _categoryCtrl.text = j['category'] as String? ?? '';
@@ -52,8 +67,32 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       _maxSlotsCtrl.text =
           (j['max_slots'] as int?)?.toString() ?? '';
       _coverImageUrl = j['cover_image_url'] as String?;
+      _rulesCtrl.text = j['rules'] as String? ?? '';
       final dl = j['deadline'] as String?;
       if (dl != null) _deadline = DateTime.tryParse(dl);
+
+      // Split the stored comma-separated platform string back into chips,
+      // keeping only values we know about.
+      final platformRaw = j['platform'] as String?;
+      if (platformRaw != null && platformRaw.trim().isNotEmpty) {
+        final parsed = platformRaw
+            .split(',')
+            .map((x) => x.trim())
+            .where((x) => x.isNotEmpty)
+            .map((x) => _platforms.firstWhere(
+                  (p) => p.toLowerCase() == x.toLowerCase(),
+                  orElse: () => '',
+                ))
+            .where((x) => x.isNotEmpty)
+            .toSet()
+            .toList();
+        if (parsed.isNotEmpty) {
+          _selectedPlatforms = parsed;
+        }
+      }
+
+      _demoAssetType = demoAssetTypeFromKey(j['demo_asset_type'] as String?);
+      _demoAssetValue = j['demo_asset_url'] as String?;
     }
   }
 
@@ -64,6 +103,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     _categoryCtrl.dispose();
     _paymentCtrl.dispose();
     _maxSlotsCtrl.dispose();
+    _rulesCtrl.dispose();
     super.dispose();
   }
 
@@ -106,6 +146,12 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
     setState(() => _saving = true);
 
+    final rules = _rulesCtrl.text.trim();
+    final demoValue = _demoAssetValue?.trim();
+    final hasDemoAsset = _demoAssetType != DemoAssetType.none &&
+        demoValue != null &&
+        demoValue.isNotEmpty;
+
     final data = <String, dynamic>{
       'title': _titleCtrl.text.trim(),
       'description': _descCtrl.text.trim(),
@@ -117,6 +163,14 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       'deadline': _deadline?.toUtc().toIso8601String(),
       'cover_image_url':
           (_coverImageUrl?.isNotEmpty ?? false) ? _coverImageUrl : null,
+      // Multi-select platforms persisted as a comma-joined string (matches the
+      // campaign create form convention). Always at least one platform.
+      'platform': _selectedPlatforms.join(','),
+      // Optional rules (null when empty so the column stays clear).
+      'rules': rules.isEmpty ? null : rules,
+      // Optional demo asset (null when nothing was attached).
+      'demo_asset_type': hasDemoAsset ? demoAssetTypeToKey(_demoAssetType) : null,
+      'demo_asset_url': hasDemoAsset ? demoValue : null,
     };
 
     bool ok;
@@ -241,6 +295,13 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
               const SizedBox(height: AppSpacing.xl),
 
+              // ── Platforms (multi-select) ─────────────────────────────────
+              _SectionLabel(label: 'Platforms', isDark: isDark),
+              const SizedBox(height: AppSpacing.sm),
+              _buildPlatformChips(isDark, textPrimary),
+
+              const SizedBox(height: AppSpacing.xl),
+
               // ── Payment Amount ────────────────────────────────────────────
               _SectionLabel(label: 'Payment Amount (₹) *', isDark: isDark),
               const SizedBox(height: AppSpacing.sm),
@@ -328,6 +389,35 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 ),
               ),
 
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Rules (Optional) ─────────────────────────────────────────
+              _SectionLabel(label: 'Rules (Optional)', isDark: isDark),
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField.multiline(
+                controller: _rulesCtrl,
+                hint: 'Add any rules or guidelines creators must follow…',
+                minLines: 3,
+                maxLines: 8,
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Demo Asset (Optional) ────────────────────────────────────
+              _SectionLabel(label: 'Demo Asset (Optional)', isDark: isDark),
+              const SizedBox(height: AppSpacing.sm),
+              DemoAssetField(
+                storageFolder: 'job-demo-assets',
+                initialType: _demoAssetType,
+                initialValue: _demoAssetValue,
+                onChanged: (type, value) {
+                  setState(() {
+                    _demoAssetType = type;
+                    _demoAssetValue = value;
+                  });
+                },
+              ),
+
               const SizedBox(height: AppSpacing.xxl),
 
               // ── Save Button ───────────────────────────────────────────────
@@ -343,6 +433,48 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPlatformChips(bool isDark, Color textPrimary) {
+    final surface =
+        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+    final border = isDark ? AppColors.darkBorder : AppColors.border;
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: _platforms.map((platform) {
+        final isSelected = _selectedPlatforms.contains(platform);
+        return ChoiceChip(
+          label: Text(platform),
+          selected: isSelected,
+          showCheckmark: false,
+          onSelected: (_) {
+            setState(() {
+              if (isSelected) {
+                // Keep at least one platform selected.
+                if (_selectedPlatforms.length > 1) {
+                  _selectedPlatforms.remove(platform);
+                }
+              } else {
+                _selectedPlatforms.add(platform);
+              }
+            });
+          },
+          selectedColor: AppColors.primary,
+          backgroundColor: surface,
+          side: BorderSide(
+            color: isSelected ? AppColors.primary : border,
+          ),
+          labelStyle: AppTextStyles.bodyMedium.copyWith(
+            color: isSelected ? Colors.white : textPrimary,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadius.allSm,
+          ),
+        );
+      }).toList(),
     );
   }
 

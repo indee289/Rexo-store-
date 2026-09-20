@@ -10,6 +10,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/campaign_cover_header.dart';
+import '../../../core/widgets/demo_asset_view.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
@@ -179,9 +180,20 @@ class _CampaignDetailScrollView extends StatelessWidget {
     final description = (campaign['description'] ?? '').toString();
     final budget = campaign['budget'];
     final platform = (campaign['platform'] ?? '').toString();
+    // The stored platform value is a comma-joined string (e.g.
+    // "Instagram,YouTube"); split it into one entry per platform.
+    final platforms = platform
+        .split(',')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
     final category = (campaign['category'] ?? '').toString();
     final deadline = campaign['deadline'] as String?;
     final guidelines = (campaign['guidelines'] ?? '').toString();
+    // New optional fields: read straight off the SELECT * map by key.
+    final rules = (campaign['rules'] ?? '').toString();
+    final demoType = (campaign['demo_asset_type'] ?? '').toString();
+    final demoUrl = (campaign['demo_asset_url'] ?? '').toString();
     final minFollowers = campaign['min_followers'];
     final filledSlots = campaign['filled_slots'];
     final totalSlots = campaign['total_slots'];
@@ -209,9 +221,12 @@ class _CampaignDetailScrollView extends StatelessWidget {
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     // ── Brand subtitle (muted category tags) ──
+    // Display the split platform list (readable "Instagram, Facebook")
+    // rather than the raw comma-joined stored string.
+    final platformsLabel = platforms.join(', ');
     final subtitleParts = <String>[
       if (category.isNotEmpty) category,
-      if (platform.isNotEmpty) platform,
+      if (platformsLabel.isNotEmpty) platformsLabel,
     ];
     final brandSubtitle =
         subtitleParts.isEmpty ? 'Brand' : subtitleParts.join(' • ');
@@ -256,7 +271,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
     }
     if (platform.isNotEmpty || category.isNotEmpty) {
       final contentType = <String>[
-        if (platform.isNotEmpty) platform,
+        if (platformsLabel.isNotEmpty) platformsLabel,
         if (category.isNotEmpty) category,
       ].join(' • ');
       detailRows.add(_DetailRowData(
@@ -275,8 +290,8 @@ class _CampaignDetailScrollView extends StatelessWidget {
 
     // ── Pills row (only fields that exist) ──
     final pills = <_PillData>[
-      if (platform.isNotEmpty)
-        _PillData(icon: _platformIcon(platform), label: platform),
+      for (final p in platforms)
+        _PillData(icon: _platformIcon(p), label: p),
       if (gender.isNotEmpty)
         _PillData(icon: Iconsax.people, label: gender),
       if (category.isNotEmpty)
@@ -447,6 +462,50 @@ class _CampaignDetailScrollView extends StatelessWidget {
                         ),
                       ],
 
+                      // Rules — new optional field. Render only when present.
+                      if (rules.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'Rules',
+                          style: AppTextStyles.h6.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: AppRadius.allLg,
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Text(
+                            rules,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // Demo Asset — new optional field. Render only when both
+                      // the type and the value are present.
+                      if (demoType.isNotEmpty && demoUrl.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'Demo Asset',
+                          style: AppTextStyles.h6.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        DemoAssetView(type: demoType, value: demoUrl),
+                      ],
+
                       // Minimum followers — keep existing data.
                       if (minFollowers != null &&
                           minFollowers is num &&
@@ -515,6 +574,8 @@ class _CampaignDetailScrollView extends StatelessWidget {
   static IconData _platformIcon(String platform) {
     final p = platform.toLowerCase();
     if (p.contains('insta')) return Iconsax.instagram;
+    if (p.contains('face')) return Iconsax.facebook;
+    if (p.contains('you')) return Iconsax.youtube;
     return Iconsax.global;
   }
 
