@@ -13,6 +13,35 @@ final jobSearchProvider = StateProvider<String>((ref) => '');
 /// Status filter on My Jobs tab.
 final myJobsStatusFilterProvider = StateProvider<String>((ref) => 'all');
 
+// ─── Column Mapping Helper ────────────────────────────────────────────────────
+//
+// Jobs are stored as rows in the ALREADY-CACHED `campaigns` table tagged
+// `is_job = true` (PostgREST refuses to serve the standalone `jobs` table with
+// PGRST205, but campaigns is served perfectly). This helper maps a raw
+// campaigns row back into the job-shaped map the Jobs screens expect.
+//
+// Mapping convention (must match supabase/JOBS_VIA_CAMPAIGNS.sql exactly):
+//   payment_amount <- per_creator_payout
+//   max_slots      <- total_slots, where total_slots == 0 means "unlimited"
+//                     and is exposed back as max_slots = null.
+//   title/description/category/deadline/cover_image_url/status/id/created_at/
+//   updated_at pass through unchanged.
+// The original campaigns columns are kept in the map too so nothing else breaks.
+Map<String, dynamic> _mapCampaignToJob(Map<String, dynamic> row) {
+  final totalSlots = row['total_slots'];
+  final maxSlots = (totalSlots is num && totalSlots.toInt() == 0)
+      ? null
+      : totalSlots;
+
+  return {
+    ...row,
+    'payment_amount': row['per_creator_payout'],
+    'max_slots': maxSlots,
+    // created_by mirrors the campaigns.brand_id used on create.
+    'created_by': row['brand_id'],
+  };
+}
+
 // ─── Available Jobs ───────────────────────────────────────────────────────────
 
 /// All active jobs, filtered by category + search term.
@@ -22,8 +51,9 @@ final availableJobsProvider =
   final search = ref.watch(jobSearchProvider);
 
   var query = SupabaseService.client
-      .from('jobs')
+      .from('campaigns')
       .select()
+      .eq('is_job', true)
       .eq('status', 'active');
 
   if (category != 'All') {
@@ -35,14 +65,17 @@ final availableJobsProvider =
   }
 
   final response = await query.order('created_at', ascending: false).limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  return List<Map<String, dynamic>>.from(response)
+      .map(_mapCampaignToJob)
+      .toList();
 });
 
 /// Distinct categories derived from existing active jobs (dynamic, no hardcode).
 final jobCategoriesProvider = FutureProvider<List<String>>((ref) async {
   final jobs = await SupabaseService.client
-      .from('jobs')
+      .from('campaigns')
       .select('category')
+      .eq('is_job', true)
       .eq('status', 'active');
 
   final cats = <String>{};
@@ -59,9 +92,9 @@ final jobSlotCountProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
         (ref, jobId) async {
   final response = await SupabaseService.client
-      .from('job_applications')
+      .from('applications')
       .select('id')
-      .eq('job_id', jobId)
+      .eq('campaign_id', jobId)
       .inFilter('status', ['applied', 'submitted', 'approved']);
 
   final filled = (response as List).length;
@@ -75,11 +108,13 @@ final jobDetailProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
         (ref, jobId) async {
   final response = await SupabaseService.client
-      .from('jobs')
+      .from('campaigns')
       .select()
       .eq('id', jobId)
+      .eq('is_job', true)
       .maybeSingle();
-  return response;
+  if (response == null) return null;
+  return _mapCampaignToJob(Map<String, dynamic>.from(response));
 });
 
 /// Whether the current user has already applied to a specific job.
@@ -89,10 +124,10 @@ final hasAppliedToJobProvider =
   if (user == null) return false;
 
   final response = await SupabaseService.client
-      .from('job_applications')
+      .from('applications')
       .select('id')
-      .eq('job_id', jobId)
-      .eq('user_id', user.id)
+      .eq('campaign_id', jobId)
+      .eq('creator_id', user.id)
       .maybeSingle();
 
   return response != null;
@@ -110,32 +145,43 @@ final myJobApplicationsProvider =
   final statusFilter = ref.watch(myJobsStatusFilterProvider);
 
   var query = SupabaseService.client
-      .from('job_applications')
+      .from('applications')
       .select()
-      .eq('user_id', user.id);
+      .eq('creator_id', user.id);
 
   if (statusFilter != 'all') {
     query = query.eq('status', statusFilter);
   }
 
-  final response = await query.order('applied_at', ascending: false);
+  final response = await query.order('created_at', ascending: false);
   final rows = List<Map<String, dynamic>>.from(response);
 
-  // Fetch each job separately (avoids embedded-join RLS/PGRST issues)
+  // Fetch each job (campaign) separately (avoids embedded-join RLS/PGRST issues)
   final enriched = <Map<String, dynamic>>[];
   for (final row in rows) {
-    final jobId = row['job_id'] as String?;
+    final campaignId = row['campaign_id'] as String?;
     Map<String, dynamic>? jobRow;
-    if (jobId != null) {
+    if (campaignId != null) {
       try {
-        jobRow = await SupabaseService.client
-            .from('jobs')
+        final campaign = await SupabaseService.client
+            .from('campaigns')
             .select()
-            .eq('id', jobId)
+            .eq('id', campaignId)
+            .eq('is_job', true)
             .maybeSingle();
+        if (campaign != null) {
+          jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
+        }
       } catch (_) {}
     }
-    enriched.add({...row, 'jobs': jobRow ?? {}});
+    enriched.add({
+      ...row,
+      // Expose the keys the screen reads at row level and the aliases that
+      // legacy code referenced (job_id / applied_at).
+      'job_id': campaignId,
+      'applied_at': row['created_at'],
+      'jobs': jobRow ?? {},
+    });
   }
   return enriched;
 });
@@ -145,20 +191,23 @@ final myJobApplicationsProvider =
 /// All jobs for the admin manage list (all statuses).
 final adminJobsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await SupabaseService.client
-      .from('jobs')
+      .from('campaigns')
       .select()
+      .eq('is_job', true)
       .order('created_at', ascending: false)
       .limit(200);
-  return List<Map<String, dynamic>>.from(response);
+  return List<Map<String, dynamic>>.from(response)
+      .map(_mapCampaignToJob)
+      .toList();
 });
 
 /// Applicant count per job (used in admin list).
 final adminJobApplicantCountProvider =
     FutureProvider.autoDispose.family<int, String>((ref, jobId) async {
   final response = await SupabaseService.client
-      .from('job_applications')
+      .from('applications')
       .select('id')
-      .eq('job_id', jobId);
+      .eq('campaign_id', jobId);
   return (response as List).length;
 });
 
@@ -166,20 +215,40 @@ final adminJobApplicantCountProvider =
 final adminJobSubmissionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await SupabaseService.client
-      .from('job_applications')
+      .from('applications')
       .select()
       .eq('status', 'submitted')
-      .order('submitted_at', ascending: false)
+      .order('created_at', ascending: false)
       .limit(200);
   final rows = List<Map<String, dynamic>>.from(response);
 
-  // Fetch job + user details separately to avoid embedded-join failures
+  // Fetch job (campaign) + user details separately to avoid embedded-join
+  // failures, and use the campaign fetch as an is_job safety net: real
+  // campaign applications never carry status 'submitted', but skip any row
+  // whose parent campaign is not a job anyway.
   final enriched = <Map<String, dynamic>>[];
   for (final row in rows) {
-    final userId = row['user_id'] as String?;
-    final jobId = row['job_id'] as String?;
-    Map<String, dynamic>? userRow;
+    final userId = row['creator_id'] as String?;
+    final campaignId = row['campaign_id'] as String?;
+
     Map<String, dynamic>? jobRow;
+    if (campaignId != null) {
+      try {
+        final campaign = await SupabaseService.client
+            .from('campaigns')
+            .select('id, title, per_creator_payout, is_job')
+            .eq('id', campaignId)
+            .maybeSingle();
+        if (campaign != null && campaign['is_job'] == true) {
+          jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
+        }
+      } catch (_) {}
+    }
+
+    // Safety net: skip rows whose campaign is not a job (is_job != true).
+    if (jobRow == null) continue;
+
+    Map<String, dynamic>? userRow;
     if (userId != null) {
       try {
         userRow = await SupabaseService.client
@@ -189,16 +258,8 @@ final adminJobSubmissionsProvider =
             .maybeSingle();
       } catch (_) {}
     }
-    if (jobId != null) {
-      try {
-        jobRow = await SupabaseService.client
-            .from('jobs')
-            .select('id, title, payment_amount')
-            .eq('id', jobId)
-            .maybeSingle();
-      } catch (_) {}
-    }
-    enriched.add({...row, 'users': userRow ?? {}, 'jobs': jobRow ?? {}});
+
+    enriched.add({...row, 'users': userRow ?? {}, 'jobs': jobRow});
   }
   return enriched;
 });
@@ -222,11 +283,13 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      await SupabaseService.client.from('job_applications').insert({
-        'job_id': jobId,
-        'user_id': user.id,
+      final now = DateTime.now().toIso8601String();
+      await SupabaseService.client.from('applications').insert({
+        'campaign_id': jobId,
+        'creator_id': user.id,
         'status': 'applied',
-        'applied_at': DateTime.now().toIso8601String(),
+        'created_at': now,
+        'updated_at': now,
       });
 
       state = const AsyncValue.data(null);
@@ -249,12 +312,14 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('job_applications').update({
+      final now = DateTime.now().toIso8601String();
+      await SupabaseService.client.from('applications').update({
         'status': 'submitted',
         'submission_type': submissionType,
         'submission_url': submissionUrl,
         'submission_note': submissionNote,
-        'submitted_at': DateTime.now().toIso8601String(),
+        'submitted_at': now,
+        'updated_at': now,
       }).eq('id', applicationId);
 
       state = const AsyncValue.data(null);
@@ -269,6 +334,11 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   // ── Admin Actions ─────────────────────────────────────────────────────────
 
   /// Create a new job posting.
+  ///
+  /// Incoming [data] keys: title, description, category, payment_amount,
+  /// max_slots(nullable), deadline(nullable ISO), cover_image_url(nullable).
+  /// These are translated to campaigns columns; the raw payment_amount/
+  /// max_slots keys are NOT written (they are not campaigns columns).
   Future<bool> createJob(Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
@@ -278,12 +348,23 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      await SupabaseService.client.from('jobs').insert({
-        ...data,
-        'created_by': user.id,
+      final now = DateTime.now().toIso8601String();
+      await SupabaseService.client.from('campaigns').insert({
+        'title': data['title'],
+        'description': data['description'],
+        'category': data['category'],
+        'per_creator_payout': data['payment_amount'],
+        // Convention: null max_slots -> total_slots = 0 ("unlimited").
+        'total_slots': data['max_slots'] ?? 0,
+        'deadline': data['deadline'],
+        'cover_image_url': data['cover_image_url'],
+        'is_job': true,
+        'brand_id': user.id,
         'status': 'active',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'budget': 0,
+        'escrow_amount': 0,
+        'created_at': now,
+        'updated_at': now,
       });
 
       state = const AsyncValue.data(null);
@@ -301,10 +382,33 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateJob(String jobId, Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('jobs').update({
-        ...data,
+      // Translate the job-shaped keys into campaigns columns. Only pass through
+      // keys that are actually present in the incoming data map.
+      final update = <String, dynamic>{
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', jobId);
+      };
+      if (data.containsKey('title')) update['title'] = data['title'];
+      if (data.containsKey('description')) {
+        update['description'] = data['description'];
+      }
+      if (data.containsKey('category')) update['category'] = data['category'];
+      if (data.containsKey('deadline')) update['deadline'] = data['deadline'];
+      if (data.containsKey('cover_image_url')) {
+        update['cover_image_url'] = data['cover_image_url'];
+      }
+      if (data.containsKey('status')) update['status'] = data['status'];
+      if (data.containsKey('payment_amount')) {
+        update['per_creator_payout'] = data['payment_amount'];
+      }
+      if (data.containsKey('max_slots')) {
+        // Convention: null max_slots -> total_slots = 0 ("unlimited").
+        update['total_slots'] = data['max_slots'] ?? 0;
+      }
+
+      await SupabaseService.client
+          .from('campaigns')
+          .update(update)
+          .eq('id', jobId);
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);
@@ -323,11 +427,11 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
     return updateJob(jobId, {'status': newStatus});
   }
 
-  /// Hard-delete a job (cascades to job_applications via ON DELETE CASCADE).
+  /// Hard-delete a job (cascades to its applications via ON DELETE CASCADE).
   Future<bool> deleteJob(String jobId) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('jobs').delete().eq('id', jobId);
+      await SupabaseService.client.from('campaigns').delete().eq('id', jobId);
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);
@@ -352,10 +456,11 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application to get user_id and job_id, then job separately.
+      // Fetch application to get creator_id and campaign_id, then campaign
+      // (job) separately.
       final app = await SupabaseService.client
-          .from('job_applications')
-          .select('user_id, job_id')
+          .from('applications')
+          .select('creator_id, campaign_id')
           .eq('id', applicationId)
           .maybeSingle();
 
@@ -364,21 +469,21 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      final userId = app['user_id'] as String;
-      final jobId = app['job_id'] as String;
+      final userId = app['creator_id'] as String;
+      final jobId = app['campaign_id'] as String;
       final job = await SupabaseService.client
-          .from('jobs')
-          .select('title, payment_amount')
+          .from('campaigns')
+          .select('title, per_creator_payout')
           .eq('id', jobId)
           .maybeSingle();
       final jobTitle = job?['title'] as String? ?? 'Job';
       final paymentAmount =
-          (job?['payment_amount'] as num?)?.toDouble() ?? 0.0;
+          (job?['per_creator_payout'] as num?)?.toDouble() ?? 0.0;
 
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status
-      await SupabaseService.client.from('job_applications').update({
+      await SupabaseService.client.from('applications').update({
         'status': 'approved',
         'reviewed_at': now,
         'reviewed_by': admin.id,
@@ -427,10 +532,11 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      // Fetch application to get user_id and job_id, then job title separately.
+      // Fetch application to get creator_id and campaign_id, then campaign
+      // (job) title separately.
       final app = await SupabaseService.client
-          .from('job_applications')
-          .select('user_id, job_id')
+          .from('applications')
+          .select('creator_id, campaign_id')
           .eq('id', applicationId)
           .maybeSingle();
 
@@ -439,10 +545,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      final userId = app['user_id'] as String;
-      final jobId = app['job_id'] as String;
+      final userId = app['creator_id'] as String;
+      final jobId = app['campaign_id'] as String;
       final job = await SupabaseService.client
-          .from('jobs')
+          .from('campaigns')
           .select('title')
           .eq('id', jobId)
           .maybeSingle();
@@ -450,7 +556,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status + rejection reason
-      await SupabaseService.client.from('job_applications').update({
+      await SupabaseService.client.from('applications').update({
         'status': 'rejected',
         'rejection_reason': rejectionReason,
         'reviewed_at': now,
