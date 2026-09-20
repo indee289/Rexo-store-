@@ -130,62 +130,71 @@ CREATE POLICY "Admins can delete campaigns" ON public.campaigns
 -- ON CONFLICT keeps re-runs safe.
 
 -- 6a. Legacy public.jobs -> public.campaigns (is_job = true)
+-- Wrapped in an EXCEPTION handler: this legacy-data copy is best-effort only.
+-- If the live campaigns table has different column names than expected, the
+-- migration is skipped silently rather than aborting the whole script. (You
+-- can always re-post the one test job from the app afterwards.)
 DO $$
 BEGIN
   IF to_regclass('public.jobs') IS NOT NULL THEN
-    INSERT INTO public.campaigns (
-      id, brand_id, title, description, category,
-      per_creator_payout, total_slots, deadline, cover_image_url,
-      status, is_job, created_at, updated_at
-    )
-    SELECT
-      j.id,
-      j.created_by,
-      j.title,
-      j.description,
-      j.category,
-      COALESCE(j.payment_amount, 0),
-      -- Convention: legacy max_slots NULL means "unlimited" and is stored as
-      -- total_slots = 0 (the Dart providers rely on COALESCE(max_slots, 0)).
-      COALESCE(j.max_slots, 0),
-      j.deadline,
-      j.cover_image_url,
-      COALESCE(j.status, 'active'),
-      true,
-      COALESCE(j.created_at, now()),
-      COALESCE(j.updated_at, now())
-    FROM public.jobs j
-    ON CONFLICT (id) DO NOTHING;
+    BEGIN
+      INSERT INTO public.campaigns (
+        id, brand_id, title, description, category,
+        per_creator_payout, total_slots, deadline, cover_image_url,
+        status, is_job, created_at, updated_at
+      )
+      SELECT
+        j.id,
+        j.created_by,
+        j.title,
+        j.description,
+        j.category,
+        COALESCE(j.payment_amount, 0),
+        COALESCE(j.max_slots, 0),
+        j.deadline,
+        j.cover_image_url,
+        COALESCE(j.status, 'active'),
+        true,
+        COALESCE(j.created_at, now()),
+        COALESCE(j.updated_at, now())
+      FROM public.jobs j
+      ON CONFLICT (id) DO NOTHING;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'Skipped legacy jobs migration: %', SQLERRM;
+    END;
   END IF;
 END;
 $$;
 
--- 6b. Legacy public.job_applications -> public.applications
+-- 6b. Legacy public.job_applications -> public.applications (best-effort)
 DO $$
 BEGIN
   IF to_regclass('public.job_applications') IS NOT NULL THEN
-    INSERT INTO public.applications (
-      id, campaign_id, creator_id, status,
-      submission_type, submission_url, submission_note, rejection_reason,
-      created_at, submitted_at, reviewed_at, reviewed_by
-    )
-    SELECT
-      ja.id,
-      ja.job_id,
-      ja.user_id,
-      COALESCE(ja.status, 'applied'),
-      ja.submission_type,
-      ja.submission_url,
-      ja.submission_note,
-      ja.rejection_reason,
-      COALESCE(ja.applied_at, now()),
-      ja.submitted_at,
-      ja.reviewed_at,
-      ja.reviewed_by
-    FROM public.job_applications ja
-    -- Only copy applications whose parent job row made it into campaigns.
-    WHERE EXISTS (SELECT 1 FROM public.campaigns c WHERE c.id = ja.job_id)
-    ON CONFLICT (id) DO NOTHING;
+    BEGIN
+      INSERT INTO public.applications (
+        id, campaign_id, creator_id, status,
+        submission_type, submission_url, submission_note, rejection_reason,
+        created_at, submitted_at, reviewed_at, reviewed_by
+      )
+      SELECT
+        ja.id,
+        ja.job_id,
+        ja.user_id,
+        COALESCE(ja.status, 'applied'),
+        ja.submission_type,
+        ja.submission_url,
+        ja.submission_note,
+        ja.rejection_reason,
+        COALESCE(ja.applied_at, now()),
+        ja.submitted_at,
+        ja.reviewed_at,
+        ja.reviewed_by
+      FROM public.job_applications ja
+      WHERE EXISTS (SELECT 1 FROM public.campaigns c WHERE c.id = ja.job_id)
+      ON CONFLICT (id) DO NOTHING;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'Skipped legacy job_applications migration: %', SQLERRM;
+    END;
   END IF;
 END;
 $$;
