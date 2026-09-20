@@ -211,5 +211,56 @@ END;
 $$;
 
 
--- ─── 7. Ask PostgREST to reload its schema cache ─────────────────────────────
+-- ─── 7. Server-side job slot enforcement (BEFORE INSERT on applications) ─────
+-- Jobs now insert into public.applications, so the old enforce_job_slots
+-- trigger (which lived on the now-unused public.job_applications table) no
+-- longer runs. Re-add an equivalent BEFORE INSERT trigger on applications that
+-- caps applicants ONLY for job campaigns, leaving real campaign applications
+-- (is_job = false) completely untouched.
+--
+-- Convention: for jobs, total_slots = 0 means UNLIMITED, so enforcement only
+-- kicks in when the target campaign is a job AND total_slots is not null and
+-- greater than 0. Counted statuses match jobSlotCountProvider in Dart
+-- (applied / submitted / approved). Idempotent via CREATE OR REPLACE FUNCTION
+-- and DROP TRIGGER IF EXISTS before CREATE TRIGGER.
+CREATE OR REPLACE FUNCTION public.enforce_job_slots()
+RETURNS trigger AS $$
+DECLARE
+  v_is_job boolean;
+  v_total_slots integer;
+  v_used integer;
+BEGIN
+  -- Look up the target campaign for this application.
+  SELECT c.is_job, c.total_slots
+    INTO v_is_job, v_total_slots
+  FROM public.campaigns c
+  WHERE c.id = NEW.campaign_id;
+
+  -- Only enforce for job campaigns with a finite, positive slot cap.
+  -- (is_job = false / null -> real campaign application: never enforced.
+  --  total_slots null or <= 0 -> unlimited: never enforced.)
+  IF v_is_job IS TRUE AND v_total_slots IS NOT NULL AND v_total_slots > 0 THEN
+    SELECT count(*)
+      INTO v_used
+    FROM public.applications a
+    WHERE a.campaign_id = NEW.campaign_id
+      AND a.status IN ('applied', 'submitted', 'approved');
+
+    IF v_used >= v_total_slots THEN
+      RAISE EXCEPTION 'This job has no slots remaining.';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS enforce_job_slots ON public.applications;
+CREATE TRIGGER enforce_job_slots
+  BEFORE INSERT ON public.applications
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_job_slots();
+
+
+-- ─── 8. Ask PostgREST to reload its schema cache ─────────────────────────────
 NOTIFY pgrst, 'reload schema';

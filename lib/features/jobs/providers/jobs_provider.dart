@@ -174,13 +174,21 @@ final myJobApplicationsProvider =
         }
       } catch (_) {}
     }
+
+    // Safety net: the shared `applications` table also holds real campaign
+    // applications (whose campaign_id points at an is_job=false campaign). For
+    // those the is_job fetch above returns null; skip them so they never render
+    // as phantom "Untitled Job" / ₹0 cards under the all/approved/rejected
+    // filters. Mirrors adminJobSubmissionsProvider's `if (jobRow == null)`.
+    if (jobRow == null) continue;
+
     enriched.add({
       ...row,
       // Expose the keys the screen reads at row level and the aliases that
       // legacy code referenced (job_id / applied_at).
       'job_id': campaignId,
       'applied_at': row['created_at'],
-      'jobs': jobRow ?? {},
+      'jobs': jobRow,
     });
   }
   return enriched;
@@ -273,7 +281,14 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
   // ── User Actions ──────────────────────────────────────────────────────────
 
-  /// Apply to a job. Enforced server-side by the slot-check trigger.
+  /// Apply to a job.
+  ///
+  /// Slot caps are enforced server-side by the enforce_job_slots BEFORE INSERT
+  /// trigger on public.applications (see supabase/JOBS_VIA_CAMPAIGNS.sql), which
+  /// fires only for is_job campaigns. Duplicate applies are prevented by the
+  /// UNIQUE(campaign_id, creator_id) constraint on applications and gated in the
+  /// UI by hasAppliedToJobProvider; a second apply throws, which the catch below
+  /// converts into a returned false + error state.
   Future<bool> applyToJob(String jobId) async {
     state = const AsyncValue.loading();
     try {
@@ -431,7 +446,13 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> deleteJob(String jobId) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('campaigns').delete().eq('id', jobId);
+      // Guard on is_job so a real campaign can never be hard-deleted through
+      // the jobs path (which would cascade-delete its applications).
+      await SupabaseService.client
+          .from('campaigns')
+          .delete()
+          .eq('id', jobId)
+          .eq('is_job', true);
 
       state = const AsyncValue.data(null);
       ref.invalidate(adminJobsProvider);

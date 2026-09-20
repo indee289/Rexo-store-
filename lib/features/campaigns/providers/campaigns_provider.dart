@@ -52,11 +52,23 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
 
   final response = await SupabaseService.client
       .from('applications')
-      .select('*, campaigns(id, title, status, cover_image_url)')
+      .select('*, campaigns(id, title, status, cover_image_url, is_job)')
       .eq('creator_id', user.id)
       .order('created_at', ascending: false);
 
-  return List<Map<String, dynamic>>.from(response);
+  // Exclude JOB applications: the `applications` table is shared by real
+  // campaign applications and job applications (whose campaign_id points at an
+  // is_job=true campaign). Keep only rows whose embedded campaign is NOT a job.
+  // A null/absent embedded campaign is treated as not-a-job so real campaign
+  // applications are never dropped.
+  final rows = List<Map<String, dynamic>>.from(response);
+  final result = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final campaign = row['campaigns'] as Map<String, dynamic>?;
+    if (campaign != null && campaign['is_job'] == true) continue;
+    result.add(row);
+  }
+  return result;
 });
 
 /// Provider for the current user's applied campaigns (drives the Campaigns tab).
@@ -91,6 +103,12 @@ final appliedCampaignsProvider =
     // Skip applications whose campaign was deleted (join yields null).
     final campaign = row['campaigns'] as Map<String, dynamic>?;
     if (campaign == null) continue;
+
+    // Skip JOB applications: the shared `applications` table also holds job
+    // applications whose campaign_id points at an is_job=true campaign. The
+    // embedded `campaigns(*)` projection includes is_job, so drop those rows
+    // (they belong in My Jobs, not the Campaigns tab).
+    if (campaign['is_job'] == true) continue;
 
     // Flatten: the campaign object augmented with the application fields.
     result.add({
