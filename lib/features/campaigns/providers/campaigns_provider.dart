@@ -18,7 +18,7 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   // fails on this project's schema cache.
   var query = SupabaseService.client
       .from('campaigns')
-      .select('*, users!brand_id(id, name, profileImage)') // live: profileImage
+      .select('*, users!brand_id(id, name, profileImage)'); // live: profileImage
 
   if (category != 'All') {
     query = query.eq('category', category);

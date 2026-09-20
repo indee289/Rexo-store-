@@ -11,6 +11,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/role_badge.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../reviews/widgets/star_rating_widget.dart';
 import '../providers/sellers_provider.dart';
