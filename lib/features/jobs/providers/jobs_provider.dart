@@ -21,22 +21,24 @@ final myJobsStatusFilterProvider = StateProvider<String>((ref) => 'all');
 // campaigns row back into the job-shaped map the Jobs screens expect.
 //
 // Mapping convention (must match supabase/JOBS_VIA_CAMPAIGNS.sql exactly):
-//   payment_amount <- per_creator_payout
+//   payment_amount <- payout_per_creator
 //   max_slots      <- total_slots, where total_slots == 0 means "unlimited"
 //                     and is exposed back as max_slots = null.
 //   title/description/category/deadline/cover_image_url/status/id/created_at/
 //   updated_at pass through unchanged.
 // The original campaigns columns are kept in the map too so nothing else breaks.
 Map<String, dynamic> _mapCampaignToJob(Map<String, dynamic> row) {
-  final totalSlots = row['total_slots'];
+  final totalSlots = row['slots'];
   final maxSlots = (totalSlots is num && totalSlots.toInt() == 0)
       ? null
       : totalSlots;
 
   return {
     ...row,
-    'payment_amount': row['per_creator_payout'],
+    'payment_amount': row['payout_per_creator'],
     'max_slots': maxSlots,
+    // Expose the live cover_image column under the key the job cards read.
+    'cover_image_url': row['cover_image'],
     // created_by mirrors the campaigns.brand_id used on create.
     'created_by': row['brand_id'],
   };
@@ -244,7 +246,7 @@ final adminJobSubmissionsProvider =
       try {
         final campaign = await SupabaseService.client
             .from('campaigns')
-            .select('id, title, per_creator_payout, is_job')
+            .select('id, title, payout_per_creator, is_job')
             .eq('id', campaignId)
             .maybeSingle();
         if (campaign != null && campaign['is_job'] == true) {
@@ -368,16 +370,15 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'title': data['title'],
         'description': data['description'],
         'category': data['category'],
-        'per_creator_payout': data['payment_amount'],
-        // Convention: null max_slots -> total_slots = 0 ("unlimited").
-        'total_slots': data['max_slots'] ?? 0,
+        'payout_per_creator': data['payment_amount'],
+        // Convention: null max_slots -> slots = 0 ("unlimited").
+        'slots': data['max_slots'] ?? 0,
         'deadline': data['deadline'],
-        'cover_image_url': data['cover_image_url'],
+        'cover_image': data['cover_image_url'],
         'is_job': true,
         'brand_id': user.id,
         'status': 'active',
         'budget': 0,
-        'escrow_amount': 0,
         'created_at': now,
         'updated_at': now,
       });
@@ -409,15 +410,15 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       if (data.containsKey('category')) update['category'] = data['category'];
       if (data.containsKey('deadline')) update['deadline'] = data['deadline'];
       if (data.containsKey('cover_image_url')) {
-        update['cover_image_url'] = data['cover_image_url'];
+        update['cover_image'] = data['cover_image_url'];
       }
       if (data.containsKey('status')) update['status'] = data['status'];
       if (data.containsKey('payment_amount')) {
-        update['per_creator_payout'] = data['payment_amount'];
+        update['payout_per_creator'] = data['payment_amount'];
       }
       if (data.containsKey('max_slots')) {
         // Convention: null max_slots -> total_slots = 0 ("unlimited").
-        update['total_slots'] = data['max_slots'] ?? 0;
+        update['slots'] = data['max_slots'] ?? 0;
       }
 
       await SupabaseService.client
@@ -494,12 +495,12 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final jobId = app['campaign_id'] as String;
       final job = await SupabaseService.client
           .from('campaigns')
-          .select('title, per_creator_payout')
+          .select('title, payout_per_creator')
           .eq('id', jobId)
           .maybeSingle();
       final jobTitle = job?['title'] as String? ?? 'Job';
       final paymentAmount =
-          (job?['per_creator_payout'] as num?)?.toDouble() ?? 0.0;
+          (job?['payout_per_creator'] as num?)?.toDouble() ?? 0.0;
 
       final now = DateTime.now().toIso8601String();
 
