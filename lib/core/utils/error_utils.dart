@@ -16,24 +16,6 @@ class ErrorUtils {
 
     final message = error.toString().toLowerCase();
 
-    // TEMP DEBUG (v2): surface the RAW error for jobs/banners/rpc failures so we
-    // can see the exact cause of "Something went wrong" now that the tables,
-    // policies, RPCs and grants are all confirmed present. Remove after fixing.
-    if (message.contains('rpc') ||
-        message.contains('function') ||
-        message.contains('pgrst') ||
-        message.contains('get_active_jobs') ||
-        message.contains('get_job') ||
-        message.contains('get_banners') ||
-        message.contains('get_all_banners') ||
-        message.contains('type') ||
-        message.contains('null') ||
-        message.contains('cast') ||
-        message.contains('list') ||
-        message.contains('subtype')) {
-      return 'DBG2: ${error.toString()}';
-    }
-
     // Network/connection errors
     if (message.contains('socketexception') ||
         message.contains('connection refused') ||

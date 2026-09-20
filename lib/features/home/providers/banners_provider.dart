@@ -5,8 +5,12 @@ import '../../../services/supabase_service.dart';
 /// Live banners for the home carousel — only visible ones, sorted by sort_order.
 final bannersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
-    final response = await SupabaseService.client.rpc('get_banners');
-    return List<Map<String, dynamic>>.from(response as List);
+    final response = await SupabaseService.client
+        .from('banners')
+        .select()
+        .eq('is_visible', true)
+        .order('sort_order', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
   } catch (_) {
     return [];
   }
@@ -15,8 +19,11 @@ final bannersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
 /// All banners for admin (including hidden).
 final adminBannersProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final response = await SupabaseService.client.rpc('get_all_banners');
-  return List<Map<String, dynamic>>.from(response as List);
+  final response = await SupabaseService.client
+      .from('banners')
+      .select()
+      .order('sort_order', ascending: true);
+  return List<Map<String, dynamic>>.from(response);
 });
 
 /// Banner actions notifier.
@@ -27,8 +34,13 @@ class BannersActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> createBanner(Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client
-          .rpc('create_banner', params: {'p_data': data});
+      final user = SupabaseService.currentUser;
+      await SupabaseService.client.from('banners').insert({
+        ...data,
+        'created_by': user?.id,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
       state = const AsyncValue.data(null);
       ref.invalidate(adminBannersProvider);
       ref.invalidate(bannersProvider);
@@ -42,8 +54,10 @@ class BannersActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateBanner(String id, Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client
-          .rpc('update_banner', params: {'p_id': id, 'p_data': data});
+      await SupabaseService.client.from('banners').update({
+        ...data,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
       state = const AsyncValue.data(null);
       ref.invalidate(adminBannersProvider);
       ref.invalidate(bannersProvider);
@@ -61,8 +75,7 @@ class BannersActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> deleteBanner(String id) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client
-          .rpc('delete_banner', params: {'p_id': id});
+      await SupabaseService.client.from('banners').delete().eq('id', id);
       state = const AsyncValue.data(null);
       ref.invalidate(adminBannersProvider);
       ref.invalidate(bannersProvider);
