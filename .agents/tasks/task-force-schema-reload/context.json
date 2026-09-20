@@ -1,0 +1,24 @@
+{
+  "project_type": "Flutter/Dart mobile app (Rexo) backed by Supabase (PostgreSQL + PostgREST). SQL migrations live in supabase/.",
+  "language": "Dart (Flutter) + SQL (PostgreSQL/PostgREST)",
+  "build_system": "Flutter (pub). NOT the focus of this task - no Dart build/verification is possible in this sandbox.",
+  "test_framework": "flutter test (not runnable here - Flutter/Dart not installed)",
+  "build_command": "flutter build (NOT runnable in sandbox - Flutter/Dart not installed)",
+  "test_command": "flutter test (NOT runnable in sandbox - Flutter/Dart not installed)",
+  "verification_instructions": "Code cannot be executed. Verify SQL by reading it, grepping key statements, and checking parenthesis/quote/dollar-quote balance. Confirm the deliverable SQL file ends with the two NOTIFY reload statements and that the throwaway table is created and dropped within the same script. Confirm no DROP TABLE targets the real jobs/job_applications/banners tables. Verify the runbook markdown is present and lists the step order.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "None required for this task. Deliverables are a .sql file and a .md runbook the USER runs manually in the Supabase Dashboard SQL Editor. Network is INTEGRATIONS_ONLY so the live DB is unreachable from the sandbox.",
+  "environment_constraints": "Network INTEGRATIONS_ONLY: cannot reach the live Supabase DB (host rbdswysknhzepawseotf.supabase.co). Flutter/Dart NOT installed: cannot build or run the app. Therefore all DB fixes ship as SQL files the USER runs in the Supabase SQL Editor, and all verification is static (read + grep + brace/quote balance). Only branch is Rexo-Kotlin; do NOT create branches or PRs - the orchestrator commits and pushes.",
+  "contribution_requirements": "Do NOT change the Flutter data-access layer: keep plain .from('jobs')/.from('banners')/.from('job_applications') identical to the working campaigns table. Do NOT create new user-facing tables. Do NOT touch lib/**/error_utils.dart (the DBG3 passthrough must stay). Do NOT drop or recreate the real jobs/job_applications/banners tables.",
+  "key_patterns": "The app's providers (lib/features/jobs/providers/jobs_provider.dart, lib/features/home/providers/banners_provider.dart) call SupabaseService.client.from('jobs'|'banners'|'job_applications'). campaigns loads fine through the identical .from() path, so the data-access code is correct. The failure is PGRST205: a stuck PostgREST schema cache that will not pick up jobs/job_applications/banners even though tables, columns, RLS and grants are all correct and identical to campaigns. Prior supabase/*.sql attempts (jobs_banners_LIKE_CAMPAIGNS.sql full rebuild, FIX_PGRST205_permanent.sql grants, RELOAD_SCHEMA_CACHE.sql plain NOTIFY, plus a project restart) did NOT fix it.",
+  "relevant_files": [
+    "supabase/FORCE_SCHEMA_RELOAD.sql (NEW - deliverable 1)",
+    "supabase/PGRST205_RUNBOOK.md (NEW - deliverable 2)",
+    "supabase/RELOAD_SCHEMA_CACHE.sql (existing prior attempt - plain NOTIFY, insufficient)",
+    "supabase/FIX_PGRST205_permanent.sql (existing prior attempt - grants, insufficient)",
+    "supabase/jobs_banners_LIKE_CAMPAIGNS.sql (existing prior attempt - full rebuild, insufficient)",
+    "lib/features/jobs/providers/jobs_provider.dart (data-access - MUST stay unchanged)",
+    "lib/features/home/providers/banners_provider.dart (data-access - MUST stay unchanged)"
+  ],
+  "directory_structure": "supabase/ holds all SQL migrations and fix scripts (the new deliverables go here). lib/features/jobs/ and lib/features/home/ hold the Flutter providers that call .from(). .agents/tasks/ holds task state."
+}
