@@ -16,6 +16,10 @@ class ErrorUtils {
 
     final message = error.toString().toLowerCase();
 
+    // TEMP DEBUG (v5): raw error to pinpoint the exact failing column/query.
+    return 'DBG5: ${error.toString()}';
+
+    // ignore: dead_code
     // Network/connection errors
     if (message.contains('socketexception') ||
         message.contains('connection refused') ||
