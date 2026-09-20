@@ -1,0 +1,22 @@
+{
+  "id": "FEAT-002",
+  "type": "docs",
+  "description": "Add clear, step-by-step user-facing instructions for running the PGRST205 fix, so the frustrated user has an unambiguous runbook. This can live as a top comment block inside supabase/FIX_PGRST205_permanent.sql AND/OR a short companion markdown note. The instructions must explain the diagnostic-first workflow, how to run the fix in the Supabase SQL Editor, what to expect, and the Dashboard fallback. Depends on FEAT-001 (the script must exist first).",
+  "status": "completed",
+  "steps": [
+    "At the very top of supabase/FIX_PGRST205_permanent.sql (above the diagnostic section), add a header comment block titled 'HOW TO USE THIS FILE' with numbered steps: (1) Open Supabase Dashboard -> SQL Editor. (2) OPTIONAL but recommended: copy-run only Section A (diagnostics) first and note that campaigns has anon/authenticated grants while jobs/job_applications/banners do not - that difference IS the bug. (3) Copy the WHOLE file and Run it once. (4) Wait ~10 seconds for PostgREST to reload. (5) In the Flutter app, pull-to-refresh / reopen the Jobs and Banners screens - the PGRST205 error should be gone. (6) If it still fails, run the Section E verification queries and follow the Dashboard Exposed-schemas + Restart-project fallback.",
+    "State plainly in the header WHY previous attempts failed: rebuilding tables and NOTIFY/restart never ADDED the missing table-level GRANTs to the anon/authenticated roles, which is exactly what PostgREST needs; this script adds them.",
+    "Keep the instructions concise and in plain language (the user is stressed); avoid jargon where possible and do not use em dashes."
+  ],
+  "acceptance_criteria": [
+    "supabase/FIX_PGRST205_permanent.sql begins with a 'HOW TO USE THIS FILE' numbered runbook covering: run diagnostics first, run the whole script, wait for reload, re-check the app, and the Dashboard fallback.",
+    "The header explains in one or two sentences why rebuilds + NOTIFY + restart did not fix it (missing GRANTs were never added).",
+    "No em dashes are used anywhere in the added text."
+  ],
+  "verification": [
+    "Read the header of supabase/FIX_PGRST205_permanent.sql and confirm the numbered runbook and the 'why previous attempts failed' explanation are present.",
+    "grep the file for absence of the em dash character to confirm none were introduced."
+  ],
+  "blocked_reason": null,
+  "findings": "Added the 'HOW TO USE THIS FILE' header runbook at the very top of supabase/FIX_PGRST205_permanent.sql (above Section A). Numbered steps cover: open SQL Editor, optionally run Section A diagnostics first (campaigns has anon/authenticated grants while jobs/job_applications/banners do not - that difference is the bug), run the whole file once (idempotent), wait ~10s for PostgREST reload, pull-to-refresh/reopen Jobs and Banners screens, and the Section E verification + Dashboard Exposed-schemas/Restart-project fallback. Includes a 'WHY DID THE PREVIOUS ATTEMPTS NOT WORK?' paragraph explaining that rebuilds + NOTIFY + restart never ADDED the missing table-level GRANTs that PostgREST needs. Plain language, no jargon-heavy phrasing, and verified zero em dashes in the file."
+}

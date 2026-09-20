@@ -1,0 +1,14 @@
+{
+  "task_id": "task-fix-pgrst205-permanent",
+  "task_description": "Permanently fix the PGRST205 'Could not find the table public.jobs in the schema cache' error affecting jobs, job_applications, and banners in the Flutter+Supabase app. Root cause: the newer tables were created without the table-level and sequence GRANTs to anon/authenticated/service_role that PostgREST requires to expose them (campaigns inherited these via Supabase default privileges, which is why it works with identical Flutter code). Deliver ONE definitive, idempotent SQL script at supabase/FIX_PGRST205_permanent.sql that runs a diagnostic first, then applies grants + schema USAGE + sequence grants + default privileges + ownership normalization + defensive RLS re-assertion, and ends with NOTIFY reload of schema and config, plus a clear user runbook. No Flutter data-fetch changes; leave the DBG3 passthrough in error_utils.dart.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Flutter/Dart not installed and network INTEGRATIONS_ONLY, so no build/test/docker is applicable; the deliverable is a static SQL script the user runs in the Supabase SQL Editor. Static verification passed: all required tokens present (GRANT USAGE, GRANT ALL ON the 3 tables, ALL SEQUENCES, ALTER DEFAULT PRIVILEGES, OWNER TO postgres x3, reload schema + reload config, diagnostic role_table_grants comparison, has_table_privilege verification, Exposed-schemas + Restart-project fallback). Parens balanced 62/62, zero em dashes, exactly 12 DROP POLICY IF EXISTS + 12 CREATE POLICY definitions, and zero CREATE/DROP TABLE for jobs/job_applications/banners. error_utils.dart DBG3 passthrough left intact. Only working-tree changes are supabase/FIX_PGRST205_permanent.sql and the task-state dir."
+  }
+}
