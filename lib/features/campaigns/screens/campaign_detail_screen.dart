@@ -47,10 +47,28 @@ class CampaignDetailScreen extends ConsumerWidget {
       bottomNavigationBar: campaignAsync.whenOrNull(
         data: (campaign) {
           if (campaign == null) return null;
-          return CampaignDetailBottomBar(campaignId: campaignId);
+          // Gate the sticky Apply CTA on the campaign's status/slot state,
+          // mirroring the Job Details screen's _ApplyBar. A Closed/inactive
+          // campaign must not present a live "Apply Now".
+          final status = (campaign['status'] as String? ?? '').toLowerCase();
+          final isClosed = status == 'closed' || status == 'inactive';
+          final filled = _asInt(campaign['filled_slots']) ?? 0;
+          final total = _asInt(campaign['total_slots']);
+          final isFull = total != null && total > 0 && filled >= total;
+          return CampaignDetailBottomBar(
+            campaignId: campaignId,
+            isClosed: isClosed,
+            isFull: isFull,
+          );
         },
       ),
     );
+  }
+
+  static int? _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return null;
   }
 
   Widget _buildNotFound(BuildContext context) {
@@ -1007,10 +1025,14 @@ class _ExpandableTextState extends State<_ExpandableText> {
 /// Sticky bottom apply bar — full-width orange Apply Now with a right arrow.
 class CampaignDetailBottomBar extends ConsumerWidget {
   final String campaignId;
+  final bool isClosed;
+  final bool isFull;
 
   const CampaignDetailBottomBar({
     super.key,
     required this.campaignId,
+    this.isClosed = false,
+    this.isFull = false,
   });
 
   @override
@@ -1040,25 +1062,49 @@ class CampaignDetailBottomBar extends ConsumerWidget {
           ),
         ],
       ),
-      child: hasApplied.when(
-        data: (applied) {
-          if (applied) {
-            return const _StatusButton(
-              label: 'Already Applied',
-              icon: Iconsax.tick_circle,
-              color: AppColors.success,
-            );
-          }
-          return _ApplyNowButton(
-            loading: false,
-            onPressed: () => context.push('/campaigns/$campaignId/apply'),
+      child: _buildButton(context, hasApplied),
+    );
+  }
+
+  Widget _buildButton(
+    BuildContext context,
+    AsyncValue<bool> hasApplied,
+  ) {
+    // Closed/inactive campaign — disabled neutral state, mirroring the Job
+    // Details screen so a Closed campaign never presents a live Apply CTA.
+    if (isClosed) {
+      return const _StatusButton(
+        label: 'Closed',
+        icon: Iconsax.slash,
+        color: AppColors.neutral,
+      );
+    }
+    // Slots full — disabled red state (parallels the Job Details gate).
+    if (isFull) {
+      return const _StatusButton(
+        label: 'Slots Full',
+        icon: Iconsax.slash,
+        color: AppColors.error,
+      );
+    }
+    return hasApplied.when(
+      data: (applied) {
+        if (applied) {
+          return const _StatusButton(
+            label: 'Already Applied',
+            icon: Iconsax.tick_circle,
+            color: AppColors.success,
           );
-        },
-        loading: () => const _ApplyNowButton(loading: true),
-        error: (_, __) => _ApplyNowButton(
+        }
+        return _ApplyNowButton(
           loading: false,
           onPressed: () => context.push('/campaigns/$campaignId/apply'),
-        ),
+        );
+      },
+      loading: () => const _ApplyNowButton(loading: true),
+      error: (_, __) => _ApplyNowButton(
+        loading: false,
+        onPressed: () => context.push('/campaigns/$campaignId/apply'),
       ),
     );
   }
