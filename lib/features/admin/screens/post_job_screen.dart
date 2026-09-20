@@ -143,9 +143,19 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       Navigator.of(context).pop(true);
     } else {
       final err = ref.read(jobsActionsProvider);
-      _showError(err.hasError
+      final sanitized = err.hasError
           ? ErrorUtils.sanitize(err.error)
-          : 'Could not save the job. Please try again.');
+          : 'Could not save the job. Please try again.';
+      // TODO(remove-debug): temporarily surface the raw insert error so we can
+      // diagnose the legacy campaigns-schema failure. Sanitized message stays
+      // first (normal UX); raw error is appended, truncated to ~300 chars.
+      if (err.hasError) {
+        final raw = err.error.toString();
+        final rawTrimmed = raw.length > 300 ? raw.substring(0, 300) : raw;
+        _showError('$sanitized\n[debug] $rawTrimmed');
+      } else {
+        _showError(sanitized);
+      }
     }
   }
 

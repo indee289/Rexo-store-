@@ -374,6 +374,22 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       final now = DateTime.now().toIso8601String();
+
+      // The live `campaigns` table is a quirky legacy table with many
+      // NOT-NULL-without-default and CHECK-constrained columns. This insert is
+      // intentionally MINIMAL: it sends only the columns we are confident exist
+      // and that the insert actually needs. Every remaining NOT-NULL / CHECK
+      // constraint that could still reject this row is relaxed by the companion
+      // migration supabase/POST_JOB_FIX.sql (run once in the Supabase SQL
+      // editor). Note: `payout_model: 'job'` here is an insert VALUE, not a
+      // server-side query filter — PostgREST only rejects .eq/.neq FILTERS on
+      // that column, so writing it as a row value is safe and required.
+      //
+      // `budget` mirrors the per-creator payout (a valid positive number)
+      // instead of 0, so that any NOT-NULL or CHECK (> 0) constraint on budget
+      // still accepts the row.
+      final payout = (data['payment_amount'] as num?)?.toDouble() ?? 0;
+      final budget = payout > 0 ? payout : 1;
       await SupabaseService.client.from('campaigns').insert({
         'title': data['title'],
         'description': data['description'],
@@ -393,7 +409,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         // fixed label (the job title also carries the real name).
         'brandName': 'Rexo',
         'status': 'active',
-        'budget': 0,
+        // Valid positive number (not 0) to survive any budget CHECK constraint.
+        'budget': budget,
+        // Only send snake_case created_at; the legacy camelCase createdAt is
+        // intentionally NOT written (POST_JOB_FIX.sql drops its NOT NULL).
         'created_at': now,
         'updated_at': now,
       });
