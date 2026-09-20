@@ -75,7 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset Password'),
+        title: const Text('Reset password'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Send Link'),
+            child: const Text('Send link'),
           ),
         ],
       ),

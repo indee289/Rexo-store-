@@ -151,7 +151,7 @@ class _SubmitTaskScreenState extends ConsumerState<SubmitTaskScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload failed: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

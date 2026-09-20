@@ -362,7 +362,7 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                     ),
                     error: (e, _) => Center(
                       child: Text(
-                        'Error: ${ErrorUtils.sanitize(e)}',
+                        ErrorUtils.sanitize(e),
                         style: TextStyle(
                             color: cs.onSurfaceVariant),
                       ),

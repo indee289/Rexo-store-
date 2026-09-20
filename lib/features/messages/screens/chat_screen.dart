@@ -68,12 +68,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (mounted) setState(() => _isSending = false);
   }
 
-  void _showComingSoon(String kind) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$kind calls coming soon')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final messagesAsync =
@@ -122,6 +116,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       backgroundColor: pageBg,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: pageBg,
         elevation: 0,
@@ -183,16 +178,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
         actions: [
-          PremiumIconButton(
-            icon: Iconsax.call,
-            tooltip: 'Voice call',
-            onPressed: () => _showComingSoon('Voice'),
-          ),
-          PremiumIconButton(
-            icon: Iconsax.video,
-            tooltip: 'Video call',
-            onPressed: () => _showComingSoon('Video'),
-          ),
           const SizedBox(width: AppSpacing.sm),
         ],
       ),

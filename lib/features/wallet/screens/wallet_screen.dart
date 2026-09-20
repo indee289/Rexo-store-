@@ -143,13 +143,17 @@ class WalletScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              _BalanceStat(
-                  label: 'Escrow',
-                  value: '₹${_formatAmount(escrow)}'),
+              Expanded(
+                child: _BalanceStat(
+                    label: 'Escrow',
+                    value: '₹${_formatAmount(escrow)}'),
+              ),
               const SizedBox(width: AppSpacing.xl),
-              _BalanceStat(
-                  label: 'Earnings',
-                  value: '₹${_formatAmount(earnings)}'),
+              Expanded(
+                child: _BalanceStat(
+                    label: 'Earnings',
+                    value: '₹${_formatAmount(earnings)}'),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -326,6 +330,8 @@ class _BalanceStat extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
           label,
@@ -333,6 +339,8 @@ class _BalanceStat extends StatelessWidget {
             fontSize: 12,
             color: Colors.white70,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

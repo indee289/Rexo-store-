@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
 /// Default subscription plans returned when DB is empty or unavailable
@@ -123,8 +124,7 @@ final subscriptionPlansProvider =
     // each name is kept.
     return _dedupByName(_dedupById(plans));
   } catch (e) {
-    debugPrint('Subscriptions error: $e');
-    // Return default plans on error (e.g., table doesn't exist or RLS issue)
+    // Silently fall back to default plans — do not log raw exceptions to console
     return _dedupByName(_dedupById(_defaultPlans));
   }
 });
@@ -151,8 +151,7 @@ final userSubscriptionsProvider =
     final byId = _dedupById(subs);
     return _dedupById(byId, key: 'plan_id');
   } catch (e) {
-    debugPrint('Subscriptions error: $e');
-    // Return empty list on error
+    // Silently return empty list — do not log raw exceptions to console
     return [];
   }
 });
@@ -199,7 +198,7 @@ final userSubscriptionPaymentsProvider =
 
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    debugPrint('Subscription payments error: $e');
+    // Silently return empty list — do not log raw exceptions to console
     return [];
   }
 });
@@ -258,7 +257,7 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionActionState> {
     } catch (e) {
       state = state.copyWith(
         isProcessing: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }
@@ -278,7 +277,7 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionActionState> {
     } catch (e) {
       state = state.copyWith(
         isProcessing: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }

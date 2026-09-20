@@ -40,7 +40,7 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Raise Dispute', showBack: true),
+      appBar: PremiumAppBar(title: 'Raise dispute', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
@@ -136,7 +136,7 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
 
               // Submit button
               PremiumButton(
-                label: 'Submit Dispute',
+                label: 'Submit dispute',
                 gradient: true,
                 loading: formState.isSubmitting,
                 onPressed: formState.isSubmitting ? null : _handleSubmit,

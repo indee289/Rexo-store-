@@ -50,7 +50,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         backgroundColor: AppColors.primary,
         icon: const Icon(Iconsax.edit, color: Colors.white, size: 20),
         label: Text(
-          'Add Review',
+          'Add review',
           style: AppTextStyles.labelLarge.copyWith(
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -128,7 +128,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
 
     showPremiumSheet<void>(
       context: context,
-      title: 'Write a Review',
+      title: 'Write a review',
       child: StatefulBuilder(
         builder: (context, setModalState) {
           return Column(
@@ -153,7 +153,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
               PremiumButton(
-                label: 'Submit Review',
+                label: 'Submit review',
                 gradient: true,
                 onPressed: selectedRating > 0
                     ? () => _submitReview(

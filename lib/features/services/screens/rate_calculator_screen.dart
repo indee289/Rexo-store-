@@ -45,7 +45,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Rate Calculator', showBack: true),
+      appBar: PremiumAppBar(title: 'Rate calculator', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -68,7 +68,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Calculate Your Rate',
+                    'Calculate your rate',
                     style: AppTextStyles.h5.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: AppSpacing.xs),

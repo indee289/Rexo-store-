@@ -302,6 +302,8 @@ class _BannerSlide extends StatelessWidget {
                           color: Colors.white,
                           letterSpacing: -0.4,
                         ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -311,6 +313,8 @@ class _BannerSlide extends StatelessWidget {
                           height: 1.3,
                           color: Colors.white.withOpacity(0.9),
                         ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

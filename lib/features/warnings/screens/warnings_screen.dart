@@ -134,7 +134,7 @@ class WarningsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           if (appealStatus == 'none')
             PremiumButton(
-              label: 'Submit Appeal',
+              label: 'Submit appeal',
               variant: PremiumButtonVariant.outline,
               icon: Iconsax.message_text,
               onPressed: () =>
@@ -309,7 +309,7 @@ class WarningsScreen extends ConsumerWidget {
 
     showPremiumSheet<void>(
       context: context,
-      title: 'Submit Appeal',
+      title: 'Submit appeal',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,7 +332,7 @@ class WarningsScreen extends ConsumerWidget {
             builder: (context, ref, _) {
               final appealState = ref.watch(appealNotifierProvider);
               return PremiumButton(
-                label: appealState.isLoading ? 'Submitting...' : 'Submit Appeal',
+                label: appealState.isLoading ? 'Submitting...' : 'Submit appeal',
                 gradient: true,
                 loading: appealState.isLoading,
                 onPressed: appealState.isLoading

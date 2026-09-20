@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../shop/providers/shop_provider.dart';
 import '../providers/categories_provider.dart';
+
+/// Local category selection state — used by any screen that embeds
+/// [CategoryFilterWidget]. Screens that need to react to the selection
+/// should watch this provider directly.
+final categoryFilterProvider = StateProvider<String>((ref) => 'All');
 
 /// Horizontal scrollable chip list loaded from product_categories DB table.
 /// Falls back to 'All' if categories is empty.
@@ -14,11 +18,10 @@ class CategoryFilterWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(productCategoriesProvider);
-    final selectedCategory = ref.watch(shopCategoryFilter);
+    final selectedCategory = ref.watch(categoryFilterProvider);
 
     return categoriesAsync.when(
       data: (categories) {
-        // Build list with 'All' as first item
         final categoryNames = <String>['All'];
         for (final cat in categories) {
           final name = cat['name'] as String? ?? '';
@@ -39,7 +42,7 @@ class CategoryFilterWidget extends ConsumerWidget {
 
               return GestureDetector(
                 onTap: () {
-                  ref.read(shopCategoryFilter.notifier).state = category;
+                  ref.read(categoryFilterProvider.notifier).state = category;
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -47,16 +50,20 @@ class CategoryFilterWidget extends ConsumerWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        isSelected ? AppColors.primary : Theme.of(context).colorScheme.surface,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color:
-                          isSelected ? AppColors.primary : Theme.of(context).dividerColor,
+                      color: isSelected
+                          ? AppColors.primary
+                          : Theme.of(context).dividerColor,
                     ),
                   ),
                   child: Text(
                     category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.labelMedium.copyWith(
                       color: isSelected
                           ? Colors.white
@@ -90,12 +97,11 @@ class CategoryFilterWidget extends ConsumerWidget {
         ),
       ),
       error: (_, __) {
-        // Fallback: show 'All' only
         return SizedBox(
           height: 40,
           child: GestureDetector(
             onTap: () {
-              ref.read(shopCategoryFilter.notifier).state = 'All';
+              ref.read(categoryFilterProvider.notifier).state = 'All';
             },
             child: Container(
               padding: const EdgeInsets.symmetric(
@@ -108,6 +114,8 @@ class CategoryFilterWidget extends ConsumerWidget {
               ),
               child: Text(
                 'All',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.labelMedium.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

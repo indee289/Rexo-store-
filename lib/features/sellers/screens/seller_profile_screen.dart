@@ -10,12 +10,9 @@ import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_card.dart';
-import '../../../core/widgets/role_badge.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../reviews/widgets/star_rating_widget.dart';
-import '../../shop/widgets/product_card.dart';
 import '../providers/sellers_provider.dart';
 
 class SellerProfileScreen extends ConsumerWidget {
@@ -26,15 +23,14 @@ class SellerProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sellerAsync = ref.watch(sellerProfileProvider(sellerId));
-    final productsAsync = ref.watch(sellerProductsProvider(sellerId));
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Seller Profile', showBack: true),
+      appBar: PremiumAppBar(title: 'Seller profile', showBack: true),
       body: sellerAsync.when(
         data: (seller) {
           if (seller == null) return _buildNotFound(context);
-          return _buildContent(context, seller, productsAsync);
+          return _buildContent(context, seller);
         },
         loading: () => const ShimmerLoading(),
         error: (error, _) => _buildError(ref, ErrorUtils.sanitize(error)),
@@ -45,7 +41,6 @@ class SellerProfileScreen extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     Map<String, dynamic> seller,
-    AsyncValue<List<Map<String, dynamic>>> productsAsync,
   ) {
     final storeName = seller['store_name'] as String? ?? 'Store';
     final description = seller['description'] as String? ?? '';
@@ -59,12 +54,10 @@ class SellerProfileScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Seller header
           PremiumCard(
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
               children: [
-                // Logo
                 PremiumAvatar(
                   imageUrl: logoUrl,
                   name: storeName,
@@ -72,7 +65,6 @@ class SellerProfileScreen extends ConsumerWidget {
                   isVerified: isVerified,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                // Store name + verified
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -81,6 +73,8 @@ class SellerProfileScreen extends ConsumerWidget {
                         storeName,
                         style: AppTextStyles.h5,
                         textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (isVerified) ...[
@@ -104,7 +98,6 @@ class SellerProfileScreen extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.lg),
-                // Stats row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -119,7 +112,7 @@ class SellerProfileScreen extends ConsumerWidget {
                       color: Theme.of(context).dividerColor,
                     ),
                     StatPill(
-                      icon: Iconsax.shopping_bag,
+                      icon: Iconsax.bag_2,
                       value: '$totalSales',
                       label: 'Sales',
                     ),
@@ -130,42 +123,6 @@ class SellerProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Products section
-          Text('Products', style: AppTextStyles.h6),
-          const SizedBox(height: AppSpacing.md),
-          productsAsync.when(
-            data: (products) {
-              if (products.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(AppSpacing.xl),
-                  child: EmptyState(
-                    icon: Iconsax.shopping_bag,
-                    title: 'No products available',
-                  ),
-                );
-              }
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: AppSpacing.md,
-                  crossAxisSpacing: AppSpacing.md,
-                  childAspectRatio: 0.7,
-                ),
-                itemCount: products.length > 6 ? 6 : products.length,
-                itemBuilder: (context, index) =>
-                    ProductCard(product: products[index]),
-              );
-            },
-            loading: () => const ShimmerCard(height: 200),
-            error: (_, __) => Text(
-              'Failed to load products',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
-            ),
-          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -174,9 +131,9 @@ class SellerProfileScreen extends ConsumerWidget {
 
   Widget _buildNotFound(BuildContext context) {
     return EmptyState(
-      icon: Iconsax.shop,
+      icon: Iconsax.warning_2,
       title: 'Seller not found',
-      ctaLabel: 'Go Back',
+      ctaLabel: 'Go back',
       onCta: () => context.pop(),
     );
   }

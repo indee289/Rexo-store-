@@ -696,20 +696,29 @@ class _DetailsCard extends StatelessWidget {
                 children: [
                   Icon(rows[i].icon, size: 18, color: textSecondary),
                   const SizedBox(width: AppSpacing.md),
-                  Text(
-                    rows[i].label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textSecondary,
+                  Flexible(
+                    child: Text(
+                      rows[i].label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const Spacer(),
-                  Text(
-                    rows[i].value,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: rows[i].valueColor ?? textPrimary,
+                  Flexible(
+                    child: Text(
+                      rows[i].value,
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: rows[i].valueColor ?? textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

@@ -6,6 +6,7 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
@@ -393,7 +394,7 @@ class _LinkedAccountsScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

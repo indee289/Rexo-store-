@@ -4,6 +4,7 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/demo_asset_field.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
@@ -215,7 +216,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

@@ -839,7 +839,7 @@ class _StatusBadge extends StatelessWidget {
       case 'applied':
         return _BadgeConfig(
           label: 'Applied',
-          bg: isDark ? AppColors.darkSurfaceAlt : const Color(0xFFF3F4F6),
+          bg: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
           fg: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
         );
       case 'submitted':
@@ -863,7 +863,7 @@ class _StatusBadge extends StatelessWidget {
       default:
         return _BadgeConfig(
           label: status,
-          bg: isDark ? AppColors.darkSurfaceAlt : const Color(0xFFF3F4F6),
+          bg: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
           fg: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
         );
     }

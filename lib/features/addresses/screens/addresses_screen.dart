@@ -175,7 +175,7 @@ class AddressesScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Address', style: AppTextStyles.h6),
+        title: Text('Delete address', style: AppTextStyles.h6),
         content: Text(
           'Are you sure you want to delete this address?',
           style: AppTextStyles.bodyMedium,

@@ -8,6 +8,7 @@ import '../icons/app_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
+import '../utils/error_utils.dart';
 import '../../services/r2_storage_service.dart';
 import '../../services/supabase_service.dart';
 import 'image_upload_field.dart';
@@ -221,7 +222,7 @@ class _DemoAssetFieldState extends State<DemoAssetField> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload failed: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

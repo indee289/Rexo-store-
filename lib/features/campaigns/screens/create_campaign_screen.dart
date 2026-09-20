@@ -166,7 +166,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: PremiumAppBar(
-        title: 'Create Campaign',
+        title: 'Create campaign',
         showBack: true,
         onBack: () => context.pop(),
       ),
@@ -356,7 +356,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
               // Submit button
               PremiumButton(
-                label: 'Create Campaign',
+                label: 'Create campaign',
                 icon: Iconsax.add_circle,
                 gradient: true,
                 loading: _isSubmitting,

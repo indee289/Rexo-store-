@@ -123,7 +123,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
 
             // Image picker area
             Text(
-              'Upload Document',
+              'Upload document',
               style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -191,7 +191,7 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
 
             // Upload button
             PremiumButton(
-              label: 'Upload Document',
+              label: 'Upload document',
               gradient: true,
               loading: _isUploading,
               onPressed: _selectedFile != null && !_isUploading
@@ -293,11 +293,15 @@ class _KycUploadScreenState extends ConsumerState<KycUploadScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  docType.toUpperCase(),
+                  docType.isNotEmpty
+                      ? docType[0].toUpperCase() + docType.substring(1).toLowerCase().replaceAll('_', ' ')
+                      : '',
                   style: AppTextStyles.labelMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (createdAt.isNotEmpty)
                   Text(

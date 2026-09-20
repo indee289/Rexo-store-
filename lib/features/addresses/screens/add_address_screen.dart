@@ -192,7 +192,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
               const SizedBox(height: AppSpacing.xxl),
               // Save button
               PremiumButton(
-                label: _isEditing ? 'Update Address' : 'Save Address',
+                label: _isEditing ? 'Update address' : 'Save address',
                 gradient: true,
                 loading: _isSaving,
                 onPressed: _isSaving ? null : _saveAddress,

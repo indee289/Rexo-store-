@@ -186,7 +186,7 @@ class FeaturedCampaignCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFFF6B81),
+                    color: AppColors.primaryLight,
                   ),
                 ),
               ),
@@ -200,7 +200,7 @@ class FeaturedCampaignCard extends StatelessWidget {
   Widget _thumbPlaceholder() => Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFE9EE), Color(0xFFFFF4F6)],
+            colors: [AppColors.primaryBg, AppColors.surface],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

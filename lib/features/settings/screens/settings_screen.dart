@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -352,6 +351,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       fontWeight: FontWeight.w700,
                       color: _textPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (handle.isNotEmpty)
                     Text(
@@ -360,6 +361,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         fontSize: 13,
                         color: _textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 4),
                   Container(
@@ -547,8 +550,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          // Use padding instead of fixed height so the row grows with
+          // the system font scale instead of clipping text.
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(color: _dividerColor, width: 1)),
@@ -568,7 +573,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
@@ -577,18 +582,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         fontWeight: FontWeight.w500,
                         color: _textPrimary,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (subtitle != null)
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
                       Text(
                         subtitle,
                         style: TextStyle(
                           fontSize: 12,
                           color: _textSecondary,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ],
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               trailing ??
                   Icon(
                     Icons.chevron_right,
@@ -612,8 +624,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      // Use constraints + padding instead of fixed height so the row grows
+      // with the system font scale instead of clipping text.
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         border: Border(
             bottom: BorderSide(color: _dividerColor, width: 1)),
@@ -633,7 +647,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
@@ -642,17 +656,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     fontWeight: FontWeight.w500,
                     color: _textPrimary,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
                     color: _textSecondary,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           AppToggle(value: value, onChanged: onChanged),
         ],
       ),
@@ -777,10 +797,4 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-// AppMotion stub kept for import compatibility
-class AppMotion {
-  static const Duration fast = Duration(milliseconds: 150);
-  static const Duration base = Duration(milliseconds: 300);
-  static const double pressScale = 0.97;
-  static const Curve standard = Curves.easeOutCubic;
-}
+

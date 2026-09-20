@@ -88,7 +88,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
       setState(() {
         _isPreparing = false;
         _errorMessage =
-            'Could not start verification. Please try again. (${e.toString()})';
+            'Could not start verification. Please try again.';
       });
     }
   }

@@ -22,7 +22,7 @@ class ServicesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Creator Services', showBack: true),
+      appBar: PremiumAppBar(title: 'Creator services', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -40,7 +40,7 @@ class ServicesScreen extends ConsumerWidget {
                 _buildServiceCard(
                   context,
                   icon: Iconsax.document_text,
-                  title: 'Media Kit',
+                  title: 'Media kit',
                   subtitle: 'Generate your media kit',
                   color: AppColors.roleBrand,
                   onTap: () => context.push('/services/media-kit'),
@@ -48,33 +48,17 @@ class ServicesScreen extends ConsumerWidget {
                 _buildServiceCard(
                   context,
                   icon: Iconsax.calculator,
-                  title: 'Rate Calculator',
+                  title: 'Rate calculator',
                   subtitle: 'Find your ideal rate',
                   color: AppColors.success,
                   onTap: () => context.push('/services/rate-calculator'),
-                ),
-                _buildServiceCard(
-                  context,
-                  icon: Iconsax.shop,
-                  title: 'UGC Marketplace',
-                  subtitle: 'Creator services',
-                  color: AppColors.primary,
-                  onTap: null,
-                ),
-                _buildServiceCard(
-                  context,
-                  icon: Iconsax.chart_2,
-                  title: 'Analytics',
-                  subtitle: 'Campaign stats',
-                  color: AppColors.roleAdmin,
-                  onTap: null,
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
 
             // UGC Marketplace listings
-            Text('UGC Marketplace', style: AppTextStyles.h6),
+            Text('UGC marketplace', style: AppTextStyles.h6),
             const SizedBox(height: AppSpacing.md),
             servicesAsync.when(
               data: (services) {

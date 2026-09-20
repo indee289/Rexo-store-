@@ -216,7 +216,10 @@ class _SubscriptionPaymentScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(widget.planName, style: AppTextStyles.h6),
+                          Text(widget.planName,
+                              style: AppTextStyles.h6,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
                           Text('${widget.durationDays} days',
                               style: AppTextStyles.caption),
                         ],
@@ -367,7 +370,7 @@ class _SubscriptionPaymentScreenState
                             strokeWidth: 2,
                           ),
                         )
-                      : Text('Submit Payment', style: AppTextStyles.button),
+                      : Text('Submit payment', style: AppTextStyles.button),
                 ),
               ),
             ],

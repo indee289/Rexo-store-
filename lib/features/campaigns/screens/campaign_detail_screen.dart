@@ -797,6 +797,8 @@ class _BrandRow extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: textPrimary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
@@ -805,6 +807,8 @@ class _BrandRow extends StatelessWidget {
                   fontSize: 12,
                   color: textSecondary,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

@@ -24,7 +24,7 @@ class CouponsScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: PremiumAppBar(
-          title: 'Coupons & Rewards',
+          title: 'Coupons & rewards',
           showBack: true,
           bottom: TabBar(
             labelColor: AppColors.primary,
@@ -91,7 +91,7 @@ class _CouponsTab extends ConsumerWidget {
 
     String discountLabel;
     if (discountType == 'percentage') {
-      discountLabel = '${discountValue.toInt()}% OFF';
+      discountLabel = '${discountValue.toInt()}% off';
     } else {
       discountLabel = '\u20B9${discountValue.toStringAsFixed(0)} OFF';
     }
@@ -229,7 +229,7 @@ class _RewardsTab extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Redeem Points', style: AppTextStyles.h6),
+                    Text('Redeem points', style: AppTextStyles.h6),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Use your reward points for discounts on your next purchase. 100 points = \u20B910 off.',
@@ -251,7 +251,7 @@ class _RewardsTab extends ConsumerWidget {
                           ),
                         ),
                         child: Text(
-                          points >= 100 ? 'Redeem Now' : 'Need 100+ points',
+                          points >= 100 ? 'Redeem now' : 'Need 100+ points',
                           style: AppTextStyles.labelLarge.copyWith(
                             color: points >= 100
                                 ? AppColors.primary

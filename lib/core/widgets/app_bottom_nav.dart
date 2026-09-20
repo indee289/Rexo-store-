@@ -47,17 +47,19 @@ class AppBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: List.generate(
-              _items.length,
-              (i) => Expanded(
-                child: _NavItem(
-                  item: _items[i],
-                  active: currentIndex == i,
-                  inactiveColor: inactive,
-                  onTap: () => onTap(i),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: IntrinsicHeight(
+            child: Row(
+              children: List.generate(
+                _items.length,
+                (i) => Expanded(
+                  child: _NavItem(
+                    item: _items[i],
+                    active: currentIndex == i,
+                    inactiveColor: inactive,
+                    onTap: () => onTap(i),
+                  ),
                 ),
               ),
             ),
@@ -119,6 +121,8 @@ class _NavItem extends StatelessWidget {
               fontWeight: active ? FontWeight.w700 : FontWeight.w500,
               color: active ? AppColors.primary : inactiveColor,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

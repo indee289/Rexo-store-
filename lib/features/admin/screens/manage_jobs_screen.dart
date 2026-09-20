@@ -388,7 +388,7 @@ class _StatusChip extends StatelessWidget {
         fg = AppColors.accentPurple;
         break;
       default:
-        bg = isDark ? AppColors.darkSurfaceAlt : const Color(0xFFF3F4F6);
+        bg = isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
         fg = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     }
 

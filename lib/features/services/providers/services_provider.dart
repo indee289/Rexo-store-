@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
 /// Provider for user's service listings
@@ -94,7 +95,7 @@ class ServiceNotifier extends StateNotifier<ServiceFormState> {
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }
@@ -117,7 +118,7 @@ class ServiceNotifier extends StateNotifier<ServiceFormState> {
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }

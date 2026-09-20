@@ -161,7 +161,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Action failed: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

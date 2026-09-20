@@ -321,7 +321,7 @@ class SessionsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Logout All Sessions', style: AppTextStyles.h6),
+        title: Text('Logout all sessions', style: AppTextStyles.h6),
         content: Text(
           'This will terminate all sessions except your current one. Continue?',
           style: AppTextStyles.bodyMedium,

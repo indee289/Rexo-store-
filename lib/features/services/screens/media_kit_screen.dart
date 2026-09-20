@@ -24,7 +24,7 @@ class MediaKitScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Media Kit', showBack: true),
+      appBar: PremiumAppBar(title: 'Media kit', showBack: true),
       body: profileAsync.when(
         data: (profileState) => _buildContent(context, profileState),
         loading: () => const ShimmerLoading(),
@@ -182,7 +182,7 @@ class MediaKitScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 PremiumButton(
-                  label: 'Share Media Kit',
+                  label: 'Share media kit',
                   variant: PremiumButtonVariant.outline,
                   icon: Iconsax.export_1,
                   onPressed: () {},

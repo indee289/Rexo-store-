@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/moderation_provider.dart';
@@ -28,7 +29,12 @@ class ModerationScreen extends ConsumerWidget {
         return _buildAdminContent(context, ref);
       },
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+            strokeWidth: 2.5,
+          ),
+        ),
       ),
       error: (_, __) => _buildAccessDenied(context),
     );
@@ -40,7 +46,7 @@ class ModerationScreen extends ConsumerWidget {
       appBar: PremiumAppBar(title: 'Moderation', showBack: true),
       body: const EmptyState(
         icon: Iconsax.lock,
-        title: 'Access Denied',
+        title: 'Access denied',
         subtitle: 'Only administrators can access moderation tools.',
       ),
     );
@@ -176,48 +182,27 @@ class ModerationScreen extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: PremiumButton(
+                  label: 'Reject',
+                  variant: PremiumButtonVariant.outline,
+                  expand: true,
                   onPressed: () {
                     ref
                         .read(moderationActionProvider.notifier)
                         .rejectItem(itemId);
                   },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.allSm,
-                    ),
-                  ),
-                  child: Text(
-                    'Reject',
-                    style: AppTextStyles.labelMedium
-                        .copyWith(fontWeight: FontWeight.w600),
-                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: ElevatedButton(
+                child: PremiumButton(
+                  label: 'Approve',
+                  expand: true,
                   onPressed: () {
                     ref
                         .read(moderationActionProvider.notifier)
                         .approveItem(itemId);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.allSm,
-                    ),
-                  ),
-                  child: Text(
-                    'Approve',
-                    style: AppTextStyles.labelMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
                 ),
               ),
             ],

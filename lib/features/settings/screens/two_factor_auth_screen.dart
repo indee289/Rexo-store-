@@ -726,7 +726,7 @@ class _TwoFactorAuthScreenState
               shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.allMd),
             ),
-            child: const Text('Cancel Setup'),
+            child: const Text('Cancel setup'),
           ),
         ),
       ],

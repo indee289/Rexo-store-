@@ -439,8 +439,9 @@ class _GradientButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 44,
+        constraints: const BoxConstraints(minHeight: 44),
         alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
           borderRadius: AppRadius.allMd,
@@ -458,11 +459,17 @@ class _GradientButton extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: Colors.white),
             const SizedBox(width: 6),
-            Text(label,
+            Flexible(
+              child: Text(
+                label,
                 style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white)),
+                    color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
@@ -484,8 +491,9 @@ class _TonalButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 44,
+        constraints: const BoxConstraints(minHeight: 44),
         alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.primary.withOpacity(isDark ? 0.18 : 0.10),
           borderRadius: AppRadius.allMd,
@@ -495,11 +503,17 @@ class _TonalButton extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: AppColors.primary),
             const SizedBox(width: 6),
-            Text(label,
+            Flexible(
+              child: Text(
+                label,
                 style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
+                    color: AppColors.primary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),

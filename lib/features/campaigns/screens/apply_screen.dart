@@ -312,7 +312,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
               // Submit button
               PremiumButton(
-                label: 'Submit Application',
+                label: 'Submit application',
                 icon: Iconsax.send_2,
                 gradient: true,
                 loading: _isSubmitting,

@@ -233,19 +233,21 @@ class SecurityLogsScreen extends ConsumerWidget {
         return _EventConfig(
           icon: Iconsax.close_circle,
           color: AppColors.error,
-          label: 'Failed Login',
+          label: 'Failed login',
         );
       case 'password_change':
         return const _EventConfig(
           icon: Iconsax.lock,
-          color: AppColors.roleBrand,
-          label: 'Password Changed',
+          color: AppColors.warning,
+          label: 'Password changed',
         );
       default:
         return _EventConfig(
           icon: Iconsax.shield_tick,
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          label: eventType.replaceAll('_', ' ').toUpperCase(),
+          label: eventType.replaceAll('_', ' ').split(' ').map(
+              (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}' : w
+            ).join(' '),
         );
     }
   }
