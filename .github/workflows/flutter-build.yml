@@ -114,8 +114,13 @@ jobs:
             --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" \
             --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL_APP_ID"
 
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/Rexoumpire.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Rexoumpire
+          path: build/app/outputs/flutter-apk/Rexoumpire.apk

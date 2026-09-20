@@ -507,7 +507,6 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               // Submit Button
               SizedBox(
                 width: double.infinity,
-                height: 52,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _handleSubmit,
                   style: ElevatedButton.styleFrom(
@@ -610,8 +609,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     return GestureDetector(
       onTap: _pickDeadline,
       child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
@@ -630,6 +629,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                       ? theme.colorScheme.onSurface
                       : theme.colorScheme.onSurfaceVariant,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Icon(Iconsax.arrow_down_1,

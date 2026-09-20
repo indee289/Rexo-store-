@@ -270,8 +270,8 @@ class _TwoFactorAuthScreenState
           children: [
             // ── AppBar ────────────────────────────────────────────────────
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               color: _pageBg,
               child: Row(
                 children: [
@@ -459,12 +459,13 @@ class _TwoFactorAuthScreenState
         ),
         const SizedBox(height: AppSpacing.xl),
         SizedBox(
-          height: 52,
+          width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _isEnrolling ? null : _enrollMfa,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 52),
               shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.allMd),
             ),
@@ -683,12 +684,12 @@ class _TwoFactorAuthScreenState
         const SizedBox(height: AppSpacing.lg),
         SizedBox(
           width: double.infinity,
-          height: 52,
           child: ElevatedButton(
             onPressed: _isVerifying ? null : _verifyOtp,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 52),
               shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.allMd),
             ),
@@ -708,7 +709,6 @@ class _TwoFactorAuthScreenState
         const SizedBox(height: AppSpacing.md),
         SizedBox(
           width: double.infinity,
-          height: 46,
           child: OutlinedButton(
             onPressed: () {
               setState(() {
@@ -723,6 +723,7 @@ class _TwoFactorAuthScreenState
             style: OutlinedButton.styleFrom(
               foregroundColor: _cs.onSurfaceVariant,
               side: BorderSide(color: _borderColor),
+              minimumSize: const Size(double.infinity, 46),
               shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.allMd),
             ),
@@ -778,7 +779,7 @@ class _TwoFactorAuthScreenState
         ),
         const SizedBox(height: AppSpacing.xl),
         SizedBox(
-          height: 52,
+          width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _isUnenrolling ? null : _unenrollMfa,
             icon: _isUnenrolling
@@ -796,6 +797,7 @@ class _TwoFactorAuthScreenState
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.error,
               side: const BorderSide(color: AppColors.error),
+              minimumSize: const Size(double.infinity, 52),
               shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.allMd),
             ),

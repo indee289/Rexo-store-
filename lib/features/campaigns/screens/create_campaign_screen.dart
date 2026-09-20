@@ -395,8 +395,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     return GestureDetector(
       onTap: _pickDeadline,
       child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: AppRadius.allMd,
@@ -415,6 +415,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                       ? theme.colorScheme.onSurface
                       : theme.colorScheme.onSurfaceVariant,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Icon(Iconsax.arrow_down_1,
@@ -432,7 +434,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   }) {
     final theme = Theme.of(context);
     return Container(
-      height: 52,
+      constraints: const BoxConstraints(minHeight: 52),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,

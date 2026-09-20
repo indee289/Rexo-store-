@@ -1028,9 +1028,10 @@ class _ApplyNowButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: loading ? null : onPressed,
       child: Container(
-        height: 52,
+        constraints: const BoxConstraints(minHeight: 52),
         width: double.infinity,
         alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         decoration: BoxDecoration(
           color: AppColors.accentOrange,
           borderRadius: AppRadius.allMd,
@@ -1087,9 +1088,10 @@ class _StatusButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
+      constraints: const BoxConstraints(minHeight: 52),
       width: double.infinity,
       alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
         borderRadius: AppRadius.allMd,

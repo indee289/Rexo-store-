@@ -83,10 +83,10 @@ class _PremiumButtonState extends State<PremiumButton> {
           );
 
     Widget surface = Container(
-      height: _height,
+      constraints: const BoxConstraints(minHeight: _height),
       width: widget.expand ? double.infinity : null,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: style.fill,
         gradient: style.gradientDecoration,

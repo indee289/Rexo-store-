@@ -709,7 +709,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: SizedBox(
-          height: 52,
+          width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

@@ -29,8 +29,8 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             // ── AppBar ────────────────────────────────────────────────────
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: pageBg,
               child: Row(
                 children: [
@@ -43,6 +43,8 @@ class DashboardScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                         color: cs.onSurface,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   GestureDetector(
@@ -96,7 +98,7 @@ class DashboardScreen extends ConsumerWidget {
                                   const NeverScrollableScrollPhysics(),
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio: 1.4,
+                              childAspectRatio: 1.3,
                               children: [
                                 _StatCard(
                                   label: 'Total Users',
@@ -252,29 +254,34 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
               borderRadius: AppRadius.allSm,
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const Spacer(),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w700,
               color: cs.onSurface,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               color: cs.onSurfaceVariant,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -299,7 +306,8 @@ class _QuickAction extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 52,
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.primary.withOpacity(
                 Theme.of(context).brightness == Brightness.dark ? 0.14 : 0.08),
@@ -308,6 +316,7 @@ class _QuickAction extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 16, color: AppColors.primary),
               const SizedBox(height: 2),
@@ -318,6 +327,9 @@ class _QuickAction extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ],
           ),

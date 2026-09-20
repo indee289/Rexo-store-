@@ -221,6 +221,7 @@ class _ActionTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: PremiumCard(
         onTap: onTap,
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             Container(
@@ -236,6 +237,7 @@ class _ActionTile extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     title,
@@ -244,6 +246,8 @@ class _ActionTile extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: theme.colorScheme.onSurface,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     subtitle,
@@ -251,10 +255,13 @@ class _ActionTile extends StatelessWidget {
                       fontSize: 12,
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Icon(
               Iconsax.arrow_right_3,
               color: theme.colorScheme.onSurface.withOpacity(0.4),

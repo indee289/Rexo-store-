@@ -50,8 +50,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             // ── AppBar ────────────────────────────────────────────────────
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               color: _pageBg,
               child: Row(
                 children: [

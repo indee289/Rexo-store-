@@ -247,8 +247,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           children: [
             // ── AppBar ────────────────────────────────────────────────────
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: _pageBg,
               child: Row(
                 children: [

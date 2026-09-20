@@ -43,19 +43,24 @@ class DepositQueueScreen extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: PremiumCard(
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Deposit #${deposit['id']?.toString().substring(0, 8) ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              'Deposit #${deposit['id']?.toString().substring(0, 8) ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             '\u20B9${deposit['amount'] ?? 0}',
                             style: const TextStyle(

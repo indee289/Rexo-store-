@@ -233,6 +233,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: PremiumCard(
                         onTap: () => _showUserActions(context, user),
+                        padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             CircleAvatar(
@@ -253,6 +254,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     user['name'] ?? 'Unknown',
@@ -260,6 +262,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     user['email'] ?? '',
@@ -268,6 +272,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                       color: theme.colorScheme.onSurface
                                           .withOpacity(0.6),
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),

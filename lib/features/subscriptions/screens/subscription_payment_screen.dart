@@ -350,7 +350,6 @@ class _SubscriptionPaymentScreenState
               // Submit button
               SizedBox(
                 width: double.infinity,
-                height: 52,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
