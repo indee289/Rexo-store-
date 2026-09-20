@@ -51,6 +51,14 @@ ALTER TABLE public.campaigns
 -- 'closed'. Drop and re-add the constraint with a superset of the old values.
 ALTER TABLE public.campaigns
   DROP CONSTRAINT IF EXISTS campaigns_status_check;
+
+-- Clean any existing row whose status is NULL or not in the allowed set BEFORE
+-- re-adding the constraint, otherwise ADD CONSTRAINT fails (23514) on that row.
+UPDATE public.campaigns
+SET status = 'draft'
+WHERE status IS NULL
+   OR status NOT IN ('draft', 'active', 'paused', 'completed', 'cancelled', 'closed');
+
 ALTER TABLE public.campaigns
   ADD CONSTRAINT campaigns_status_check
   CHECK (status IN ('draft', 'active', 'paused', 'completed', 'cancelled', 'closed'));
@@ -81,6 +89,13 @@ ALTER TABLE public.applications
 -- applications CHECK forbids 'applied' and 'submitted'. Re-add with a superset.
 ALTER TABLE public.applications
   DROP CONSTRAINT IF EXISTS applications_status_check;
+
+-- Clean any invalid/NULL status BEFORE re-adding the constraint.
+UPDATE public.applications
+SET status = 'pending'
+WHERE status IS NULL
+   OR status NOT IN ('pending', 'approved', 'rejected', 'withdrawn', 'applied', 'submitted');
+
 ALTER TABLE public.applications
   ADD CONSTRAINT applications_status_check
   CHECK (status IN ('pending', 'approved', 'rejected', 'withdrawn', 'applied', 'submitted'));
