@@ -52,37 +52,52 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
   }
 
   // Fetch base user profile
-  final profile = await SupabaseService.getUserProfile(user.id);
+  Map<String, dynamic>? profile;
+  try {
+    profile = await SupabaseService.getUserProfile(user.id);
+  } catch (e) {
+    return ProfileState(error: 'Profile not found. Please try again.');
+  }
   if (profile == null) {
     return const ProfileState(error: 'Profile not found');
   }
 
   final role = (profile['role'] ?? 'creator').toString().toLowerCase();
 
-  // Fetch role-specific profile
+  // Fetch role-specific profile — gracefully skip if table missing or RLS blocks
   Map<String, dynamic>? roleProfile;
-  if (role == 'creator') {
-    final response = await SupabaseService.client
-        .from('creator_profiles')
-        .select()
-        .eq('user_id', user.id)
-        .maybeSingle();
-    roleProfile = response;
-  } else if (role == 'brand') {
-    final response = await SupabaseService.client
-        .from('brand_profiles')
-        .select()
-        .eq('user_id', user.id)
-        .maybeSingle();
-    roleProfile = response;
+  try {
+    if (role == 'creator') {
+      final response = await SupabaseService.client
+          .from('creator_profiles')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+      roleProfile = response;
+    } else if (role == 'brand') {
+      final response = await SupabaseService.client
+          .from('brand_profiles')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+      roleProfile = response;
+    }
+  } catch (_) {
+    // Role-specific profile is optional — don't fail the whole profile load
+    roleProfile = null;
   }
 
-  // Fetch wallet data
-  final wallet = await SupabaseService.client
-      .from('wallets')
-      .select()
-      .eq('user_id', user.id)
-      .maybeSingle();
+  // Fetch wallet data — gracefully skip if table/RLS issue
+  Map<String, dynamic>? wallet;
+  try {
+    wallet = await SupabaseService.client
+        .from('wallets')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+  } catch (_) {
+    wallet = null;
+  }
 
   return ProfileState(
     profile: profile,
@@ -148,16 +163,14 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     _lastError = null;
 
     try {
-      // Only allow confirmed live users-table columns.
-      // Confirmed live schema: username, bio, phone, profileImage, name.
-      // Removed: handle (live column is username), avatar_url (live column is
-      // profileImage), updated_at (column does not exist in live DB).
+      // CONFIRMED LIVE users columns (from Stage F3 verification):
+      // id, uid, email, name, username, role, profileImage
+      // bio, phone, isVerified, isBanned, createdAt — NOT confirmed in live DB.
+      // Only send columns that definitely exist to prevent 400 errors.
       const validColumns = {
         'name',
-        'username',    // live column — was 'handle'
-        'bio',
-        'phone',
-        'profileImage', // live column — was 'avatar_url'
+        'username',     // live column (was handle)
+        'profileImage', // live column (was avatar_url)
       };
 
       final filteredFields = <String, dynamic>{};

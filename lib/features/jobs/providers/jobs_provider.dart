@@ -162,13 +162,13 @@ final myJobApplicationsProvider =
   var query = SupabaseService.client
       .from('applications')
       .select()
-      .eq('creatorId', user.id);      // live: camelCase
+      .eq('creatorId', user.id);
 
   if (statusFilter != 'all') {
     query = query.eq('status', statusFilter);
   }
 
-  final response = await query.order('created_at', ascending: false);
+  final response = await query.order('createdAt', ascending: false); // live: createdAt
   final rows = List<Map<String, dynamic>>.from(response);
 
   // Fetch each job (campaign) separately (avoids embedded-join RLS/PGRST issues)
@@ -240,7 +240,7 @@ final adminJobSubmissionsProvider =
       .from('applications')
       .select()
       .eq('status', 'submitted')
-      .order('created_at', ascending: false)
+      .order('createdAt', ascending: false) // live: createdAt
       .limit(200);
   final rows = List<Map<String, dynamic>>.from(response);
 

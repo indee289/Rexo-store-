@@ -55,25 +55,31 @@ final myApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
-  // Use campaigns(*) rather than naming payout_model explicitly — PostgREST's
-  // schema cache rejects referencing payout_model by name, but * returns it.
+  // Fetch applications with campaignId, then enrich with campaign data separately
+  // (embedded join campaigns(*) fails because FK column is camelCase campaignId)
   final response = await SupabaseService.client
       .from('applications')
-      .select('*, campaigns(*)')
-      .eq('creatorId', user.id)        // live: camelCase
-      .order('created_at', ascending: false);
+      .select()
+      .eq('creatorId', user.id)
+      .order('createdAt', ascending: false); // live: createdAt
 
-  // Exclude JOB applications: the `applications` table is shared by real
-  // campaign applications and job applications (whose campaign_id points at an
-  // is_job=true campaign). Keep only rows whose embedded campaign is NOT a job.
-  // A null/absent embedded campaign is treated as not-a-job so real campaign
-  // applications are never dropped.
   final rows = List<Map<String, dynamic>>.from(response);
   final result = <Map<String, dynamic>>[];
+
   for (final row in rows) {
-    final campaign = row['campaigns'] as Map<String, dynamic>?;
-    if (campaign != null && campaign['payout_model'] == 'job') continue;
-    result.add(row);
+    final campaignId = row['campaignId'] as String?;
+    if (campaignId == null) continue;
+
+    try {
+      final campaign = await SupabaseService.client
+          .from('campaigns')
+          .select()
+          .eq('id', campaignId)
+          .maybeSingle();
+      if (campaign == null) continue;
+      if (campaign['payout_model'] == 'job' || campaign['payoutModel'] == 'job') continue;
+      result.add({...row, 'campaigns': campaign});
+    } catch (_) {}
   }
   return result;
 });
@@ -96,33 +102,36 @@ final appliedCampaignsProvider =
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
+  // Fetch applications then enrich with campaign data separately
+  // (PostgREST can't auto-join via camelCase FK campaignId)
   final response = await SupabaseService.client
       .from('applications')
-      .select(
-          'status, created_at, campaigns(*, users!brandId(id, name, profileImage))') // live FK
-      .eq('creatorId', user.id)        // live: camelCase
-      .order('created_at', ascending: false);
+      .select()
+      .eq('creatorId', user.id)
+      .order('createdAt', ascending: false); // live: createdAt
 
   final rows = List<Map<String, dynamic>>.from(response);
-
   final result = <Map<String, dynamic>>[];
+
   for (final row in rows) {
-    // Skip applications whose campaign was deleted (join yields null).
-    final campaign = row['campaigns'] as Map<String, dynamic>?;
-    if (campaign == null) continue;
+    final campaignId = row['campaignId'] as String?;
+    if (campaignId == null) continue;
 
-    // Skip JOB applications: the shared `applications` table also holds job
-    // applications whose campaign_id points at an is_job=true campaign. The
-    // embedded `campaigns(*)` projection includes is_job, so drop those rows
-    // (they belong in My Jobs, not the Campaigns tab).
-    if (campaign['payout_model'] == 'job') continue;
+    try {
+      final campaign = await SupabaseService.client
+          .from('campaigns')
+          .select('*, users!brandId(id, name, profileImage)')
+          .eq('id', campaignId)
+          .maybeSingle();
+      if (campaign == null) continue;
+      if (campaign['payout_model'] == 'job' || campaign['payoutModel'] == 'job') continue;
 
-    // Flatten: the campaign object augmented with the application fields.
-    result.add({
-      ...campaign,
-      'application_status': row['status'],
-      'applied_at': row['created_at'],
-    });
+      result.add({
+        ...campaign,
+        'application_status': row['status'],
+        'applied_at': row['createdAt'] ?? row['created_at'],
+      });
+    } catch (_) {}
   }
 
   return result;
