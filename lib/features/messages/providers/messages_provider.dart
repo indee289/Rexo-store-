@@ -184,20 +184,24 @@ final chatPeerProvider =
 /// Resolves the chat room id shared by the current user and [otherUserId], if
 /// one already exists. Returns `null` when the two have never chatted.
 Future<String?> _findRoomId(String selfId, String otherUserId) async {
-  final rooms = await SupabaseService.client
-      .from('chat_rooms')
-      .select('id, participants')
-      .contains('participants', [selfId])
-      .limit(200);
+  try {
+    final rooms = await SupabaseService.client
+        .from('chat_rooms')
+        .select('id, participants')
+        .contains('participants', [selfId])
+        .limit(200);
 
-  for (final room in List<Map<String, dynamic>>.from(rooms)) {
-    final participants = (room['participants'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        const <String>[];
-    if (participants.contains(otherUserId)) {
-      return (room['id'] ?? '').toString();
+    for (final room in List<Map<String, dynamic>>.from(rooms)) {
+      final participants = (room['participants'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const <String>[];
+      if (participants.contains(otherUserId)) {
+        return (room['id'] ?? '').toString();
+      }
     }
+  } catch (_) {
+    // Query failed — return null (no room found)
   }
   return null;
 }
@@ -209,20 +213,24 @@ Future<String?> _findRoomId(String selfId, String otherUserId) async {
 final chatMessagesProvider =
     FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, otherUserId) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return [];
 
-  final roomId = await _findRoomId(user.id, otherUserId);
-  if (roomId == null) return [];
+    final roomId = await _findRoomId(user.id, otherUserId);
+    if (roomId == null) return [];
 
-  final messages = await SupabaseService.client
-      .from('chat_messages')
-      .select()
-      .eq('chatRoomId', roomId)
-      .order('timestamp', ascending: true)
-      .limit(200);
+    final messages = await SupabaseService.client
+        .from('chat_messages')
+        .select()
+        .eq('chatRoomId', roomId)
+        .order('timestamp', ascending: true)
+        .limit(200);
 
-  return List<Map<String, dynamic>>.from(messages);
+    return List<Map<String, dynamic>>.from(messages);
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Realtime stream provider for chat messages with [otherUserId].

@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../services/supabase_service.dart';
 
-/// Brand splash — bold full-bleed green gradient with a glassy logo badge.
+/// Instagram-style splash screen.
+///
+/// Clean white (sand dune) background with the Rexo logo centered.
+/// Bottom: "from Rexo" text — like Instagram's "from Meta".
+/// Auto-navigates after 2 seconds.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -17,159 +21,101 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fadeIn;
-  late final Animation<double> _scaleIn;
-
-  Timer? _navTimer;
-  String _target = AppRoutes.login;
-  String? _blockedStatus;
-
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scaleIn = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-    _controller.forward();
-
-    _resolveDestination();
-    _navTimer = Timer(const Duration(milliseconds: 1800), _navigate);
+    _navigateAfterDelay();
   }
 
-  Future<void> _resolveDestination() async {
-    if (!SupabaseService.isAuthenticated) {
-      _target = AppRoutes.login;
-      return;
-    }
-    try {
-      final user = SupabaseService.currentUser;
-      if (user != null) {
-        final profile = await SupabaseService.getUserProfile(user.id);
-        // Live column is `isBanned` (boolean). There is no `account_status`
-        // column in the live users schema. `suspended` state does not exist
-        // as a separate flag — banned users are handled by `isBanned: true`.
-        final isBanned = profile?['isBanned'] == true;
-        if (isBanned) {
-          await SupabaseService.signOut();
-          _blockedStatus = 'banned';
-          _target = AppRoutes.login;
-          return;
-        }
-      }
-      _target = AppRoutes.home;
-    } catch (_) {
-      _target = AppRoutes.home;
-    }
-  }
-
-  void _navigate() {
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    if (_blockedStatus != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _blockedStatus == 'banned'
-                ? "Your account has been banned. Please contact support."
-                : "Your account has been restricted. Please contact support.",
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-    context.go(_target);
-  }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _navTimer?.cancel();
-    super.dispose();
+    if (SupabaseService.isAuthenticated) {
+      context.go(AppRoutes.home);
+    } else {
+      context.go(AppRoutes.login);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const Spacer(),
-              FadeTransition(
-                opacity: _fadeIn,
-                child: ScaleTransition(
-                  scale: _scaleIn,
-                  child: Column(
-                    children: [
-                      // Logo badge — real Rexo logo
-                      Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.35),
-                            width: 1.5,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.all(16),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Rexo',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Creator Marketing Platform',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          // Center logo
+          const Expanded(
+            child: Center(
+              child: _RexoLogo(),
+            ),
+          ),
+          // Bottom "from" text — like Instagram's "from Meta"
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'from',
+                    style: AppTextStyles.footnote.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 56),
-                child: SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: CircularProgressIndicator(
-                    color: Colors.white.withOpacity(0.9),
-                    strokeWidth: 2.5,
+                  const SizedBox(height: 2),
+                  Text(
+                    'Rexo',
+                    style: AppTextStyles.headline.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The Rexo logo — uses the asset image, falls back to text logo.
+class _RexoLogo extends StatelessWidget {
+  const _RexoLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Try to show the logo asset
+        Image.asset(
+          'assets/logo.png',
+          width: 80,
+          height: 80,
+          errorBuilder: (_, __, ___) => Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: AppColors.storyGradient,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'R',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
