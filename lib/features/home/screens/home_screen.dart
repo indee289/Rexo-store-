@@ -15,11 +15,12 @@ import '../providers/banners_provider.dart';
 import '../providers/home_provider.dart';
 import '../widgets/featured_campaign_card.dart';
 
-/// Redesigned Home — "Personalized Hero" layout.
+/// Instagram-style Home feed.
 ///
-/// Emerald gradient greeting card at top with the user's name, a floating
-/// action row of quick-access pills (Wallet / Notifications / Messages), a
-/// banner carousel, and a Featured Campaigns feed below.
+/// Top: white app bar with the 'Rexo' logo left-aligned + notification/inbox
+/// icons right. Then: horizontal 'Stories' row of banner/campaign highlights
+/// (with the iconic story-ring gradient around each avatar). Then: vertical
+/// feed of featured campaign cards, Instagram post-style.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -27,22 +28,46 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () async => ref.invalidate(featuredCampaignsProvider),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            const _GreetingHero(),
-            const SizedBox(height: 20),
-            const _BannerCarousel(),
-            const SizedBox(height: 24),
-            const _FeaturedHeader(),
-            const SizedBox(height: 14),
-            _FeaturedList(),
-            const SizedBox(height: 28),
-          ],
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            ref.invalidate(featuredCampaignsProvider);
+            ref.invalidate(bannersProvider);
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Sticky Instagram-style header
+              const SliverToBoxAdapter(child: _IgHeader()),
+
+              // Hairline separator
+              const SliverToBoxAdapter(
+                child: Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: AppColors.border,
+                ),
+              ),
+
+              // Stories row
+              const SliverToBoxAdapter(child: _StoriesRow()),
+
+              const SliverToBoxAdapter(
+                child: Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: AppColors.border,
+                ),
+              ),
+
+              // Feed
+              _FeedList(),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
         ),
       ),
     );
@@ -50,145 +75,53 @@ class HomeScreen extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Greeting Hero (gradient card with personalized welcome + action pills)
+// Instagram top header
 // ─────────────────────────────────────────────────────────────────────────
 
-class _GreetingHero extends ConsumerWidget {
-  const _GreetingHero();
+class _IgHeader extends ConsumerWidget {
+  const _IgHeader();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(currentUserProfileProvider);
-    final name = profileAsync.whenOrNull(
-          data: (state) => (state.profile?['name'] ?? 'there').toString(),
-        ) ??
-        'there';
-    final firstName = name.split(' ').first;
-
     final unreadNotifs = ref.watch(unreadNotificationsCountProvider);
     final unreadInbox = ref.watch(conversationsProvider).maybeWhen(
           data: (list) => list.where((c) => c['is_read'] == false).length,
           orElse: () => 0,
         );
 
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'Good morning'
-        : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF10B981),
-            Color(0xFF047857),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+      child: Row(
         children: [
-          // Decorative blob
-          Positioned(
-            top: -30,
-            right: -40,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.10),
-              ),
+          // Rexo "logo" — bold left-aligned wordmark (IG's Billabong style)
+          Text(
+            'Rexo',
+            style: AppTextStyles.largeTitle.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 26,
+              letterSpacing: -0.5,
             ),
           ),
-          Positioned(
-            bottom: -20,
-            left: -30,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.08),
-              ),
-            ),
+          const Spacer(),
+          // Wallet icon (Rexo-specific)
+          _HeaderIcon(
+            icon: Iconsax.wallet_2,
+            onTap: () => context.push(AppRoutes.wallet),
           ),
-
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  // Greeting
-                  Text(
-                    greeting + ',',
-                    style: AppTextStyles.callout.copyWith(
-                      color: Colors.white.withOpacity(0.85),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    firstName + ' 👋',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.largeTitle.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 30,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ready to grow your reach today?',
-                    style: AppTextStyles.subheadline.copyWith(
-                      color: Colors.white.withOpacity(0.80),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Quick access pills row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _QuickPill(
-                          icon: Iconsax.wallet_2,
-                          label: 'Wallet',
-                          onTap: () => context.push(AppRoutes.wallet),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _QuickPill(
-                          icon: Iconsax.notification,
-                          label: 'Alerts',
-                          badge: unreadNotifs,
-                          onTap: () => context.push(AppRoutes.notifications),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _QuickPill(
-                          icon: Iconsax.sms,
-                          label: 'Inbox',
-                          badge: unreadInbox,
-                          onTap: () => context.push(AppRoutes.messages),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          const SizedBox(width: 4),
+          // Notifications (IG heart)
+          _HeaderIcon(
+            icon: Iconsax.notification,
+            badge: unreadNotifs,
+            onTap: () => context.push(AppRoutes.notifications),
+          ),
+          const SizedBox(width: 4),
+          // DM / messages (IG paper plane)
+          _HeaderIcon(
+            icon: Iconsax.send_2,
+            badge: unreadInbox,
+            onTap: () => context.push(AppRoutes.messages),
           ),
         ],
       ),
@@ -196,25 +129,22 @@ class _GreetingHero extends ConsumerWidget {
   }
 }
 
-/// Glass pill in the greeting hero — icon + label + optional badge.
-class _QuickPill extends StatefulWidget {
+class _HeaderIcon extends StatefulWidget {
   final IconData icon;
-  final String label;
   final int badge;
   final VoidCallback onTap;
 
-  const _QuickPill({
+  const _HeaderIcon({
     required this.icon,
-    required this.label,
     required this.onTap,
     this.badge = 0,
   });
 
   @override
-  State<_QuickPill> createState() => _QuickPillState();
+  State<_HeaderIcon> createState() => _HeaderIconState();
 }
 
-class _QuickPillState extends State<_QuickPill> {
+class _HeaderIconState extends State<_HeaderIcon> {
   bool _pressed = false;
 
   @override
@@ -227,58 +157,172 @@ class _QuickPillState extends State<_QuickPill> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.7 : 1.0,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.18),
-            borderRadius: AppRadius.allLg,
-            border: Border.all(
-              color: Colors.white.withOpacity(0.30),
-              width: 1,
+        opacity: _pressed ? 0.4 : 1.0,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Icon(widget.icon,
+                  size: 26, color: AppColors.textPrimary),
             ),
-          ),
-          child: Column(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(widget.icon, color: Colors.white, size: 22),
-                  if (widget.badge > 0)
-                    Positioned(
-                      top: -6,
-                      right: -8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        constraints: const BoxConstraints(
-                            minWidth: 16, minHeight: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
-                          borderRadius: AppRadius.pillAll,
-                          border: Border.all(
-                              color: Colors.white, width: 1.5),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          widget.badge > 99 ? '99+' : '${widget.badge}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
+            if (widget.badge > 0)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 5, vertical: 1),
+                  constraints:
+                      const BoxConstraints(minWidth: 18, minHeight: 18),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentPink,
+                    borderRadius: AppRadius.pillAll,
+                    border:
+                        Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.badge > 99 ? '99+' : '${widget.badge}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
                     ),
-                ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Stories row — horizontal scroll of banner "stories" with IG rings
+// ─────────────────────────────────────────────────────────────────────────
+
+class _StoriesRow extends ConsumerWidget {
+  const _StoriesRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final banners = ref.watch(bannersProvider).value ??
+        const <Map<String, dynamic>>[];
+    final profile = ref.watch(currentUserProfileProvider).value?.profile;
+
+    if (banners.isEmpty && profile == null) {
+      return const SizedBox(height: 0);
+    }
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: SizedBox(
+        height: 96,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            // "Your story" — user avatar with plus badge
+            if (profile != null)
+              _StoryCircle.user(
+                name: (profile['name'] ?? 'You').toString(),
+                imageUrl: profile['profileImage'] as String?,
+                label: 'Your story',
+              ),
+            // Banner stories
+            for (final b in banners)
+              _StoryCircle(
+                imageUrl: (b['image_url'] ?? '').toString(),
+                label: (b['title'] ?? 'Story').toString(),
+                onTap: () {
+                  final linkType = b['link_type'] as String? ?? 'none';
+                  final campaignId = b['link_campaign_id'] as String?;
+                  final page = b['link_page'] as String?;
+                  if (linkType == 'campaign' && campaignId != null) {
+                    context.push('/campaigns/$campaignId');
+                  } else if (linkType == 'page' &&
+                      page != null &&
+                      page.isNotEmpty) {
+                    context.push(page);
+                  }
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A single Instagram-style story circle with the iconic gradient ring.
+class _StoryCircle extends StatefulWidget {
+  final String? imageUrl;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isUser;
+  final String? name;
+
+  const _StoryCircle({
+    required this.imageUrl,
+    required this.label,
+    this.onTap,
+    this.isUser = false,
+    this.name,
+  });
+
+  const _StoryCircle.user({
+    required String name,
+    required String? imageUrl,
+    required this.label,
+  })  : imageUrl = imageUrl,
+        onTap = null,
+        isUser = true,
+        name = name;
+
+  @override
+  State<_StoryCircle> createState() => _StoryCircleState();
+}
+
+class _StoryCircleState extends State<_StoryCircle> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.6 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _RingedAvatar(
+                imageUrl: widget.imageUrl,
+                name: widget.name,
+                isUser: widget.isUser,
               ),
               const SizedBox(height: 6),
-              Text(
-                widget.label,
-                style: AppTextStyles.caption1.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+              SizedBox(
+                width: 72,
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption1.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -289,248 +333,158 @@ class _QuickPillState extends State<_QuickPill> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Banner carousel (admin-managed banners; hidden when none)
-// ─────────────────────────────────────────────────────────────────────────
+class _RingedAvatar extends StatelessWidget {
+  final String? imageUrl;
+  final String? name;
+  final bool isUser;
 
-class _BannerCarousel extends ConsumerStatefulWidget {
-  const _BannerCarousel();
-
-  @override
-  ConsumerState<_BannerCarousel> createState() => _BannerCarouselState();
-}
-
-class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
-  final _controller = PageController();
-  int _page = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const _RingedAvatar({
+    required this.imageUrl,
+    required this.name,
+    required this.isUser,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final bannerHeight = (width * 0.42).clamp(160.0, 190.0);
-
-    final liveBanners = ref.watch(bannersProvider);
-    final dbBanners = liveBanners.value ?? const <Map<String, dynamic>>[];
-    if (dbBanners.isEmpty) return const SizedBox.shrink();
-
-    final slideCount = dbBanners.length;
-
-    return Column(
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        SizedBox(
-          height: bannerHeight,
-          child: PageView.builder(
-            controller: _controller,
-            itemCount: slideCount,
-            onPageChanged: (i) => setState(() => _page = i),
-            itemBuilder: (_, i) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _DbBannerSlide(banner: dbBanners[i]),
+        // Story gradient ring
+        Container(
+          width: 64,
+          height: 64,
+          padding: const EdgeInsets.all(2.5),
+          decoration: BoxDecoration(
+            gradient: isUser ? null : AppColors.storyGradient,
+            color: isUser ? AppColors.border : null,
+            shape: BoxShape.circle,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: (imageUrl != null && imageUrl!.isNotEmpty)
+                  ? Image.network(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          _initialFallback(name ?? '?'),
+                    )
+                  : _initialFallback(name ?? '?'),
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            slideCount,
-            (i) => AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: i == _page ? 22 : 7,
-              height: 7,
+        // Plus badge for "your story"
+        if (isUser)
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 22,
+              height: 22,
               decoration: BoxDecoration(
-                color: i == _page
-                    ? AppColors.primary
-                    : AppColors.primary.withOpacity(0.22),
-                borderRadius: AppRadius.pillAll,
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Iconsax.add,
+                size: 14,
+                color: Colors.white,
               ),
             ),
           ),
-        ),
       ],
     );
   }
-}
 
-class _DbBannerSlide extends StatelessWidget {
-  final Map<String, dynamic> banner;
-  const _DbBannerSlide({required this.banner});
-
-  @override
-  Widget build(BuildContext context) {
-    final imageUrl = banner['image_url'] as String? ?? '';
-    final linkType = banner['link_type'] as String? ?? 'none';
-    final campaignId = banner['link_campaign_id'] as String?;
-    final page = banner['link_page'] as String?;
-
-    void onTap() {
-      if (linkType == 'campaign' && campaignId != null) {
-        context.push('/campaigns/$campaignId');
-      } else if (linkType == 'page' && page != null && page.isNotEmpty) {
-        context.push(page);
-      }
-    }
-
-    return GestureDetector(
-      onTap: linkType != 'none' ? onTap : null,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.allXl,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.10),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: -4,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: AppRadius.allXl,
-          child: imageUrl.isNotEmpty
-              ? Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _fallbackContainer(),
-                )
-              : _fallbackContainer(),
+  Widget _initialFallback(String n) {
+    final letter = n.trim().isEmpty ? '?' : n.trim()[0].toUpperCase();
+    return Container(
+      color: AppColors.surfaceAlt,
+      alignment: Alignment.center,
+      child: Text(
+        letter,
+        style: AppTextStyles.title3.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
-
-  Widget _fallbackContainer() => Container(
-        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
-      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Featured campaigns section
+// Feed list (Instagram-style vertical posts)
 // ─────────────────────────────────────────────────────────────────────────
 
-class _FeaturedHeader extends StatelessWidget {
-  const _FeaturedHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 22,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'Featured Campaigns',
-            style: AppTextStyles.title3.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => context.go(AppRoutes.campaigns),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primaryBg,
-                borderRadius: AppRadius.pillAll,
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'See all',
-                    style: AppTextStyles.footnote.copyWith(
-                      color: AppColors.primaryDeep,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  const Icon(Iconsax.arrow_right_3,
-                      size: 14, color: AppColors.primaryDeep),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeaturedList extends ConsumerWidget {
+class _FeedList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(featuredCampaignsProvider);
     final saved = ref.watch(savedCampaignsProvider);
 
     return async.when(
-      loading: () => Column(
-        children: [
-          for (int i = 0; i < 3; i++)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: ShimmerCard(height: 92),
-            ),
-        ],
+      loading: () => SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (_, __) => const Padding(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 16),
+            child: ShimmerCard(height: 320),
+          ),
+          childCount: 3,
+        ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
       data: (rows) {
         final items = rows.map(_mapCampaign).toList();
         if (items.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
-            child: Center(
-              child: Text(
-                'No campaigns yet',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          return const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24, 40, 24, 40),
+              child: Center(
+                child: Text(
+                  'No campaigns yet',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
             ),
           );
         }
-        return Column(
-          children: [
-            for (final data in items)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: FeaturedCampaignCard(
-                  data: data,
-                  saved: saved.contains(data.id),
-                  onToggleSave: () {
-                    final notifier = ref.read(savedCampaignsProvider.notifier);
-                    final next = Set<String>.from(notifier.state);
-                    if (!next.add(data.id)) next.remove(data.id);
-                    notifier.state = next;
-                  },
-                  onTap: () => context.push('/campaigns/${data.id}'),
-                ),
+        return SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => Padding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+              child: FeaturedCampaignCard(
+                data: items[index],
+                saved: saved.contains(items[index].id),
+                onToggleSave: () {
+                  final notifier =
+                      ref.read(savedCampaignsProvider.notifier);
+                  final next = Set<String>.from(notifier.state);
+                  if (!next.add(items[index].id)) {
+                    next.remove(items[index].id);
+                  }
+                  notifier.state = next;
+                },
+                onTap: () => context.push('/campaigns/${items[index].id}'),
               ),
-          ],
+            ),
+            childCount: items.length,
+          ),
         );
       },
     );
   }
 }
 
-// ── Data mapping helpers ──────────────────────────────────────────────────
+// ── Data mapping helpers (unchanged) ─────────────────────────────────────
 
 FeaturedCampaignData _mapCampaign(Map<String, dynamic> c) {
   int asInt(dynamic v) =>

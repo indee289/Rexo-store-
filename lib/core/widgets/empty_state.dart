@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-/// Modern empty state — "hero card" design.
+/// Instagram-style empty state.
 ///
-/// Instead of the classic centered illustration, this shows a large tilted
-/// rounded-square icon tile with layered gradient shadows, a big bold title,
-/// a two-line subtitle, and an optional pill-shaped CTA. Uses gentle rotation
-/// + scale animation for subtle life.
-class EmptyState extends StatefulWidget {
+/// Minimal, content-first — a thin-stroke circular outline containing a
+/// single line-drawn icon, followed by a big black title, a gray subtitle,
+/// and a blue text CTA (Instagram-style link button). No colored tiles,
+/// no gradients, no shadows.
+class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
@@ -37,135 +36,45 @@ class EmptyState extends StatefulWidget {
   });
 
   @override
-  State<EmptyState> createState() => _EmptyStateState();
-}
-
-class _EmptyStateState extends State<EmptyState>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _rotation;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3200),
-    )..repeat(reverse: true);
-    _rotation = Tween<double>(begin: -0.04, end: 0.04).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _scale = Tween<double>(begin: 0.98, end: 1.02).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final Widget? ctaWidget = widget.cta ??
-        ((widget.ctaLabel != null && widget.onCta != null)
-            ? _PillCta(
-                label: widget.ctaLabel!,
-                icon: widget.ctaIcon,
-                onPressed: widget.onCta!,
+    final Widget? ctaWidget = cta ??
+        ((ctaLabel != null && onCta != null)
+            ? _InstagramLinkCta(
+                label: ctaLabel!,
+                onPressed: onCta!,
               )
             : null);
 
     return Center(
       child: Padding(
-        padding: widget.padding,
+        padding: padding,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Big tilted icon tile
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) => Transform.rotate(
-                angle: _rotation.value,
-                child: Transform.scale(scale: _scale.value, child: child),
+            // IG-style thin-stroke circle with icon inside
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.textPrimary,
+                  width: 2,
+                ),
               ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Layered soft shadow blob behind
-                  Positioned(
-                    top: 24,
-                    left: 24,
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary.withOpacity(0.10),
-                      ),
-                    ),
-                  ),
-                  // Big rounded-square icon tile
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF34D399),
-                          Color(0xFF10B981),
-                          Color(0xFF059669),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.35),
-                          blurRadius: 30,
-                          offset: const Offset(0, 16),
-                          spreadRadius: -8,
-                        ),
-                        BoxShadow(
-                          color: AppColors.primaryDark.withOpacity(0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                          spreadRadius: -2,
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      widget.icon,
-                      size: 52,
-                      color: Colors.white,
-                    ),
-                  ),
-                  // Highlight dot top-right for depth
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.35),
-                      ),
-                    ),
-                  ),
-                ],
+              alignment: Alignment.center,
+              child: Icon(
+                icon,
+                size: 44,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
-            // Title
+            // Big bold black title (IG "Share your first Reel" style)
             Text(
-              widget.title,
+              title,
               textAlign: TextAlign.center,
               style: AppTextStyles.title2.copyWith(
                 color: AppColors.textPrimary,
@@ -175,25 +84,25 @@ class _EmptyStateState extends State<EmptyState>
               ),
             ),
 
-            // Subtitle
-            if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
-              const SizedBox(height: 8),
+            // Gray subtitle
+            if (subtitle != null && subtitle!.isNotEmpty) ...[
+              const SizedBox(height: 10),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  widget.subtitle!,
+                  subtitle!,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.callout.copyWith(
+                  style: AppTextStyles.body.copyWith(
                     color: AppColors.textSecondary,
-                    height: 1.45,
+                    height: 1.4,
                   ),
                 ),
               ),
             ],
 
-            // CTA
+            // Instagram-style blue text CTA
             if (ctaWidget != null) ...[
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               ctaWidget,
             ],
           ],
@@ -203,23 +112,19 @@ class _EmptyStateState extends State<EmptyState>
   }
 }
 
-/// Pill-shaped CTA button — full rounded, gradient background, layered glow.
-class _PillCta extends StatefulWidget {
+/// Instagram-style blue text-link CTA — bold blue text, no fill, subtle
+/// press feedback.
+class _InstagramLinkCta extends StatefulWidget {
   final String label;
-  final IconData? icon;
   final VoidCallback onPressed;
 
-  const _PillCta({
-    required this.label,
-    required this.onPressed,
-    this.icon,
-  });
+  const _InstagramLinkCta({required this.label, required this.onPressed});
 
   @override
-  State<_PillCta> createState() => _PillCtaState();
+  State<_InstagramLinkCta> createState() => _InstagramLinkCtaState();
 }
 
-class _PillCtaState extends State<_PillCta> {
+class _InstagramLinkCtaState extends State<_InstagramLinkCta> {
   bool _pressed = false;
 
   @override
@@ -230,46 +135,17 @@ class _PillCtaState extends State<_PillCta> {
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 28,
-            vertical: 14,
-          ),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF059669)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            widget.label,
+            style: AppTextStyles.headline.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
             ),
-            borderRadius: AppRadius.pillAll,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.40),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-                spreadRadius: -4,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.icon != null) ...[
-                Icon(widget.icon, size: 18, color: Colors.white),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                widget.label,
-                style: AppTextStyles.headline.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
           ),
         ),
       ),

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
 
-/// iOS-style icon button.
+/// Instagram-style icon button — flat, minimal, 44×44 tap target.
 ///
-/// Simple, tactile, 44×44 tap target. iOS icon buttons are typically flat
-/// with tinted glyphs. Optional [background] renders a circular gray fill
-/// (like iOS toolbar buttons on grouped surfaces); [tonal] tints it with the
-/// accent color.
+/// Instagram uses simple outlined black icons with no background chrome.
+/// Optional [background] renders a subtle gray circular fill (like the
+/// IG "search" bar hint area). Opacity press feedback (no ripple).
 class PremiumIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback? onPressed;
@@ -24,7 +22,7 @@ class PremiumIconButton extends StatefulWidget {
     required this.onPressed,
     this.background = false,
     this.tonal = false,
-    this.iconSize = 22,
+    this.iconSize = 24,
     this.color,
     this.tooltip,
   });
@@ -57,16 +55,14 @@ class _PremiumIconButtonState extends State<PremiumIconButton> {
     );
 
     if (widget.background) {
-      final Color fill = widget.tonal
-          ? AppColors.primaryBg
-          : AppColors.surfaceAlt;
-
       glyph = Container(
-        width: 36,
-        height: 36,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
-          color: fill,
-          borderRadius: AppRadius.pillAll,
+          color: widget.tonal
+              ? AppColors.primaryBg
+              : AppColors.surfaceAlt,
+          shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
         child: glyph,

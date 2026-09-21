@@ -4,11 +4,10 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// iOS-style navigation bar.
+/// Instagram-style navigation bar.
 ///
-/// Transparent background over the systemGroupedBackground scaffold, centered
-/// 17pt semibold title, iOS chevron back button that says the parent screen
-/// name style (here: just the chevron), and green tinted actions.
+/// White background with a hairline bottom border. Bold title on the left
+/// (or centered when there's a back button), action icons on the right.
 class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -31,7 +30,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
+        kToolbarHeight + (bottom?.preferredSize.height ?? 0) + 0.5,
       );
 
   @override
@@ -40,48 +39,57 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
     final bool canPop = Navigator.of(context).canPop();
     if (resolvedLeading == null &&
         (showBack || (automaticallyImplyLeading && canPop))) {
-      resolvedLeading = _IosBackButton(
+      resolvedLeading = _BackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
       );
     }
 
-    return AppBar(
-      title: Text(
-        title,
-        style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.border, width: 0.5),
+        ),
       ),
-      leading: resolvedLeading,
-      leadingWidth: resolvedLeading is _IosBackButton ? 60 : null,
-      automaticallyImplyLeading: false,
-      actions: [
-        if (actions != null) ...actions!,
-        const SizedBox(width: 8),
-      ],
-      bottom: bottom,
-      backgroundColor: AppColors.background,
-      foregroundColor: AppColors.primary,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: true,
-      surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.transparent,
+      child: AppBar(
+        title: Text(
+          title,
+          style: AppTextStyles.title3.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        leading: resolvedLeading,
+        automaticallyImplyLeading: false,
+        actions: [
+          if (actions != null) ...actions!,
+          const SizedBox(width: 8),
+        ],
+        bottom: bottom,
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+      ),
     );
   }
 }
 
-/// iOS-style chevron back button — accent-colored, no ripple.
-class _IosBackButton extends StatefulWidget {
+/// Instagram-style back button — thin left arrow, no chrome.
+class _BackButton extends StatefulWidget {
   final VoidCallback onTap;
 
-  const _IosBackButton({required this.onTap});
+  const _BackButton({required this.onTap});
 
   @override
-  State<_IosBackButton> createState() => _IosBackButtonState();
+  State<_BackButton> createState() => _BackButtonState();
 }
 
-class _IosBackButtonState extends State<_IosBackButton> {
+class _BackButtonState extends State<_BackButton> {
   bool _pressed = false;
 
   @override
@@ -97,15 +105,10 @@ class _IosBackButtonState extends State<_IosBackButton> {
         opacity: _pressed ? 0.4 : 1.0,
         child: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Iconsax.arrow_left,
-                size: 24,
-                color: AppColors.primary,
-              ),
-            ],
+          child: Icon(
+            Iconsax.arrow_left,
+            size: 24,
+            color: AppColors.textPrimary,
           ),
         ),
       ),
@@ -113,7 +116,7 @@ class _IosBackButtonState extends State<_IosBackButton> {
   }
 }
 
-/// Sliver version — used for large-title scroll effects.
+/// Sliver version — for scroll-collapsing headers.
 class PremiumSliverAppBar extends StatelessWidget {
   final String title;
   final List<Widget>? actions;
@@ -141,7 +144,7 @@ class PremiumSliverAppBar extends StatelessWidget {
     final bool canPop = Navigator.of(context).canPop();
     Widget? leading;
     if (showBack || canPop) {
-      leading = _IosBackButton(
+      leading = _BackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
       );
     }
@@ -149,12 +152,14 @@ class PremiumSliverAppBar extends StatelessWidget {
     return SliverAppBar(
       title: Text(
         title,
-        style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
+        style: AppTextStyles.title3.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       leading: leading,
-      leadingWidth: leading != null ? 60 : null,
       automaticallyImplyLeading: false,
       actions: [
         if (actions != null) ...actions!,
@@ -162,7 +167,7 @@ class PremiumSliverAppBar extends StatelessWidget {
       ],
       backgroundColor: AppColors.background,
       surfaceTintColor: Colors.transparent,
-      foregroundColor: AppColors.primary,
+      foregroundColor: AppColors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,

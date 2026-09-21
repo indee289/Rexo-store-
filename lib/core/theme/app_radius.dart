@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// iOS-inspired corner radius scale.
+/// Instagram-inspired corner radius scale.
 ///
-/// Follows Apple's continuous corner geometry — soft, refined rounding
-/// consistent with iOS 16+ system components.
+/// Instagram uses very tight, minimal radii: small chips are pills, buttons
+/// are 6-8px, cards are unrounded (feed) or 8px (highlights). Story rings
+/// and avatars are full circles.
 abstract class AppRadius {
   AppRadius._();
 
-  static const double sm = 8;   // chips, small tags, badges
-  static const double md = 12;  // iOS buttons, inputs, alerts
-  static const double lg = 16;  // iOS cards, sheets on smaller surfaces
-  static const double xl = 20;  // iOS bottom sheets, modals, large surfaces
+  static const double sm = 6;   // chips, small tags, badges (IG uses ~4-6)
+  static const double md = 8;   // IG buttons, inputs, action pills
+  static const double lg = 12;  // IG cards, small containers
+  static const double xl = 16;  // IG bottom sheets, larger surfaces
   static const double pill = 999; // fully rounded pills / avatars
 
   /// Pre-built `BorderRadius` helpers.
@@ -20,47 +21,28 @@ abstract class AppRadius {
   static const BorderRadius allXl = BorderRadius.all(Radius.circular(xl));
   static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 
-  /// Top-only radius — iOS bottom sheets, modals.
+  /// Top-only radius for bottom sheets / modals.
   static const BorderRadius topXl =
       BorderRadius.vertical(top: Radius.circular(xl));
 }
 
-/// iOS-inspired elevation.
+/// Instagram-inspired elevation.
 ///
-/// iOS uses very restrained shadows — most depth comes from hairline borders
-/// and subtle vertical offset, not blur. These tokens deliver that feel.
+/// Instagram uses **almost no shadows** — depth comes from hairline
+/// borders and the flat white surface. These tokens return empty lists so
+/// existing call-sites keep compiling but produce zero visual shadow.
 abstract class AppElevation {
   AppElevation._();
 
-  /// Card shadow — barely-there, iOS-style lift.
-  static List<BoxShadow> card(bool isDark) => [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          offset: const Offset(0, 1),
-          blurRadius: 4,
-          spreadRadius: 0,
-        ),
-        BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          offset: const Offset(0, 8),
-          blurRadius: 24,
-          spreadRadius: -4,
-        ),
-      ];
+  /// Card shadow — none. Instagram cards use just a hairline border.
+  static List<BoxShadow> card(bool isDark) => const [];
 
-  /// Raised surface — sticky CTAs, floating dock, sheets.
+  /// Raised — a barely-there lift for sticky bars.
   static List<BoxShadow> raised(bool isDark) => [
         BoxShadow(
-          color: Colors.black.withOpacity(0.08),
-          offset: const Offset(0, 4),
-          blurRadius: 16,
-          spreadRadius: -2,
-        ),
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          offset: const Offset(0, 12),
-          blurRadius: 32,
-          spreadRadius: -6,
+          color: Colors.black.withOpacity(0.04),
+          offset: const Offset(0, -0.5),
+          blurRadius: 0,
         ),
       ];
 }

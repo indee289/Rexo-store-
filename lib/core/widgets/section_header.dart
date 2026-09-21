@@ -5,16 +5,13 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-/// iOS-style section header.
+/// Instagram-style section header.
 ///
-/// Two visual patterns depending on context:
-///
-/// 1. **Standalone title row** — a strong title with an optional "See all >"
-///    trailing action (used in Home / Explore feed sections).
-/// 2. **iOS grouped list header** — a small uppercase-ish gray label above a
-///    grouped list section. Achieved via [uppercase] flag.
-///
-/// The primary [title] is bold (17pt), subtitle uses iOS footnote gray.
+/// Two visual patterns:
+/// 1. **Standalone title row** — bold black title with an optional blue
+///    "See all" trailing text-link (Instagram feed section style).
+/// 2. **Uppercase gray label** — small gray label above list groups
+///    (like IG settings sections).
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -23,9 +20,6 @@ class SectionHeader extends StatelessWidget {
   final IconData actionIcon;
   final Widget? action;
   final EdgeInsetsGeometry padding;
-
-  /// When true renders in iOS grouped-header style: small gray label,
-  /// no action row. Used above grouped list sections.
   final bool uppercase;
 
   const SectionHeader({
@@ -42,7 +36,6 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // iOS grouped-header style — subdued gray label used above list groups.
     if (uppercase) {
       return Padding(
         padding: EdgeInsets.only(
@@ -55,14 +48,13 @@ class SectionHeader extends StatelessWidget {
           title.toUpperCase(),
           style: AppTextStyles.footnote.copyWith(
             color: AppColors.textSecondary,
-            letterSpacing: 0.3,
-            fontWeight: FontWeight.w400,
+            letterSpacing: 0.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       );
     }
 
-    // Standalone title row (feed section headers).
     return Padding(
       padding: padding,
       child: Row(
@@ -75,8 +67,10 @@ class SectionHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.title3.copyWith(
+                  style: AppTextStyles.title2.copyWith(
                     color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
                   ),
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
@@ -96,7 +90,7 @@ class SectionHeader extends StatelessWidget {
             action!,
           ] else if (actionLabel != null && onAction != null) ...[
             const SizedBox(width: AppSpacing.sm),
-            _SectionAction(
+            _SeeAllLink(
               label: actionLabel!,
               onTap: onAction!,
             ),
@@ -107,21 +101,17 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-/// iOS-style "See All" text action — accent color, tight tracking.
-class _SectionAction extends StatefulWidget {
+class _SeeAllLink extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _SectionAction({
-    required this.label,
-    required this.onTap,
-  });
+  const _SeeAllLink({required this.label, required this.onTap});
 
   @override
-  State<_SectionAction> createState() => _SectionActionState();
+  State<_SeeAllLink> createState() => _SeeAllLinkState();
 }
 
-class _SectionActionState extends State<_SectionAction> {
+class _SeeAllLinkState extends State<_SeeAllLink> {
   bool _pressed = false;
 
   @override
@@ -134,12 +124,12 @@ class _SectionActionState extends State<_SectionAction> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.4 : 1.0,
+        opacity: _pressed ? 0.5 : 1.0,
         child: Text(
           widget.label,
           style: AppTextStyles.subheadline.copyWith(
             color: AppColors.primary,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

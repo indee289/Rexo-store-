@@ -314,152 +314,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     final name = profile['name'] ?? 'User';
     final handle = profile['username'] ?? '';
-    final role = profile['role'] ?? 'creator';
     final avatarUrl = profile['profileImage'];
 
-    // Emerald gradient hero user card with layered depth.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF10B981), Color(0xFF047857)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.30),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-              spreadRadius: -6,
-            ),
-          ],
+    // Instagram-style profile row — flat, minimal, tappable.
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const EditProfileScreen()),
         ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Decorative blob
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.10),
-                ),
+        splashColor: Colors.transparent,
+        highlightColor: AppColors.surfaceAlt,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              PremiumAvatar(
+                imageUrl: avatarUrl,
+                name: name,
+                size: 56,
               ),
-            ),
-            Row(
-              children: [
-                // Avatar with white ring
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border:
-                        Border.all(color: Colors.white, width: 2.5),
-                  ),
-                  child: PremiumAvatar(
-                    imageUrl: avatarUrl,
-                    name: name,
-                    size: 54,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (handle.toString().isNotEmpty) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        name,
+                        '@$handle',
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: -0.3,
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (handle.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '@$handle',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withOpacity(0.80),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.22),
-                          borderRadius: AppRadius.pillAll,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.35),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Iconsax.crown_1,
-                                size: 12, color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text(
-                              _formatRole(role),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
-                  ),
-                ),
-                // Circular edit button
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const EditProfileScreen()),
-                  ),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.22),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.35),
-                        width: 1,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'View your profile',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: const Icon(
-                      Iconsax.edit_2,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+              const Icon(
+                Iconsax.arrow_right_3,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
         ),
       ),
     );

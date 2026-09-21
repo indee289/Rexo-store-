@@ -14,11 +14,13 @@ import '../providers/profile_provider.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import 'edit_profile_screen.dart';
 
-/// Redesigned Profile — "Cover Hero" layout.
+/// Instagram-style Profile screen.
 ///
-/// Emerald gradient hero panel with a big centered avatar sits at the top.
-/// A white sheet with a large top-radius overlaps it, hosting the stat row,
-/// primary actions, and a grid of colored feature tiles.
+/// White background. Top: back arrow + username center + settings/menu right.
+/// Below: horizontal row of [avatar | Campaigns | Followers | Following] with
+/// stats. Then: name (bold), role/handle line, bio. Then: full-width
+/// [Edit Profile | Share Profile] bordered buttons. Then: story highlights.
+/// Then: tab bar (Grid / Applications / Saved) and content below.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -27,7 +29,7 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: profileAsync.when(
         data: (profileState) => _Body(profileState: profileState),
         loading: () => const ShimmerProfile(),
@@ -39,13 +41,12 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 // Body
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
 class _Body extends ConsumerWidget {
   final ProfileState profileState;
-
   const _Body({required this.profileState});
 
   @override
@@ -63,455 +64,184 @@ class _Body extends ConsumerWidget {
     final bio = (profile['bio'] ?? '').toString();
     final isVerified = profile['isVerified'] == true;
 
-    return Stack(
-      children: [
-        // 1. Emerald hero panel
-        _CoverHero(
-          name: name,
-          handle: handle,
-          role: role,
-          avatarUrl: avatarUrl,
-          bio: bio,
-          isVerified: isVerified,
-          onSettingsTap: () => context.push('/settings'),
-        ),
-
-        // 2. Scrollable content over the hero
-        Positioned.fill(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                // Spacer for the hero region
-                const SizedBox(height: 320),
-
-                // Overlapping white sheet
-                Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(32),
-                    ),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Stat row
-                      _StatsRow(),
-                      const SizedBox(height: 24),
-
-                      // Action buttons
-                      _ActionRow(
-                        handle: handle,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Section header
-                      _SectionHeader('QUICK ACCESS'),
-                      const SizedBox(height: 12),
-
-                      // Feature tile grid
-                      _FeatureGrid(isAdmin: isAdmin),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return SafeArea(
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Instagram top bar with username centered
+          SliverToBoxAdapter(
+            child: _TopBar(handle: handle.isEmpty ? name : handle),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Cover Hero
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CoverHero extends StatelessWidget {
-  final String name;
-  final String handle;
-  final String role;
-  final String? avatarUrl;
-  final String bio;
-  final bool isVerified;
-  final VoidCallback onSettingsTap;
-
-  const _CoverHero({
-    required this.name,
-    required this.handle,
-    required this.role,
-    required this.avatarUrl,
-    required this.bio,
-    required this.isVerified,
-    required this.onSettingsTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 360,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF10B981),
-            Color(0xFF047857),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Decorative blobs
-          Positioned(
-            top: -40,
-            right: -60,
-            child: _Blob(
-              size: 200,
-              color: Colors.white.withOpacity(0.10),
-            ),
-          ),
-          Positioned(
-            top: 60,
-            left: -80,
-            child: _Blob(
-              size: 240,
-              color: Colors.white.withOpacity(0.08),
+          const SliverToBoxAdapter(
+            child: Divider(
+              height: 0.5,
+              thickness: 0.5,
+              color: AppColors.border,
             ),
           ),
 
-          // Top action row
-          SafeArea(
+          // Avatar + stats row
+          SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  _CircleGlassButton(
-                    icon: Iconsax.setting_2,
-                    onTap: onSettingsTap,
+                  _Avatar(imageUrl: avatarUrl, name: name),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _StatsRow(),
                   ),
                 ],
               ),
             ),
           ),
 
-          // Avatar + name block
-          Positioned.fill(
-            top: 60,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
-                // Avatar with ring
-                Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 108,
-                      height: 108,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+          // Name + role/handle + bio
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.headline.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ),
-                      child: ClipOval(
-                        child: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                            ? Image.network(
-                                avatarUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _InitialAvatar(name: name),
-                              )
-                            : _InitialAvatar(name: name),
-                      ),
-                    ),
-                    if (isVerified)
-                      const Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: VerifiedBadge(size: 28),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Name
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.title1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                      if (isVerified) ...[
+                        const SizedBox(width: 4),
+                        const VerifiedBadge(size: 14),
+                      ],
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-
-                // Handle
-                if (handle.isNotEmpty)
+                  const SizedBox(height: 2),
                   Text(
-                    '@$handle',
-                    style: AppTextStyles.callout.copyWith(
-                      color: Colors.white.withOpacity(0.85),
+                    _formatRole(role),
+                    style: AppTextStyles.subheadline.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                const SizedBox(height: 10),
+                  if (bio.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      bio,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
 
-                // Role pill
-                _RolePill(role: role),
-              ],
+          // Action buttons row
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _IgButton(
+                      label: 'Edit profile',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const EditProfileScreen()),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _IgButton(
+                      label: 'Share profile',
+                      onTap: () => _shareProfile(context, handle),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _IgIconButton(
+                    icon: Iconsax.user_add,
+                    onTap: () => context.push('/linked-accounts'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Story highlights row
+          SliverToBoxAdapter(
+            child: _HighlightsRow(isAdmin: isAdmin),
+          ),
+
+          const SliverToBoxAdapter(
+            child: Divider(
+              height: 0.5,
+              thickness: 0.5,
+              color: AppColors.border,
+            ),
+          ),
+
+          // Icon tab bar (grid / list / tagged style)
+          const SliverToBoxAdapter(child: _TabBar()),
+
+          const SliverToBoxAdapter(
+            child: Divider(
+              height: 0.5,
+              thickness: 0.5,
+              color: AppColors.border,
+            ),
+          ),
+
+          // Empty grid placeholder
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 60),
+              child: Column(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AppColors.textPrimary, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Iconsax.camera,
+                      size: 30,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Share your first campaign',
+                    style: AppTextStyles.title2.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Your posts will appear on your profile.',
+                    style: AppTextStyles.subheadline.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Blob extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _Blob({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
-  }
-}
-
-class _CircleGlassButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleGlassButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.20),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.35), width: 1),
-        ),
-        alignment: Alignment.center,
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
-}
-
-class _InitialAvatar extends StatelessWidget {
-  final String name;
-
-  const _InitialAvatar({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final letter = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
-    return Container(
-      color: AppColors.primaryLight,
-      alignment: Alignment.center,
-      child: Text(
-        letter,
-        style: AppTextStyles.largeTitle.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 44,
-        ),
-      ),
-    );
-  }
-}
-
-class _RolePill extends StatelessWidget {
-  final String role;
-
-  const _RolePill({required this.role});
-
-  @override
-  Widget build(BuildContext context) {
-    final label =
-        role.isEmpty ? 'Creator' : role[0].toUpperCase() + role.substring(1);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.20),
-        borderRadius: AppRadius.pillAll,
-        border: Border.all(color: Colors.white.withOpacity(0.30), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Iconsax.crown_1, size: 13, color: Colors.white),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTextStyles.footnote.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Stats row (3 colored pill cards)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _StatsRow extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final campaigns = ref.watch(currentUserCampaignsCountProvider);
-    final followers = ref.watch(currentUserFollowersCountProvider);
-    final following = ref.watch(currentUserFollowingCountProvider);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _StatPill(
-            label: 'Campaigns',
-            value: _fmt(campaigns),
-            color: AppColors.primary,
-            bgColor: AppColors.primaryBg,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatPill(
-            label: 'Followers',
-            value: _fmt(followers),
-            color: const Color(0xFF3B82F6),
-            bgColor: const Color(0xFFEFF6FF),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatPill(
-            label: 'Following',
-            value: _fmt(following),
-            color: const Color(0xFFF59E0B),
-            bgColor: const Color(0xFFFEF3C7),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _fmt(AsyncValue<int> v) => v.when(
-        data: (c) {
-          if (c >= 1000000) return '${(c / 1000000).toStringAsFixed(1)}M';
-          if (c >= 1000) return '${(c / 1000).toStringAsFixed(1)}K';
-          return c.toString();
-        },
-        loading: () => '—',
-        error: (_, __) => '0',
-      );
-}
-
-class _StatPill extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final Color bgColor;
-
-  const _StatPill({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.bgColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: AppRadius.allLg,
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTextStyles.title2.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 22,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.caption1.copyWith(
-              color: color.withOpacity(0.75),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Action row
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ActionRow extends StatelessWidget {
-  final String handle;
-
-  const _ActionRow({required this.handle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: _PrimaryActionButton(
-            label: 'Edit Profile',
-            icon: Iconsax.edit_2,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        _SecondaryActionButton(
-          icon: Iconsax.share,
-          onTap: () => _shareProfile(context, handle),
-        ),
-      ],
     );
   }
 
@@ -530,223 +260,76 @@ class _ActionRow extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Profile link copied: $link'),
-        backgroundColor: AppColors.success,
+        backgroundColor: AppColors.textPrimary,
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
     );
   }
-}
 
-class _PrimaryActionButton extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _PrimaryActionButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<_PrimaryActionButton> createState() => _PrimaryActionButtonState();
-}
-
-class _PrimaryActionButtonState extends State<_PrimaryActionButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF059669)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: AppRadius.allLg,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-                spreadRadius: -4,
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(widget.icon, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                widget.label,
-                style: AppTextStyles.headline.copyWith(color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  String _formatRole(String r) {
+    if (r.isEmpty) return 'Creator';
+    return r[0].toUpperCase() + r.substring(1).toLowerCase();
   }
 }
 
-class _SecondaryActionButton extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
+// ─────────────────────────────────────────────────────────────────────────
+// Top bar (Instagram: back arrow / handle centered / menu right)
+// ─────────────────────────────────────────────────────────────────────────
 
-  const _SecondaryActionButton({required this.icon, required this.onTap});
-
-  @override
-  State<_SecondaryActionButton> createState() =>
-      _SecondaryActionButtonState();
-}
-
-class _SecondaryActionButtonState extends State<_SecondaryActionButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBg,
-            borderRadius: AppRadius.allLg,
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            widget.icon,
-            color: AppColors.primaryDeep,
-            size: 22,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Feature grid
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  const _SectionHeader(this.label);
+class _TopBar extends StatelessWidget {
+  final String handle;
+  const _TopBar({required this.handle});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        label,
-        style: AppTextStyles.footnote.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureGrid extends StatelessWidget {
-  final bool isAdmin;
-
-  const _FeatureGrid({required this.isAdmin});
-
-  @override
-  Widget build(BuildContext context) {
-    final tiles = <Widget>[
-      _FeatureTile(
-        title: 'Wallet',
-        subtitle: 'Balance & pay',
-        icon: Iconsax.wallet_1,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF10B981), Color(0xFF34D399)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        onTap: () => context.push('/wallet'),
-      ),
-      _FeatureTile(
-        title: 'Subscriptions',
-        subtitle: 'Your plan',
-        icon: Iconsax.crown_1,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        onTap: () => context.push('/subscriptions'),
-      ),
-      if (isAdmin)
-        _FeatureTile(
-          title: 'Admin Center',
-          subtitle: 'Platform ops',
-          icon: Iconsax.shield_tick,
-          gradient: const LinearGradient(
-            colors: [Color(0xFFEF4444), Color(0xFFF87171)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+      child: Row(
+        children: [
+          const SizedBox(width: 44), // symmetric spacer for centering
+          Expanded(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Iconsax.lock,
+                      size: 14, color: AppColors.textPrimary),
+                  const SizedBox(width: 4),
+                  Text(
+                    handle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.title3.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          onTap: () => context.push('/admin'),
-        ),
-    ];
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.35,
-      children: tiles,
+          _TopBarIcon(
+            icon: Iconsax.setting_2,
+            onTap: () => context.push('/settings'),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _FeatureTile extends StatefulWidget {
-  final String title;
-  final String subtitle;
+class _TopBarIcon extends StatefulWidget {
   final IconData icon;
-  final Gradient gradient;
   final VoidCallback onTap;
 
-  const _FeatureTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.gradient,
-    required this.onTap,
-  });
+  const _TopBarIcon({required this.icon, required this.onTap});
 
   @override
-  State<_FeatureTile> createState() => _FeatureTileState();
+  State<_TopBarIcon> createState() => _TopBarIconState();
 }
 
-class _FeatureTileState extends State<_FeatureTile> {
+class _TopBarIconState extends State<_TopBarIcon> {
   bool _pressed = false;
 
   @override
@@ -757,50 +340,321 @@ class _FeatureTileState extends State<_FeatureTile> {
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: widget.gradient,
-            borderRadius: AppRadius.allLg,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-                spreadRadius: -4,
-              ),
-            ],
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.4 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Icon(widget.icon, size: 24, color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Avatar (no story ring in profile header — matches IG's own profile)
+// ─────────────────────────────────────────────────────────────────────────
+
+class _Avatar extends StatelessWidget {
+  final String? imageUrl;
+  final String name;
+  const _Avatar({required this.imageUrl, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 86,
+      height: 86,
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceAlt,
+        shape: BoxShape.circle,
+      ),
+      child: ClipOval(
+        child: (imageUrl != null && imageUrl!.isNotEmpty)
+            ? Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _initialFallback(),
+              )
+            : _initialFallback(),
+      ),
+    );
+  }
+
+  Widget _initialFallback() {
+    final letter = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
+    return Container(
+      color: AppColors.surfaceAlt,
+      alignment: Alignment.center,
+      child: Text(
+        letter,
+        style: AppTextStyles.largeTitle.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
+          fontSize: 36,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Stats row (Campaigns / Followers / Following)
+// ─────────────────────────────────────────────────────────────────────────
+
+class _StatsRow extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final campaigns = ref.watch(currentUserCampaignsCountProvider);
+    final followers = ref.watch(currentUserFollowersCountProvider);
+    final following = ref.watch(currentUserFollowingCountProvider);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _Stat(value: _fmt(campaigns), label: 'Campaigns'),
+        _Stat(value: _fmt(followers), label: 'Followers'),
+        _Stat(value: _fmt(following), label: 'Following'),
+      ],
+    );
+  }
+
+  String _fmt(AsyncValue<int> v) => v.when(
+        data: (c) {
+          if (c >= 1000000) return '${(c / 1000000).toStringAsFixed(1)}M';
+          if (c >= 1000) return '${(c / 1000).toStringAsFixed(1)}K';
+          return c.toString();
+        },
+        loading: () => '—',
+        error: (_, __) => '0',
+      );
+}
+
+class _Stat extends StatelessWidget {
+  final String value;
+  final String label;
+  const _Stat({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: AppTextStyles.title2.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
           ),
-          padding: const EdgeInsets.all(16),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: AppTextStyles.subheadline.copyWith(
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Instagram bordered action buttons
+// ─────────────────────────────────────────────────────────────────────────
+
+class _IgButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _IgButton({required this.label, required this.onTap});
+
+  @override
+  State<_IgButton> createState() => _IgButtonState();
+}
+
+class _IgButtonState extends State<_IgButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Container(
+          height: 32,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            widget.label,
+            style: AppTextStyles.footnote.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IgIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _IgIconButton({required this.icon, required this.onTap});
+
+  @override
+  State<_IgIconButton> createState() => _IgIconButtonState();
+}
+
+class _IgIconButtonState extends State<_IgIconButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Icon(widget.icon, size: 18, color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Highlights row (Wallet / Subs / Admin as IG-style circular highlights)
+// ─────────────────────────────────────────────────────────────────────────
+
+class _HighlightsRow extends StatelessWidget {
+  final bool isAdmin;
+  const _HighlightsRow({required this.isAdmin});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <_HighlightData>[
+      _HighlightData(
+        icon: Iconsax.wallet_1,
+        label: 'Wallet',
+        onTap: () => context.push('/wallet'),
+      ),
+      _HighlightData(
+        icon: Iconsax.crown_1,
+        label: 'Plan',
+        onTap: () => context.push('/subscriptions'),
+      ),
+      _HighlightData(
+        icon: Iconsax.send_2,
+        label: 'Campaigns',
+        onTap: () => context.push('/my-campaigns'),
+      ),
+      if (isAdmin)
+        _HighlightData(
+          icon: Iconsax.shield_tick,
+          label: 'Admin',
+          onTap: () => context.push('/admin'),
+        ),
+    ];
+
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        itemCount: items.length,
+        itemBuilder: (context, index) =>
+            _HighlightCircle(data: items[index]),
+      ),
+    );
+  }
+}
+
+class _HighlightData {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  _HighlightData({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+}
+
+class _HighlightCircle extends StatefulWidget {
+  final _HighlightData data;
+  const _HighlightCircle({required this.data});
+
+  @override
+  State<_HighlightCircle> createState() => _HighlightCircleState();
+}
+
+class _HighlightCircleState extends State<_HighlightCircle> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.data.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon in white circle
               Container(
-                width: 40,
-                height: 40,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
                   shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border, width: 1),
                 ),
                 alignment: Alignment.center,
-                child: Icon(widget.icon, color: Colors.white, size: 22),
-              ),
-              const Spacer(),
-              Text(
-                widget.title,
-                style: AppTextStyles.headline.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+                child: Icon(
+                  widget.data.icon,
+                  size: 26,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                widget.subtitle,
-                style: AppTextStyles.footnote.copyWith(
-                  color: Colors.white.withOpacity(0.85),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: 72,
+                child: Text(
+                  widget.data.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption1.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -811,13 +665,58 @@ class _FeatureTileState extends State<_FeatureTile> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Tab bar (grid / list style — visual only for now)
+// ─────────────────────────────────────────────────────────────────────────
+
+class _TabBar extends StatelessWidget {
+  const _TabBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      color: Colors.white,
+      child: Row(
+        children: [
+          _tabIcon(context, Iconsax.category, active: true),
+          _tabIcon(context, Iconsax.bookmark, active: false),
+          _tabIcon(context, Iconsax.tag, active: false),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabIcon(BuildContext context, IconData icon,
+      {required bool active}) {
+    return Expanded(
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: active ? AppColors.textPrimary : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 22,
+          color: active ? AppColors.textPrimary : AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Error state
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
 class _ErrorState extends StatelessWidget {
   final VoidCallback onRetry;
-
   const _ErrorState({required this.onRetry});
 
   @override
@@ -826,16 +725,36 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Iconsax.warning_2, size: 48, color: AppColors.textHint),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.textPrimary, width: 1.5),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Iconsax.warning_2,
+                size: 36, color: AppColors.textPrimary),
+          ),
           const SizedBox(height: 16),
-          Text('Failed to load profile',
-              style: AppTextStyles.callout
-                  .copyWith(color: AppColors.textSecondary)),
+          Text(
+            'Failed to load profile',
+            style: AppTextStyles.title2.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: onRetry,
-            child: const Text('Retry',
-                style: TextStyle(color: AppColors.primary)),
+            child: const Text(
+              'Retry',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

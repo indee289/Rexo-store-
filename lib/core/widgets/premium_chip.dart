@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
-import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-/// iOS-style filter / selection chip.
+/// Instagram-style tag / filter chip.
 ///
-/// A pill-shaped button with:
-///   * **Unselected** – system-gray filled pill with primary label
-///   * **Selected**   – tinted emerald pill with the accent as text/icon
-///
-/// Optional leading [icon] and trailing [count] badge supported.
+/// Selected → black filled with white text (IG "highlight" active).
+/// Unselected → white with a hairline border and black text.
 class PremiumChip extends StatefulWidget {
   final String label;
   final bool selected;
@@ -37,40 +33,46 @@ class _PremiumChipState extends State<PremiumChip> {
 
   @override
   Widget build(BuildContext context) {
-    final Color fill = widget.selected
-        ? AppColors.primaryBg
-        : AppColors.surfaceAlt;
+    final Color fill =
+        widget.selected ? AppColors.textPrimary : Colors.white;
     final Color foreground =
-        widget.selected ? AppColors.primaryDeep : AppColors.textPrimary;
+        widget.selected ? Colors.white : AppColors.textPrimary;
+    final Color borderColor = widget.selected
+        ? AppColors.textPrimary
+        : AppColors.border;
 
     final chip = AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md + 2,
-        vertical: AppSpacing.sm + 1,
-      ),
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOut,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: fill,
         borderRadius: AppRadius.pillAll,
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (widget.icon != null) ...[
-            Icon(widget.icon, size: 15, color: foreground),
-            const SizedBox(width: 6),
+            Icon(widget.icon, size: 14, color: foreground),
+            const SizedBox(width: 5),
           ],
           Text(
             widget.label,
             style: AppTextStyles.footnote.copyWith(
               color: foreground,
-              fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
           if (widget.count != null) ...[
-            const SizedBox(width: 6),
-            _CountBadge(count: widget.count!, selected: widget.selected),
+            const SizedBox(width: 5),
+            Text(
+              '(${widget.count})',
+              style: AppTextStyles.footnote.copyWith(
+                color: foreground.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ],
       ),
@@ -88,38 +90,6 @@ class _PremiumChipState extends State<PremiumChip> {
         duration: const Duration(milliseconds: 100),
         opacity: _pressed ? 0.6 : 1.0,
         child: chip,
-      ),
-    );
-  }
-}
-
-class _CountBadge extends StatelessWidget {
-  final int count;
-  final bool selected;
-
-  const _CountBadge({required this.count, required this.selected});
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg =
-        selected ? AppColors.primary : AppColors.systemGray4;
-    final Color fg = Colors.white;
-
-    return Container(
-      constraints: const BoxConstraints(minWidth: 18),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: AppRadius.pillAll,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        '$count',
-        textAlign: TextAlign.center,
-        style: AppTextStyles.caption2.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

@@ -9,8 +9,8 @@ import '../theme/app_text_styles.dart';
 /// Visual variants for [PremiumTextField].
 enum PremiumTextFieldVariant { standard, search, multiline }
 
-/// iOS-style text field — filled with system gray fill, 17pt body,
-/// clean labels, iOS-style clear button, no border in resting state.
+/// Instagram-style text field — flat gray fill (#EFEFEF), no borders,
+/// small radius, 14pt body text.
 class PremiumTextField extends StatefulWidget {
   final TextEditingController? controller;
   final PremiumTextFieldVariant variant;
@@ -152,14 +152,13 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
           child: Icon(
             Iconsax.close_circle,
             size: 18,
-            color: AppColors.systemGray,
+            color: AppColors.textSecondary,
           ),
         ),
       );
     }
 
-    // Borderless iOS-style filled field.
-    OutlineInputBorder border(Color color, [double width = 1.5]) =>
+    OutlineInputBorder border(Color color, [double width = 1]) =>
         OutlineInputBorder(
           borderRadius: AppRadius.allMd,
           borderSide: color == Colors.transparent
@@ -173,22 +172,22 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       prefixText: _isSearch ? null : widget.prefixText,
       prefixIcon: prefix == null
           ? null
-          : Icon(prefix, size: 20, color: AppColors.systemGray),
+          : Icon(prefix, size: 20, color: AppColors.textSecondary),
       suffixIcon: suffix,
       filled: true,
       fillColor: AppColors.surfaceAlt,
       border: border(Colors.transparent),
       enabledBorder: border(Colors.transparent),
-      focusedBorder: border(AppColors.primary, 1.5),
+      focusedBorder: border(Colors.transparent),
       errorBorder: border(AppColors.error),
-      focusedErrorBorder: border(AppColors.error, 1.5),
-      hintStyle: AppTextStyles.body.copyWith(color: AppColors.textHint),
+      focusedErrorBorder: border(AppColors.error, 1),
+      hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
       labelStyle:
           AppTextStyles.subheadline.copyWith(color: AppColors.textSecondary),
       floatingLabelStyle:
           AppTextStyles.footnote.copyWith(color: AppColors.textSecondary),
       contentPadding: EdgeInsets.symmetric(
-        horizontal: 16,
+        horizontal: 14,
         vertical: _isSearch ? 12 : 14,
       ),
       isDense: _isSearch,
@@ -208,7 +207,7 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       maxLines: widget.obscureText ? 1 : (_isMultiline ? widget.maxLines : 1),
       maxLength: widget.maxLength,
       style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-      cursorColor: AppColors.primary,
+      cursorColor: AppColors.textPrimary,
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,

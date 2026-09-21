@@ -7,16 +7,14 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Central app theme — **iOS-inspired, light only**.
+/// Central app theme — **Instagram-inspired, light only**.
 ///
-/// Follows Apple's Human Interface Guidelines: system-grouped background,
-/// pure-white cells, hairline separators, refined SF Pro-style typography,
-/// tight spacing, and restrained shadows. No dark mode by product decision.
+/// Pure white surfaces, hairline separators, blue accents, no shadows.
 class AppTheme {
   AppTheme._();
 
   // ---------------------------------------------------------------------------
-  // Light theme (iOS)
+  // Light theme (Instagram)
   // ---------------------------------------------------------------------------
   static ThemeData get lightTheme {
     return ThemeData(
@@ -25,14 +23,14 @@ class AppTheme {
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: GoogleFonts.inter().fontFamily,
-      splashFactory: NoSplash.splashFactory, // iOS doesn't ripple
+      splashFactory: NoSplash.splashFactory, // IG has no ripple
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
       splashColor: Colors.transparent,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         primaryContainer: AppColors.primaryBg,
-        onPrimaryContainer: AppColors.primaryDeep,
+        onPrimaryContainer: AppColors.primaryDark,
         secondary: AppColors.primary,
         surface: Colors.white,
         error: AppColors.error,
@@ -46,7 +44,7 @@ class AppTheme {
       ),
       textTheme: _buildTextTheme(),
 
-      // ── iOS-style nav bar (translucent, centered title, no elevation) ────
+      // ── Instagram-style app bar ──────────────────────────────────────────
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
@@ -56,36 +54,36 @@ class AppTheme {
         centerTitle: true,
         titleSpacing: AppSpacing.lg,
         iconTheme: const IconThemeData(
-          color: AppColors.primary,
-          size: 22,
+          color: AppColors.textPrimary,
+          size: 24,
         ),
         actionsIconTheme: const IconThemeData(
-          color: AppColors.primary,
-          size: 22,
+          color: AppColors.textPrimary,
+          size: 24,
         ),
-        titleTextStyle: AppTextStyles.headline.copyWith(
+        titleTextStyle: AppTextStyles.title3.copyWith(
           color: AppColors.textPrimary,
         ),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
 
-      // ── iOS-style grouped cards ──────────────────────────────────────────
+      // ── Instagram-style card (no shadow, just white) ─────────────────────
       cardTheme: CardTheme(
         color: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allLg),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
         margin: EdgeInsets.zero,
       ),
 
-      // ── iOS-style filled button ──────────────────────────────────────────
+      // ── IG "Follow" style filled blue button ─────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           textStyle: AppTextStyles.button,
-          minimumSize: const Size(double.infinity, 50),
+          minimumSize: const Size(double.infinity, 44),
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
@@ -94,21 +92,22 @@ class AppTheme {
         ),
       ),
 
-      // ── iOS-style tinted button ──────────────────────────────────────────
+      // ── IG "Following" bordered secondary button ─────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          textStyle: AppTextStyles.button.copyWith(color: AppColors.primary),
-          side: BorderSide.none,
-          backgroundColor: AppColors.primaryBg,
-          minimumSize: const Size(double.infinity, 50),
+          foregroundColor: AppColors.textPrimary,
+          textStyle: AppTextStyles.button
+              .copyWith(color: AppColors.textPrimary),
+          side: const BorderSide(color: AppColors.border, width: 1),
+          backgroundColor: AppColors.background,
+          minimumSize: const Size(double.infinity, 44),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         ),
       ),
 
-      // ── iOS-style plain text button ──────────────────────────────────────
+      // ── IG plain text button (blue links) ────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
@@ -119,18 +118,19 @@ class AppTheme {
         ),
       ),
 
-      // ── iOS-style input field ────────────────────────────────────────────
+      // ── IG search bar / input (gray fill, no border) ─────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceAlt,
         isDense: false,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md + 2,
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
         ),
-        hintStyle: AppTextStyles.body.copyWith(color: AppColors.textHint),
-        labelStyle: AppTextStyles.subheadline
-            .copyWith(color: AppColors.textSecondary),
+        hintStyle:
+            AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+        labelStyle:
+            AppTextStyles.subheadline.copyWith(color: AppColors.textSecondary),
         floatingLabelStyle:
             AppTextStyles.footnote.copyWith(color: AppColors.textSecondary),
         prefixIconColor: AppColors.textSecondary,
@@ -145,20 +145,19 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.allMd,
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide.none,
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.allMd,
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: AppRadius.allMd,
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
       ),
 
-      // ── iOS-style chip ───────────────────────────────────────────────────
+      // ── IG-style tag chip ────────────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceAlt,
         selectedColor: AppColors.primaryBg,
@@ -167,16 +166,16 @@ class AppTheme {
         labelStyle: AppTextStyles.footnote
             .copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
         secondaryLabelStyle:
-            AppTextStyles.footnote.copyWith(color: AppColors.primaryDeep),
+            AppTextStyles.footnote.copyWith(color: AppColors.primary),
         side: BorderSide.none,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.xs + 2,
         ),
       ),
 
-      // ── iOS-style bottom sheet ───────────────────────────────────────────
+      // ── Bottom sheet ─────────────────────────────────────────────────────
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
@@ -189,48 +188,45 @@ class AppTheme {
         dragHandleColor: AppColors.systemGray3,
       ),
 
-      // ── iOS-style dialog ─────────────────────────────────────────────────
+      // ── Dialog ───────────────────────────────────────────────────────────
       dialogTheme: DialogTheme(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.allLg),
-        titleTextStyle: AppTextStyles.headline
+        titleTextStyle: AppTextStyles.title3
             .copyWith(color: AppColors.textPrimary),
         contentTextStyle:
-            AppTextStyles.callout.copyWith(color: AppColors.textPrimary),
+            AppTextStyles.body.copyWith(color: AppColors.textPrimary),
       ),
 
-      // ── iOS-style bottom nav / tab bar ───────────────────────────────────
+      // ── Bottom nav (IG-style — light, no elevation) ──────────────────────
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.systemGray,
-        selectedLabelStyle: AppTextStyles.caption2
-            .copyWith(fontWeight: FontWeight.w600),
+        selectedItemColor: AppColors.textPrimary,
+        unselectedItemColor: AppColors.textPrimary,
+        selectedLabelStyle: AppTextStyles.caption2,
         unselectedLabelStyle: AppTextStyles.caption2,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
       ),
 
-      // ── iOS-style toggle switch (green track) ────────────────────────────
+      // ── IG toggle (blue) ─────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          return Colors.white;
-        }),
+        thumbColor: MaterialStateProperty.resolveWith(
+            (_) => Colors.white),
         trackColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
             return AppColors.primary;
           }
           return AppColors.systemGray4;
         }),
-        trackOutlineColor:
-            MaterialStateProperty.all(Colors.transparent),
+        trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
       ),
 
-      // ── iOS-style checkbox / radio ───────────────────────────────────────
+      // ── Checkbox / Radio (blue) ──────────────────────────────────────────
       checkboxTheme: CheckboxThemeData(
         fillColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
@@ -241,7 +237,7 @@ class AppTheme {
         checkColor: MaterialStateProperty.all(Colors.white),
         side: const BorderSide(color: AppColors.systemGray3, width: 1.5),
         shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
 
       radioTheme: RadioThemeData(
@@ -253,42 +249,39 @@ class AppTheme {
         }),
       ),
 
-      // ── Progress / loading ───────────────────────────────────────────────
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
         linearTrackColor: AppColors.surfaceAlt,
       ),
 
-      // ── Dividers — iOS hairline ──────────────────────────────────────────
+      // ── IG hairline dividers (1px light gray) ────────────────────────────
       dividerTheme: const DividerThemeData(
-        color: AppColors.separator,
+        color: AppColors.border,
         thickness: 0.5,
         space: 0,
       ),
 
-      // ── Text selection / cursor ──────────────────────────────────────────
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: AppColors.primary,
         selectionColor: AppColors.primaryBg,
         selectionHandleColor: AppColors.primary,
       ),
 
-      // ── Snackbar (iOS-style toast look) ──────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
         contentTextStyle:
-            AppTextStyles.callout.copyWith(color: Colors.white),
+            AppTextStyles.body.copyWith(color: Colors.white),
         actionTextColor: AppColors.primaryLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
         elevation: 0,
       ),
 
-      // ── List tile — iOS grouped cell base ────────────────────────────────
+      // ── IG list tile (minimal, no color) ─────────────────────────────────
       listTileTheme: ListTileThemeData(
         tileColor: Colors.white,
-        selectedTileColor: AppColors.primaryBg,
-        iconColor: AppColors.textSecondary,
+        selectedTileColor: AppColors.surfaceAlt,
+        iconColor: AppColors.textPrimary,
         textColor: AppColors.textPrimary,
         titleTextStyle:
             AppTextStyles.body.copyWith(color: AppColors.textPrimary),
@@ -298,51 +291,40 @@ class AppTheme {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.xs,
         ),
-        minLeadingWidth: 32,
+        minLeadingWidth: 28,
         horizontalTitleGap: AppSpacing.md,
         shape: const RoundedRectangleBorder(),
       ),
 
-      // ── Icons ────────────────────────────────────────────────────────────
       iconTheme: const IconThemeData(
-        color: AppColors.textSecondary,
-        size: 22,
+        color: AppColors.textPrimary,
+        size: 24,
       ),
 
-      // ── Tab bar (segmented control feel) ────────────────────────────────
+      // ── IG tab bar (Photos/Reels/Tagged style) ──────────────────────────
       tabBarTheme: TabBarTheme(
         labelColor: AppColors.textPrimary,
         unselectedLabelColor: AppColors.textSecondary,
-        labelStyle: AppTextStyles.subheadline
-            .copyWith(fontWeight: FontWeight.w600),
+        labelStyle:
+            AppTextStyles.subheadline.copyWith(fontWeight: FontWeight.w600),
         unselectedLabelStyle: AppTextStyles.subheadline,
-        indicatorColor: AppColors.primary,
-        indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: Colors.transparent,
+        indicatorColor: AppColors.textPrimary,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: AppColors.border,
       ),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Dark theme — LIGHT-ONLY app: this returns [lightTheme] as an alias.
-  //
-  // Kept for API compatibility with any existing call-sites that reference
-  // `AppTheme.darkTheme` (e.g. MaterialApp.darkTheme wiring). Product decision:
-  // no dark mode.
-  // ---------------------------------------------------------------------------
+  // Dark alias — points to light (app is light-only).
   static ThemeData get darkTheme => lightTheme;
 
-  // ---------------------------------------------------------------------------
-  // Text theme — iOS scale mapped to Material 3 slots.
-  // ---------------------------------------------------------------------------
   static TextTheme _buildTextTheme() {
-    Color primary = AppColors.textPrimary;
-    Color secondary = AppColors.textSecondary;
-    Color hint = AppColors.textHint;
+    const Color primary = AppColors.textPrimary;
+    const Color secondary = AppColors.textSecondary;
+    const Color hint = AppColors.textHint;
 
     return TextTheme(
-      displayLarge:
-          AppTextStyles.largeTitle.copyWith(color: primary),
+      displayLarge: AppTextStyles.largeTitle.copyWith(color: primary),
       displayMedium: AppTextStyles.title1.copyWith(color: primary),
       displaySmall: AppTextStyles.title2.copyWith(color: primary),
       headlineLarge: AppTextStyles.title1.copyWith(color: primary),
@@ -353,7 +335,7 @@ class AppTheme {
       titleSmall: AppTextStyles.subheadline
           .copyWith(color: primary, fontWeight: FontWeight.w600),
       bodyLarge: AppTextStyles.body.copyWith(color: primary),
-      bodyMedium: AppTextStyles.callout.copyWith(color: primary),
+      bodyMedium: AppTextStyles.body.copyWith(color: primary),
       bodySmall: AppTextStyles.subheadline.copyWith(color: secondary),
       labelLarge: AppTextStyles.labelLarge.copyWith(color: primary),
       labelMedium: AppTextStyles.labelMedium.copyWith(color: secondary),
