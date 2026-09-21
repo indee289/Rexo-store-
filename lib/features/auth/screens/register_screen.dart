@@ -26,6 +26,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _handleController = TextEditingController();
   bool _obscurePassword = true;
   String _selectedRole = 'creator';
 
@@ -34,6 +35,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _handleController.dispose();
     super.dispose();
   }
 
@@ -54,8 +56,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     await ref.read(authProvider.notifier).signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          name: _nameController.text.trim(),
+          fullName: _nameController.text.trim(),
           role: _selectedRole,
+          handle: _handleController.text.trim().isEmpty
+              ? _emailController.text.trim().split('@').first
+              : _handleController.text.trim(),
         );
 
     if (!mounted) return;
@@ -131,6 +136,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Enter email';
                       if (!v.contains('@')) return 'Invalid email';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Username
+                  _IgTextField(
+                    controller: _handleController,
+                    hint: 'Username',
+                    textInputAction: TextInputAction.next,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Choose a username';
+                      if (v.trim().length < 3) return 'Min 3 characters';
                       return null;
                     },
                   ),
