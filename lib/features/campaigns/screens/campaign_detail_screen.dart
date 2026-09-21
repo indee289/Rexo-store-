@@ -307,13 +307,11 @@ class _CampaignDetailScrollView extends StatelessWidget {
     return SafeArea(
       top: false,
       bottom: false,
-      child: CustomScrollView(
+      child: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                 // Cover header with overlaid app bar + status/category pill.
                 _CoverHeader(
                   coverImageUrl: coverImageUrl,
@@ -589,10 +587,9 @@ class _CampaignDetailScrollView extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    }
 
   static List<String> _hashtagsFrom(dynamic raw) {
     if (raw == null) return const [];

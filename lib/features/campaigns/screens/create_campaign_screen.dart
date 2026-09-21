@@ -30,6 +30,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   final _budgetController = TextEditingController();
   final _perCreatorController = TextEditingController();
   final _companyNameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _rulesController = TextEditingController();
   DateTime? _deadline;
 
   String _selectedCategory = 'Logo';
@@ -77,6 +79,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     _budgetController.dispose();
     _perCreatorController.dispose();
     _companyNameController.dispose();
+    _descriptionController.dispose();
+    _rulesController.dispose();
     super.dispose();
   }
 
@@ -107,6 +111,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       await SupabaseService.client.from('campaigns').insert({
         'brandId': user.id,           // live: brandId (camelCase)
         'title': _campaignNameController.text.trim(),
+        'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
         'platform': platformForDb,
         'slots': int.tryParse(_slotsController.text.trim()) ?? 1,        'filled_slots': 0,
@@ -118,6 +123,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'cover_image': _coverImageUrl,
         'gender': _selectedGender,
         'page_profile_category': _selectedPageProfileCategory,
+        'rules': _rulesController.text.trim().isEmpty
+            ? null
+            : _rulesController.text.trim(),
         'status': 'active',
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
@@ -308,6 +316,30 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                   }
                   return null;
                 },
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // 8b. Campaign Description
+              _buildLabel('Description'),
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField.multiline(
+                controller: _descriptionController,
+                hint: 'Describe your campaign — what creators need to know',
+                minLines: 3,
+                maxLines: 6,
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // 8c. Campaign Rules (optional)
+              _buildLabel('Rules (Optional)'),
+              const SizedBox(height: AppSpacing.sm),
+              PremiumTextField.multiline(
+                controller: _rulesController,
+                hint: 'Any specific rules or guidelines for creators',
+                minLines: 2,
+                maxLines: 4,
               ),
 
               const SizedBox(height: AppSpacing.lg),
