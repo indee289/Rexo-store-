@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
+import '../theme/app_text_styles.dart';
 
-/// Fixed bottom navigation bar (matches the Home reference).
+/// iOS-style tab bar.
 ///
-/// Exactly four tabs — Home, Campaigns, Jobs, Profile — each with an icon and
-/// a label. The active tab shows a soft violet rounded chip behind its icon
-/// plus a violet label; inactive tabs show a muted icon + label. Theme-aware.
+/// Four tabs — Home, Campaigns, Jobs, Profile. Follows Apple's tab bar
+/// conventions: white background, subtle top hairline, small icons above
+/// tiny labels, active tab tinted with the app accent (emerald).
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -20,46 +20,33 @@ class AppBottomNav extends StatelessWidget {
   });
 
   static const _items = [
-    _Item(Iconsax.home_2, 'Home'),
-    _Item(Iconsax.send_2, 'Campaigns'),
-    _Item(Iconsax.briefcase, 'Jobs'),
-    _Item(Iconsax.user, 'Profile'),
+    _Item(Iconsax.home_2, Iconsax.home_2, 'Home'),
+    _Item(Iconsax.send_2, Iconsax.send_2, 'Campaigns'),
+    _Item(Iconsax.briefcase, Iconsax.briefcase, 'Jobs'),
+    _Item(Iconsax.user, Iconsax.user, 'Profile'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final barColor = isDark ? AppColors.darkSurface : Colors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-    final inactive = isDark ? AppColors.darkTextHint : AppColors.textHint;
-
     return Container(
-      decoration: BoxDecoration(
-        color: barColor,
-        border: Border(top: BorderSide(color: borderColor, width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.30 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, -2),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.separator, width: 0.5),
+        ),
       ),
       child: SafeArea(
         top: false,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 64),
-          child: IntrinsicHeight(
-            child: Row(
-              children: List.generate(
-                _items.length,
-                (i) => Expanded(
-                  child: _NavItem(
-                    item: _items[i],
-                    active: currentIndex == i,
-                    inactiveColor: inactive,
-                    onTap: () => onTap(i),
-                  ),
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            children: List.generate(
+              _items.length,
+              (i) => Expanded(
+                child: _TabItem(
+                  item: _items[i],
+                  active: currentIndex == i,
+                  onTap: () => onTap(i),
                 ),
               ),
             ),
@@ -72,64 +59,63 @@ class AppBottomNav extends StatelessWidget {
 
 class _Item {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
-  const _Item(this.icon, this.label);
+  const _Item(this.icon, this.activeIcon, this.label);
 }
 
-class _NavItem extends StatelessWidget {
+class _TabItem extends StatefulWidget {
   final _Item item;
   final bool active;
-  final Color inactiveColor;
   final VoidCallback onTap;
 
-  const _NavItem({
+  const _TabItem({
     required this.item,
     required this.active,
-    required this.inactiveColor,
     required this.onTap,
   });
 
   @override
+  State<_TabItem> createState() => _TabItemState();
+}
+
+class _TabItemState extends State<_TabItem> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final Color tint =
+        widget.active ? AppColors.primary : AppColors.systemGray;
+
     return GestureDetector(
-      onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.6 : 1.0,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-              decoration: BoxDecoration(
-                color: active
-                    ? AppColors.primary.withOpacity(0.12)
-                    : Colors.transparent,
-                borderRadius: AppRadius.allMd,
-              ),
-              child: Icon(
-                item.icon,
-                size: 22,
-                color: active ? AppColors.primary : inactiveColor,
-              ),
+            Icon(
+              widget.active ? widget.item.activeIcon : widget.item.icon,
+              size: 25,
+              color: tint,
             ),
-            const SizedBox(height: 2),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active ? AppColors.primary : inactiveColor,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+            const SizedBox(height: 3),
+            Text(
+              widget.item.label,
+              style: AppTextStyles.caption2.copyWith(
+                color: tint,
+                fontWeight:
+                    widget.active ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

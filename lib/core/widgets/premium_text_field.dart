@@ -4,12 +4,13 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
+import '../theme/app_text_styles.dart';
 
 /// Visual variants for [PremiumTextField].
 enum PremiumTextFieldVariant { standard, search, multiline }
 
-/// Clean teal-focused text field: #F8FAFC fill, 12px radius, 1px border,
-/// 2px teal on focus, floating label or hint, prefix/suffix icons.
+/// iOS-style text field — filled with system gray fill, 17pt body,
+/// clean labels, iOS-style clear button, no border in resting state.
 class PremiumTextField extends StatefulWidget {
   final TextEditingController? controller;
   final PremiumTextFieldVariant variant;
@@ -138,30 +139,27 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor =
-        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-    final hintColor =
-        isDark ? AppColors.darkTextHint : AppColors.textHint;
-    final labelColor =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final textColor =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-
     final IconData? prefix =
         _isSearch ? Iconsax.search_normal : widget.prefixIcon;
 
     Widget? suffix = widget.suffix;
     if (_isSearch && _controller.text.isNotEmpty) {
-      suffix = IconButton(
-        icon: const Icon(Iconsax.close_circle, size: 18),
-        color: hintColor,
-        onPressed: _clear,
+      suffix = GestureDetector(
+        onTap: _clear,
+        behavior: HitTestBehavior.opaque,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Icon(
+            Iconsax.close_circle,
+            size: 18,
+            color: AppColors.systemGray,
+          ),
+        ),
       );
     }
 
-    // Borderless filled fields; only the focus state shows a green outline.
-    OutlineInputBorder _border(Color color, [double width = 1.5]) =>
+    // Borderless iOS-style filled field.
+    OutlineInputBorder border(Color color, [double width = 1.5]) =>
         OutlineInputBorder(
           borderRadius: AppRadius.allMd,
           borderSide: color == Colors.transparent
@@ -175,27 +173,26 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       prefixText: _isSearch ? null : widget.prefixText,
       prefixIcon: prefix == null
           ? null
-          : Icon(prefix, size: 20, color: hintColor),
+          : Icon(prefix, size: 20, color: AppColors.systemGray),
       suffixIcon: suffix,
       filled: true,
-      fillColor: fillColor,
-      border: _border(Colors.transparent),
-      enabledBorder: _border(Colors.transparent),
-      focusedBorder: _border(AppColors.primary, 1.5),
-      errorBorder: _border(AppColors.error),
-      focusedErrorBorder: _border(AppColors.error, 1.5),
-      hintStyle: TextStyle(fontSize: 14, color: hintColor),
-      labelStyle: TextStyle(fontSize: 14, color: labelColor),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      fillColor: AppColors.surfaceAlt,
+      border: border(Colors.transparent),
+      enabledBorder: border(Colors.transparent),
+      focusedBorder: border(AppColors.primary, 1.5),
+      errorBorder: border(AppColors.error),
+      focusedErrorBorder: border(AppColors.error, 1.5),
+      hintStyle: AppTextStyles.body.copyWith(color: AppColors.textHint),
+      labelStyle:
+          AppTextStyles.subheadline.copyWith(color: AppColors.textSecondary),
+      floatingLabelStyle:
+          AppTextStyles.footnote.copyWith(color: AppColors.textSecondary),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: _isSearch ? 12 : 14,
+      ),
+      isDense: _isSearch,
     );
-
-    if (_isSearch) {
-      decoration = decoration.copyWith(
-        isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      );
-    }
 
     return TextFormField(
       controller: _controller,
@@ -210,7 +207,8 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
       minLines: _isMultiline ? widget.minLines : 1,
       maxLines: widget.obscureText ? 1 : (_isMultiline ? widget.maxLines : 1),
       maxLength: widget.maxLength,
-      style: TextStyle(fontSize: 14, color: textColor),
+      style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+      cursorColor: AppColors.primary,
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,

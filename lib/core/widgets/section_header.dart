@@ -2,40 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_motion.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-/// A consistent "section title + optional action" row (Component_Library).
+/// iOS-style section header.
 ///
-/// Replaces the many ad-hoc inline title rows (e.g. "Top Creators — See all")
-/// with one token-driven primitive. The title uses [AppTextStyles.h6], an
-/// optional [subtitle] uses [AppTextStyles.caption], and the trailing action is
-/// a compact text button with an Iconsax chevron.
+/// Two visual patterns depending on context:
 ///
-/// Provide either [actionLabel] + [onAction] for the standard text action, or a
-/// fully custom [action] widget (which takes precedence).
+/// 1. **Standalone title row** — a strong title with an optional "See all >"
+///    trailing action (used in Home / Explore feed sections).
+/// 2. **iOS grouped list header** — a small uppercase-ish gray label above a
+///    grouped list section. Achieved via [uppercase] flag.
+///
+/// The primary [title] is bold (17pt), subtitle uses iOS footnote gray.
 class SectionHeader extends StatelessWidget {
-  /// Section title.
   final String title;
-
-  /// Optional supporting line under the title.
   final String? subtitle;
-
-  /// Label for the trailing text action (e.g. "See all").
   final String? actionLabel;
-
-  /// Tap handler for the trailing text action.
   final VoidCallback? onAction;
-
-  /// Trailing Iconsax glyph shown after [actionLabel]. Defaults to a chevron.
   final IconData actionIcon;
-
-  /// Fully custom trailing widget. Overrides [actionLabel]/[onAction].
   final Widget? action;
-
-  /// Outer padding around the header row.
   final EdgeInsetsGeometry padding;
+
+  /// When true renders in iOS grouped-header style: small gray label,
+  /// no action row. Used above grouped list sections.
+  final bool uppercase;
 
   const SectionHeader({
     super.key,
@@ -46,12 +37,32 @@ class SectionHeader extends StatelessWidget {
     this.actionIcon = Iconsax.arrow_right_3,
     this.action,
     this.padding = const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    this.uppercase = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // iOS grouped-header style — subdued gray label used above list groups.
+    if (uppercase) {
+      return Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.md,
+          bottom: AppSpacing.xs + 2,
+        ),
+        child: Text(
+          title.toUpperCase(),
+          style: AppTextStyles.footnote.copyWith(
+            color: AppColors.textSecondary,
+            letterSpacing: 0.3,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      );
+    }
 
+    // Standalone title row (feed section headers).
     return Padding(
       padding: padding,
       child: Row(
@@ -64,15 +75,15 @@ class SectionHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.h6.copyWith(
-                    color: colorScheme.onSurface,
+                  style: AppTextStyles.title3.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xs),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle!,
-                    style: AppTextStyles.caption.copyWith(
+                    style: AppTextStyles.footnote.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -87,7 +98,6 @@ class SectionHeader extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             _SectionAction(
               label: actionLabel!,
-              icon: actionIcon,
               onTap: onAction!,
             ),
           ],
@@ -97,15 +107,13 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-/// Compact tappable text action ("See all >") with press-scale feedback.
+/// iOS-style "See All" text action — accent color, tight tracking.
 class _SectionAction extends StatefulWidget {
   final String label;
-  final IconData icon;
   final VoidCallback onTap;
 
   const _SectionAction({
     required this.label,
-    required this.icon,
     required this.onTap,
   });
 
@@ -116,40 +124,23 @@ class _SectionAction extends StatefulWidget {
 class _SectionActionState extends State<_SectionAction> {
   bool _pressed = false;
 
-  void _setPressed(bool value) {
-    if (value == _pressed) return;
-    setState(() => _pressed = value);
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onTap,
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? AppMotion.pressScale : 1,
-        duration: AppMotion.fast,
-        curve: AppMotion.standard,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.label,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Icon(
-              widget.icon,
-              size: 16,
-              color: AppColors.primary,
-            ),
-          ],
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.4 : 1.0,
+        child: Text(
+          widget.label,
+          style: AppTextStyles.subheadline.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
