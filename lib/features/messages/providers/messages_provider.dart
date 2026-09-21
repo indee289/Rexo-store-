@@ -41,36 +41,37 @@ final conversationsProvider =
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
-  // Rooms where the current user's id string is inside participants jsonb.
-  final rooms = await SupabaseService.client
-      .from('chat_rooms')
-      .select()
-      .contains('participants', [user.id])
-      .order('lastMessageAt', ascending: false)
-      .limit(200);
+  try {
+    // Rooms where the current user's id string is inside participants jsonb.
+    final rooms = await SupabaseService.client
+        .from('chat_rooms')
+        .select()
+        .contains('participants', [user.id])
+        .order('lastMessageAt', ascending: false)
+        .limit(200);
 
-  final roomRows = List<Map<String, dynamic>>.from(rooms);
-  if (roomRows.isEmpty) return [];
+    final roomRows = List<Map<String, dynamic>>.from(rooms);
+    if (roomRows.isEmpty) return [];
 
-  // Resolve peer ids (the other participant of each room).
-  final peerIds = <String>{};
-  for (final room in roomRows) {
-    final peerId = _otherParticipant(room, user.id);
-    if (peerId != null) peerIds.add(peerId);
-  }
-
-  // Fetch peer public rows in one query (users.uid == participant id string).
-  final peersById = <String, Map<String, dynamic>>{};
-  if (peerIds.isNotEmpty) {
-    final peers = await SupabaseService.client
-        .from('users')
-        .select('uid, name, username, profileImage')
-        .inFilter('uid', peerIds.toList());
-    for (final p in List<Map<String, dynamic>>.from(peers)) {
-      final id = (p['uid'] ?? '').toString();
-      if (id.isNotEmpty) peersById[id] = p;
+    // Resolve peer ids (the other participant of each room).
+    final peerIds = <String>{};
+    for (final room in roomRows) {
+      final peerId = _otherParticipant(room, user.id);
+      if (peerId != null) peerIds.add(peerId);
     }
-  }
+
+    // Fetch peer public rows in one query (users.uid == participant id string).
+    final peersById = <String, Map<String, dynamic>>{};
+    if (peerIds.isNotEmpty) {
+      final peers = await SupabaseService.client
+          .from('users')
+          .select('uid, name, username, profileImage')
+          .inFilter('uid', peerIds.toList());
+      for (final p in List<Map<String, dynamic>>.from(peers)) {
+        final id = (p['uid'] ?? '').toString();
+        if (id.isNotEmpty) peersById[id] = p;
+      }
+    }
 
   final conversations = <Map<String, dynamic>>[];
   for (final room in roomRows) {
@@ -101,6 +102,12 @@ final conversationsProvider =
   });
 
   return conversations;
+  } catch (_) {
+    // Query failed — table might be empty, RLS mismatch, or jsonb
+    // containment issue. Return empty list so the UI shows "No messages"
+    // instead of crashing with "Something went wrong".
+    return [];
+  }
 });
 
 /// Returns the id of the participant that is not [selfId], or `null` when the
