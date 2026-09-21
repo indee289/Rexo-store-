@@ -204,9 +204,6 @@ class WalletScreen extends ConsumerWidget {
       ),
     );
   }
-      ),
-    );
-  }
 
   Widget _buildTransactionTile(
       BuildContext context, Map<String, dynamic> transaction) {
