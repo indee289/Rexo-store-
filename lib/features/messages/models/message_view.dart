@@ -1,75 +1,58 @@
-/// Typed view model used by the messaging UI, parsed from a `messages` row.
+/// Typed view model used by the messaging UI, parsed from a `chat_messages`
+/// row (the live table).
 ///
-/// Wraps the base message columns (`id`, `sender_id`, `receiver_id`, `content`,
-/// `is_read`, `created_at`) together with the soft-state columns added by the
-/// message soft-state migration (`is_unsent`, `edited_at`, `deleted_for`).
+/// The live `chat_messages` table uses camelCase columns:
+///   id (uuid), chatRoomId (text), senderId (text), text (the body),
+///   type (text), imageUrl (text), status (text), timestamp (created-at),
+///   readBy (jsonb), isEdited (bool), updatedAt (timestamptz), reactions (jsonb)
 ///
-/// The [fromMap] factory is null-safe and tolerates legacy rows that predate
-/// the soft-state migration: missing `is_unsent` defaults to `false`, missing
-/// `edited_at` defaults to `null`, and missing `deleted_for` defaults to an
-/// empty list.
-///
-/// See design "Data Models > Message model".
+/// There is no dedicated `is_unsent` column, so an unsent message is modeled by
+/// `status == 'deleted'`. The [fromMap] factory is null-safe and also tolerates
+/// the legacy `messages`-table field names (`sender_id`, `content`, `is_read`,
+/// `created_at`) so nothing breaks if an older row shape ever appears.
 class MessageView {
   final String id;
   final String senderId;
-  final String receiverId;
 
-  /// The raw stored content. Prefer [displayContent] for rendering, which
-  /// hides content for unsent messages.
+  /// The raw stored body. Prefer [displayContent] for rendering, which hides
+  /// content for unsent messages.
   final String content;
   final bool isRead;
   final DateTime createdAt;
 
-  // Soft-state fields.
-
-  /// `true` when the sender unsent the message; content is hidden for everyone.
+  /// `true` when the message was unsent (`chat_messages.status == 'deleted'`);
+  /// the body is hidden for everyone.
   final bool isUnsent;
 
-  /// Non-null when the message was edited; presence means show an "edited" label.
-  final DateTime? editedAt;
-
-  /// User ids that have deleted this message for themselves (client filters).
-  final List<String> deletedFor;
+  /// `true` when the message was edited (`chat_messages.isEdited`); presence
+  /// means the UI shows an "edited" label.
+  final bool isEdited;
 
   const MessageView({
     required this.id,
     required this.senderId,
-    required this.receiverId,
     required this.content,
     required this.isRead,
     required this.createdAt,
     this.isUnsent = false,
-    this.editedAt,
-    this.deletedFor = const [],
+    this.isEdited = false,
   });
 
   /// Displayed body: empty for unsent messages, otherwise the raw [content].
-  ///
-  /// Unsent bubbles render a "message unsent" placeholder and expose no actions.
   String get displayContent => isUnsent ? '' : content;
 
-  /// Whether the message has been edited (presence of an edit timestamp).
-  bool get isEdited => editedAt != null;
-
-  /// Null-safe parse of a `messages` row into a [MessageView].
-  ///
-  /// Handles missing or legacy columns gracefully so rows created before the
-  /// soft-state migration still parse:
-  /// - `is_unsent` -> `false`
-  /// - `edited_at` -> `null`
-  /// - `deleted_for` -> `[]`
+  /// Null-safe parse of a `chat_messages` row (with legacy fallbacks) into a
+  /// [MessageView].
   factory MessageView.fromMap(Map<String, dynamic> map) {
+    final status = (map['status'] ?? '').toString().toLowerCase();
     return MessageView(
       id: (map['id'] ?? '').toString(),
-      senderId: (map['sender_id'] ?? '').toString(),
-      receiverId: (map['receiver_id'] ?? '').toString(),
-      content: (map['content'] ?? '').toString(),
-      isRead: _parseBool(map['is_read']),
-      createdAt: _parseDate(map['created_at']),
-      isUnsent: _parseBool(map['is_unsent']),
-      editedAt: _parseNullableDate(map['edited_at']),
-      deletedFor: _parseStringList(map['deleted_for']),
+      senderId: (map['senderId'] ?? map['sender_id'] ?? '').toString(),
+      content: (map['text'] ?? map['content'] ?? '').toString(),
+      isRead: _parseBool(map['is_read']) || status == 'read' || status == 'seen',
+      createdAt: _parseDate(map['timestamp'] ?? map['created_at']),
+      isUnsent: status == 'deleted' || _parseBool(map['is_unsent']),
+      isEdited: _parseBool(map['isEdited']) || map['edited_at'] != null,
     );
   }
 
@@ -99,39 +82,18 @@ class MessageView {
     if (str.isEmpty) return null;
     return DateTime.tryParse(str);
   }
-
-  /// Parses a list of user-id strings from a Postgres `uuid[]` value. Accepts a
-  /// `List` (any element types) and defaults to an empty list otherwise.
-  static List<String> _parseStringList(dynamic value) {
-    if (value is List) {
-      return value
-          .where((e) => e != null)
-          .map((e) => e.toString())
-          .toList(growable: false);
-    }
-    return const [];
-  }
 }
 
 /// Returns the messages visible to [currentUserId], preserving the input's
 /// ascending `createdAt` order.
 ///
-/// A message is visible iff [currentUserId] is not present in its
-/// `deletedFor` set. Unsent messages remain in the result (rendered as a
-/// placeholder by the UI) unless the current user also deleted them for
-/// themselves.
+/// With the live `chat_messages` schema there is no per-user "delete for me"
+/// column, so every message is visible to both participants. Unsent messages
+/// remain in the result (rendered as a placeholder by the UI). This function is
+/// kept for the chat screen's call site and to leave room for future per-user
+/// hiding without touching the widget layer.
 ///
 /// Pure function: does not mutate [all]; the returned list is a new list.
-///
-/// See design "Key Functions > visibleMessages" and "Algorithmic Pseudocode".
 List<MessageView> visibleMessages(List<MessageView> all, String currentUserId) {
-  final result = <MessageView>[];
-  for (final m in all) {
-    // Invariant: result holds all not-deleted-for-me messages seen so far,
-    // in original order.
-    if (!m.deletedFor.contains(currentUserId)) {
-      result.add(m);
-    }
-  }
-  return result;
+  return List<MessageView>.of(all);
 }

@@ -85,7 +85,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   return const EmptyState(
                     icon: Iconsax.message,
                     title: 'No messages yet',
-                    subtitle: 'Start a conversation',
+                    subtitle: "Start a conversation and it'll show up here.",
                   );
                 }
 
@@ -94,7 +94,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   return const EmptyState(
                     icon: Iconsax.search_normal,
                     title: 'No matches',
-                    subtitle: 'Try a different name',
+                    subtitle: 'Try a different name.',
                   );
                 }
 
@@ -119,7 +119,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ),
               error: (e, _) => EmptyState(
                 icon: Iconsax.warning_2,
-                title: 'Failed to load messages',
+                title: "Couldn't load your messages",
                 subtitle: ErrorUtils.sanitize(e),
               ),
             ),
@@ -325,7 +325,7 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                         itemBuilder: (context, index) {
                           final user = users[index];
                           final userId =
-                              user['user_id'] as String? ?? '';
+                              user['uid'] as String? ?? ''; // live: uid
                           final name = user['name'] as String? ?? 'User';
                           final username =
                               user['username'] as String? ?? ''; // live: username

@@ -182,7 +182,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       } catch (e) {
         if (mounted) {
           setState(() => _isUploadingAvatar = false);
-          _showSnack('Upload failed: ${e.toString()}', AppColors.error);
+          _showSnack(ErrorUtils.sanitize(e), AppColors.error);
         }
       }
     }

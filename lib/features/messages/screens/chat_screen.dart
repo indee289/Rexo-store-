@@ -235,8 +235,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     color: AppColors.primary),
               ),
               error: (e, _) => Center(
-                child: Text('Failed to load messages',
-                    style: TextStyle(color: cs.onSurfaceVariant)),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Text(
+                    "Couldn't load this chat. Check your connection and try again.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: cs.onSurfaceVariant),
+                  ),
+                ),
               ),
             ),
           ),
@@ -506,20 +512,6 @@ class _MessageActionsSheetState
     }
   }
 
-  Future<void> _deleteForMe() async {
-    setState(() => _busy = true);
-    final ok = await ref
-        .read(messageActionsProvider.notifier)
-        .deleteForMe(widget.message.id);
-    if (!mounted) return;
-    if (ok) {
-      _closeOnSuccess();
-    } else {
-      setState(() => _busy = false);
-      _showSnack("Couldn't update message.");
-    }
-  }
-
   Future<void> _saveEdit() async {
     if (!widget.isMine || widget.message.isUnsent) {
       _showSnack('Only the sender can do that.');
@@ -569,14 +561,9 @@ class _MessageActionsSheetState
           _ActionRow(
             icon: Iconsax.slash,
             label: 'Unsend',
+            destructive: true,
             onTap: _busy ? null : _unsend,
           ),
-        _ActionRow(
-          icon: Iconsax.trash,
-          label: 'Delete for me',
-          destructive: true,
-          onTap: _busy ? null : _deleteForMe,
-        ),
         _ActionRow(
           icon: Iconsax.copy,
           label: 'Copy',

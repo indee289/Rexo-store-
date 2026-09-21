@@ -217,14 +217,37 @@ final campaignActionsProvider =
 final campaignApplicantsProvider =
     FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, campaignId) async {
+  // Fetch applications, then enrich each with the creator's public user row
+  // separately. We avoid the PostgREST embedded join (`creator:users!creatorId`)
+  // because the live `applications.creatorId` column is plain text (matching
+  // `users.uid`) with no FK relationship, so the embedded form errors out.
   final response = await SupabaseService.client
       .from('applications')
-      .select(
-          '*, creator:users!creatorId(id, name, username, profileImage, isVerified)') // live columns
+      .select()
       .eq('campaignId', campaignId)   // live: camelCase
       .order('createdAt', ascending: false); // live: createdAt
 
-  return List<Map<String, dynamic>>.from(response);
+  final rows = List<Map<String, dynamic>>.from(response);
+  final result = <Map<String, dynamic>>[];
+
+  for (final row in rows) {
+    final creatorId = (row['creatorId'] ?? '').toString();
+    Map<String, dynamic>? creator;
+    if (creatorId.isNotEmpty) {
+      try {
+        creator = await SupabaseService.client
+            .from('users')
+            .select('uid, name, username, profileImage, isVerified') // live cols
+            .eq('uid', creatorId)
+            .maybeSingle();
+      } catch (_) {
+        creator = null;
+      }
+    }
+    result.add({...row, 'creator': creator});
+  }
+
+  return result;
 });
 
 /// Current user's own profile row (used to prefill the Apply form). Named
