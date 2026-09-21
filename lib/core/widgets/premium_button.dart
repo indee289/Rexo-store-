@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -7,7 +9,14 @@ import '../theme/app_text_styles.dart';
 /// Visual variants for [PremiumButton].
 enum PremiumButtonVariant { filled, tonal, outline, ghost, glass }
 
-/// Clean teal button with variants matching the Instagram-style design system.
+/// Premium button — modern, animated, brand-accented.
+///
+/// Variants:
+/// - [filled]: gradient CTA with soft glow shadow (main call-to-action)
+/// - [tonal]: subtle tinted fill for secondary actions
+/// - [outline]: bordered, transparent fill
+/// - [ghost]: text-only
+/// - [glass]: frosted glass (BackdropFilter blur) with hairline rim
 class PremiumButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -35,7 +44,7 @@ class PremiumButton extends StatefulWidget {
 class _PremiumButtonState extends State<PremiumButton> {
   bool _pressed = false;
 
-  static const double _height = 46;
+  static const double _height = 48;
 
   bool get _enabled => widget.onPressed != null && !widget.loading;
 
@@ -75,37 +84,58 @@ class _PremiumButtonState extends State<PremiumButton> {
                   style: AppTextStyles.button.copyWith(
                     color: style.foreground,
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
                   ),
                 ),
               ),
             ],
           );
 
+    // Filled variant gets a layered emerald glow for premium depth.
+    final List<BoxShadow>? shadows =
+        (widget.variant == PremiumButtonVariant.filled && _enabled)
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(isDark ? 0.45 : 0.35),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -4,
+                ),
+                BoxShadow(
+                  color: AppColors.primaryDark.withOpacity(isDark ? 0.35 : 0.20),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                  spreadRadius: -2,
+                ),
+              ]
+            : null;
+
     Widget surface = Container(
       constraints: const BoxConstraints(minHeight: _height),
       width: widget.expand ? double.infinity : null,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: style.fill,
         gradient: style.gradientDecoration,
         borderRadius: AppRadius.allMd,
         border: style.border,
-        boxShadow:
-            (widget.variant == PremiumButtonVariant.filled && _enabled)
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.30),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                      spreadRadius: -2,
-                    ),
-                  ]
-                : null,
+        boxShadow: shadows,
       ),
       child: content,
     );
+
+    // Glass variant wraps in a BackdropFilter for a true frosted-glass effect.
+    if (widget.variant == PremiumButtonVariant.glass) {
+      surface = ClipRRect(
+        borderRadius: AppRadius.allMd,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: surface,
+        ),
+      );
+    }
 
     Widget styled = Opacity(
       opacity: (widget.onPressed == null) ? 0.5 : 1.0,
@@ -114,7 +144,7 @@ class _PremiumButtonState extends State<PremiumButton> {
 
     Widget scaled = AnimatedScale(
       scale: _pressed ? 0.97 : 1.0,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 120),
       curve: Curves.easeOut,
       child: styled,
     );
@@ -155,9 +185,14 @@ class _PremiumButtonState extends State<PremiumButton> {
         );
       case PremiumButtonVariant.glass:
         return _ButtonStyle(
-          fill: Colors.white.withOpacity(isDark ? 0.08 : 0.15),
-          foreground: Colors.white,
-          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+          fill: (isDark ? Colors.white : Colors.white).withOpacity(
+            isDark ? 0.10 : 0.55,
+          ),
+          foreground: isDark ? Colors.white : AppColors.textPrimary,
+          border: Border.all(
+            color: Colors.white.withOpacity(isDark ? 0.14 : 0.55),
+            width: 1,
+          ),
         );
     }
   }
