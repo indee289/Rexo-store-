@@ -101,7 +101,7 @@ class _IosBackButtonState extends State<_IosBackButton> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Iconsax.arrow_left_2,
+                Iconsax.arrow_left,
                 size: 24,
                 color: AppColors.primary,
               ),
