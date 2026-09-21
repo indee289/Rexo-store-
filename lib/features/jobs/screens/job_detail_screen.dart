@@ -1015,59 +1015,69 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
   }
 }
 
-/// The orange "Apply Now" CTA with paper-plane icon and loading state.
-class _ApplyNowButton extends StatelessWidget {
+/// Instagram-blue "Apply Now" CTA — flat, tight, 48px tall (bounded so it
+/// cannot expand to fill the full sticky bar area).
+class _ApplyNowButton extends StatefulWidget {
   final bool loading;
   final VoidCallback onPressed;
 
   const _ApplyNowButton({required this.loading, required this.onPressed});
 
   @override
+  State<_ApplyNowButton> createState() => _ApplyNowButtonState();
+}
+
+class _ApplyNowButtonState extends State<_ApplyNowButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: loading ? null : onPressed,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 52),
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppColors.accentOrange,
-          borderRadius: AppRadius.allMd,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.accentOrange.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: loading
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Iconsax.send_1, size: 20, color: Colors.white),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    'Apply Now',
-                    style: AppTextStyles.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+      onTap: widget.loading ? null : widget.onPressed,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.7 : 1.0,
+        child: Container(
+          // Fixed height (was minHeight — that could expand in Column with
+          // unbounded height, causing the button to fill the screen).
+          height: 48,
+          width: double.infinity,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: AppRadius.allMd,
+          ),
+          child: widget.loading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-                ],
-              ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Iconsax.send_1, size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Apply Now',
+                      style: AppTextStyles.button.copyWith(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
