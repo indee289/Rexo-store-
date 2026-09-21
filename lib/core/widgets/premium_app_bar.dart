@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
-/// Clean Instagram-style AppBar.
-/// White background, 0 elevation, 1px bottom border, title 18px w600 centered.
+/// iOS-style navigation bar.
+///
+/// Transparent background over the systemGroupedBackground scaffold, centered
+/// 17pt semibold title, iOS chevron back button that says the parent screen
+/// name style (here: just the chevron), and green tinted actions.
 class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -32,72 +36,84 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.background;
-    final fg = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-
     Widget? resolvedLeading = leading;
     final bool canPop = Navigator.of(context).canPop();
     if (resolvedLeading == null &&
         (showBack || (automaticallyImplyLeading && canPop))) {
-      resolvedLeading = _CleanBackButton(
+      resolvedLeading = _IosBackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
-        color: fg,
       );
     }
 
-    return Container(
-      color: bg,
-      child: AppBar(
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: fg,
-            letterSpacing: -0.2,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        leading: resolvedLeading,
-        automaticallyImplyLeading: false,
-        actions: [
-          if (actions != null) ...actions!,
-          const SizedBox(width: 4),
-        ],
-        bottom: bottom,
-        backgroundColor: Colors.transparent,
-        foregroundColor: fg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
+    return AppBar(
+      title: Text(
+        title,
+        style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
+      leading: resolvedLeading,
+      leadingWidth: resolvedLeading is _IosBackButton ? 60 : null,
+      automaticallyImplyLeading: false,
+      actions: [
+        if (actions != null) ...actions!,
+        const SizedBox(width: 8),
+      ],
+      bottom: bottom,
+      backgroundColor: AppColors.background,
+      foregroundColor: AppColors.primary,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: true,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
     );
   }
 }
 
-class _CleanBackButton extends StatelessWidget {
+/// iOS-style chevron back button — accent-colored, no ripple.
+class _IosBackButton extends StatefulWidget {
   final VoidCallback onTap;
-  final Color? color;
-  const _CleanBackButton({required this.onTap, this.color});
+
+  const _IosBackButton({required this.onTap});
+
+  @override
+  State<_IosBackButton> createState() => _IosBackButtonState();
+}
+
+class _IosBackButtonState extends State<_IosBackButton> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onTap,
-      icon: Icon(
-        Iconsax.arrow_left,
-        size: 24,
-        color: color ?? AppColors.textPrimary,
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.4 : 1.0,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Iconsax.arrow_left_2,
+                size: 24,
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Sliver version of the clean AppBar.
+/// Sliver version — used for large-title scroll effects.
 class PremiumSliverAppBar extends StatelessWidget {
   final String title;
   final List<Widget>? actions;
@@ -122,40 +138,31 @@ class PremiumSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.background;
-    final fg = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-
     final bool canPop = Navigator.of(context).canPop();
     Widget? leading;
     if (showBack || canPop) {
-      leading = _CleanBackButton(
+      leading = _IosBackButton(
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
-        color: fg,
       );
     }
 
     return SliverAppBar(
       title: Text(
         title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: fg,
-          letterSpacing: -0.2,
-        ),
+        style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       leading: leading,
+      leadingWidth: leading != null ? 60 : null,
       automaticallyImplyLeading: false,
       actions: [
         if (actions != null) ...actions!,
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
       ],
-      backgroundColor: bg,
+      backgroundColor: AppColors.background,
       surfaceTintColor: Colors.transparent,
-      foregroundColor: fg,
+      foregroundColor: AppColors.primary,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,
