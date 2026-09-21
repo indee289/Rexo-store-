@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
 
@@ -77,7 +78,7 @@ class AvatarWidget extends StatelessWidget {
           height: size,
           color: colorScheme.onSurface.withOpacity(0.08),
           child: Icon(
-            Icons.person,
+            Iconsax.user,
             size: size * 0.5,
             color: colorScheme.onSurface.withOpacity(0.4),
           ),

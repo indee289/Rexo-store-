@@ -2,20 +2,23 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() =>
+      _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
@@ -27,7 +30,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   File? _selectedImage;
   bool _isSaving = false;
+  bool _isUploadingAvatar = false;
   String? _currentAvatarUrl;
+
+  // ── Theme-aware color helpers ────────────────────────────────────────────
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+  Color get _pageBg =>
+      _isDark ? AppColors.darkBackground : AppColors.background;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _surfaceAlt =>
+      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
 
   @override
   void initState() {
@@ -41,10 +56,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final profile = profileState.profile;
       if (profile != null) {
         _nameController.text = profile['name'] ?? '';
-        _handleController.text = profile['handle'] ?? '';
+        _handleController.text = profile['username'] ?? ''; // live: username
         _bioController.text = profile['bio'] ?? '';
         _phoneController.text = profile['phone'] ?? '';
-        _currentAvatarUrl = profile['avatar_url'];
+        _currentAvatarUrl = profile['profileImage']; // live: profileImage
         if (mounted) setState(() {});
       }
     });
@@ -59,106 +74,164 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  void _showAvatarPickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: AppRadius.topXl,
+        ),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: _borderColor,
+                  borderRadius: AppRadius.pillAll,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'Change Profile Photo',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: _cs.onSurface,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _AvatarOption(
+                    icon: Iconsax.camera,
+                    label: 'Camera',
+                    color: AppColors.primary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImage(ImageSource.camera);
+                    },
+                  ),
+                  _AvatarOption(
+                    icon: Iconsax.gallery,
+                    label: 'Gallery',
+                    color: AppColors.accentPurple,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                  if (_currentAvatarUrl != null || _selectedImage != null)
+                    _AvatarOption(
+                      icon: Iconsax.trash,
+                      label: 'Remove',
+                      color: AppColors.error,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _selectedImage = null;
+                          _currentAvatarUrl = null;
+                        });
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       maxWidth: 512,
       maxHeight: 512,
-      imageQuality: 80,
+      imageQuality: 85,
     );
 
-    if (pickedFile != null) {
+    if (pickedFile != null && mounted) {
       setState(() {
         _selectedImage = File(pickedFile.path);
+        _isUploadingAvatar = true;
       });
+
+      try {
+        final notifier = ref.read(profileNotifierProvider.notifier);
+        final avatarUrl = await notifier.uploadAvatar(_selectedImage!);
+        if (avatarUrl != null && mounted) {
+          setState(() {
+            _currentAvatarUrl = avatarUrl;
+            _isUploadingAvatar = false;
+          });
+          _showSnack('Photo updated!', AppColors.success);
+        } else if (mounted) {
+          setState(() => _isUploadingAvatar = false);
+          _showSnack('Failed to upload photo', AppColors.error);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isUploadingAvatar = false);
+          _showSnack(ErrorUtils.sanitize(e), AppColors.error);
+        }
+      }
     }
+  }
+
+  void _showSnack(String message, Color background) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: background,
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+      ),
+    );
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSaving = true);
 
     try {
       final notifier = ref.read(profileNotifierProvider.notifier);
-
-      // Upload avatar if changed
-      if (_selectedImage != null) {
-        final avatarUrl = await notifier.uploadAvatar(_selectedImage!);
-        if (avatarUrl != null) {
-          _currentAvatarUrl = avatarUrl;
-        }
-      }
-
-      // Update profile fields
       final fields = <String, dynamic>{
         'name': _nameController.text.trim(),
-        'handle': _handleController.text.trim(),
+        'username': _handleController.text.trim(), // live: username
         'bio': _bioController.text.trim(),
         'phone': _phoneController.text.trim(),
       };
-
-      // Include avatar URL in update if it was uploaded
       if (_currentAvatarUrl != null) {
-        fields['avatar_url'] = _currentAvatarUrl;
+        fields['profileImage'] = _currentAvatarUrl; // live: profileImage
       }
 
       final success = await notifier.updateProfile(fields);
 
       if (mounted) {
         if (success) {
-          // Refresh profile data
           ref.invalidate(currentUserProfileProvider);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Profile updated successfully',
-                style: GoogleFonts.poppins(fontSize: 13),
-              ),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
+          _showSnack('Profile updated successfully ✓', AppColors.success);
           Navigator.of(context).pop();
         } else {
-          // Read the actual error from the notifier for a specific message
           final errorMessage = notifier.lastError != null
               ? ErrorUtils.sanitize(notifier.lastError)
               : 'Failed to update profile';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                errorMessage,
-                style: GoogleFonts.poppins(fontSize: 13),
-              ),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
+          _showSnack(errorMessage, AppColors.error);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              ErrorUtils.sanitize(e),
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        _showSnack(ErrorUtils.sanitize(e), AppColors.error);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -167,252 +240,347 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _saveProfile,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : Text(
-                    'Save',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+      backgroundColor: _pageBg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── AppBar ────────────────────────────────────────────────────
+            Container(
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: _pageBg,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(
+                      Iconsax.arrow_left,
+                      size: 24,
+                      color: _cs.onSurface,
                     ),
                   ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Avatar
-              GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    if (_selectedImage != null)
-                      ClipOval(
-                        child: Image.file(
-                          _selectedImage!,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    else
-                      AvatarWidget(
-                        url: _currentAvatarUrl,
-                        name: _nameController.text,
-                        size: 100,
-                      ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.surface, width: 2),
-                        ),
-                        child: const Icon(
-                          Iconsax.camera,
-                          size: 16,
-                          color: Colors.white,
-                        ),
+                  Expanded(
+                    child: Text(
+                      'Edit Profile',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _cs.onSurface,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tap to change photo',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Name field
-              _buildTextField(
-                controller: _nameController,
-                label: 'Name',
-                hint: 'Enter your full name',
-                icon: Iconsax.user,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              // Handle field
-              _buildTextField(
-                controller: _handleController,
-                label: 'Handle',
-                hint: 'your_handle',
-                icon: Iconsax.user_tag,
-                prefixText: '@',
-              ),
-              const SizedBox(height: 16),
-              // Bio field
-              _buildTextField(
-                controller: _bioController,
-                label: 'Bio',
-                hint: 'Tell us about yourself...',
-                icon: Iconsax.document_text,
-                maxLines: 4,
-              ),
-              const SizedBox(height: 16),
-              // Phone field
-              _buildTextField(
-                controller: _phoneController,
-                label: 'Phone',
-                hint: 'Enter your phone number',
-                icon: Iconsax.call,
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 32),
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
                   ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  GestureDetector(
+                    onTap: _isSaving ? null : _saveProfile,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'Save',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
                           ),
-                        )
-                      : Text(
-                          'Save Changes',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Body ──────────────────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Avatar section — center
+                      Center(child: _buildAvatarSection()),
+                      const SizedBox(height: AppSpacing.xxl),
+
+                      _buildField(
+                        controller: _nameController,
+                        label: 'Full Name',
+                        hint: 'Enter your full name',
+                        icon: Iconsax.user,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Name is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      _buildField(
+                        controller: _handleController,
+                        label: 'Username',
+                        hint: '@your_handle',
+                        icon: Iconsax.user_tag,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      _buildMultilineField(
+                        controller: _bioController,
+                        label: 'Bio',
+                        hint: 'Tell the world about yourself...',
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      _buildField(
+                        controller: _phoneController,
+                        label: 'Phone',
+                        hint: '+91 98765 43210',
+                        icon: Iconsax.call,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+
+                      // Save button
+                      PremiumButton(
+                        label: 'Save Changes',
+                        loading: _isSaving,
+                        onPressed: _isSaving ? null : _saveProfile,
+                        icon: Iconsax.save_2,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildAvatarSection() {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _showAvatarPickerSheet,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
+                child: ClipOval(
+                  child: _isUploadingAvatar
+                      ? Container(
+                          color: _surfaceAlt,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        )
+                      : _selectedImage != null
+                          ? Image.file(
+                              _selectedImage!,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                            )
+                          : PremiumAvatar(
+                              imageUrl: _currentAvatarUrl,
+                              name: _nameController.text,
+                              size: 80,
+                            ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _pageBg, width: 2),
+                  ),
+                  child: const Icon(
+                    Iconsax.camera,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _isUploadingAvatar ? 'Uploading...' : 'Tap to change photo',
+          style: TextStyle(
+            fontSize: 12,
+            color: _cs.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildField({
     required TextEditingController controller,
     required String label,
     required String hint,
     required IconData icon,
-    String? prefixText,
-    int maxLines = 1,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    final theme = Theme.of(context);
+    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
+          borderRadius: AppRadius.allMd,
+          borderSide: c == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: c, width: w),
+        );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+            color: _cs.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          maxLines: maxLines,
           keyboardType: keyboardType,
           validator: validator,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: theme.colorScheme.onSurface,
-          ),
+          style: TextStyle(fontSize: 14, color: _cs.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
-            ),
-            prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-            prefixText: prefixText,
-            prefixStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: theme.colorScheme.onSurface,
-            ),
+            hintStyle: TextStyle(
+                fontSize: 14,
+                color: _isDark ? AppColors.darkTextHint : AppColors.textHint),
             filled: true,
-            fillColor: theme.colorScheme.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
+            fillColor: _surfaceAlt,
+            prefixIcon: Icon(icon,
+                color: _isDark ? AppColors.darkTextHint : AppColors.textHint,
+                size: 20),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
+                horizontal: 16, vertical: 16),
+            border: border(Colors.transparent),
+            enabledBorder: border(Colors.transparent),
+            focusedBorder: border(AppColors.primary, 1.5),
+            errorBorder: border(AppColors.error),
+            focusedErrorBorder: border(AppColors.error, 1.5),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMultilineField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+  }) {
+    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
+          borderRadius: AppRadius.allMd,
+          borderSide: c == Colors.transparent
+              ? BorderSide.none
+              : BorderSide(color: c, width: w),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _cs.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: 4,
+          minLines: 3,
+          style: TextStyle(fontSize: 14, color: _cs.onSurface),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+                fontSize: 14,
+                color: _isDark ? AppColors.darkTextHint : AppColors.textHint),
+            filled: true,
+            fillColor: _surfaceAlt,
+            contentPadding: const EdgeInsets.all(16),
+            border: border(Colors.transparent),
+            enabledBorder: border(Colors.transparent),
+            focusedBorder: border(AppColors.primary, 1.5),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Avatar picker option button.
+class _AvatarOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AvatarOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: AppRadius.allMd,
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

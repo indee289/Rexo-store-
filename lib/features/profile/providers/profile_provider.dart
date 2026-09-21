@@ -38,75 +38,116 @@ class ProfileState {
     );
   }
 
-  String get role => profile?['role'] ?? 'creator';
+  String get role => (profile?['role'] ?? 'creator').toString().toLowerCase();
   bool get isCreator => role == 'creator';
   bool get isBrand => role == 'brand';
   bool get isAdmin => role == 'admin';
 }
 
-/// Provider for the full user profile with role-specific data
+/// Provider for the full user profile with role-specific data.
+/// All secondary queries (roleProfile, wallet, follows) are wrapped in
+/// try/catch so a single missing table never crashes the whole profile.
 final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
   final user = SupabaseService.currentUser;
   if (user == null) {
     return const ProfileState(error: 'Not authenticated');
   }
 
-  // Fetch base user profile
-  final profile = await SupabaseService.getUserProfile(user.id);
+  // Fetch base user profile — the only required call
+  Map<String, dynamic>? profile;
+  try {
+    profile = await SupabaseService.getUserProfile(user.id);
+  } catch (e) {
+    return const ProfileState(error: 'Could not load profile. Please try again.');
+  }
   if (profile == null) {
     return const ProfileState(error: 'Profile not found');
   }
 
-  final role = profile['role'] ?? 'creator';
-
-  // Fetch role-specific profile
+  // Role-specific profiles — creator_profiles / brand_profiles may not exist
+  // in the live DB; gracefully skip without crashing.
   Map<String, dynamic>? roleProfile;
-  if (role == 'creator') {
-    final response = await SupabaseService.client
-        .from('creator_profiles')
-        .select()
-        .eq('user_id', user.id)
-        .maybeSingle();
-    roleProfile = response;
-  } else if (role == 'brand') {
-    final response = await SupabaseService.client
-        .from('brand_profiles')
-        .select()
-        .eq('user_id', user.id)
-        .maybeSingle();
-    roleProfile = response;
+  try {
+    final role = (profile['role'] ?? 'creator').toString().toLowerCase();
+    if (role == 'creator') {
+      roleProfile = await SupabaseService.client
+          .from('creator_profiles')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+    } else if (role == 'brand') {
+      roleProfile = await SupabaseService.client
+          .from('brand_profiles')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+    }
+  } catch (_) {
+    roleProfile = null; // Table absent — silently skip
   }
 
-  // Fetch wallet data
-  final wallet = await SupabaseService.client
-      .from('wallets')
-      .select()
-      .eq('user_id', user.id)
-      .maybeSingle();
+  // Wallet — the wallets table may not exist; walletBalance is also on users
+  Map<String, dynamic>? wallet;
+  try {
+    wallet = await SupabaseService.client
+        .from('wallets')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+  } catch (_) {
+    wallet = null; // Table absent — silently skip
+  }
 
-  return ProfileState(
-    profile: profile,
-    roleProfile: roleProfile,
-    wallet: wallet,
-  );
+  return ProfileState(profile: profile, roleProfile: roleProfile, wallet: wallet);
+});
+
+/// Number of campaigns the current user has applied to.
+final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return 0;
+  try {
+    final response = await SupabaseService.client
+        .from('applications')
+        .select('id')
+        .eq('creatorId', user.id); // live: camelCase
+    return (response as List).length;
+  } catch (_) {
+    return 0;
+  }
+});
+
+/// Followers count — reads from users.followersCount (live column).
+/// The `follows` table does not exist in the live DB.
+final currentUserFollowersCountProvider = FutureProvider<int>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return 0;
+  try {
+    final row = await SupabaseService.getUserProfile(user.id);
+    return (row?['followersCount'] as num?)?.toInt() ?? 0;
+  } catch (_) {
+    return 0;
+  }
+});
+
+/// Following count — reads from users.followingCount (live column).
+final currentUserFollowingCountProvider = FutureProvider<int>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return 0;
+  try {
+    final row = await SupabaseService.getUserProfile(user.id);
+    return (row?['followingCount'] as num?)?.toInt() ?? 0;
+  } catch (_) {
+    return 0;
+  }
 });
 
 /// Profile notifier for updating profile data
 class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
   ProfileNotifier() : super(const AsyncValue.data(null));
 
-  /// Stores the last error encountered during an update operation.
-  /// The UI can read this to display a specific error message.
   Object? _lastError;
   Object? get lastError => _lastError;
 
-  /// Update user profile fields.
-  ///
-  /// Only valid users table columns are sent to Supabase to prevent
-  /// "column not found" errors.
-  ///
-  /// Returns true on success, false on failure. On failure, [lastError]
-  /// contains the original error object for use with ErrorUtils.sanitize.
   Future<bool> updateProfile(Map<String, dynamic> fields) async {
     final user = SupabaseService.currentUser;
     if (user == null) return false;
@@ -115,14 +156,10 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     _lastError = null;
 
     try {
-      // Only allow valid users table columns to be sent
+      // Confirmed live users columns — only send known columns.
       const validColumns = {
-        'name',
-        'handle',
-        'bio',
-        'phone',
-        'avatar_url',
-        'updated_at',
+        'name', 'username', 'profileImage', 'bio', 'phone', 'mobile',
+        'location', 'category', 'instagramLink',
       };
 
       final filteredFields = <String, dynamic>{};
@@ -131,8 +168,6 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
           filteredFields[entry.key] = entry.value;
         }
       }
-
-      filteredFields['updated_at'] = DateTime.now().toIso8601String();
 
       await SupabaseService.updateUserProfile(
         userId: user.id,
@@ -147,36 +182,21 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Upload avatar to Cloudflare R2 and update profile
   Future<String?> uploadAvatar(File file) async {
     final user = SupabaseService.currentUser;
     if (user == null) return null;
-
     state = const AsyncValue.loading();
-
     try {
       final fileExt = file.path.split('.').last;
       final fileName = '${const Uuid().v4()}.$fileExt';
       final filePath = 'avatars/${user.id}/$fileName';
       final fileBytes = await file.readAsBytes();
-
       final contentType = _getAvatarContentType(fileExt);
-
-      final publicUrl = await R2StorageService.uploadFile(
-        filePath,
-        fileBytes,
-        contentType,
-      );
-
-      // Update user profile with new avatar URL
+      final publicUrl = await R2StorageService.uploadFile(filePath, fileBytes, contentType);
       await SupabaseService.updateUserProfile(
         userId: user.id,
-        data: {
-          'avatar_url': publicUrl,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
+        data: {'profileImage': publicUrl},
       );
-
       state = const AsyncValue.data(null);
       return publicUrl;
     } catch (e, st) {
@@ -187,22 +207,15 @@ class ProfileNotifier extends StateNotifier<AsyncValue<void>> {
 
   String _getAvatarContentType(String extension) {
     switch (extension.toLowerCase()) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'gif':
-        return 'image/gif';
-      case 'webp':
-        return 'image/webp';
-      default:
-        return 'application/octet-stream';
+      case 'jpg': case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'gif': return 'image/gif';
+      case 'webp': return 'image/webp';
+      default: return 'application/octet-stream';
     }
   }
 }
 
-/// Provider for profile updates
 final profileNotifierProvider =
     StateNotifierProvider<ProfileNotifier, AsyncValue<void>>((ref) {
   return ProfileNotifier();

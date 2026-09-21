@@ -1,103 +1,90 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// App typography — a two-font premium system:
+/// • Manrope (600–700) for headings / titles / buttons
+/// • Inter (400–500) for body / labels / captions
+///
+/// Swap the two builders below to re-font the whole app.
 class AppTextStyles {
   AppTextStyles._();
 
-  /// Heading styles using Poppins
-  /// Colors are intentionally omitted so they inherit from the active theme's
-  /// textTheme (light or dark), ensuring proper contrast in both modes.
-  static TextStyle get h1 => GoogleFonts.poppins(
-        fontSize: 32,
-        fontWeight: FontWeight.w700,
-        height: 1.2,
+  /// Heading / title typeface.
+  static TextStyle _heading({
+    required double fontSize,
+    required FontWeight fontWeight,
+    double? height,
+    double? letterSpacing,
+    Color? color,
+  }) =>
+      GoogleFonts.manrope(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: height,
+        letterSpacing: letterSpacing,
+        color: color,
       );
 
-  static TextStyle get h2 => GoogleFonts.poppins(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        height: 1.25,
+  /// Body / label typeface.
+  static TextStyle _body({
+    required double fontSize,
+    required FontWeight fontWeight,
+    double? height,
+    double? letterSpacing,
+    Color? color,
+  }) =>
+      GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: height,
+        letterSpacing: letterSpacing,
+        color: color,
       );
 
-  static TextStyle get h3 => GoogleFonts.poppins(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        height: 1.3,
-      );
+  /// Base font family used by the theme (body text).
+  static String? get fontFamily => GoogleFonts.inter().fontFamily;
 
-  static TextStyle get h4 => GoogleFonts.poppins(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        height: 1.35,
-      );
+  // ── Headings (Manrope) ─────────────────────────────────────────────────
+  static TextStyle get h1 =>
+      _heading(fontSize: 32, fontWeight: FontWeight.w700, height: 1.2, letterSpacing: -0.5);
+  static TextStyle get h2 =>
+      _heading(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25, letterSpacing: -0.4);
+  static TextStyle get h3 =>
+      _heading(fontSize: 24, fontWeight: FontWeight.w700, height: 1.3, letterSpacing: -0.3);
+  static TextStyle get h4 =>
+      _heading(fontSize: 20, fontWeight: FontWeight.w700, height: 1.35, letterSpacing: -0.2);
+  static TextStyle get h5 =>
+      _heading(fontSize: 18, fontWeight: FontWeight.w600, height: 1.4, letterSpacing: -0.2);
+  static TextStyle get h6 =>
+      _heading(fontSize: 16, fontWeight: FontWeight.w600, height: 1.4, letterSpacing: -0.1);
 
-  static TextStyle get h5 => GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        height: 1.4,
-      );
+  // ── Body (Inter) ───────────────────────────────────────────────────────
+  static TextStyle get bodyLarge =>
+      _body(fontSize: 16, fontWeight: FontWeight.w400, height: 1.5);
+  static TextStyle get bodyMedium =>
+      _body(fontSize: 14, fontWeight: FontWeight.w400, height: 1.5);
+  static TextStyle get bodySmall =>
+      _body(fontSize: 12, fontWeight: FontWeight.w400, height: 1.5);
+  static TextStyle get caption =>
+      _body(fontSize: 11, fontWeight: FontWeight.w400, height: 1.4);
 
-  static TextStyle get h6 => GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        height: 1.4,
-      );
-
-  /// Body styles
-  static TextStyle get bodyLarge => GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-      );
-
-  static TextStyle get bodyMedium => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-      );
-
-  static TextStyle get bodySmall => GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-      );
-
-  /// Caption
-  static TextStyle get caption => GoogleFonts.poppins(
-        fontSize: 11,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-      );
-
-  /// Button text
-  static TextStyle get button => GoogleFonts.poppins(
+  // ── Buttons (Manrope) ──────────────────────────────────────────────────
+  static TextStyle get button => _heading(
         fontSize: 15,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: Colors.white,
         height: 1.2,
+        letterSpacing: 0.1,
       );
 
-  /// Label styles
-  static TextStyle get labelLarge => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        height: 1.4,
-      );
-
-  static TextStyle get labelMedium => GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        height: 1.4,
-      );
-
-  static TextStyle get labelSmall => GoogleFonts.poppins(
-        fontSize: 10,
-        fontWeight: FontWeight.w500,
-        height: 1.4,
-      );
-
-  /// Overline
-  static TextStyle get overline => GoogleFonts.poppins(
+  // ── Labels (Inter) ─────────────────────────────────────────────────────
+  static TextStyle get labelLarge =>
+      _body(fontSize: 14, fontWeight: FontWeight.w500, height: 1.4);
+  static TextStyle get labelMedium =>
+      _body(fontSize: 12, fontWeight: FontWeight.w500, height: 1.4);
+  static TextStyle get labelSmall =>
+      _body(fontSize: 10, fontWeight: FontWeight.w500, height: 1.4);
+  static TextStyle get overline => _heading(
         fontSize: 10,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.5,

@@ -4,8 +4,8 @@
 -- Add company_name column
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS company_name TEXT;
 
--- Add gender column with CHECK constraint
-ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('All', 'Male', 'Female'));
+-- Add gender column with CHECK constraint (lowercase values)
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('all', 'male', 'female'));
 
 -- Add page_profile_category column
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS page_profile_category TEXT;

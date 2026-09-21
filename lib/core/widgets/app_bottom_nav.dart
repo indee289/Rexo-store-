@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
+/// Fixed bottom navigation bar (matches the Home reference).
+///
+/// Exactly four tabs — Home, Campaigns, Jobs, Profile — each with an icon and
+/// a label. The active tab shows a soft violet rounded chip behind its icon
+/// plus a violet label; inactive tabs show a muted icon + label. Theme-aware.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -14,141 +19,118 @@ class AppBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _items = [
+    _Item(Iconsax.home_2, 'Home'),
+    _Item(Iconsax.send_2, 'Campaigns'),
+    _Item(Iconsax.briefcase, 'Jobs'),
+    _Item(Iconsax.user, 'Profile'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final barColor = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final inactive = isDark ? AppColors.darkTextHint : AppColors.textHint;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: theme.brightness == Brightness.light
-            ? Border.all(
-                color: theme.dividerColor.withOpacity(0.3),
-                width: 0.5,
-              )
-            : null,
+        color: barColor,
+        border: Border(top: BorderSide(color: borderColor, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
+            color: Colors.black.withOpacity(isDark ? 0.30 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Iconsax.home_2,
-              activeIcon: Iconsax.home_2,
-              label: 'Home',
-              isActive: currentIndex == 0,
-              onTap: () => onTap(0),
+      child: SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: IntrinsicHeight(
+            child: Row(
+              children: List.generate(
+                _items.length,
+                (i) => Expanded(
+                  child: _NavItem(
+                    item: _items[i],
+                    active: currentIndex == i,
+                    inactiveColor: inactive,
+                    onTap: () => onTap(i),
+                  ),
+                ),
+              ),
             ),
-            _NavItem(
-              icon: Iconsax.briefcase,
-              activeIcon: Iconsax.briefcase,
-              label: 'Campaigns',
-              isActive: currentIndex == 1,
-              onTap: () => onTap(1),
-            ),
-            _NavItem(
-              icon: Iconsax.shop,
-              activeIcon: Iconsax.shop,
-              label: 'Shop',
-              isActive: currentIndex == 2,
-              onTap: () => onTap(2),
-            ),
-            _NavItem(
-              icon: Iconsax.user,
-              activeIcon: Iconsax.user,
-              label: 'Profile',
-              isActive: currentIndex == 3,
-              onTap: () => onTap(3),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _Item {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
-  final bool isActive;
+  const _Item(this.icon, this.label);
+}
+
+class _NavItem extends StatelessWidget {
+  final _Item item;
+  final bool active;
+  final Color inactiveColor;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isActive,
+    required this.item,
+    required this.active,
+    required this.inactiveColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isActive ? 16 : 12,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primary.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
+            AnimatedContainer(
               duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+              decoration: BoxDecoration(
+                color: active
+                    ? AppColors.primary.withOpacity(0.12)
+                    : Colors.transparent,
+                borderRadius: AppRadius.allMd,
+              ),
               child: Icon(
-                isActive ? activeIcon : icon,
-                key: ValueKey(isActive),
-                color: isActive
-                    ? AppColors.primary
-                    : theme.colorScheme.onSurface.withOpacity(0.4),
+                item.icon,
                 size: 22,
+                color: active ? AppColors.primary : inactiveColor,
               ),
             ),
-            if (isActive) ...[
-              const SizedBox(width: 6),
-              AnimatedOpacity(
-                opacity: isActive ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                child: Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    color: AppColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? AppColors.primary : inactiveColor,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-            ],
+            ),
           ],
         ),
       ),

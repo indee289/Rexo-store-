@@ -64,12 +64,21 @@ class ReviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'User ${userId.substring(0, 6)}',
+                      userId.isEmpty
+                          ? 'User'
+                          : 'User ${userId.substring(0, userId.length < 6 ? userId.length : 6)}',
                       style: AppTextStyles.labelLarge.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Text(formattedDate, style: AppTextStyles.caption),
+                    Text(
+                      formattedDate,
+                      style: AppTextStyles.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),

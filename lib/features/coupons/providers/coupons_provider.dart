@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
 /// Provider for available coupons (active and not expired)
@@ -142,7 +143,7 @@ class CouponNotifier extends StateNotifier<CouponState> {
     } catch (e) {
       state = state.copyWith(
         isApplying: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }

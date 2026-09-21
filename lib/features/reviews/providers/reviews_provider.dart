@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
 /// Parameter class for fetching reviews
@@ -97,7 +98,7 @@ class ReviewNotifier extends StateNotifier<ReviewFormState> {
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }

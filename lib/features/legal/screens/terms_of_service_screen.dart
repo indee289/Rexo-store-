@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 
 class TermsOfServiceScreen extends StatelessWidget {
   const TermsOfServiceScreen({super.key});
@@ -12,23 +11,7 @@ class TermsOfServiceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Terms of Service',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
-        ),
-      ),
+      appBar: PremiumAppBar(title: 'Terms of Service', showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -36,12 +19,11 @@ class TermsOfServiceScreen extends StatelessWidget {
           children: [
             Text(
               'Last Updated: January 1, 2024',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
+              style: AppTextStyles.caption.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             _buildSection(
               context,
               'Acceptance of Terms',
@@ -111,23 +93,20 @@ class TermsOfServiceScreen extends StatelessWidget {
 
   Widget _buildSection(BuildContext context, String title, String content) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.h6.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             content,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               height: 1.6,
             ),

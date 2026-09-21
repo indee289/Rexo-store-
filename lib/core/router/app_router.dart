@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/addresses/screens/add_address_screen.dart';
 import '../../features/addresses/screens/addresses_screen.dart';
+import '../../features/admin/screens/admin_shell.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/mfa_challenge_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/campaigns/screens/apply_screen.dart';
@@ -26,8 +28,6 @@ import '../../features/messages/screens/chat_screen.dart';
 import '../../features/messages/screens/messages_screen.dart';
 import '../../features/moderation/screens/moderation_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
-import '../../features/orders/screens/order_detail_screen.dart';
-import '../../features/orders/screens/orders_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/reviews/screens/reviews_screen.dart';
@@ -37,12 +37,12 @@ import '../../features/services/screens/media_kit_screen.dart';
 import '../../features/services/screens/rate_calculator_screen.dart';
 import '../../features/services/screens/services_screen.dart';
 import '../../features/sessions/screens/sessions_screen.dart';
+import '../../features/settings/screens/help_support_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
-import '../../features/shop/screens/cart_screen.dart';
-import '../../features/shop/screens/checkout_screen.dart';
-import '../../features/shop/screens/product_detail_screen.dart';
-import '../../features/shop/screens/shop_screen.dart';
+import '../../features/jobs/screens/job_detail_screen.dart';
+import '../../features/jobs/screens/jobs_screen.dart';
 import '../../features/subscriptions/screens/subscriptions_screen.dart';
+import '../../features/subscriptions/screens/subscription_payment_screen.dart';
 import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/wallet/screens/withdraw_screen.dart';
@@ -50,21 +50,25 @@ import '../../features/warnings/screens/warnings_screen.dart';
 import '../../features/settings/screens/two_factor_auth_screen.dart';
 import '../widgets/app_shell.dart';
 
+/// Global navigator key for the root [GoRouter]. Lets non-widget code (e.g. the
+/// OneSignal push-subscription observer) present dialogs over the current route.
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 /// Route paths
 class AppRoutes {
   AppRoutes._();
 
   static const String splash = '/splash';
   static const String login = '/login';
+  static const String mfaChallenge = '/mfa-challenge';
   static const String register = '/register';
   static const String home = '/home';
   static const String campaigns = '/campaigns';
   static const String campaignDetail = '/campaigns/:id';
   static const String campaignApply = '/campaigns/:id/apply';
-  static const String shop = '/shop';
-  static const String productDetail = '/shop/:id';
-  static const String cart = '/cart';
-  static const String checkout = '/checkout';
+  static const String jobs = '/jobs';
+  static const String jobDetail = '/jobs/:id';
   static const String profile = '/profile';
   static const String wallet = '/wallet';
   static const String walletDeposit = '/wallet/deposit';
@@ -81,9 +85,8 @@ class AppRoutes {
   static const String addAddress = '/add-address';
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
+  static const String helpSupport = '/help-support';
 
-  static const String orders = '/orders';
-  static const String orderDetail = '/orders/:id';
   static const String disputes = '/disputes';
   static const String disputesRaise = '/disputes/raise';
   static const String reviews = '/reviews/:targetId';
@@ -93,6 +96,7 @@ class AppRoutes {
   static const String servicesRateCalculator = '/services/rate-calculator';
   static const String servicesMediaKit = '/services/media-kit';
   static const String subscriptions = '/subscriptions';
+  static const String subscriptionPayment = '/subscriptions/payment';
   static const String sessions = '/sessions';
   static const String securityLogs = '/security-logs';
   static const String warnings = '/warnings';
@@ -102,28 +106,75 @@ class AppRoutes {
   static const String creatorProfile = '/creators/:id';
 
   static const String twoFactorAuth = '/two-factor-auth';
+
+  /// Admin Center (merged admin app). Only reachable by admins — gated at the
+  /// entry point (Profile menu) and guarded again inside [AdminShell].
+  static const String adminDashboard = '/admin';
+}
+
+/// Lightweight [Listenable] used as GoRouter's `refreshListenable`. It is
+/// bumped whenever the auth state changes so the router re-runs `redirect`
+/// WITHOUT being recreated (which would reset navigation to /splash).
+class _AuthRefreshNotifier extends ChangeNotifier {
+  void bump() => notifyListeners();
 }
 
 /// GoRouter provider
+///
+/// IMPORTANT: the GoRouter instance is created ONCE. We must NOT `ref.watch`
+/// authProvider here — doing so rebuilt the whole router on every auth change,
+/// which reset navigation back to `initialLocation` (/splash), causing the
+/// splash screen to flash and the page to "reload" on login. Instead we drive
+/// redirect re-evaluation through a `refreshListenable` bumped on auth changes,
+/// and read the current auth state inside `redirect` via `ref.read`.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refresh = _AuthRefreshNotifier();
+  final sub = ref.listen<AuthState>(
+    authProvider,
+    (_, __) => refresh.bump(),
+    fireImmediately: false,
+  );
+  ref.onDispose(() {
+    sub.close();
+    refresh.dispose();
+  });
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: refresh,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final status = authState.status;
       final isAuthenticated = status == AuthStatus.authenticated;
       final isLoading = status == AuthStatus.loading || status == AuthStatus.initial;
       final isOnAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register;
       final isOnSplash = state.matchedLocation == AppRoutes.splash;
+      final isOnMfaChallenge =
+          state.matchedLocation == AppRoutes.mfaChallenge;
 
       // Allow splash screen to handle its own navigation
       if (isOnSplash) return null;
 
       // Don't redirect while loading/initializing
       if (isLoading) return null;
+
+      // Password step done but a verified second factor is still pending:
+      // force the MFA challenge and never let this user reach a protected
+      // route (e.g. /home) until the factor is verified.
+      if (status == AuthStatus.mfaRequired) {
+        return isOnMfaChallenge ? null : AppRoutes.mfaChallenge;
+      }
+
+      // Once the challenge is satisfied (authenticated) send them home; if the
+      // session was dropped (unauthenticated) send them back to login. Either
+      // way, don't leave anyone stranded on the challenge screen.
+      if (isOnMfaChallenge) {
+        if (isAuthenticated) return AppRoutes.home;
+        if (!isAuthenticated) return AppRoutes.login;
+      }
 
       // If not authenticated and not on an auth route, redirect to login
       if (!isAuthenticated && !isOnAuthRoute) {
@@ -148,6 +199,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      /// MFA challenge screen (login-time TOTP second factor)
+      GoRoute(
+        path: AppRoutes.mfaChallenge,
+        builder: (context, state) => const MfaChallengeScreen(),
       ),
 
       /// Register screen
@@ -182,12 +239,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          /// Shop branch
+          /// Jobs branch
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.shop,
-                builder: (context, state) => const ShopScreen(),
+                path: AppRoutes.jobs,
+                builder: (context, state) => const JobsScreen(),
               ),
             ],
           ),
@@ -222,25 +279,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      /// Product detail screen (pushed on top of bottom nav)
+      /// Job detail screen (pushed on top of bottom nav)
       GoRoute(
-        path: AppRoutes.productDetail,
+        path: AppRoutes.jobDetail,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return ProductDetailScreen(productId: id);
+          return JobDetailScreen(jobId: id);
         },
-      ),
-
-      /// Cart screen
-      GoRoute(
-        path: AppRoutes.cart,
-        builder: (context, state) => const CartScreen(),
-      ),
-
-      /// Checkout screen
-      GoRoute(
-        path: AppRoutes.checkout,
-        builder: (context, state) => const CheckoutScreen(),
       ),
 
       /// Wallet screen
@@ -267,7 +312,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const NotificationsScreen(),
       ),
 
-      /// Messages screen
+      /// Messages / Inbox screen (opened from the Home header inbox icon;
+      /// no longer a bottom-nav tab per the Home reference).
       GoRoute(
         path: AppRoutes.messages,
         builder: (context, state) => const MessagesScreen(),
@@ -339,27 +385,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TermsOfServiceScreen(),
       ),
 
+      /// Help & Support screen
+      GoRoute(
+        path: AppRoutes.helpSupport,
+        builder: (context, state) => const HelpSupportScreen(),
+      ),
+
 
 
       /// Two-Factor Authentication screen
       GoRoute(
         path: AppRoutes.twoFactorAuth,
         builder: (context, state) => const TwoFactorAuthScreen(),
-      ),
-
-      /// Orders screen
-      GoRoute(
-        path: AppRoutes.orders,
-        builder: (context, state) => const OrdersScreen(),
-      ),
-
-      /// Order Detail screen
-      GoRoute(
-        path: AppRoutes.orderDetail,
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return OrderDetailScreen(orderId: id);
-        },
       ),
 
       /// Disputes screen
@@ -427,6 +464,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SubscriptionsScreen(),
       ),
 
+      /// Subscription payment screen.
+      /// Extra must be a Map<String, dynamic> with keys:
+      ///   planId (String), planName (String), amount (double), durationDays (int)
+      GoRoute(
+        path: AppRoutes.subscriptionPayment,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return SubscriptionPaymentScreen(
+            planId: extra['planId'] as String,
+            planName: extra['planName'] as String,
+            amount: (extra['amount'] as num).toDouble(),
+            durationDays: (extra['durationDays'] as num).toInt(),
+          );
+        },
+      ),
+
       /// Sessions & Devices screen
       GoRoute(
         path: AppRoutes.sessions,
@@ -449,6 +502,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.moderation,
         builder: (context, state) => const ModerationScreen(),
+      ),
+
+      /// Admin Center (merged admin app) — full-screen, outside the storefront
+      /// bottom-nav shell. [AdminShell] hosts Dashboard/Users/Actions/Settings/
+      /// Profile and guards against non-admins (redirects to /home). The entry
+      /// point in the Profile menu is only shown when isAdminProvider is true.
+      GoRoute(
+        path: AppRoutes.adminDashboard,
+        builder: (context, state) => const AdminShell(),
       ),
 
       /// Public Profile screen (deep link)

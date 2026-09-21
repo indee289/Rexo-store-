@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/sessions_provider.dart';
 
@@ -19,34 +22,15 @@ class SessionsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Sessions & Devices',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
-      ),
+      appBar: PremiumAppBar(title: 'Sessions & Devices', showBack: true),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Active Sessions Section
-            Text(
-              'Active Sessions',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
+            Text('Active Sessions', style: AppTextStyles.h6),
+            const SizedBox(height: AppSpacing.md),
             sessionsAsync.when(
               data: (sessions) {
                 if (sessions.isEmpty) {
@@ -54,24 +38,18 @@ class SessionsScreen extends ConsumerWidget {
                 }
                 return Column(
                   children: sessions
-                      .map((session) => _buildSessionCard(context, ref, session))
+                      .map(
+                          (session) => _buildSessionCard(context, ref, session))
                       .toList(),
                 );
               },
               loading: () => const ShimmerLoading(height: 240),
               error: (error, _) => _buildErrorState('Failed to load sessions'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             // My Devices Section
-            Text(
-              'My Devices',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
+            Text('My Devices', style: AppTextStyles.h6),
+            const SizedBox(height: AppSpacing.md),
             devicesAsync.when(
               data: (devices) {
                 if (devices.isEmpty) {
@@ -86,7 +64,7 @@ class SessionsScreen extends ConsumerWidget {
               loading: () => const ShimmerLoading(height: 160),
               error: (error, _) => _buildErrorState('Failed to load devices'),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxl),
             // Logout All Other Sessions Button
             SizedBox(
               width: double.infinity,
@@ -97,29 +75,25 @@ class SessionsScreen extends ConsumerWidget {
                 icon: const Icon(Iconsax.logout, size: 20),
                 label: Text(
                   'Logout All Other Sessions',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.allMd,
                   ),
                 ),
               ),
             ),
             if (sessionsState.error != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 sessionsState.error!,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: AppColors.error,
-                ),
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
               ),
             ],
           ],
@@ -142,11 +116,11 @@ class SessionsScreen extends ConsumerWidget {
     final sessionId = session['id'] as String;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
@@ -156,7 +130,7 @@ class SessionsScreen extends ConsumerWidget {
             height: 40,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.allSm,
             ),
             child: const Icon(
               Iconsax.monitor,
@@ -164,32 +138,34 @@ class SessionsScreen extends ConsumerWidget {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   deviceId,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.labelLarge.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'IP: $ipAddress',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
                   ),
                 ),
                 Text(
                   'Last active: $lastActive',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  style: AppTextStyles.caption.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
                   ),
                 ),
               ],
@@ -197,7 +173,9 @@ class SessionsScreen extends ConsumerWidget {
           ),
           IconButton(
             onPressed: () {
-              ref.read(sessionsNotifierProvider.notifier).terminateSession(sessionId);
+              ref
+                  .read(sessionsNotifierProvider.notifier)
+                  .terminateSession(sessionId);
             },
             icon: const Icon(
               Iconsax.close_circle,
@@ -233,11 +211,11 @@ class SessionsScreen extends ConsumerWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
@@ -247,7 +225,7 @@ class SessionsScreen extends ConsumerWidget {
             height: 40,
             decoration: BoxDecoration(
               color: AppColors.success.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.allSm,
             ),
             child: Icon(
               deviceIcon,
@@ -255,33 +233,35 @@ class SessionsScreen extends ConsumerWidget {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   deviceName,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.labelLarge.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Type: $deviceType | OS: $osVersion',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
                   ),
                 ),
                 if (appVersion.isNotEmpty)
                   Text(
                     'App Version: $appVersion',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                    style: AppTextStyles.caption.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.4),
                     ),
                   ),
               ],
@@ -295,10 +275,10 @@ class SessionsScreen extends ConsumerWidget {
   Widget _buildEmptyState(BuildContext context, String message) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
@@ -308,11 +288,10 @@ class SessionsScreen extends ConsumerWidget {
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             size: 32,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             message,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
@@ -324,18 +303,15 @@ class SessionsScreen extends ConsumerWidget {
   Widget _buildErrorState(String message) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: AppColors.error.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: AppColors.error.withOpacity(0.2)),
       ),
       child: Text(
         message,
-        style: GoogleFonts.poppins(
-          fontSize: 13,
-          color: AppColors.error,
-        ),
+        style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
         textAlign: TextAlign.center,
       ),
     );
@@ -345,30 +321,31 @@ class SessionsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Logout All Sessions',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
+        title: Text('Logout all sessions', style: AppTextStyles.h6),
         content: Text(
           'This will terminate all sessions except your current one. Continue?',
-          style: GoogleFonts.poppins(fontSize: 14),
+          style: AppTextStyles.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+              style: AppTextStyles.labelLarge.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(sessionsNotifierProvider.notifier).terminateAllOtherSessions();
+              ref
+                  .read(sessionsNotifierProvider.notifier)
+                  .terminateAllOtherSessions();
             },
             child: Text(
               'Logout All',
-              style: GoogleFonts.poppins(color: AppColors.error),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
             ),
           ),
         ],

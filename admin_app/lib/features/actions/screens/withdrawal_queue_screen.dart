@@ -10,6 +10,44 @@ import '../../admin/providers/admin_provider.dart';
 class WithdrawalQueueScreen extends ConsumerWidget {
   const WithdrawalQueueScreen({super.key});
 
+  /// Builds a short, human-readable payout line from the withdrawal's
+  /// `payout_details` JSONB. Returns null when there's nothing to show.
+  ///
+  /// `payout_details` shapes (see 07_WALLET_TABLES.sql):
+  ///   UPI  -> {upi_id: "name@bank"}
+  ///   Bank -> {account_number, ifsc_code, account_holder_name}
+  static String? _payoutSummary(Map<String, dynamic> withdrawal) {
+    final method = withdrawal['method']?.toString();
+    final raw = withdrawal['payout_details'];
+    if (raw is! Map) {
+      // No structured details — fall back to just the method if present.
+      return (method != null && method.isNotEmpty) ? 'Payout via $method' : null;
+    }
+    final details = Map<String, dynamic>.from(raw);
+
+    final upi = details['upi_id']?.toString();
+    if (upi != null && upi.isNotEmpty) {
+      return 'UPI: $upi';
+    }
+
+    final account = details['account_number']?.toString();
+    if (account != null && account.isNotEmpty) {
+      final holder = details['account_holder_name']?.toString();
+      final ifsc = details['ifsc_code']?.toString();
+      final buffer = StringBuffer('Bank: ');
+      if (holder != null && holder.isNotEmpty) buffer.write('$holder · ');
+      // Mask all but the last 4 digits of the account number.
+      final masked = account.length > 4
+          ? '••••${account.substring(account.length - 4)}'
+          : account;
+      buffer.write(masked);
+      if (ifsc != null && ifsc.isNotEmpty) buffer.write(' · $ifsc');
+      return buffer.toString();
+    }
+
+    return (method != null && method.isNotEmpty) ? 'Payout via $method' : null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final withdrawals = ref.watch(adminWithdrawalsProvider);
@@ -42,19 +80,24 @@ class WithdrawalQueueScreen extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: PremiumCard(
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Withdrawal #${withdrawal['id']?.toString().substring(0, 8) ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              'Withdrawal #${withdrawal['id']?.toString().substring(0, 8) ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             '\u20B9${withdrawal['amount'] ?? 0}',
                             style: const TextStyle(
@@ -73,10 +116,10 @@ class WithdrawalQueueScreen extends ConsumerWidget {
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
-                      if (withdrawal['bank_details'] != null) ...[
+                      if (_payoutSummary(withdrawal) != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          'Bank: ${withdrawal['bank_details']}',
+                          _payoutSummary(withdrawal)!,
                           style: TextStyle(
                             fontSize: 12,
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),

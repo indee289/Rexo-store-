@@ -20,24 +20,107 @@ jobs:
           channel: stable
 
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          cd admin_app && flutter pub get
 
       - name: Analyze code
-        run: flutter analyze
+        run: flutter analyze --no-pub lib/
         continue-on-error: true
 
-      - name: Build APK
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release-keystore.jks
+            echo "storeFile=release-keystore.jks" > android/key.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          else
+            echo "No keystore configured, skipping signing setup"
+          fi
+
+      - name: Configure Firebase (real google-services.json)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          # The repo ships a PLACEHOLDER android/app/google-services.json (project
+          # "rexo-marketplace") only so the build compiles. FCM cannot mint a token
+          # for that fake project, so user_devices stays empty. When the real
+          # base64-encoded config is provided via the GOOGLE_SERVICES_JSON secret
+          # (from the actual Firebase project), decode it over the placeholder so
+          # the built APK talks to the correct project and FCM tokens are valid.
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            # Accept the secret as EITHER raw JSON or base64. Detect by the first
+            # non-whitespace char: real google-services.json starts with '{',
+            # base64 never does. This avoids the common "no matching client"
+            # failure caused by pasting raw JSON while the step base64-decodes it.
+            first_char=$(printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | head -c1)
+            if [ "$first_char" = "{" ]; then
+              printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+              echo "Wrote google-services.json (raw JSON secret)."
+            else
+              echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+              echo "Wrote google-services.json (base64 secret)."
+            fi
+            if grep -q '"package_name": "com.rexo.marketplace"' android/app/google-services.json; then
+              echo "Verified: google-services.json contains com.rexo.marketplace client."
+            else
+              echo "WARNING: google-services.json has NO com.rexo.marketplace client — build will fail."
+            fi
+          else
+            echo "GOOGLE_SERVICES_JSON secret not set — using placeholder; FCM/push will NOT work."
+          fi
+
+      - name: Build APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
+          FCM_PRIVATE_KEY_BASE64: ${{ secrets.FCM_PRIVATE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
+        run: |
+          # Base64 encode FCM_PRIVATE_KEY to safely pass through dart-define
+          # (PEM keys contain newlines that break shell command lines)
+          if [ -n "$FCM_PRIVATE_KEY_BASE64" ]; then
+            FCM_KEY_ENCODED=$(echo "$FCM_PRIVATE_KEY_BASE64" | base64 -w 0)
+          else
+            FCM_KEY_ENCODED=""
+          fi
+
           flutter build apk --release \
-            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
-            --dart-define=R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }} \
-            --dart-define=R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }} \
-            --dart-define=R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }} \
-            --dart-define=R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=R2_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+            --dart-define=R2_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+            --dart-define=R2_ACCOUNT_ID="$R2_ACCOUNT_ID" \
+            --dart-define=R2_BUCKET_NAME="$R2_BUCKET_NAME" \
+            --dart-define=R2_PUBLIC_URL="$R2_PUBLIC_URL" \
+            --dart-define=FCM_PROJECT_ID="$FCM_PROJECT_ID" \
+            --dart-define=FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL" \
+            --dart-define=FCM_PRIVATE_KEY="$FCM_KEY_ENCODED" \
+            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL_APP_ID"
+
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/Rexoumpire.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Rexoumpire
+          path: build/app/outputs/flutter-apk/Rexoumpire.apk

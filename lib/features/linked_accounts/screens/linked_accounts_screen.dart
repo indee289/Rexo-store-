@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/linked_accounts_provider.dart';
 
@@ -16,17 +20,32 @@ class LinkedAccountsScreen extends ConsumerStatefulWidget {
       _LinkedAccountsScreenState();
 }
 
-class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
+class _LinkedAccountsScreenState
+    extends ConsumerState<LinkedAccountsScreen> {
   final _instagramController = TextEditingController();
   final _youtubeController = TextEditingController();
   final _tiktokController = TextEditingController();
+  final _twitterController = TextEditingController();
+  final _facebookController = TextEditingController();
   bool _isSaving = false;
+  bool _populated = false;
+
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _borderColor =>
+      _isDark ? AppColors.darkBorder : AppColors.border;
+  Color get _surfaceAlt =>
+      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
+  Color get _textHint => _isDark ? AppColors.darkTextHint : AppColors.textHint;
 
   @override
   void dispose() {
     _instagramController.dispose();
     _youtubeController.dispose();
     _tiktokController.dispose();
+    _twitterController.dispose();
+    _facebookController.dispose();
     super.dispose();
   }
 
@@ -36,61 +55,21 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Linked Accounts',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: Theme.of(context).colorScheme.onSurface),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Linked Accounts',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: accountsAsync.when(
         data: (accounts) {
-          _populateControllers(accounts);
-          return _buildContent(accounts);
+          if (!_populated) {
+            _populateControllers(accounts);
+            _populated = true;
+          }
+          return _buildContent(context, accounts);
         },
         loading: () => const ShimmerLoading(),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Iconsax.warning_2,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Failed to load linked accounts',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => ref.invalidate(linkedAccountsProvider),
-                child: Text(
-                  'Retry',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => _buildError(context),
       ),
     );
   }
@@ -115,237 +94,313 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
             _tiktokController.text = handle;
           }
           break;
+        case 'twitter':
+          if (_twitterController.text.isEmpty) {
+            _twitterController.text = handle;
+          }
+          break;
+        case 'facebook':
+          if (_facebookController.text.isEmpty) {
+            _facebookController.text = handle;
+          }
+          break;
       }
     }
   }
 
-  Widget _buildContent(List<Map<String, dynamic>> accounts) {
+  bool _isConnected(
+      List<Map<String, dynamic>> accounts, String platform) {
+    return accounts.any((a) =>
+        a['platform'] == platform &&
+        (a['handle'] ?? '').toString().isNotEmpty);
+  }
+
+  Widget _buildContent(
+      BuildContext context, List<Map<String, dynamic>> accounts) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Connect your social media accounts to showcase your reach and engagement to brands.',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              height: 1.5,
+          // Header info card
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(_isDark ? 0.14 : 0.08),
+              borderRadius: AppRadius.allLg,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.16),
+                    borderRadius: AppRadius.allSm,
+                  ),
+                  child: const Icon(Iconsax.link_2,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Connect your social accounts',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _cs.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Link platforms to boost your campaign reach',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          _buildPlatformField(
-            label: 'Instagram',
-            controller: _instagramController,
+
+          const SizedBox(height: AppSpacing.xl),
+
+          _platformCard(
+            accounts: accounts,
+            platform: 'instagram',
+            displayName: 'Instagram',
             icon: Iconsax.instagram,
+            color: AppColors.socialInstagram,
             hint: '@your_handle',
-            color: const Color(0xFFE1306C),
+            controller: _instagramController,
           ),
-          const SizedBox(height: 16),
-          _buildPlatformField(
-            label: 'YouTube',
-            controller: _youtubeController,
+          const SizedBox(height: AppSpacing.md),
+
+          _platformCard(
+            accounts: accounts,
+            platform: 'youtube',
+            displayName: 'YouTube',
             icon: Iconsax.video_play,
-            hint: 'Channel name or URL',
-            color: const Color(0xFFFF0000),
+            color: AppColors.socialYoutube,
+            hint: 'channel name',
+            controller: _youtubeController,
           ),
-          const SizedBox(height: 16),
-          _buildPlatformField(
-            label: 'TikTok',
-            controller: _tiktokController,
-            icon: Iconsax.music,
+          const SizedBox(height: AppSpacing.md),
+
+          _platformCard(
+            accounts: accounts,
+            platform: 'tiktok',
+            displayName: 'TikTok',
+            icon: Iconsax.video_tick,
+            color: AppColors.socialTiktok,
             hint: '@your_handle',
-            color: const Color(0xFF000000),
+            controller: _tiktokController,
           ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _saveAccounts,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: AppSpacing.md),
+
+          _platformCard(
+            accounts: accounts,
+            platform: 'twitter',
+            displayName: 'Twitter / X',
+            icon: Iconsax.message_text,
+            color: AppColors.socialTwitter,
+            hint: '@your_handle',
+            controller: _twitterController,
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          _platformCard(
+            accounts: accounts,
+            platform: 'facebook',
+            displayName: 'Facebook',
+            icon: Iconsax.global,
+            color: AppColors.socialFacebook,
+            hint: 'page or profile name',
+            controller: _facebookController,
+          ),
+
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Save button
+          PremiumButton(
+            label: _isSaving ? 'Saving...' : 'Save Changes',
+            loading: _isSaving,
+            onPressed: _isSaving ? null : () => _save(context, accounts),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+    );
+  }
+
+  Widget _platformCard({
+    required List<Map<String, dynamic>> accounts,
+    required String platform,
+    required String displayName,
+    required IconData icon,
+    required Color color,
+    required String hint,
+    required TextEditingController controller,
+  }) {
+    final connected = _isConnected(accounts, platform);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: AppRadius.allLg,
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: AppRadius.allSm,
                 ),
+                child: Icon(icon, color: color, size: 22),
               ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      'Save Accounts',
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: _cs.onSurface,
                       ),
                     ),
-            ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: connected
+                                ? AppColors.success
+                                : _textHint,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          connected ? 'Connected' : 'Not connected',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: connected
+                                ? AppColors.success
+                                : _textHint,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          // Show verified status
-          if (accounts.isNotEmpty) ...[
-            Divider(color: Theme.of(context).dividerColor),
-            const SizedBox(height: 16),
-            Text(
-              'Account Status',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: controller,
+            style: TextStyle(fontSize: 14, color: _cs.onSurface),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(fontSize: 14, color: _textHint),
+              filled: true,
+              fillColor: _surfaceAlt,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.allMd,
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadius.allMd,
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadius.allMd,
+                borderSide: BorderSide(color: color, width: 1.5),
               ),
             ),
-            const SizedBox(height: 8),
-            ...accounts.map((account) => _buildAccountStatus(account)),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPlatformField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    required Color color,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            ),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Theme.of(context).dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Theme.of(context).dividerColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: color, width: 1.5),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-          style: GoogleFonts.poppins(fontSize: 14),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccountStatus(Map<String, dynamic> account) {
-    final platform = account['platform'] as String? ?? '';
-    final verified = account['verified'] as bool? ?? false;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+  Widget _buildError(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            verified ? Iconsax.tick_circle : Iconsax.clock,
-            size: 16,
-            color: verified ? AppColors.success : AppColors.warning,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            platform[0].toUpperCase() + platform.substring(1),
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: verified
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.warning.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              verified ? 'Verified' : 'Pending',
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: verified ? AppColors.success : AppColors.warning,
-              ),
-            ),
+          Icon(Iconsax.warning_2,
+              size: 48, color: _cs.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Text('Failed to load accounts',
+              style: TextStyle(color: _cs.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => ref.invalidate(linkedAccountsProvider),
+            child: const Text('Retry'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _saveAccounts() async {
+  Future<void> _save(
+      BuildContext context, List<Map<String, dynamic>> accounts) async {
     setState(() => _isSaving = true);
 
-    final notifier = ref.read(linkedAccountsActionsProvider.notifier);
+    try {
+      final notifier = ref.read(linkedAccountsActionsProvider.notifier);
+      final platformHandles = {
+        'instagram': _instagramController.text.trim(),
+        'youtube': _youtubeController.text.trim(),
+        'tiktok': _tiktokController.text.trim(),
+        'twitter': _twitterController.text.trim(),
+        'facebook': _facebookController.text.trim(),
+      };
+      for (final entry in platformHandles.entries) {
+        if (entry.value.isNotEmpty) {
+          await notifier.saveAccount(platform: entry.key, handle: entry.value);
+        }
+      }
 
-    // Save each non-empty field
-    if (_instagramController.text.trim().isNotEmpty) {
-      await notifier.saveAccount(
-        platform: 'instagram',
-        handle: _instagramController.text.trim(),
-      );
-    }
-    if (_youtubeController.text.trim().isNotEmpty) {
-      await notifier.saveAccount(
-        platform: 'youtube',
-        handle: _youtubeController.text.trim(),
-      );
-    }
-    if (_tiktokController.text.trim().isNotEmpty) {
-      await notifier.saveAccount(
-        platform: 'tiktok',
-        handle: _tiktokController.text.trim(),
-      );
-    }
-
-    setState(() => _isSaving = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Accounts saved successfully',
-            style: GoogleFonts.poppins(fontSize: 14),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Accounts saved successfully'),
+            backgroundColor: AppColors.success,
           ),
-          backgroundColor: AppColors.success,
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorUtils.sanitize(e)),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 }

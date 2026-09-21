@@ -2,13 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../services/r2_storage_service.dart';
 import '../../services/supabase_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/error_utils.dart';
 
 /// A reusable image upload widget that picks an image from camera/gallery,
 /// uploads it to Cloudflare R2 Storage, and returns the public URL.
@@ -297,7 +298,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Image upload failed: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

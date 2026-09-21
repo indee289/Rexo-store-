@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class AppConstants {
   AppConstants._();
 
@@ -33,6 +35,51 @@ class AppConstants {
 
   static const String r2BucketName = String.fromEnvironment(
     'R2_BUCKET_NAME',
+    defaultValue: '',
+  );
+
+  /// Public base URL for the R2 bucket (e.g. https://pub-xxxx.r2.dev or a
+  /// custom domain). The S3 API endpoint returned by uploads is NOT publicly
+  /// viewable without auth, so uploaded images (covers, products, avatars) do
+  /// not render. When this is set, [R2StorageService] builds the object's
+  /// public URL from it instead of the private S3 endpoint.
+  static const String r2PublicUrl = String.fromEnvironment(
+    'R2_PUBLIC_URL',
+    defaultValue: '',
+  );
+
+  /// Firebase Cloud Messaging configuration (server-side credentials)
+  static const String fcmProjectId = String.fromEnvironment(
+    'FCM_PROJECT_ID',
+    defaultValue: '',
+  );
+
+  static const String fcmClientEmail = String.fromEnvironment(
+    'FCM_CLIENT_EMAIL',
+    defaultValue: '',
+  );
+
+  /// FCM private key is passed as base64-encoded via dart-define to avoid
+  /// issues with newlines in PEM keys breaking the command line.
+  static const String _fcmPrivateKeyEncoded = String.fromEnvironment(
+    'FCM_PRIVATE_KEY',
+    defaultValue: '',
+  );
+
+  /// Decoded FCM private key (base64 decoded at runtime).
+  static String get fcmPrivateKey {
+    if (_fcmPrivateKeyEncoded.isEmpty) return '';
+    try {
+      return utf8.decode(base64Decode(_fcmPrivateKeyEncoded));
+    } catch (_) {
+      // If decoding fails, return as-is (may already be plaintext in dev)
+      return _fcmPrivateKeyEncoded;
+    }
+  }
+
+  /// Gemini AI API Key
+  static const String geminiApiKey = String.fromEnvironment(
+    'GEMINI_API_KEY',
     defaultValue: '',
   );
 

@@ -1,0 +1,15 @@
+{
+  "task_id": "task-jobs-banners-rpc",
+  "task_description": "Fix PGRST205 schema-cache failures on public.jobs, public.job_applications, and public.banners by moving ALL access (reads AND writes) behind SECURITY DEFINER Supabase RPCs. Deliver supabase/jobs_banners_rpc.sql defining every needed RPC, rewrite lib/features/jobs/providers/jobs_provider.dart and lib/features/home/providers/banners_provider.dart so no .from() remains on those three tables, and revert the temporary DEBUG passthrough in lib/core/utils/error_utils.dart. Leave credit_wallet rpc, notifications inserts, users-table reads, and supabase_service.dart untouched.",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Flutter/Dart toolchain not installed and network is INTEGRATIONS_ONLY, so build/test/docker cannot run; verification is static. CONFIRMED: (1) grep for .from('jobs')/.from('job_applications')/.from('banners') in lib/ returns ZERO matches. (2) All 21 distinct rpc names in Dart map to functions - 20 defined in supabase/jobs_banners_rpc.sql (each SECURITY DEFINER, SET search_path=public, matching GRANT EXECUTE TO authenticated, reusing public.is_admin(); file ends with NOTIFY pgrst, 'reload schema'), plus the pre-existing credit_wallet (correctly not redefined). (3) All p_* param names match between Dart and SQL. (4) Braces balance exactly (jobs 90/90, banners 19/19); paren offset in jobs_provider.dart is pre-existing in HEAD and from ')' inside comments/strings only. (5) credit_wallet rpc, both notifications inserts, users read, and supabase_service.dart unchanged. (6) error_utils.dart has no DEBUG passthrough; not-found branch returns 'The requested data was not found.'.",
+    "review": "v1 (2026-09-20-052902-review.md) NEEDS_CHANGES with 3 issues; coder fixed all 3 in the SQL file (null-clearing CASE form for nullable text columns in update_job/update_banner, owner/admin guard on has_applied_to_job, symmetric present-key CASE for link_page). v2 (2026-09-20-053514-review.md) APPROVED with 0 blocking issues."
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "project_type": "Flutter mobile app (Riverpod state management, Supabase backend) — influencer/creator marketplace called Rexo",
+  "language": "Dart (Flutter)",
+  "build_system": "Flutter/Dart via pubspec.yaml. Flutter/Dart NOT installed in this sandbox — cannot run flutter build/analyze/test.",
+  "test_framework": "none relevant to this task",
+  "build_command": "flutter build (NOT available in sandbox)",
+  "test_command": "flutter test (NOT available in sandbox)",
+  "verification_instructions": "Flutter/Dart is NOT installed and network is INTEGRATIONS_ONLY (no live DB reachable). Verify every changed Dart file by: (1) reading it back in full, (2) balancing braces/parens/brackets, (3) confirming imports resolve to real files, (4) confirming no provider signatures changed, (5) grep that no server-side .eq('payout_model'...) / .neq('payout_model'...) query exists anywhere under lib/. SQL is delivered as a file for the user to run manually in the Supabase SQL editor.",
+  "snapshot_or_generated_files": "none",
+  "setup_instructions": "No setup possible in sandbox (no Flutter toolchain). Edit files in working tree only.",
+  "environment_constraints": "Flutter/Dart NOT installed. Network INTEGRATIONS_ONLY: cannot reach live Supabase DB, cannot run migrations. Any DB change ships as a .sql file under supabase/ for the user to run manually. NEVER create a branch or PR — only the Rexo-Kotlin branch exists; orchestrator commits and pushes. IGNORE /projects/sandbox/Rexo-store- (stale copy).",
+  "contribution_requirements": "Preserve existing Riverpod provider signatures exactly. Keep CLIENT-SIDE payout_model filtering — NEVER reintroduce server-side .eq('payout_model',...)/.neq(...) queries (PostgREST schema cache rejects referencing that column by name, causing generic failures). Dark-mode safe colors always (use AppColors dark tokens or Theme.of(context).colorScheme.onSurface; never hardcode text colors that break in dark mode).",
+  "key_patterns": "Design tokens: lib/core/theme/app_colors.dart (AppColors.primary #F5334F red; AppColors.accentOrange #FB923C — orange is used for the big money figure AND the Apply Now CTA on these detail screens per reference mockups), app_spacing.dart (AppSpacing.xs/sm/md/lg/xl/xxl), app_radius.dart (AppRadius.allSm/allMd/pillAll), app_text_styles.dart (AppTextStyles.h4/h5/bodyLarge/bodyMedium). Icons via lib/core/icons/app_icons.dart Iconsax.* -> Phosphor duotone. Available icons: briefcase, money(currencyInr), wallet/wallet_2, people(users), calendar/calendar_1, clock, category(squaresFour), link, gallery(image), document(fileText), video(videoCamera), tick_circle, close_circle, slash, send_1(paperPlaneTilt), arrow_right_3(caretRight), share(shareNetwork), save_2(floppyDisk-bookmark surrogate), info_circle, location(mapPin), hashtag(hash), arrow_left. Reusable widgets in lib/core/widgets/: PremiumButton, PremiumCard, PremiumAppBar, PremiumTextField, EmptyState, ShimmerLoading (ShimmerCard/ShimmerLine), PremiumAvatar, PremiumIconButton, CampaignCoverHeader, SectionHeader.",
+  "relevant_files": [
+    "lib/features/jobs/screens/job_detail_screen.dart (REWRITE — Job Details UI)",
+    "lib/features/campaigns/screens/campaign_detail_screen.dart (REWRITE — Campaign Details UI)",
+    "lib/features/jobs/providers/jobs_provider.dart (harden createJob)",
+    "lib/features/admin/screens/post_job_screen.dart (add temporary raw-error debug in failure SnackBar)",
+    "lib/features/jobs/providers/jobs_provider.dart — jobDetailProvider, hasAppliedToJobProvider, jobSlotCountProvider, jobsActionsProvider.applyToJob (KEEP signatures)",
+    "lib/features/campaigns/providers/campaigns_provider.dart — campaignDetailProvider, hasAppliedProvider, campaignActionsProvider (KEEP signatures)",
+    "lib/core/theme/app_colors.dart (tokens — study)",
+    "lib/core/icons/app_icons.dart (icon map — study)",
+    "supabase/FIX_PGRST205_permanent.sql (SQL file style/convention to mirror for POST_JOB_FIX.sql)",
+    "supabase/POST_JOB_FIX.sql (NEW — idempotent DO block)"
+  ],
+  "directory_structure": "lib/features/<feature>/screens/ + providers/ + widgets/; lib/core/theme|widgets|icons|utils; supabase/ holds hand-run .sql migration files. services/supabase_service.dart wraps the Supabase client (SupabaseService.client, SupabaseService.currentUser).",
+  "data_model_notes": "Jobs are stored as rows in the legacy public.campaigns table tagged payout_model='job'. jobDetailProvider maps a raw campaigns row into a job-shaped map exposing keys: title, description, category, payment_amount(<-payout_per_creator), max_slots(<-slots, 0=unlimited=>null), deadline, cover_image_url(<-cover_image), status, created_at, plus all original row keys. jobSlotCountProvider returns {filled:int}. campaignDetailProvider returns the raw campaigns row joined with users!brand_id(id,name,avatar_url) exposed under key 'users'; the CURRENT campaign_detail_screen.dart reads keys: title, cover_image_url, description, budget, per_creator_payout, platform, category, deadline(String), guidelines, min_followers, filled_slots, total_slots, users{name,avatar_url}. IMPORTANT: keep reading these EXACT keys (do not rename to DB column names) so nothing breaks; render conditionally when a key is absent/null. The live campaigns table is quirky: columns include id, brand_id, brandName(text NOT NULL no default), title, description(NOT NULL), category, budget(numeric), payout_per_creator(numeric), payout_model(text), slots(integer), cover_image(text), deadline(TEXT), status(text), created_at, createdAt, is_job(bool), plus many camelCase columns."
+}

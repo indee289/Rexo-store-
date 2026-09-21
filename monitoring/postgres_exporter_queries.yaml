@@ -1,0 +1,379 @@
+# ============================================================
+# PostgreSQL Exporter Custom Queries for Phase 1 Monitoring
+# ============================================================
+# This file defines custom queries to collect Phase 1 specific
+# metrics from the PostgreSQL database.
+# ============================================================
+
+# ============================================================
+# PHASE 1 SCHEMA VALIDATION QUERIES
+# ============================================================
+
+phase1_subscription_plans_schema_valid:
+  query: |
+    SELECT 
+      CASE WHEN EXISTS(
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='subscription_plans' AND column_name='interval'
+      ) THEN 1 ELSE 0 END as schema_valid
+  metrics:
+    - schema_valid:
+        usage: "GAUGE"
+        description: "Whether subscription_plans table has the required interval column"
+
+phase1_wallet_functions_available:
+  query: |
+    SELECT 
+      CASE WHEN (
+        EXISTS(SELECT 1 FROM pg_proc WHERE proname='credit_wallet') AND
+        EXISTS(SELECT 1 FROM pg_proc WHERE proname='debit_wallet')
+      ) THEN 1 ELSE 0 END as functions_available
+  metrics:
+    - functions_available:
+        usage: "GAUGE"
+        description: "Whether wallet alias functions are available"
+
+phase1_subscription_payments_table_exists:
+  query: |
+    SELECT 
+      CASE WHEN EXISTS(
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name='subscription_payments'
+      ) THEN 1 ELSE 0 END as table_exists
+  metrics:
+    - table_exists:
+        usage: "GAUGE"
+        description: "Whether subscription_payments table exists"
+
+# ============================================================
+# PHASE 1 PERFORMANCE METRICS
+# ============================================================
+
+phase1_subscription_plans_operations:
+  query: |
+    SELECT 
+      component_name,
+      operation_type,
+      COUNT(*) as total_operations,
+      COUNT(*) FILTER (WHERE success = true) as successful_operations,
+      COUNT(*) FILTER (WHERE success = false) as failed_operations,
+      AVG(execution_time_ms) as avg_execution_time_ms,
+      MAX(execution_time_ms) as max_execution_time_ms
+    FROM phase1_performance_metrics
+    WHERE component_name = 'subscription_plans'
+      AND created_at > NOW() - INTERVAL '5 minutes'
+    GROUP BY component_name, operation_type
+  metrics:
+    - component_name:
+        usage: "LABEL"
+        description: "Phase 1 component name"
+    - operation_type:
+        usage: "LABEL" 
+        description: "Type of operation"
+    - total_operations:
+        usage: "GAUGE"
+        description: "Total operations in last 5 minutes"
+    - successful_operations:
+        usage: "GAUGE"
+        description: "Successful operations in last 5 minutes"
+    - failed_operations:
+        usage: "GAUGE"
+        description: "Failed operations in last 5 minutes"
+    - avg_execution_time_ms:
+        usage: "GAUGE"
+        description: "Average execution time in milliseconds"
+    - max_execution_time_ms:
+        usage: "GAUGE"
+        description: "Maximum execution time in milliseconds"
+
+phase1_wallet_functions_operations:
+  query: |
+    SELECT 
+      component_name,
+      operation_type,
+      COUNT(*) as total_operations,
+      COUNT(*) FILTER (WHERE success = true) as successful_operations,
+      COUNT(*) FILTER (WHERE success = false) as failed_operations,
+      AVG(execution_time_ms) as avg_execution_time_ms
+    FROM phase1_performance_metrics
+    WHERE component_name = 'wallet_functions'
+      AND created_at > NOW() - INTERVAL '5 minutes'
+    GROUP BY component_name, operation_type
+  metrics:
+    - component_name:
+        usage: "LABEL"
+        description: "Phase 1 component name"
+    - operation_type:
+        usage: "LABEL"
+        description: "Type of operation"
+    - total_operations:
+        usage: "GAUGE"
+        description: "Total operations in last 5 minutes"
+    - successful_operations:
+        usage: "GAUGE"
+        description: "Successful operations in last 5 minutes"
+    - failed_operations:
+        usage: "GAUGE"
+        description: "Failed operations in last 5 minutes"
+    - avg_execution_time_ms:
+        usage: "GAUGE"
+        description: "Average execution time in milliseconds"
+
+phase1_subscription_payments_operations:
+  query: |
+    SELECT 
+      component_name,
+      operation_type,
+      COUNT(*) as total_operations,
+      COUNT(*) FILTER (WHERE success = true) as successful_operations,
+      COUNT(*) FILTER (WHERE success = false) as failed_operations,
+      AVG(execution_time_ms) as avg_execution_time_ms
+    FROM phase1_performance_metrics
+    WHERE component_name = 'subscription_payments'
+      AND created_at > NOW() - INTERVAL '5 minutes'
+    GROUP BY component_name, operation_type
+  metrics:
+    - component_name:
+        usage: "LABEL"
+        description: "Phase 1 component name"
+    - operation_type:
+        usage: "LABEL"
+        description: "Type of operation"
+    - total_operations:
+        usage: "GAUGE"
+        description: "Total operations in last 5 minutes"
+    - successful_operations:
+        usage: "GAUGE"
+        description: "Successful operations in last 5 minutes"
+    - failed_operations:
+        usage: "GAUGE"
+        description: "Failed operations in last 5 minutes"
+    - avg_execution_time_ms:
+        usage: "GAUGE"
+        description: "Average execution time in milliseconds"
+
+# ============================================================
+# PHASE 1 ERROR ANALYSIS
+# ============================================================
+
+phase1_recent_errors:
+  query: |
+    SELECT 
+      component_name,
+      error_type,
+      COUNT(*) as error_count,
+      MAX(created_at) as latest_error
+    FROM phase1_error_log
+    WHERE created_at > NOW() - INTERVAL '1 hour'
+      AND resolved_at IS NULL
+    GROUP BY component_name, error_type
+  metrics:
+    - component_name:
+        usage: "LABEL"
+        description: "Component with errors"
+    - error_type:
+        usage: "LABEL"
+        description: "Type of error"
+    - error_count:
+        usage: "GAUGE"
+        description: "Number of unresolved errors in last hour"
+
+phase1_health_check_results:
+  query: |
+    SELECT 
+      component_name,
+      status,
+      COUNT(*) as check_count
+    FROM phase1_health_checks
+    WHERE checked_at > NOW() - INTERVAL '1 hour'
+    GROUP BY component_name, status
+  metrics:
+    - component_name:
+        usage: "LABEL"
+        description: "Component being monitored"
+    - status:
+        usage: "LABEL"
+        description: "Health check status"
+    - check_count:
+        usage: "GAUGE"
+        description: "Number of health checks with this status"
+
+# ============================================================
+# DATABASE-SPECIFIC PHASE 1 METRICS
+# ============================================================
+
+phase1_subscription_plans_data_integrity:
+  query: |
+    SELECT 
+      COUNT(*) as total_plans,
+      COUNT(*) FILTER (WHERE interval IS NOT NULL) as plans_with_interval,
+      COUNT(*) FILTER (WHERE duration_days > 0) as plans_with_duration,
+      COUNT(*) FILTER (WHERE interval IS NOT NULL AND duration_days > 0) as plans_complete
+    FROM subscription_plans
+  metrics:
+    - total_plans:
+        usage: "GAUGE"
+        description: "Total number of subscription plans"
+    - plans_with_interval:
+        usage: "GAUGE"
+        description: "Plans with interval column populated"
+    - plans_with_duration:
+        usage: "GAUGE"
+        description: "Plans with duration_days populated"
+    - plans_complete:
+        usage: "GAUGE"
+        description: "Plans with both interval and duration populated"
+
+phase1_subscription_payments_status:
+  query: |
+    SELECT 
+      CASE WHEN EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='subscription_payments')
+      THEN (
+        SELECT 
+          COUNT(*) as total_payments,
+          COUNT(*) FILTER (WHERE status = 'pending') as pending_payments,
+          COUNT(*) FILTER (WHERE status = 'approved') as approved_payments,
+          COUNT(*) FILTER (WHERE status = 'rejected') as rejected_payments
+        FROM subscription_payments
+      )::text
+      ELSE '0,0,0,0'
+      END as payment_stats
+  metrics:
+    - payment_stats:
+        usage: "LABEL"
+        description: "Subscription payment statistics (total,pending,approved,rejected)"
+
+# ============================================================
+# MIGRATION STATUS MONITORING
+# ============================================================
+
+phase1_migration_consistency_check:
+  query: |
+    SELECT 
+      CASE WHEN (
+        -- Migration 1: Subscription Plans
+        EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='subscription_plans' AND column_name='interval') AND
+        -- Migration 2: Wallet Functions
+        EXISTS(SELECT 1 FROM pg_proc WHERE proname='credit_wallet') AND
+        EXISTS(SELECT 1 FROM pg_proc WHERE proname='debit_wallet') AND
+        -- Migration 3: Subscription Payments
+        EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='subscription_payments')
+      ) THEN 1 ELSE 0 END as migrations_consistent
+  metrics:
+    - migrations_consistent:
+        usage: "GAUGE"
+        description: "Whether all Phase 1 migrations are consistently applied"
+
+# ============================================================
+# COMPONENT HEALTH SCORES
+# ============================================================
+
+phase1_component_health_score:
+  query: |
+    WITH health_metrics AS (
+      SELECT 
+        'subscription_plans' as component,
+        CASE WHEN EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='subscription_plans' AND column_name='interval')
+             THEN 1.0 ELSE 0.0 END as schema_health,
+        COALESCE(
+          (SELECT COUNT(*) FILTER (WHERE success = true)::float / NULLIF(COUNT(*), 0)
+           FROM phase1_performance_metrics 
+           WHERE component_name = 'subscription_plans' 
+           AND created_at > NOW() - INTERVAL '1 hour'), 
+          1.0
+        ) as operation_health
+      UNION ALL
+      SELECT 
+        'wallet_functions' as component,
+        CASE WHEN EXISTS(SELECT 1 FROM pg_proc WHERE proname='credit_wallet') AND
+                  EXISTS(SELECT 1 FROM pg_proc WHERE proname='debit_wallet')
+             THEN 1.0 ELSE 0.0 END as schema_health,
+        COALESCE(
+          (SELECT COUNT(*) FILTER (WHERE success = true)::float / NULLIF(COUNT(*), 0)
+           FROM phase1_performance_metrics 
+           WHERE component_name = 'wallet_functions' 
+           AND created_at > NOW() - INTERVAL '1 hour'), 
+          1.0
+        ) as operation_health
+      UNION ALL
+      SELECT 
+        'subscription_payments' as component,
+        CASE WHEN EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='subscription_payments')
+             THEN 1.0 ELSE 0.0 END as schema_health,
+        COALESCE(
+          (SELECT COUNT(*) FILTER (WHERE success = true)::float / NULLIF(COUNT(*), 0)
+           FROM phase1_performance_metrics 
+           WHERE component_name = 'subscription_payments' 
+           AND created_at > NOW() - INTERVAL '1 hour'), 
+          1.0
+        ) as operation_health
+    )
+    SELECT 
+      component,
+      (schema_health * 0.6 + operation_health * 0.4) as health_score
+    FROM health_metrics
+  metrics:
+    - component:
+        usage: "LABEL"
+        description: "Phase 1 component"
+    - health_score:
+        usage: "GAUGE"
+        description: "Overall health score for component (0-1)"
+
+# ============================================================
+# DATABASE CONNECTION AND PERFORMANCE
+# ============================================================
+
+phase1_database_connection_status:
+  query: |
+    SELECT 1 as connection_status
+  metrics:
+    - connection_status:
+        usage: "GAUGE"
+        description: "Database connection status (1=connected, 0=disconnected)"
+
+phase1_active_connections:
+  query: |
+    SELECT COUNT(*) as active_connections
+    FROM pg_stat_activity
+    WHERE state = 'active'
+  metrics:
+    - active_connections:
+        usage: "GAUGE"
+        description: "Number of active database connections"
+
+phase1_long_running_queries:
+  query: |
+    SELECT COUNT(*) as long_running_queries
+    FROM pg_stat_activity
+    WHERE state = 'active'
+      AND query_start < NOW() - INTERVAL '30 seconds'
+      AND query NOT LIKE '%pg_stat_activity%'
+  metrics:
+    - long_running_queries:
+        usage: "GAUGE"
+        description: "Number of queries running longer than 30 seconds"
+
+# ============================================================
+# TABLE SIZE MONITORING
+# ============================================================
+
+phase1_table_sizes:
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      pg_total_relation_size(schemaname||'.'||tablename) as size_bytes
+    FROM pg_tables 
+    WHERE tablename IN ('subscription_plans', 'subscription_payments', 'phase1_performance_metrics', 'phase1_health_checks', 'phase1_error_log')
+      AND schemaname = 'public'
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Total table size in bytes"

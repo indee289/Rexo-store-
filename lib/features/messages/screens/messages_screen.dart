@@ -1,107 +1,153 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/premium_sheet.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/messages_provider.dart';
 
-class MessagesScreen extends ConsumerWidget {
+class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  ConsumerState<MessagesScreen> createState() => _MessagesScreenState();
+}
+
+class _MessagesScreenState extends ConsumerState<MessagesScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> items) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return items;
+    return items
+        .where((c) => (c['other_user_name'] as String? ?? '')
+            .toLowerCase()
+            .contains(q))
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Messages', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-      ),
-      body: conversationsAsync.when(
-        data: (conversations) {
-          if (conversations.isEmpty) {
-            return _buildEmptyState(theme);
-          }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async {
-              ref.invalidate(conversationsProvider);
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: conversations.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                indent: 76,
-                color: theme.dividerColor,
-              ),
-              itemBuilder: (context, index) {
-                final conversation = conversations[index];
-                return _ConversationTile(conversation: conversation);
-              },
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: PremiumAppBar(
+        title: 'Messages',
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: PremiumIconButton(
+              icon: Iconsax.message_text,
+              tooltip: 'New chat',
+              background: true,
+              tonal: true,
+              onPressed: () => _openNewChatSearch(context),
             ),
-          );
-        },
-        loading: () => ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: 6,
-          itemBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: ShimmerCard(height: 72),
           ),
-        ),
-        error: (e, _) => Center(
-          child:
-              Text('Failed to load messages', style: AppTextStyles.bodyMedium),
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
-          Icon(
-            Iconsax.message,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No messages yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+          // ── Search bar ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: PremiumTextField.search(
+              controller: _searchController,
+              hint: 'Search',
+              onChanged: (value) => setState(() => _query = value),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Start a conversation with brands or creators',
-            style: AppTextStyles.bodySmall,
+
+          // ── Conversation list ───────────────────────────────────────────
+          Expanded(
+            child: conversationsAsync.when(
+              data: (conversations) {
+                if (conversations.isEmpty) {
+                  return const EmptyState(
+                    icon: Iconsax.message,
+                    title: 'No messages yet',
+                    subtitle: "Start a conversation and it'll show up here.",
+                  );
+                }
+
+                final filtered = _filter(conversations);
+                if (filtered.isEmpty) {
+                  return const EmptyState(
+                    icon: Iconsax.search_normal,
+                    title: 'No matches',
+                    subtitle: 'Try a different name.',
+                  );
+                }
+
+                return RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: () async {
+                    ref.invalidate(conversationsProvider);
+                  },
+                  child: ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final conversation = filtered[index];
+                      return _ConversationTile(conversation: conversation)
+                          .staggeredEntrance(index);
+                    },
+                  ),
+                );
+              },
+              loading: () => ListView.builder(
+                itemCount: 8,
+                itemBuilder: (_, __) => const ShimmerConversationRow(),
+              ),
+              error: (e, _) => EmptyState(
+                icon: Iconsax.warning_2,
+                title: "Couldn't load your messages",
+                subtitle: ErrorUtils.sanitize(e),
+                ctaLabel: 'Retry',
+                ctaIcon: Iconsax.refresh,
+                onCta: () => ref.invalidate(conversationsProvider),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
+  void _openNewChatSearch(BuildContext context) {
+    showPremiumSheet<void>(
+      context: context,
+      title: 'New Chat',
+      child: const _NewChatSheet(),
+    );
+  }
 }
 
+/// Single conversation row — Instagram-style.
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
-
   const _ConversationTile({required this.conversation});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final otherUserId = conversation['other_user_id'] as String;
     final name = conversation['other_user_name'] as String? ?? 'User';
     final avatarUrl = conversation['other_user_avatar'] as String?;
@@ -109,79 +155,225 @@ class _ConversationTile extends StatelessWidget {
     final lastMessageAt =
         DateTime.tryParse(conversation['last_message_at'] ?? '');
     final isRead = conversation['is_read'] == true;
-    final timeStr = lastMessageAt != null ? _formatTime(lastMessageAt) : '';
+    final isUnread = !isRead;
+    final timeStr =
+        lastMessageAt != null ? _formatTime(lastMessageAt) : '';
+    final cs = Theme.of(context).colorScheme;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      leading: CircleAvatar(
-        radius: 26,
-        backgroundColor: theme.dividerColor,
-        backgroundImage:
-            avatarUrl != null ? NetworkImage(avatarUrl) : null,
-        child: avatarUrl == null
-            ? Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: AppTextStyles.h5.copyWith(color: AppColors.primary),
-              )
-            : null,
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              name,
-              style: AppTextStyles.labelLarge.copyWith(
-                fontWeight: isRead ? FontWeight.w400 : FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push('/messages/$otherUserId'),
+        child: Container(
+          height: 72,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                    color: Theme.of(context).dividerColor, width: 1)),
           ),
-          Text(timeStr, style: AppTextStyles.caption),
-        ],
-      ),
-      subtitle: Row(
-        children: [
-          Expanded(
-            child: Text(
-              lastMessage,
-              style: AppTextStyles.bodySmall.copyWith(
-                fontWeight: isRead ? FontWeight.w400 : FontWeight.w500,
-                color: isRead
-                    ? theme.colorScheme.onSurface.withOpacity(0.6)
-                    : theme.colorScheme.onSurface,
+          child: Row(
+            children: [
+              // Avatar
+              PremiumAvatar(
+                imageUrl: avatarUrl,
+                name: name,
+                size: 48,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+              const SizedBox(width: 12),
+
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isUnread
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: cs.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isUnread
+                                ? AppColors.primary
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            lastMessage,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isUnread
+                                  ? cs.onSurface
+                                  : cs.onSurfaceVariant,
+                              fontWeight: isUnread
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isUnread)
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          if (!isRead)
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
+        ),
       ),
-      onTap: () => context.push('/messages/$otherUserId'),
     );
   }
 
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final diff = now.difference(dateTime);
+    if (diff.inDays == 0) return DateFormat('hh:mm a').format(dateTime);
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return DateFormat('EEE').format(dateTime);
+    return DateFormat('dd/MM').format(dateTime);
+  }
+}
 
-    if (diff.inDays == 0) {
-      return DateFormat('hh:mm a').format(dateTime);
-    } else if (diff.inDays == 1) {
-      return 'Yesterday';
-    } else if (diff.inDays < 7) {
-      return DateFormat('EEE').format(dateTime);
-    } else {
-      return DateFormat('dd/MM').format(dateTime);
-    }
+/// New chat search sheet.
+class _NewChatSheet extends ConsumerStatefulWidget {
+  const _NewChatSheet();
+
+  @override
+  ConsumerState<_NewChatSheet> createState() => _NewChatSheetState();
+}
+
+class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
+  final _controller = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resultsAsync = ref.watch(userSearchProvider(_query));
+    final cs = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.7,
+      child: Column(
+        children: [
+          PremiumTextField.search(
+            controller: _controller,
+            hint: 'Search by name or @handle',
+            autofocus: true,
+            onChanged: (value) => setState(() => _query = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: _query.trim().isEmpty
+                ? Center(
+                    child: Text(
+                      'Search for people to start a conversation',
+                      style: TextStyle(
+                          fontSize: 14, color: cs.onSurfaceVariant),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : resultsAsync.when(
+                    data: (users) {
+                      if (users.isEmpty) {
+                        return Center(
+                          child: Text('No users found',
+                              style: TextStyle(
+                                  color: cs.onSurfaceVariant)),
+                        );
+                      }
+                      return ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs),
+                        itemCount: users.length,
+                        separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: Theme.of(context).dividerColor),
+                        itemBuilder: (context, index) {
+                          final user = users[index];
+                          final userId =
+                              user['uid'] as String? ?? ''; // live: uid
+                          final name = user['name'] as String? ?? 'User';
+                          final username =
+                              user['username'] as String? ?? ''; // live: username
+                          final avatarUrl =
+                              user['profileImage'] as String?; // live: profileImage
+                          return ListTile(
+                            leading: PremiumAvatar(
+                              imageUrl: avatarUrl,
+                              name: name,
+                              size: 44,
+                            ),
+                            title: Text(name,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface)),
+                            subtitle: username.isNotEmpty
+                                ? Text('@$username',
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: cs.onSurfaceVariant))
+                                : null,
+                            onTap: () {
+                              Navigator.pop(context);
+                              context.push('/messages/$userId');
+                            },
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                          color: AppColors.primary),
+                    ),
+                    error: (e, _) => Center(
+                      child: Text(
+                        ErrorUtils.sanitize(e),
+                        style: TextStyle(
+                            color: cs.onSurfaceVariant),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,0 +1,14 @@
+{
+  "task_id": "task-force-schema-reload",
+  "task_description": "Fix the persistent PGRST205 'Could not find the table public.jobs in the schema cache' error (also job_applications and banners) using a DIFFERENT method than prior failed attempts: force PostgREST to fully rebuild its stuck schema cache via real DDL events on the exposed public schema (COMMENT ON SCHEMA + create/drop a disposable throwaway table) combined with NOTIFY reload schema + reload config. Deliver supabase/FORCE_SCHEMA_RELOAD.sql plus a Hinglish runbook supabase/PGRST205_RUNBOOK.md documenting the Exposed-schemas Dashboard toggle and project Restart fallbacks. Flutter data-access stays identical to campaigns (no code change).",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Flutter/Dart not installed and network INTEGRATIONS_ONLY (live Supabase DB unreachable), so no build/test/execution is possible; deliverables are a .sql file the user runs in the Supabase SQL Editor plus a Hinglish runbook. Static verification passed: COMMENT ON SCHEMA public IS 'reload schema' present once (line 43); disposable public._pgrst_cache_bust is DROP-IF-EXISTS + CREATE + DROP inside a DO block; the file's last two executable statements are NOTIFY pgrst 'reload schema' then NOTIFY pgrst 'reload config'; zero DROP of the real jobs/job_applications/banners tables; $$ dollar-quote count is 2 (balanced). PGRST205_RUNBOOK.md exists (Hinglish, ordered steps). git status shows only the two new supabase files; no .dart files modified."
+  }
+}

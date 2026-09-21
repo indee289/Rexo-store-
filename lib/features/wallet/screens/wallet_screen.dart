@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/utils/error_utils.dart';
 import '../providers/wallet_provider.dart';
 
 class WalletScreen extends ConsumerWidget {
@@ -14,18 +20,12 @@ class WalletScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final walletAsync = ref.watch(walletProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Wallet', style: AppTextStyles.h5),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: const PremiumAppBar(title: 'Wallet'),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
@@ -34,72 +34,70 @@ class WalletScreen extends ConsumerWidget {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Balance Card
+              // ── Balance card ────────────────────────────────────────────
               walletAsync.when(
-                data: (wallet) => _buildBalanceCard(wallet),
-                loading: () => const ShimmerCard(height: 200),
-                error: (e, _) => _buildBalanceCard(null),
+                data: (wallet) => _buildBalanceCard(context, wallet),
+                loading: () => const ShimmerCard(height: 180),
+                error: (e, _) => _buildBalanceCard(context, null),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
 
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
-                      icon: Iconsax.money_add,
-                      label: 'Deposit',
-                      onTap: () => context.push('/wallet/deposit'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionButton(
-                      icon: Iconsax.money_send,
-                      label: 'Withdraw',
-                      onTap: () => context.push('/wallet/withdraw'),
-                    ),
-                  ),
-                ],
+              // ── Transactions ────────────────────────────────────────────
+              Text(
+                'Recent transactions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
-
-              const SizedBox(height: 28),
-
-              // Transaction History
-              Text('Transaction History', style: AppTextStyles.h6),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               transactionsAsync.when(
                 data: (transactions) {
                   if (transactions.isEmpty) {
-                    return _buildEmptyState(theme);
+                    return const EmptyState(
+                      icon: Iconsax.receipt,
+                      title: 'No transactions yet',
+                      subtitle:
+                          'Your deposits, withdrawals and earnings will show up here.',
+                    );
                   }
                   return Column(
-                    children: transactions
-                        .take(20)
-                        .map((t) => _buildTransactionTile(t, theme))
-                        .toList(),
+                    children: [
+                      for (var i = 0;
+                          i < transactions.take(20).length;
+                          i++)
+                        _buildTransactionTile(context, transactions[i])
+                            .staggeredEntrance(i),
+                    ],
                   );
                 },
                 loading: () => Column(
                   children: List.generate(
                     4,
                     (_) => const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
                       child: ShimmerCard(height: 72),
                     ),
                   ),
                 ),
-                error: (e, _) => Center(
-                  child: Text('Failed to load transactions',
-                      style: AppTextStyles.bodyMedium),
+                error: (e, _) => EmptyState(
+                  icon: Iconsax.warning_2,
+                  title: "Couldn't load your transactions",
+                  subtitle: ErrorUtils.sanitize(e),
+                  ctaLabel: 'Retry',
+                  ctaIcon: Iconsax.refresh,
+                  onCta: () => ref.invalidate(transactionsProvider),
                 ),
               ),
+
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -107,89 +105,168 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceCard(Map<String, dynamic>? wallet) {
+  Widget _buildBalanceCard(
+      BuildContext context, Map<String, dynamic>? wallet) {
     final available = (wallet?['available_balance'] ?? 0).toDouble();
     final escrow = (wallet?['escrow_balance'] ?? 0).toDouble();
     final earnings = (wallet?['total_earnings'] ?? 0).toDouble();
-    final withdrawn = (wallet?['total_withdrawn'] ?? 0).toDouble();
-    final currency = wallet?['currency'] ?? 'INR';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF5722), Color(0xFFE64A19), Color(0xFFBF360C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        gradient: AppColors.heroGradient,
+        borderRadius: AppRadius.allXl,
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.3),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Available Balance',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '\u20b9${_formatAmount(available)}',
-            style: AppTextStyles.h2.copyWith(
-              color: Colors.white,
-              fontSize: 34,
-            ),
-          ),
-          const SizedBox(height: 20),
           Row(
             children: [
-              _BalanceStat(
-                label: 'Escrow',
-                value: '\u20b9${_formatAmount(escrow)}',
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  borderRadius: AppRadius.allSm,
+                ),
+                child: const Icon(Iconsax.wallet_2,
+                    size: 18, color: Colors.white),
               ),
-              const SizedBox(width: 24),
-              _BalanceStat(
-                label: 'Earnings',
-                value: '\u20b9${_formatAmount(earnings)}',
-              ),
-              const SizedBox(width: 24),
-              _BalanceStat(
-                label: 'Withdrawn',
-                value: '\u20b9${_formatAmount(withdrawn)}',
+              const SizedBox(width: AppSpacing.sm),
+              const Expanded(
+                child: Text(
+                  'Total balance',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                    letterSpacing: 0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              currency,
-              style: AppTextStyles.caption.copyWith(color: Colors.white54),
+          const SizedBox(height: AppSpacing.sm),
+          // Use content-driven height with maxLines + overflow instead of
+          // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
+          Text(
+            '₹${_formatAmount(available)}',
+            style: const TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.05,
             ),
+            maxLines: 1,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.12),
+              borderRadius: AppRadius.allMd,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _BalanceStat(
+                      icon: Iconsax.lock,
+                      label: 'Escrow',
+                      value: '₹${_formatAmount(escrow)}'),
+                ),
+                Container(
+                  width: 1,
+                  height: 34,
+                  color: Colors.white.withOpacity(0.18),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _BalanceStat(
+                      icon: Iconsax.money_recive,
+                      label: 'Earnings',
+                      value: '₹${_formatAmount(earnings)}'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // Deposit / Withdraw actions. On comfortable widths they sit
+          // side by side; on very narrow phones (or at the largest text
+          // scale) they stack full-width so the 'Withdraw' label is never
+          // clipped to 'Withdr...'. No fixed pixel width, no shrunken font.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final depositBtn = PremiumButton(
+                label: 'Deposit',
+                variant: PremiumButtonVariant.glass,
+                icon: Iconsax.money_add,
+                onPressed: () => context.push('/wallet/deposit'),
+              );
+              final withdrawBtn = PremiumButton(
+                label: 'Withdraw',
+                variant: PremiumButtonVariant.glass,
+                icon: Iconsax.money_send,
+                onPressed: () => context.push('/wallet/withdraw'),
+              );
+
+              // Estimate the width one button needs for its icon + full
+              // 'Withdraw' label at the current text scale. If two buttons
+              // plus the gap don't fit, stack them.
+              final scale = MediaQuery.textScalerOf(context).scale(15);
+              final estButtonWidth = 32 + 18 + 8 + ('Withdraw'.length * scale * 0.62);
+              final fitsSideBySide =
+                  constraints.maxWidth >= (estButtonWidth * 2) + 12;
+
+              if (fitsSideBySide) {
+                return Row(
+                  children: [
+                    Expanded(child: depositBtn),
+                    const SizedBox(width: 12),
+                    Expanded(child: withdrawBtn),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  depositBtn,
+                  const SizedBox(height: 12),
+                  withdrawBtn,
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionTile(Map<String, dynamic> transaction, ThemeData theme) {
+  Widget _buildTransactionTile(
+      BuildContext context, Map<String, dynamic> transaction) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
     final type = transaction['type'] as String;
     final amount = (transaction['amount'] ?? 0).toDouble();
     final status = transaction['status'] as String? ?? 'pending';
-    final method = transaction['payment_method'] ?? transaction['method'] ?? '';
-    final createdAt = DateTime.tryParse(transaction['created_at'] ?? '');
+    final method =
+        transaction['payment_method'] ?? transaction['method'] ?? '';
+    final createdAt =
+        DateTime.tryParse(transaction['created_at'] ?? '');
     final dateStr = createdAt != null
-        ? DateFormat('dd MMM yyyy, hh:mm a').format(createdAt)
+        ? DateFormat('dd MMM yyyy').format(createdAt)
         : '';
 
     Color statusColor;
@@ -207,26 +284,31 @@ class WalletScreen extends ConsumerWidget {
     final isDeposit = type == 'deposit';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor),
+        color: cardBg,
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: (isDeposit ? AppColors.success : AppColors.primary)
-                  .withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+                  .withOpacity(0.10),
+              borderRadius: AppRadius.allSm,
             ),
             child: Icon(
-              isDeposit ? Iconsax.money_add : Iconsax.money_send,
-              color: isDeposit ? AppColors.success : AppColors.primary,
+              isDeposit
+                  ? Iconsax.money_add
+                  : Iconsax.money_send,
+              color: isDeposit
+                  ? AppColors.success
+                  : AppColors.primary,
               size: 20,
             ),
           ),
@@ -237,157 +319,70 @@ class WalletScreen extends ConsumerWidget {
               children: [
                 Text(
                   isDeposit ? 'Deposit' : 'Withdrawal',
-                  style: AppTextStyles.labelLarge,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  '$method \u2022 $dateStr',
-                  style: AppTextStyles.caption,
+                  '$method • $dateStr',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurfaceVariant,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isDeposit ? '+' : '-'}\u20b9${_formatAmount(amount)}',
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: isDeposit ? AppColors.success : theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: AppTextStyles.caption.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 9,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isDeposit ? '+' : '-'}₹${_formatAmount(amount)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDeposit ? AppColors.success : AppColors.error,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Column(
-        children: [
-          Icon(
-            Iconsax.empty_wallet,
-            size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No transactions yet',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your deposit and withdrawal history will appear here',
-            style: AppTextStyles.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatAmount(double amount) {
-    if (amount == amount.roundToDouble()) {
-      return amount.toStringAsFixed(0);
-    }
-    return amount.toStringAsFixed(2);
-  }
-}
-
-class _BalanceStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _BalanceStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.caption.copyWith(
-            color: Colors.white60,
-            fontSize: 10,
-          ),
-        ),
-        const SizedBox(height: 2),
+const SizedBox(height: 4),
+        // Use content-driven height with maxLines + overflow instead of
+        // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
         Text(
           value,
-          style: AppTextStyles.labelLarge.copyWith(
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
             color: Colors.white,
-            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Use content-driven height with maxLines + overflow instead of
+        // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
+        Text(
+          value,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(label, style: AppTextStyles.labelLarge),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

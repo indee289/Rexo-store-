@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'supabase_service.dart';
 
@@ -34,6 +35,23 @@ class PushNotificationService {
 
   static FirebaseMessaging? _messaging;
 
+  /// Local notifications plugin used to render a heads-up banner when an FCM
+  /// message arrives while the app is in the foreground (FCM does not display
+  /// a system notification for foreground messages on its own).
+  static FlutterLocalNotificationsPlugin? _localNotifications;
+  static bool _localNotificationsReady = false;
+
+  /// Android notification channel used for foreground heads-up notifications.
+  /// Created programmatically so no manual channel XML is required under
+  /// android/app/src/main.
+  static const AndroidNotificationChannel _androidChannel =
+      AndroidNotificationChannel(
+    'rexo_high_importance',
+    'General',
+    description: 'General notifications from Rexo',
+    importance: Importance.high,
+  );
+
   /// Safely get the messaging instance, returns null if unavailable
   static FirebaseMessaging? get _safeMessaging {
     try {
@@ -44,12 +62,57 @@ class PushNotificationService {
     }
   }
 
+  /// Initialize the local notifications plugin and Android channel.
+  /// Best-effort: any failure leaves [_localNotificationsReady] false and the
+  /// app keeps working without foreground banners.
+  static Future<void> _initLocalNotifications() async {
+    if (_localNotificationsReady) return;
+    try {
+      final plugin = FlutterLocalNotificationsPlugin();
+
+      const androidInit =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const darwinInit = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidInit,
+        iOS: darwinInit,
+        macOS: darwinInit,
+      );
+
+      await plugin.initialize(initSettings);
+
+      // Create the Android channel (no-op on iOS).
+      try {
+        await plugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.createNotificationChannel(_androidChannel);
+      } catch (_) {
+        // Channel creation may fail on non-Android platforms - ignore.
+      }
+
+      _localNotifications = plugin;
+      _localNotificationsReady = true;
+    } catch (_) {
+      // Local notifications unavailable - foreground banners simply won't show.
+      _localNotificationsReady = false;
+    }
+  }
+
   /// Initialize push notifications - call after Firebase.initializeApp()
   /// This method never throws. If Firebase is not available, it silently returns.
   static Future<void> initialize() async {
     try {
       final messaging = _safeMessaging;
       if (messaging == null) return;
+
+      // Initialize local notifications so foreground messages can show a
+      // heads-up banner. Best-effort; never blocks FCM setup.
+      await _initLocalNotifications();
 
       // Request notification permissions (handles Android 13+ automatically)
       final settings = await messaging.requestPermission(
@@ -166,10 +229,58 @@ class PushNotificationService {
     }
   }
 
-  /// Handle foreground message
+  /// Handle foreground message by showing a local heads-up notification.
+  ///
+  /// FCM does not surface a system notification while the app is in the
+  /// foreground, so we render one via flutter_local_notifications. Everything
+  /// is guarded so a rendering failure never crashes the app.
   static void _handleForegroundMessage(RemoteMessage message) {
-    // Messages received while app is in foreground
-    // Could show a local notification or in-app banner
+    try {
+      final plugin = _localNotifications;
+      if (plugin == null || !_localNotificationsReady) return;
+
+      final notification = message.notification;
+      final data = message.data;
+
+      // Prefer the notification payload, fall back to data payload.
+      final title = notification?.title ??
+          (data['title'] as String?) ??
+          'Rexo';
+      final body = notification?.body ??
+          (data['body'] as String?) ??
+          (data['message'] as String?) ??
+          '';
+
+      // Nothing meaningful to show.
+      if (title.isEmpty && body.isEmpty) return;
+
+      final androidDetails = AndroidNotificationDetails(
+        _androidChannel.id,
+        _androidChannel.name,
+        channelDescription: _androidChannel.description,
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      );
+      const darwinDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: darwinDetails,
+        macOS: darwinDetails,
+      );
+
+      // Use a per-message id so multiple notifications can coexist.
+      final id =
+          DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+
+      plugin.show(id, title, body, details);
+    } catch (_) {
+      // Best-effort: never crash on a foreground push.
+    }
   }
 
   /// Handle when user taps a background notification

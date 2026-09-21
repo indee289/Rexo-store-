@@ -1,0 +1,25 @@
+{
+  "project_type": "Flutter + Riverpod mobile app backed by Supabase (Postgres + PostgREST)",
+  "language": "Dart (Flutter) for the app; SQL for the database fix",
+  "build_system": "Flutter (pub/gradle). NOT installed in this sandbox.",
+  "test_framework": "None relevant to this task; the deliverable is a SQL script the USER runs.",
+  "build_command": "N/A in sandbox (Flutter/Dart not installed). Validation is read + grep + SQL syntax/brace-balance review.",
+  "test_command": "N/A in sandbox. Verification is done by the USER running the SQL in Supabase SQL Editor.",
+  "verification_instructions": "Since Flutter/Dart are not installed and network is INTEGRATIONS_ONLY (no live Supabase access), verify the SQL script by: (1) reading it for correctness, (2) confirming it is idempotent (drop-if-exists before create, IF NOT EXISTS where needed), (3) confirming GRANT/USAGE/OWNER/NOTIFY statements are present and target the three tables, (4) checking parenthesis/dollar-quote balance. The USER runs the script in the Supabase SQL Editor to confirm the PGRST205 clears.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed. Work directly in the working tree at /projects/sandbox/Rexo-Kotlin. The orchestrator commits & pushes.",
+  "environment_constraints": "Flutter/Dart NOT installed. Network is INTEGRATIONS_ONLY: cannot reach the live Supabase DB from the sandbox, so the DB fix MUST be delivered as a .sql file the USER runs in the Supabase SQL Editor. Only branch is 'Rexo-Kotlin'; never create a branch or PR. IGNORE the stale copy at /projects/sandbox/Rexo-store-.",
+  "contribution_requirements": "Keep the Flutter data-fetch approach unchanged (plain .from('jobs')/.from('job_applications')/.from('banners') exactly like campaigns_provider uses .from('campaigns')). Do NOT introduce mock/static data. LEAVE the temporary 'DBG3: ${error}' passthrough at the top of lib/core/utils/error_utils.dart sanitize() untouched; the orchestrator reverts it once the user confirms the fix.",
+  "key_patterns": "ROOT CAUSE (confirmed by exploration): supabase/schema.sql contains ZERO GRANT statements. The campaigns table works through PostgREST because it inherited Supabase's platform default privileges (ALTER DEFAULT PRIVILEGES grants ALL on tables to anon/authenticated/service_role for objects created by the dashboard/postgres role). The newer tables jobs/job_applications/banners were created by supabase/jobs_banners_LIKE_CAMPAIGNS.sql which does CREATE TABLE + ENABLE RLS + policies + NOTIFY but NO explicit GRANTs and NO sequence grants. PostgREST accesses tables as the anon/authenticated roles; without table-level GRANTs it cannot see them and returns PGRST205 'Could not find the table in the schema cache'. NOTIFY reload and project restart do not add missing grants, which is why the error survived both. The Flutter code is identical to campaigns (plain .from()), so this is purely a DB privilege/exposure issue.",
+  "relevant_files": [
+    "supabase/jobs_banners_LIKE_CAMPAIGNS.sql (the rebuild script that created the tables WITHOUT grants - study its table/RLS shape)",
+    "supabase/schema.sql (original schema; how campaigns was created; note it has zero GRANTs, confirming platform default privileges are what make campaigns work)",
+    "supabase/RELOAD_SCHEMA_CACHE.sql and supabase/PERMANENT_FIX_run_this.sql (prior attempts that did NOT add grants)",
+    "supabase/DIAGNOSTIC_check_everything.sql (existing diagnostic style to mirror)",
+    "lib/features/jobs/providers/jobs_provider.dart (uses .from('jobs') / .from('job_applications'))",
+    "lib/features/home/providers/banners_provider.dart (uses .from('banners'))",
+    "lib/features/home/providers/home_provider.dart and lib/features/admin/providers/admin_provider.dart (use .from('campaigns') - the working comparison)",
+    "lib/core/utils/error_utils.dart (has temporary DBG3 passthrough - LEAVE IT)"
+  ],
+  "directory_structure": "supabase/ holds all .sql (schema.sql, migrations, and many fix_*/jobs_banners_* scripts). lib/features/*/providers/*.dart hold the Riverpod providers that call SupabaseService.client.from(...). The new deliverable goes at supabase/FIX_PGRST205_permanent.sql."
+}

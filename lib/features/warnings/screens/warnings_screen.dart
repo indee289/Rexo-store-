@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_sheet.dart';
+import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/warnings_provider.dart';
 
@@ -18,21 +24,9 @@ class WarningsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Warnings & Suspensions',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
-      ),
+      appBar: PremiumAppBar(title: 'Warnings & Suspensions', showBack: true),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -45,17 +39,13 @@ class WarningsScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Active Suspensions',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.error,
-                      ),
+                      style: AppTextStyles.h6.copyWith(color: AppColors.error),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     ...suspensions.map(
                       (s) => _buildSuspensionCard(context, ref, s),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
                   ],
                 );
               },
@@ -63,15 +53,8 @@ class WarningsScreen extends ConsumerWidget {
               error: (_, __) => _buildErrorText('Failed to load suspensions'),
             ),
             // Warnings Section
-            Text(
-              'Warnings',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
+            Text('Warnings', style: AppTextStyles.h6),
+            const SizedBox(height: AppSpacing.md),
             warningsAsync.when(
               data: (warnings) {
                 if (warnings.isEmpty) {
@@ -99,7 +82,8 @@ class WarningsScreen extends ConsumerWidget {
   ) {
     final reason = suspension['reason'] ?? 'No reason provided';
     final startsAt = suspension['starts_at'] != null
-        ? DateFormat('MMM dd, yyyy').format(DateTime.parse(suspension['starts_at']))
+        ? DateFormat('MMM dd, yyyy')
+            .format(DateTime.parse(suspension['starts_at']))
         : 'Unknown';
     final endsAt = suspension['ends_at'] != null
         ? DateFormat('MMM dd, yyyy').format(DateTime.parse(suspension['ends_at']))
@@ -108,11 +92,11 @@ class WarningsScreen extends ConsumerWidget {
     final suspensionId = suspension['id'] as String;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.error.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Column(
@@ -121,12 +105,11 @@ class WarningsScreen extends ConsumerWidget {
           Row(
             children: [
               const Icon(Iconsax.warning_2, color: AppColors.error, size: 20),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   'Account Suspended',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.error,
                   ),
@@ -134,56 +117,40 @@ class WarningsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             reason,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
+            style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'Duration: $startsAt - $endsAt',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
+            style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           if (appealStatus == 'none')
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showAppealBottomSheet(context, ref, suspensionId),
-                icon: const Icon(Iconsax.message_text, size: 18),
-                label: Text(
-                  'Submit Appeal',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
+            PremiumButton(
+              label: 'Submit appeal',
+              variant: PremiumButtonVariant.outline,
+              icon: Iconsax.message_text,
+              onPressed: () =>
+                  _showAppealBottomSheet(context, ref, suspensionId),
             )
           else
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm + 2, vertical: AppSpacing.xs),
               decoration: BoxDecoration(
                 color: _getAppealStatusColor(appealStatus).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: AppRadius.allSm,
               ),
               child: Text(
-                'Appeal: ${appealStatus.toUpperCase()}',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
+                'Appeal: ${appealStatus[0].toUpperCase()}${appealStatus.substring(1).toLowerCase()}',
+                style: AppTextStyles.labelSmall.copyWith(
                   fontWeight: FontWeight.w600,
                   color: _getAppealStatusColor(appealStatus),
                 ),
@@ -198,40 +165,42 @@ class WarningsScreen extends ConsumerWidget {
     final reason = warning['reason'] ?? 'No reason provided';
     final severity = warning['severity'] ?? 'low';
     final createdAt = warning['created_at'] != null
-        ? DateFormat('MMM dd, yyyy').format(DateTime.parse(warning['created_at']))
+        ? DateFormat('MMM dd, yyyy')
+            .format(DateTime.parse(warning['created_at']))
         : 'Unknown';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSeverityBadge(severity),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   reason,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
+                  style: AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   createdAt,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  style: AppTextStyles.caption.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
                   ),
                 ),
               ],
@@ -249,23 +218,23 @@ class WarningsScreen extends ConsumerWidget {
         color = AppColors.error;
         break;
       case 'medium':
-        color = const Color(0xFFFF9800);
+        color = AppColors.primary;
         break;
       default:
         color = AppColors.warning;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadius.allSm,
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        severity.toUpperCase(),
-        style: GoogleFonts.poppins(
-          fontSize: 10,
+        severity[0].toUpperCase() + severity.substring(1).toLowerCase(),
+        style: AppTextStyles.labelSmall.copyWith(
           fontWeight: FontWeight.w700,
           color: color,
         ),
@@ -282,17 +251,17 @@ class WarningsScreen extends ConsumerWidget {
       case 'rejected':
         return AppColors.error;
       default:
-        return const Color(0xFF9E9E9E);
+        return AppColors.textHint;
     }
   }
 
   Widget _buildEmptyState(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
@@ -302,20 +271,17 @@ class WarningsScreen extends ConsumerWidget {
             size: 48,
             color: AppColors.success,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'No warnings',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            style: AppTextStyles.labelLarge.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Your account is in good standing',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
+            style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
@@ -326,10 +292,10 @@ class WarningsScreen extends ConsumerWidget {
 
   Widget _buildErrorText(String message) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Text(
         message,
-        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.error),
+        style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
       ),
     );
   }
@@ -341,108 +307,52 @@ class WarningsScreen extends ConsumerWidget {
   ) {
     final controller = TextEditingController();
 
-    showModalBottomSheet(
+    showPremiumSheet<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      title: 'Submit appeal',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Explain why you believe this suspension should be lifted.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          PremiumTextField.multiline(
+            controller: controller,
+            hint: 'Write your appeal...',
+            minLines: 4,
+            maxLines: 6,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Consumer(
+            builder: (context, ref, _) {
+              final appealState = ref.watch(appealNotifierProvider);
+              return PremiumButton(
+                label: appealState.isLoading ? 'Submitting...' : 'Submit appeal',
+                gradient: true,
+                loading: appealState.isLoading,
+                onPressed: appealState.isLoading
+                    ? null
+                    : () {
+                        if (controller.text.trim().isNotEmpty) {
+                          ref
+                              .read(appealNotifierProvider.notifier)
+                              .submitAppeal(
+                                suspensionId: suspensionId,
+                                appealText: controller.text.trim(),
+                              );
+                          Navigator.pop(context);
+                        }
+                      },
+              );
+            },
+          ),
+        ],
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Submit Appeal',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Explain why you believe this suspension should be lifted.',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Write your appeal...',
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                ),
-                style: GoogleFonts.poppins(fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              Consumer(
-                builder: (context, ref, _) {
-                  final appealState = ref.watch(appealNotifierProvider);
-                  return SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: appealState.isLoading
-                          ? null
-                          : () {
-                              if (controller.text.trim().isNotEmpty) {
-                                ref
-                                    .read(appealNotifierProvider.notifier)
-                                    .submitAppeal(
-                                      suspensionId: suspensionId,
-                                      appealText: controller.text.trim(),
-                                    );
-                                Navigator.pop(context);
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        appealState.isLoading ? 'Submitting...' : 'Submit Appeal',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

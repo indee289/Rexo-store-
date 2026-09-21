@@ -1,332 +1,111 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/avatar_widget.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../models/creator_view.dart';
 import '../providers/creators_provider.dart';
+import '../widgets/creator_profile_header.dart';
 
-/// Creator profile screen showing stats, Follow button, and Message button.
-/// Navigated to from the Top Creators tab on the home screen.
-class CreatorProfileScreen extends ConsumerWidget {
+/// Instagram-style public creator profile screen.
+///
+/// Navigated to from the Top Creators section on the home screen via
+/// `/creators/{userId}`. It watches the resilient [creatorViewProvider] (which
+/// falls back to the `users` row) so tapping a creator that only exists as a
+/// `users` row no longer shows "creator not found" — the previous bug. A
+/// "creator unavailable" [EmptyState] now only appears when the user id is
+/// genuinely unknown (Requirement 7.4).
+///
+/// This is a [ConsumerStatefulWidget] so it can hold **optimistic** follow
+/// state ([_optimisticFollowing] / [_optimisticCount]). [isFollowingProvider]
+/// and [followerCountProvider] remain the source of truth; the optimistic
+/// overrides only provide immediate visual feedback until the providers
+/// reconcile after a successful toggle (Requirements 9.1–9.4).
+class CreatorProfileScreen extends ConsumerStatefulWidget {
   final String creatorUserId;
 
   const CreatorProfileScreen({super.key, required this.creatorUserId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CreatorProfileScreen> createState() =>
+      _CreatorProfileScreenState();
+}
+
+class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
+  /// Optimistic follow indicator. `null` => defer to [isFollowingProvider].
+  bool? _optimisticFollowing;
+
+  /// Optimistic follower count. `null` => defer to [followerCountProvider].
+  int? _optimisticCount;
+
+  String get _creatorUserId => widget.creatorUserId;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final creatorAsync = ref.watch(creatorProfileProvider(creatorUserId));
-    final isFollowingAsync = ref.watch(isFollowingProvider(creatorUserId));
-    final followerCountAsync = ref.watch(followerCountProvider(creatorUserId));
+    final creatorAsync = ref.watch(creatorViewProvider(_creatorUserId));
+    final isFollowingAsync = ref.watch(isFollowingProvider(_creatorUserId));
+    final followerCountAsync = ref.watch(followerCountProvider(_creatorUserId));
+
+    // Reconcile: once the providers catch up to a successful optimistic
+    // toggle, drop the local overrides so the providers resume as the single
+    // source of truth (flicker-free — we only clear when they already match).
+    _maybeReconcile(isFollowingAsync, followerCountAsync);
+
+    // Displayed values: optimistic override wins, otherwise provider truth.
+    final bool displayedFollowing = _optimisticFollowing ??
+        isFollowingAsync.maybeWhen<bool>(data: (v) => v, orElse: () => false);
+    final int displayedCount = _optimisticCount ??
+        followerCountAsync.maybeWhen<int>(data: (v) => v, orElse: () => 0);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Creator Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left, color: theme.colorScheme.onSurface),
-        ),
-      ),
+      appBar: PremiumAppBar(title: 'Creator Profile', showBack: true),
       body: creatorAsync.when(
         data: (creator) {
+          // Genuinely unknown user id → creator unavailable (Req 7.4).
           if (creator == null) {
-            return Center(
-              child: Text(
-                'Creator not found',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
+            return const EmptyState(
+              icon: Iconsax.user_remove,
+              title: 'Creator unavailable',
+              subtitle:
+                  "We couldn't find this creator's profile. They may no "
+                  'longer be available.',
             );
           }
 
-          final userData = creator['users'] as Map<String, dynamic>?;
-          final name = userData?['name'] ?? 'Creator';
-          final avatarUrl = userData?['avatar_url'];
-          final handle = userData?['handle'] ?? '';
-          final category = creator['category'] ?? '';
-          final bio = creator['bio'] ?? '';
-          final rating = creator['rating'] ?? 0.0;
-          final campaignsCompleted = creator['campaigns_completed'] ?? 0;
-
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Avatar
-                AvatarWidget(
-                  url: avatarUrl,
-                  name: name,
-                  size: 96,
-                  showBorder: true,
-                ),
-                const SizedBox(height: 16),
-
-                // Name
-                Text(
-                  name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-
-                // Handle
-                if (handle.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '@$handle',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-
-                // Category
-                if (category.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      category,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-
-                // Bio
-                if (bio.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    bio,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 24),
-
-                // Stats row
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 24,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: theme.dividerColor),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatItem(
-                        theme,
-                        icon: Iconsax.people,
-                        label: 'Followers',
-                        value: followerCountAsync.when(
-                          data: (count) => _formatCount(count),
-                          loading: () => '...',
-                          error: (_, __) => '0',
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 32,
-                        color: theme.dividerColor,
-                      ),
-                      _buildStatItem(
-                        theme,
-                        icon: Iconsax.medal_star,
-                        label: 'Campaigns',
-                        value: campaignsCompleted.toString(),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 32,
-                        color: theme.dividerColor,
-                      ),
-                      _buildStatItem(
-                        theme,
-                        icon: Iconsax.star_1,
-                        label: 'Rating',
-                        value: double.tryParse(rating.toString())
-                                ?.toStringAsFixed(1) ??
-                            '0.0',
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Action buttons: Follow + Message
-                Row(
-                  children: [
-                    // Follow/Unfollow button
-                    Expanded(
-                      child: isFollowingAsync.when(
-                        data: (isFollowing) {
-                          return ElevatedButton.icon(
-                            onPressed: () {
-                              final notifier =
-                                  ref.read(followActionsProvider.notifier);
-                              if (isFollowing) {
-                                notifier.unfollow(creatorUserId);
-                              } else {
-                                notifier.follow(creatorUserId);
-                              }
-                            },
-                            icon: Icon(
-                              isFollowing
-                                  ? Iconsax.user_minus
-                                  : Iconsax.user_add,
-                              size: 20,
-                            ),
-                            label: Text(
-                              isFollowing ? 'Unfollow' : 'Follow',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isFollowing
-                                  ? theme.colorScheme.surface
-                                  : AppColors.primary,
-                              foregroundColor: isFollowing
-                                  ? theme.colorScheme.onSurface
-                                  : Colors.white,
-                              elevation: isFollowing ? 0 : 2,
-                              side: isFollowing
-                                  ? BorderSide(color: theme.dividerColor)
-                                  : null,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          );
-                        },
-                        loading: () => ElevatedButton(
-                          onPressed: null,
-                          style: ElevatedButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                        error: (_, __) => ElevatedButton.icon(
-                          onPressed: () {
-                            ref.invalidate(
-                                isFollowingProvider(creatorUserId));
-                          },
-                          icon: const Icon(Iconsax.user_add, size: 20),
-                          label: Text(
-                            'Follow',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Message button
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          context.push('/messages/$creatorUserId');
-                        },
-                        icon: const Icon(Iconsax.message, size: 20),
-                        label: Text(
-                          'Message',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-              ],
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl,
+              vertical: AppSpacing.xl,
+            ),
+            child: CreatorProfileHeader(
+              creator: creator,
+              isFollowing: displayedFollowing,
+              followerCount: displayedCount,
+              onToggleFollow: () => _toggleFollow(
+                currentlyFollowing: displayedFollowing,
+                currentCount: displayedCount,
+              ),
+              onMessage: () => context.push('/messages/$_creatorUserId'),
+              onCopyLink: () => _copyProfileLink(creator),
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppSpacing.xxl),
             child: Text(
               'Failed to load creator profile',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: AppColors.error,
-              ),
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
             ),
           ),
         ),
@@ -334,46 +113,115 @@ class CreatorProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(
-    ThemeData theme, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: AppColors.primary,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-      ],
-    );
+  /// Clears the optimistic overrides once the providers have resolved to the
+  /// same values, so [isFollowingProvider] / [followerCountProvider] resume as
+  /// the source of truth. Scheduled post-frame to avoid setState-during-build.
+  void _maybeReconcile(
+    AsyncValue<bool> isFollowingAsync,
+    AsyncValue<int> followerCountAsync,
+  ) {
+    if (_optimisticFollowing == null && _optimisticCount == null) return;
+
+    final followingSettled =
+        isFollowingAsync.maybeWhen(data: (v) => v, orElse: () => null);
+    final countSettled =
+        followerCountAsync.maybeWhen(data: (v) => v, orElse: () => null);
+    if (followingSettled == null || countSettled == null) return;
+
+    if (followingSettled == _optimisticFollowing &&
+        countSettled == _optimisticCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _optimisticFollowing = null;
+          _optimisticCount = null;
+        });
+      });
+    }
   }
 
-  String _formatCount(int count) {
-    if (count >= 1000000) {
-      return '${(count / 1000000).toStringAsFixed(1)}M';
-    } else if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}K';
+  /// Optimistic follow/unfollow toggle (Requirements 9.1–9.5).
+  ///
+  /// Flips the displayed follow indicator and follower count IMMEDIATELY, then
+  /// performs the follow/unfollow request. On success the providers are already
+  /// invalidated by [FollowActionsNotifier] and reconciliation clears the
+  /// overrides. On failure both values are reverted to their pre-toggle state
+  /// and a retry SnackBar is shown.
+  ///
+  /// The unique follower-following pair (Req 9.5) is guaranteed by the DB
+  /// unique constraint plus the notifier's re-entry guard — this method never
+  /// inserts directly, so no duplicate follow can be created.
+  Future<void> _toggleFollow({
+    required bool currentlyFollowing,
+    required int currentCount,
+  }) async {
+    final target = !currentlyFollowing;
+
+    // 1) Flip immediately for instant feedback.
+    setState(() {
+      _optimisticFollowing = target;
+      _optimisticCount =
+          (currentCount + (target ? 1 : -1)).clamp(0, 1 << 31).toInt();
+    });
+
+    // 2) Perform the request.
+    final notifier = ref.read(followActionsProvider.notifier);
+    final ok = target
+        ? await notifier.follow(_creatorUserId)
+        : await notifier.unfollow(_creatorUserId);
+
+    if (!mounted) return;
+
+    if (!ok) {
+      // 3a) Revert both to pre-toggle values and prompt retry.
+      setState(() {
+        _optimisticFollowing = currentlyFollowing;
+        _optimisticCount = currentCount;
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text("Couldn't update follow. Try again.")),
+        );
     }
-    return count.toString();
+    // 3b) On success the notifier has invalidated the follow providers; the
+    // optimistic overrides remain until _maybeReconcile clears them once the
+    // fresh provider values match, keeping the transition flicker-free.
+  }
+
+  /// Copies a **safe** profile link that references the creator handle and
+  /// excludes internal user ids (Requirement 8.4).
+  ///
+  /// Format: `rexo://profile/@{handle}`. When the handle is empty we fall back
+  /// to a name-derived slug, and finally to a generic `rexo://profile` link —
+  /// never the internal `userId`.
+  void _copyProfileLink(CreatorView creator) {
+    final link = _buildProfileLink(creator);
+    Clipboard.setData(ClipboardData(text: link));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('Profile link copied')),
+      );
+  }
+
+  /// Builds the shareable deep link. Guarantees the internal [CreatorView.userId]
+  /// is never included.
+  String _buildProfileLink(CreatorView creator) {
+    final handle = creator.handle.trim();
+    if (handle.isNotEmpty) {
+      return 'rexo://profile/@$handle';
+    }
+
+    final slug = creator.name
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    if (slug.isNotEmpty) {
+      return 'rexo://profile/$slug';
+    }
+
+    return 'rexo://profile';
   }
 }

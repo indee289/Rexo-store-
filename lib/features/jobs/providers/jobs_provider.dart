@@ -1,0 +1,676 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../services/supabase_service.dart';
+
+// ─── Filter / Search State ────────────────────────────────────────────────────
+
+/// Active category filter on the Available Jobs tab ('All' = no filter).
+final jobCategoryFilterProvider = StateProvider<String>((ref) => 'All');
+
+/// Search term on the Available Jobs tab.
+final jobSearchProvider = StateProvider<String>((ref) => '');
+
+/// Status filter on My Jobs tab.
+final myJobsStatusFilterProvider = StateProvider<String>((ref) => 'all');
+
+// ─── Column Mapping Helper ────────────────────────────────────────────────────
+//
+// Jobs are stored as rows in the ALREADY-CACHED `campaigns` table tagged
+// `is_job = true` (PostgREST refuses to serve the standalone `jobs` table with
+// PGRST205, but campaigns is served perfectly). This helper maps a raw
+// campaigns row back into the job-shaped map the Jobs screens expect.
+//
+// Mapping convention (must match supabase/JOBS_VIA_CAMPAIGNS.sql exactly):
+//   payment_amount <- payout_per_creator
+//   max_slots      <- total_slots, where total_slots == 0 means "unlimited"
+//                     and is exposed back as max_slots = null.
+//   title/description/category/deadline/cover_image_url/status/id/created_at/
+//   updated_at pass through unchanged.
+// The original campaigns columns are kept in the map too so nothing else breaks.
+Map<String, dynamic> _mapCampaignToJob(Map<String, dynamic> row) {
+  final totalSlots = row['slots'];
+  final maxSlots = (totalSlots is num && totalSlots.toInt() == 0)
+      ? null
+      : totalSlots;
+
+  return {
+    // The `...row` spread carries EVERY raw campaigns column through, so the
+    // optional extra fields (platform / rules / demo_asset_type /
+    // demo_asset_url) reach jobDetailProvider automatically without ever being
+    // named in a .select(...) projection.
+    ...row,
+    'payment_amount': row['payout_per_creator'],
+    'max_slots': maxSlots,
+    // Expose the live cover_image column under the key the job cards read.
+    'cover_image_url': row['cover_image'] ?? row['coverImage'],
+    // created_by mirrors the campaigns.brandId (live camelCase FK column).
+    'created_by': row['brandId'] ?? row['brand_id'],
+  };
+}
+
+// ─── Available Jobs ───────────────────────────────────────────────────────────
+
+/// All active jobs, filtered by category + search term.
+final availableJobsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final category = ref.watch(jobCategoryFilterProvider);
+  final search = ref.watch(jobSearchProvider);
+
+  // NOTE: PostgREST's schema cache on this project refuses to let us FILTER
+  // (.eq/.neq) on payout_model server-side ("column does not exist"), even
+  // though SELECT * returns its value fine. So we fetch active campaigns with
+  // SELECT * (which works — Home shows campaigns) and filter to jobs in Dart.
+  final response = await SupabaseService.client
+      .from('campaigns')
+      .select()
+      .eq('status', 'active')
+      .order('created_at', ascending: false)
+      .limit(200);
+
+  var jobs = List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] == 'job')
+      .toList();
+
+  if (category != 'All') {
+    jobs = jobs.where((row) => row['category'] == category).toList();
+  }
+  if (search.isNotEmpty) {
+    final q = search.toLowerCase();
+    jobs = jobs
+        .where((row) =>
+            (row['title'] as String?)?.toLowerCase().contains(q) ?? false)
+        .toList();
+  }
+
+  return jobs.take(100).map(_mapCampaignToJob).toList();
+});
+
+/// Distinct categories derived from existing active jobs (dynamic, no hardcode).
+final jobCategoriesProvider = FutureProvider<List<String>>((ref) async {
+  final jobs = await SupabaseService.client
+      .from('campaigns')
+      .select()
+      .eq('status', 'active')
+      .limit(200);
+
+  final cats = <String>{};
+  for (final row in List<Map<String, dynamic>>.from(jobs)) {
+    if (row['payout_model'] != 'job') continue;
+    final cat = row['category'] as String?;
+    if (cat != null && cat.trim().isNotEmpty) cats.add(cat.trim());
+  }
+  final sorted = cats.toList()..sort();
+  return ['All', ...sorted];
+});
+
+/// Slot counts for a single job: returns { filled: int }.
+final jobSlotCountProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
+        (ref, jobId) async {
+  final response = await SupabaseService.client
+      .from('applications')
+      .select('id')
+      .eq('campaignId', jobId)        // live: camelCase
+      .inFilter('status', ['applied', 'submitted', 'approved']);
+
+  final filled = (response as List).length;
+  return {'filled': filled};
+});
+
+// ─── Job Detail ───────────────────────────────────────────────────────────────
+
+/// Single job detail.
+final jobDetailProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
+        (ref, jobId) async {
+  final response = await SupabaseService.client
+      .from('campaigns')
+      .select()
+      .eq('id', jobId)
+      .maybeSingle();
+  if (response == null || response['payout_model'] != 'job') return null;
+  return _mapCampaignToJob(Map<String, dynamic>.from(response));
+});
+
+/// Whether the current user has already applied to a specific job.
+final hasAppliedToJobProvider =
+    FutureProvider.autoDispose.family<bool, String>((ref, jobId) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return false;
+
+  final response = await SupabaseService.client
+      .from('applications')
+      .select('id')
+      .eq('campaignId', jobId)        // live: camelCase
+      .eq('creatorId', user.id)       // live: camelCase
+      .maybeSingle();
+
+  return response != null;
+});
+
+// ─── My Jobs ─────────────────────────────────────────────────────────────────
+
+/// The current user's job applications, joined with the job details.
+/// Optionally filtered by status (pass 'all' for no filter).
+final myJobApplicationsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final user = SupabaseService.currentUser;
+  if (user == null) return [];
+
+  final statusFilter = ref.watch(myJobsStatusFilterProvider);
+
+  var query = SupabaseService.client
+      .from('applications')
+      .select()
+      .eq('creatorId', user.id);
+
+  if (statusFilter != 'all') {
+    query = query.eq('status', statusFilter);
+  }
+
+  final response = await query.order('createdAt', ascending: false); // live: createdAt
+  final rows = List<Map<String, dynamic>>.from(response);
+
+  // Fetch each job (campaign) separately (avoids embedded-join RLS/PGRST issues)
+  final enriched = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final campaignId = row['campaignId'] as String?;  // live: camelCase
+    Map<String, dynamic>? jobRow;
+    if (campaignId != null) {
+      try {
+        final campaign = await SupabaseService.client
+            .from('campaigns')
+            .select()
+            .eq('id', campaignId)
+            .maybeSingle();
+        if (campaign != null && campaign['payout_model'] == 'job') {
+          jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
+        }
+      } catch (_) {}
+    }
+
+    // Safety net: the shared `applications` table also holds real campaign
+    // applications (whose campaign_id points at an is_job=false campaign). For
+    // those the is_job fetch above returns null; skip them so they never render
+    // as phantom "Untitled Job" / ₹0 cards under the all/approved/rejected
+    // filters. Mirrors adminJobSubmissionsProvider's `if (jobRow == null)`.
+    if (jobRow == null) continue;
+
+    enriched.add({
+      ...row,
+      // Expose the keys the screen reads at row level and the aliases that
+      // legacy code referenced (job_id / applied_at).
+      'job_id': campaignId,
+      'applied_at': row['created_at'],
+      'jobs': jobRow,
+    });
+  }
+  return enriched;
+});
+
+// ─── Admin Providers ──────────────────────────────────────────────────────────
+
+/// All jobs for the admin manage list (all statuses).
+final adminJobsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final response = await SupabaseService.client
+      .from('campaigns')
+      .select()
+      .order('created_at', ascending: false)
+      .limit(300);
+  return List<Map<String, dynamic>>.from(response)
+      .where((row) => row['payout_model'] == 'job')
+      .map(_mapCampaignToJob)
+      .toList();
+});
+
+/// Applicant count per job (used in admin list).
+final adminJobApplicantCountProvider =
+    FutureProvider.autoDispose.family<int, String>((ref, jobId) async {
+  final response = await SupabaseService.client
+      .from('applications')
+      .select('id')
+      .eq('campaignId', jobId);       // live: camelCase
+  return (response as List).length;
+});
+
+/// All submitted (pending review) job applications for admin review.
+final adminJobSubmissionsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final response = await SupabaseService.client
+      .from('applications')
+      .select()
+      .eq('status', 'submitted')
+      .order('createdAt', ascending: false) // live: createdAt
+      .limit(200);
+  final rows = List<Map<String, dynamic>>.from(response);
+
+  // Fetch job (campaign) + user details separately to avoid embedded-join
+  // failures, and use the campaign fetch as an is_job safety net: real
+  // campaign applications never carry status 'submitted', but skip any row
+  // whose parent campaign is not a job anyway.
+  final enriched = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    final userId = row['creatorId'] as String?;       // live: camelCase
+    final campaignId = row['campaignId'] as String?;  // live: camelCase
+
+    Map<String, dynamic>? jobRow;
+    if (campaignId != null) {
+      try {
+        final campaign = await SupabaseService.client
+            .from('campaigns')
+            .select()
+            .eq('id', campaignId)
+            .maybeSingle();
+        if (campaign != null && campaign['payout_model'] == 'job') {
+          jobRow = _mapCampaignToJob(Map<String, dynamic>.from(campaign));
+        }
+      } catch (_) {}
+    }
+
+    // Safety net: skip rows whose campaign is not a job (is_job != true).
+    if (jobRow == null) continue;
+
+    Map<String, dynamic>? userRow;
+    if (userId != null) {
+      try {
+        userRow = await SupabaseService.client
+            .from('users')
+            .select('id, name, username, profileImage') // live columns
+            .eq('id', userId)
+            .maybeSingle();
+      } catch (_) {}
+    }
+
+    enriched.add({...row, 'users': userRow ?? {}, 'jobs': jobRow});
+  }
+  return enriched;
+});
+
+// ─── Jobs Actions Notifier ────────────────────────────────────────────────────
+
+class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
+  final Ref ref;
+
+  JobsActionsNotifier(this.ref) : super(const AsyncValue.data(null));
+
+  // ── User Actions ──────────────────────────────────────────────────────────
+
+  /// Apply to a job.
+  ///
+  /// Slot caps are enforced server-side by the enforce_job_slots BEFORE INSERT
+  /// trigger on public.applications (see supabase/JOBS_VIA_CAMPAIGNS.sql), which
+  /// fires only for is_job campaigns. Duplicate applies are prevented by the
+  /// UNIQUE(campaign_id, creator_id) constraint on applications and gated in the
+  /// UI by hasAppliedToJobProvider; a second apply throws, which the catch below
+  /// converts into a returned false + error state.
+  Future<bool> applyToJob(String jobId) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) {
+        state = AsyncValue.error('Not authenticated', StackTrace.current);
+        return false;
+      }
+
+      final now = DateTime.now().toIso8601String();
+      await SupabaseService.client.from('applications').insert({
+        'campaignId': jobId,     // live: camelCase
+        'creatorId': user.id,    // live: camelCase
+        'status': 'applied',
+        'createdAt': now,        // live: createdAt
+      });
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(myJobApplicationsProvider);
+      ref.invalidate(hasAppliedToJobProvider(jobId));
+      ref.invalidate(availableJobsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Submit proof for an applied job (moves status → submitted).
+  Future<bool> submitTask({
+    required String applicationId,
+    required String submissionType,
+    required String submissionUrl,
+    String? submissionNote,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final now = DateTime.now().toIso8601String();
+      await SupabaseService.client.from('applications').update({
+        'status': 'submitted',
+        'submission_type': submissionType,
+        'submission_url': submissionUrl,
+        'submission_note': submissionNote,
+        'updatedAt': now, // live: updatedAt
+      }).eq('id', applicationId);
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(myJobApplicationsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  // ── Admin Actions ─────────────────────────────────────────────────────────
+
+  /// Create a new job posting.
+  ///
+  /// Incoming [data] keys: title, description, category, payment_amount,
+  /// max_slots(nullable), deadline(nullable ISO), cover_image_url(nullable).
+  /// These are translated to campaigns columns; the raw payment_amount/
+  /// max_slots keys are NOT written (they are not campaigns columns).
+  Future<bool> createJob(Map<String, dynamic> data) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) {
+        state = AsyncValue.error('Not authenticated', StackTrace.current);
+        return false;
+      }
+
+      final now = DateTime.now().toIso8601String();
+
+      // The live `campaigns` table is a quirky legacy table with many
+      // NOT-NULL-without-default and CHECK-constrained columns. This insert is
+      // intentionally MINIMAL: it sends only the columns we are confident exist
+      // and that the insert actually needs. Every remaining NOT-NULL / CHECK
+      // constraint that could still reject this row is relaxed by the companion
+      // migration supabase/POST_JOB_FIX.sql (run once in the Supabase SQL
+      // editor). Note: `payout_model: 'job'` here is an insert VALUE, not a
+      // server-side query filter — PostgREST only rejects .eq/.neq FILTERS on
+      // that column, so writing it as a row value is safe and required.
+      //
+      // `budget` mirrors the per-creator payout (a valid positive number)
+      // instead of 0, so that any NOT-NULL or CHECK (> 0) constraint on budget
+      // still accepts the row.
+      final payout = (data['payment_amount'] as num?)?.toDouble() ?? 0;
+      final budget = payout > 0 ? payout : 1;
+      await SupabaseService.client.from('campaigns').insert({
+        'title': data['title'],
+        'description': data['description'],
+        'category': data['category'],
+        'payout_per_creator': data['payment_amount'],
+        // Convention: null max_slots -> slots = 0 ("unlimited").
+        'slots': data['max_slots'] ?? 0,
+        'deadline': data['deadline'],
+        'cover_image': data['cover_image_url'],
+        // Mark this campaign row as a JOB using the existing (already-cached)
+        // payout_model column, so we never depend on a newly-added column that
+        // PostgREST's schema cache refuses to serve.
+        'payout_model': 'job',
+        // Optional extra fields (multi-platform / rules / demo asset). These
+        // are plain INSERT VALUES, exactly the same safe category as the
+        // `payout_model: 'job'` value above. They must NEVER be used in a
+        // .eq/.neq/.filter query filter, and must NEVER be named inside a
+        // .select('...') projection (PostgREST's schema cache rejects that for
+        // newly-added columns). They are read back only from SELECT * result
+        // maps via the `...row` spread in _mapCampaignToJob.
+        'platform': data['platform'],
+        'rules': data['rules'],
+        'demo_asset_type': data['demo_asset_type'],
+        'demo_asset_url': data['demo_asset_url'],
+        'brandId': user.id,           // live: brandId (camelCase)
+        // NOTE: brandName is intentionally NOT written here. PostgREST's schema
+        // cache does not expose a 'brandName' column (PGRST204), so referencing
+        // it in an insert fails. POST_JOB_FIX.sql drops the NOT NULL on any such
+        // legacy column so this minimal insert succeeds without it.
+        'status': 'active',
+        // Valid positive number (not 0) to survive any budget CHECK constraint.
+        'budget': budget,
+        // Only send snake_case created_at; the legacy camelCase createdAt is
+        // intentionally NOT written (POST_JOB_FIX.sql drops its NOT NULL).
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(adminJobsProvider);
+      ref.invalidate(availableJobsProvider);
+      ref.invalidate(jobCategoriesProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Update an existing job.
+  Future<bool> updateJob(String jobId, Map<String, dynamic> data) async {
+    state = const AsyncValue.loading();
+    try {
+      // Translate the job-shaped keys into campaigns columns. Only pass through
+      // keys that are actually present in the incoming data map.
+      final update = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (data.containsKey('title')) update['title'] = data['title'];
+      if (data.containsKey('description')) {
+        update['description'] = data['description'];
+      }
+      if (data.containsKey('category')) update['category'] = data['category'];
+      if (data.containsKey('deadline')) update['deadline'] = data['deadline'];
+      if (data.containsKey('cover_image_url')) {
+        update['cover_image'] = data['cover_image_url'];
+      }
+      if (data.containsKey('status')) update['status'] = data['status'];
+      if (data.containsKey('payment_amount')) {
+        update['payout_per_creator'] = data['payment_amount'];
+      }
+      if (data.containsKey('max_slots')) {
+        // Convention: null max_slots -> total_slots = 0 ("unlimited").
+        update['slots'] = data['max_slots'] ?? 0;
+      }
+      // Optional extra fields: guarded pass-through as plain UPDATE VALUES
+      // (same safe category as the keys above). Never used in a filter or a
+      // .select projection.
+      if (data.containsKey('platform')) update['platform'] = data['platform'];
+      if (data.containsKey('rules')) update['rules'] = data['rules'];
+      if (data.containsKey('demo_asset_type')) {
+        update['demo_asset_type'] = data['demo_asset_type'];
+      }
+      if (data.containsKey('demo_asset_url')) {
+        update['demo_asset_url'] = data['demo_asset_url'];
+      }
+
+      await SupabaseService.client
+          .from('campaigns')
+          .update(update)
+          .eq('id', jobId);
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(adminJobsProvider);
+      ref.invalidate(availableJobsProvider);
+      ref.invalidate(jobDetailProvider(jobId));
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Toggle job status between active and closed.
+  Future<bool> toggleJobStatus(String jobId, String currentStatus) async {
+    final newStatus = currentStatus == 'active' ? 'closed' : 'active';
+    return updateJob(jobId, {'status': newStatus});
+  }
+
+  /// Hard-delete a job (cascades to its applications via ON DELETE CASCADE).
+  Future<bool> deleteJob(String jobId) async {
+    state = const AsyncValue.loading();
+    try {
+      // Delete by the unique campaign id. (We can't add a payout_model filter
+      // here because PostgREST's cache rejects filtering on that column; the id
+      // is unique so this targets exactly the job row.)
+      await SupabaseService.client
+          .from('campaigns')
+          .delete()
+          .eq('id', jobId);
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(adminJobsProvider);
+      ref.invalidate(availableJobsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Approve a job submission:
+  /// 1. Update application → approved + reviewed_at + reviewed_by
+  /// 2. Credit user wallet via atomic RPC
+  /// 3. Insert in-app notification for the user
+  Future<bool> approveJobSubmission(String applicationId) async {
+    state = const AsyncValue.loading();
+    try {
+      final admin = SupabaseService.currentUser;
+      if (admin == null) {
+        state = AsyncValue.error('Not authenticated', StackTrace.current);
+        return false;
+      }
+
+      // Fetch application to get creatorId and campaignId, then campaign (job) separately.
+      final app = await SupabaseService.client
+          .from('applications')
+          .select('creatorId, campaignId')    // live: camelCase
+          .eq('id', applicationId)
+          .maybeSingle();
+
+      if (app == null) {
+        state = AsyncValue.error('Application not found', StackTrace.current);
+        return false;
+      }
+
+      final userId = app['creatorId'] as String;    // live: camelCase
+      final jobId = app['campaignId'] as String;    // live: camelCase
+      final job = await SupabaseService.client
+          .from('campaigns')
+          .select('title, payout_per_creator')
+          .eq('id', jobId)
+          .maybeSingle();
+      final jobTitle = job?['title'] as String? ?? 'Job';
+      final paymentAmount =
+          (job?['payout_per_creator'] as num?)?.toDouble() ?? 0.0;
+
+      final now = DateTime.now().toIso8601String();
+
+      // 1) Update application status
+      // reviewed_at, reviewed_by not in live schema — use updatedAt + adminFeedback
+      await SupabaseService.client.from('applications').update({
+        'status': 'approved',
+        'updatedAt': now,
+      }).eq('id', applicationId);
+
+      // 2) Credit wallet atomically
+      if (paymentAmount > 0) {
+        await SupabaseService.client.rpc('credit_wallet', params: {
+          'p_user_id': userId,
+          'p_amount': paymentAmount,
+        });
+      }
+
+      // 3) In-app notification
+      // Live notifications columns: "userId", message (not body), read (not is_read), "createdAt"
+      await SupabaseService.client.from('notifications').insert({
+        'userId': userId,
+        'title': '🎉 Job Approved!',
+        'message':
+            'Your submission for "$jobTitle" has been approved. ₹${paymentAmount.toStringAsFixed(0)} has been credited to your wallet.',
+        'type': 'job_approved',
+        'read': false,
+        'createdAt': now,
+      });
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(adminJobSubmissionsProvider);
+      ref.invalidate(myJobApplicationsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Reject a job submission with an optional reason.
+  /// Inserts an in-app notification for the user.
+  Future<bool> rejectJobSubmission(
+    String applicationId, {
+    String? rejectionReason,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final admin = SupabaseService.currentUser;
+      if (admin == null) {
+        state = AsyncValue.error('Not authenticated', StackTrace.current);
+        return false;
+      }
+
+      // Fetch application to get creator_id and campaign_id, then campaign
+      // (job) title separately.
+      final app = await SupabaseService.client
+          .from('applications')
+          .select('creatorId, campaignId')    // live: camelCase
+          .eq('id', applicationId)
+          .maybeSingle();
+
+      if (app == null) {
+        state = AsyncValue.error('Application not found', StackTrace.current);
+        return false;
+      }
+
+      final userId = app['creatorId'] as String;    // live: camelCase
+      final jobId = app['campaignId'] as String;    // live: camelCase
+      final job = await SupabaseService.client
+          .from('campaigns')
+          .select('title')
+          .eq('id', jobId)
+          .maybeSingle();
+      final jobTitle = job?['title'] as String? ?? 'Job';
+      final now = DateTime.now().toIso8601String();
+
+      // 1) Update application status + rejection reason
+      // rejection_reason, reviewed_at, reviewed_by not in live schema
+      // Use adminFeedback (confirmed live column) for rejection reason
+      await SupabaseService.client.from('applications').update({
+        'status': 'rejected',
+        'adminFeedback': rejectionReason, // live column for feedback
+        'updatedAt': now,
+      }).eq('id', applicationId);
+
+      // 2) In-app notification
+      // Live notifications columns: "userId", message (not body), read (not is_read), "createdAt"
+      final msgBody = rejectionReason != null && rejectionReason.trim().isNotEmpty
+          ? 'Your submission for "$jobTitle" was not approved. Reason: $rejectionReason'
+          : 'Your submission for "$jobTitle" was not approved.';
+
+      await SupabaseService.client.from('notifications').insert({
+        'userId': userId,
+        'title': 'Submission Rejected',
+        'message': msgBody,
+        'type': 'job_rejected',
+        'read': false,
+        'createdAt': now,
+      });
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(adminJobSubmissionsProvider);
+      ref.invalidate(myJobApplicationsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+}
+
+final jobsActionsProvider =
+    StateNotifierProvider<JobsActionsNotifier, AsyncValue<void>>((ref) {
+  return JobsActionsNotifier(ref);
+});

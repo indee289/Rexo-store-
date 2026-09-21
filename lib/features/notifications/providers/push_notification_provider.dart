@@ -92,22 +92,28 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     }
   }
 
-  /// Store notification in the notifications table
+  /// Store notification in the notifications table.
+  ///
+  /// Live schema columns (confirmed Stage C):
+  ///   "userId"    text  — ownership column
+  ///   message     text  — body content (NOT 'body')
+  ///   read        bool  — read state   (NOT 'is_read')
+  ///   "createdAt" timestamptz          (NOT 'created_at')
   Future<void> _storeNotification(Map<String, dynamic> data) async {
     try {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) return;
 
       await SupabaseService.client.from('notifications').insert({
-        'user_id': userId,
+        'userId': userId,
         'title': data['title'] ?? 'Notification',
-        'body': data['body'] ?? '',
+        'message': data['body'] ?? data['message'] ?? '',
         'type': data['type'] ?? 'general',
-        'is_read': false,
-        'created_at': DateTime.now().toIso8601String(),
+        'read': false,
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (_) {
-      // Silently fail - notification storage is non-critical
+      // Silently fail — notification storage is non-critical
     }
   }
 }

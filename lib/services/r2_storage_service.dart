@@ -110,10 +110,81 @@ class R2StorageService {
       );
     }
 
-    // Return the public URL
-    // R2 public bucket URL format: https://pub-{hash}.r2.dev/{path}
-    // Or use the endpoint URL directly for public access
+    // Return the PUBLIC URL when a public base is configured.
+    //
+    // The S3 API endpoint ($_endpoint/$_bucketName/$path) requires an
+    // authenticated (SigV4-signed) request, so it is NOT viewable by an
+    // <img>/CachedNetworkImage widget — that is why uploaded covers, product
+    // images and avatars never rendered. When R2_PUBLIC_URL is set (the
+    // bucket's public r2.dev URL or a custom domain), build the browsable URL
+    // from it. Otherwise fall back to the private endpoint URL (dev only).
+    final publicBase = AppConstants.r2PublicUrl.trim();
+    if (publicBase.isNotEmpty) {
+      final normalizedBase = publicBase.endsWith('/')
+          ? publicBase.substring(0, publicBase.length - 1)
+          : publicBase;
+      return '$normalizedBase/$path';
+    }
     return '$_endpoint/$_bucketName/$path';
+  }
+
+  /// Normalize a *stored* image URL into a publicly-viewable URL.
+  ///
+  /// Uploaded images are stored in R2 and their URL is persisted in the DB.
+  /// Historically (and whenever [AppConstants.r2PublicUrl] was not configured)
+  /// that stored URL is the private S3 API endpoint —
+  /// `https://{account}.r2.cloudflarestorage.com/{bucket}/{path}` — which
+  /// requires SigV4-signed requests and therefore cannot be loaded by
+  /// `Image.network` / `CachedNetworkImage`. As a result covers, product
+  /// images and avatars fell back to the placeholder/gradient.
+  ///
+  /// This helper is applied at *render* time so BOTH newly uploaded images and
+  /// images already persisted with the private endpoint resolve to the public
+  /// URL, provided a public base ([AppConstants.r2PublicUrl]) is configured at
+  /// build time.
+  ///
+  /// Behaviour:
+  ///   * `null`/empty input -> `''`.
+  ///   * A private R2 endpoint URL (contains `.r2.cloudflarestorage.com/`) ->
+  ///     when a public base is configured, `{publicBase}/{objectPath}` where
+  ///     `objectPath` is everything after the `/{bucket}/` segment. When no
+  ///     public base is configured the input is returned unchanged (it cannot
+  ///     be fixed without a public base).
+  ///   * Any other URL (already public r2.dev, custom domain or external) is
+  ///     returned unchanged.
+  ///   * It never throws — on any parse issue the original input is returned.
+  static String publicUrlFor(String? storedUrl) {
+    if (storedUrl == null || storedUrl.isEmpty) return '';
+
+    try {
+      const marker = '.r2.cloudflarestorage.com/';
+      final markerIndex = storedUrl.indexOf(marker);
+
+      // Not a private R2 endpoint URL -> already public/external, leave as-is.
+      if (markerIndex == -1) return storedUrl;
+
+      final publicBase = AppConstants.r2PublicUrl.trim();
+      // Can't rewrite to a public URL without a configured public base.
+      if (publicBase.isEmpty) return storedUrl;
+
+      // Everything after '.r2.cloudflarestorage.com/' is '{bucket}/{path}'.
+      final afterHost = storedUrl.substring(markerIndex + marker.length);
+      final firstSlash = afterHost.indexOf('/');
+      // No object path after the bucket segment — nothing to rewrite.
+      if (firstSlash == -1) return storedUrl;
+
+      final objectPath = afterHost.substring(firstSlash + 1);
+      if (objectPath.isEmpty) return storedUrl;
+
+      final normalizedBase = publicBase.endsWith('/')
+          ? publicBase.substring(0, publicBase.length - 1)
+          : publicBase;
+
+      return '$normalizedBase/$objectPath';
+    } catch (_) {
+      // Be defensive: never break rendering because of a URL parse issue.
+      return storedUrl;
+    }
   }
 
   /// Upload a file from a File object (convenience method).

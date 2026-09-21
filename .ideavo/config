@@ -1,0 +1,33 @@
+{
+  "systemSetup": [
+    {"name": "Accept Flutter License", "command": "flutter doctor --version"},
+    {"name": "Initialize Flutter License", "command": "flutter doctor --version"}
+  ],
+  "templateName": "custom",
+  "projectDependencies": [
+    {"name": "Install Flutter Dependencies", "command": "flutter pub get"}
+  ],
+  "codeChecks": [
+    {"name": "Run Flutter Lint", "command": "flutter lint"}
+  ],
+  "buildSteps": [
+    {"name": "Build Flutter Release APK", "command": "flutter build apk --release"}
+  ],
+  "runStep": [
+    {"name": "Run Flutter Web", "command": "flutter run -d web --port 8080", "port": "8080"}
+  ],
+  "deploySteps": [
+    {"name": "Deploy Flutter Release", "command": "flutter build apk --release"}
+  ],
+  "cleanupFiles": [
+    "build/",
+    ".dart_tool/",
+    ".flutter-plugins/",
+    "**/*.gradle/**"
+  ],
+  "packageManager": "flutter",
+  "envPaths": [
+    {"name": "default", "path": ".env"},
+    {"name": "admin", "path": "admin_app/.env"}
+  ]
+}

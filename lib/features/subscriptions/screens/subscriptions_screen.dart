@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/router/app_router.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/subscriptions_provider.dart';
 
@@ -23,48 +30,35 @@ class SubscriptionsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Subscriptions',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-        ),
+      appBar: PremiumAppBar(
+        title: 'Subscriptions',
+        showBack: true,
+        onBack: () => context.pop(),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Active subscription section
             userSubsAsync.when(
               data: (subs) {
-                final activeSubs = subs
-                    .where((s) => s['status'] == 'active')
-                    .toList();
+                final activeSubs =
+                    subs.where((s) => s['status'] == 'active').toList();
 
                 if (activeSubs.isNotEmpty) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Current Subscription', style: AppTextStyles.h6),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
                       ...activeSubs.map((sub) => _buildActiveSubCard(
                             context,
                             ref,
                             sub,
                             actionState.isProcessing,
                           )),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   );
                 }
@@ -76,14 +70,27 @@ class SubscriptionsScreen extends ConsumerWidget {
 
             // Available plans
             Text('Available Plans', style: AppTextStyles.h6),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             plansAsync.when(
               data: (plans) {
-                if (plans.isEmpty) {
+                // Hide plans the user is already actively subscribed to so a
+                // tier never appears both under "Current Subscription" and
+                // "Available Plans" (a source of perceived duplicates). This
+                // is on top of the id+name de-dup in subscriptionPlansProvider.
+                final activePlanIds = (userSubsAsync.value ?? [])
+                    .where((s) => s['status'] == 'active')
+                    .map((s) => s['plan_id']?.toString())
+                    .whereType<String>()
+                    .toSet();
+                final available = plans
+                    .where((p) => !activePlanIds.contains(p['id']?.toString()))
+                    .toList();
+
+                if (available.isEmpty) {
                   return _buildEmptyState(context);
                 }
                 return Column(
-                  children: plans
+                  children: available
                       .map((plan) => _buildPlanCard(
                             context,
                             ref,
@@ -124,11 +131,11 @@ class SubscriptionsScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.success.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.allMd,
         border: Border.all(color: AppColors.success.withOpacity(0.3)),
       ),
       child: Column(
@@ -137,10 +144,10 @@ class SubscriptionsScreen extends ConsumerWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadius.allSm,
                 ),
                 child: const Icon(
                   Iconsax.crown_1,
@@ -148,7 +155,7 @@ class SubscriptionsScreen extends ConsumerWidget {
                   color: AppColors.success,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,13 +178,13 @@ class SubscriptionsScreen extends ConsumerWidget {
             ],
           ),
           if (expiryLabel.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               'Expires: $expiryLabel',
               style: AppTextStyles.bodySmall,
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
@@ -189,9 +196,7 @@ class SubscriptionsScreen extends ConsumerWidget {
                         builder: (ctx) => AlertDialog(
                           title: Text(
                             'Cancel Subscription',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AppTextStyles.h6,
                           ),
                           content: const Text(
                             'Are you sure you want to cancel this subscription?',
@@ -205,7 +210,8 @@ class SubscriptionsScreen extends ConsumerWidget {
                               onPressed: () => Navigator.pop(ctx, true),
                               child: Text(
                                 'Yes, Cancel',
-                                style: TextStyle(color: AppColors.error),
+                                style: AppTextStyles.labelLarge
+                                    .copyWith(color: AppColors.error),
                               ),
                             ),
                           ],
@@ -222,7 +228,7 @@ class SubscriptionsScreen extends ConsumerWidget {
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.error),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.allSm,
                 ),
               ),
               child: Text(
@@ -251,189 +257,120 @@ class SubscriptionsScreen extends ConsumerWidget {
     final planId = plan['id'] as String? ?? '';
 
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Plan header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: PremiumCard(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Plan header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm + 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: AppRadius.allSm,
+                  ),
+                  child: const Icon(
+                    Iconsax.crown_1,
+                    size: 24,
+                    color: AppColors.primary,
+                  ),
                 ),
-                child: const Icon(
-                  Iconsax.crown_1,
-                  size: 24,
-                  color: AppColors.primary,
+                const SizedBox(width: AppSpacing.md + 2),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, style: AppTextStyles.h6),
+                      Text(
+                        '$durationDays days',
+                        style: AppTextStyles.caption,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: AppTextStyles.h6),
-                    Text(
-                      '$durationDays days',
-                      style: AppTextStyles.caption,
-                    ),
-                  ],
+                Text(
+                  '\u20B9${price.toStringAsFixed(0)}',
+                  style: AppTextStyles.h4.copyWith(color: AppColors.primary),
                 ),
-              ),
-              Text(
-                '\u20B9${price.toStringAsFixed(0)}',
-                style: AppTextStyles.h4.copyWith(color: AppColors.primary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
 
-          // Features list
-          if (features.isNotEmpty) ...[
-            ...features.map((feature) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Iconsax.tick_circle,
-                      size: 16,
-                      color: AppColors.success,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        feature.toString(),
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
+            // Features list
+            if (features.isNotEmpty) ...[
+              ...features.map((feature) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm - 2),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Iconsax.tick_circle,
+                        size: 16,
+                        color: AppColors.success,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          feature.toString(),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-          ],
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: AppSpacing.lg),
+            ],
 
-          // Subscribe button
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
+            // Subscribe button
+            PremiumButton(
+              label: 'Subscribe',
+              gradient: true,
+              loading: isProcessing,
               onPressed: isProcessing
                   ? null
-                  : () async {
-                      final success = await ref
-                          .read(subscriptionNotifierProvider.notifier)
-                          .subscribe(planId, durationDays);
-
-                      if (success && context.mounted) {
-                        ref.invalidate(userSubscriptionsProvider);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Subscribed successfully!'),
-                            backgroundColor: AppColors.success,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        );
-                      }
+                  : () {
+                      // Open the manual payment flow. The subscription is NOT
+                      // activated here — the user submits a payment proof that
+                      // an admin must approve before it becomes active.
+                      context.push(
+                        AppRoutes.subscriptionPayment,
+                        extra: {
+                          'planId': planId,
+                          'planName': name,
+                          'amount': price,
+                          'durationDays': durationDays,
+                        },
+                      );
                     },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
-              ),
-              child: isProcessing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text('Subscribe', style: AppTextStyles.button),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
-          children: [
-            Icon(
-              Iconsax.crown_1,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No plans available yet',
-              style: AppTextStyles.h5.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back soon!',
-              style: AppTextStyles.bodySmall,
-            ),
-          ],
-        ),
-      ),
+    return const EmptyState(
+      icon: Iconsax.crown_1,
+      title: 'No plans available yet',
+      subtitle: 'Check back soon!',
     );
   }
 
   Widget _buildError(WidgetRef ref, String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
-          children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 48,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: 12),
-            Text('Failed to load plans', style: AppTextStyles.bodyMedium),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(subscriptionPlansProvider),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Iconsax.warning_2,
+      title: 'Failed to load plans',
+      subtitle: error,
+      ctaLabel: 'Retry',
+      ctaIcon: Iconsax.refresh,
+      onCta: () => ref.invalidate(subscriptionPlansProvider),
     );
   }
 }

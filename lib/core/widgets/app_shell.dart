@@ -15,6 +15,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
+      // Fixed bottom bar — content sits above it (no overlap).
       extendBody: false,
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,

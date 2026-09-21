@@ -2,72 +2,76 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../services/supabase_service.dart';
 
-/// Provider for user notifications list
+/// Provider for user notifications list.
+///
+/// Uses a regular SELECT query instead of .stream() because the live
+/// notifications table PK column name is unconfirmed and .stream()
+/// throws when the primaryKey column doesn't exist.
+///
+/// LIVE SCHEMA COLUMNS:
+///   userId (text) — ownership column
+///   title, message, type, read (bool), link, createdAt
 final notificationsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  if (user == null) return <Map<String, dynamic>>[];
 
-  final response = await SupabaseService.client
-      .from('notifications')
-      .select()
-      .eq('user_id', user.id)
-      .order('created_at', ascending: false);
-
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final response = await SupabaseService.client
+        .from('notifications')
+        .select()
+        .eq('userId', user.id)
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return <Map<String, dynamic>>[];
+  }
 });
 
-/// Unread notifications count
-final unreadNotificationsCountProvider = FutureProvider<int>((ref) async {
-  final notifications = await ref.watch(notificationsProvider.future);
-  return notifications.where((n) => n['is_read'] == false).length;
+/// Unread count — derived from notifications list.
+final unreadNotificationsCountProvider = Provider<int>((ref) {
+  final notifications = ref.watch(notificationsProvider).value ?? const [];
+  return notifications.where((n) => n['read'] == false).length;
 });
 
 /// Notification actions notifier
 class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
-
   NotificationActionsNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  /// Mark a single notification as read
   Future<void> markAsRead(String id) async {
     try {
       await SupabaseService.client
           .from('notifications')
-          .update({'is_read': true}).eq('id', id);
-
+          .update({'read': true}).eq('id', id);
       ref.invalidate(notificationsProvider);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  /// Mark all notifications as read
   Future<void> markAllAsRead() async {
     try {
       final user = SupabaseService.currentUser;
       if (user == null) return;
-
       await SupabaseService.client
           .from('notifications')
-          .update({'is_read': true})
-          .eq('user_id', user.id)
-          .eq('is_read', false);
-
+          .update({'read': true})
+          .eq('userId', user.id)
+          .eq('read', false);
       ref.invalidate(notificationsProvider);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  /// Delete a notification
   Future<void> deleteNotification(String id) async {
     try {
       await SupabaseService.client
           .from('notifications')
           .delete()
           .eq('id', id);
-
       ref.invalidate(notificationsProvider);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -75,7 +79,6 @@ class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-/// Notification actions provider
 final notificationActionsProvider =
     StateNotifierProvider<NotificationActionsNotifier, AsyncValue<void>>((ref) {
   return NotificationActionsNotifier(ref);

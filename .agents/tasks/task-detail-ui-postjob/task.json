@@ -1,0 +1,15 @@
+{
+  "task_id": "task-detail-ui-postjob",
+  "task_description": "Redesign Job Details and Campaign Details screens to match the premium reference mockups (orange money figure + orange Apply Now CTA, dark-mode safe, existing providers/keys preserved), and fix the Post Job 'Something went wrong' failure by hardening createJob, delivering an idempotent supabase/POST_JOB_FIX.sql, and adding a temporary raw-error debug surface in post_job_screen.dart.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "review": "Semantic review reached APPROVED on v3 (2026-09-20-105500-review.md). v1 flagged the Closed-campaign pill color (fixed) plus two accepted intentional decisions (SQL ships as supabase/POST_JOB_FIX.sql for manual run; the // TODO(remove-debug) raw-error SnackBar is a requested temporary diagnostic). v2 flagged the ungated closed-campaign Apply CTA (fixed by threading isClosed/isFull into CampaignDetailBottomBar to mirror the Job screen). v3 APPROVED with one non-blocking cosmetic nit: the two bottom bars order their applied/closed/full gate checks differently.",
+    "summary": "Flutter/Dart NOT installed and network INTEGRATIONS_ONLY, so flutter analyze/build/test and docker are not runnable in-sandbox (per context.json constraints); no automated tests exist for these UI/DB changes. Static verification passed: (1) code-only brace/paren/bracket balance is correct in all 3 changed Dart files (job_detail_screen.dart, campaign_detail_screen.dart, jobs_provider.dart) and the edited post_job_screen.dart — the raw-count paren delta in jobs_provider.dart resolves to 289/289 once strings+comments are stripped. (2) Zero server-side .eq('payout_model'...)/.neq('payout_model'...) query filters anywhere under lib/. (3) Provider signatures unchanged: jobDetailProvider/hasAppliedToJobProvider/jobSlotCountProvider/createJob/applyToJob and campaignDetailProvider/hasAppliedProvider all intact. (4) createJob sends a minimal legacy-safe column set with budget as a positive number and NO camelCase createdAt (createdAt appears only in a comment). (5) supabase/POST_JOB_FIX.sql is idempotent: Section A loops information_schema.columns dropping NOT NULL except {id,title,description,brand_id,status}, Section B drops payout_model/payoutModel/platform CHECKs, Section C ensures status allows active/closed, Section D ends with NOTIFY pgrst 'reload schema'/'reload config'. (6) post_job_screen.dart failure SnackBar appends truncated raw error marked // TODO(remove-debug), sanitized message first. All theme tokens/widget params used were confirmed present in their source files; colors are dark-mode-safe."
+  }
+}

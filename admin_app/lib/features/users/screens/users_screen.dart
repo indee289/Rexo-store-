@@ -26,6 +26,10 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 
   void _showUserActions(BuildContext context, Map<String, dynamic> user) {
+    // Live users identity column is `uid` (text), not `id` (uuid).
+    // All updates use .eq('uid', ...) to target the correct row.
+    final uid = user['uid']?.toString() ?? '';
+
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -51,52 +55,57 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
               const SizedBox(height: 16),
               const Divider(),
+              // Verify: sets "isVerified" = true (live camelCase column)
               ListTile(
                 leading: const Icon(Iconsax.verify, color: AppColors.success),
-                title: const Text('Verify User'),
+                title: const Text('Verify user'),
                 onTap: () => _performUserAction(
                   context,
-                  user['id'],
+                  uid,
                   'verify',
                   'User verified successfully',
                 ),
               ),
-              ListTile(
-                leading: const Icon(Iconsax.slash, color: AppColors.warning),
-                title: const Text('Suspend User'),
-                onTap: () => _performUserAction(
-                  context,
-                  user['id'],
-                  'suspend',
-                  'User suspended successfully',
-                ),
-              ),
+              // Ban: sets "isBanned" = true (live column — no account_status)
               ListTile(
                 leading: const Icon(Iconsax.close_circle, color: AppColors.error),
-                title: const Text('Ban User'),
+                title: const Text('Ban user'),
                 onTap: () => _performUserAction(
                   context,
-                  user['id'],
+                  uid,
                   'ban',
                   'User banned successfully',
                 ),
               ),
+              // Unban: sets "isBanned" = false
               ListTile(
-                leading: const Icon(Iconsax.user_edit, color: AppColors.primary),
-                title: const Text('Change Role to Admin'),
+                leading: const Icon(Iconsax.tick_circle, color: AppColors.warning),
+                title: const Text('Unban user'),
                 onTap: () => _performUserAction(
                   context,
-                  user['id'],
+                  uid,
+                  'unban',
+                  'User unbanned successfully',
+                ),
+              ),
+              // Role changes use the live `role` column
+              ListTile(
+                leading: const Icon(Iconsax.user_edit, color: AppColors.primary),
+                title: const Text('Change role to admin'),
+                onTap: () => _performUserAction(
+                  context,
+                  uid,
                   'role_admin',
                   'User role changed to admin',
                 ),
               ),
               ListTile(
-                leading: Icon(Iconsax.user, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                title: const Text('Change Role to User'),
+                leading: Icon(Iconsax.user,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                title: const Text('Change role to creator'),
                 onTap: () => _performUserAction(
                   context,
-                  user['id'],
+                  uid,
                   'role_creator',
                   'User role changed to creator',
                 ),
@@ -110,42 +119,44 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
   Future<void> _performUserAction(
     BuildContext context,
-    String userId,
+    String uid,
     String action,
     String successMessage,
   ) async {
-    Navigator.pop(context); // Close bottom sheet first
+    Navigator.pop(context);
 
     try {
       switch (action) {
+        // Live column: "isVerified" (camelCase boolean). Identity: uid (text).
         case 'verify':
           await SupabaseService.client
               .from('users')
-              .update({'is_verified': true}).eq('id', userId);
+              .update({'isVerified': true}).eq('uid', uid);
           break;
-        case 'suspend':
-          await SupabaseService.client
-              .from('users')
-              .update({'account_status': 'suspended'}).eq('id', userId);
-          break;
+        // Live column: "isBanned" (boolean). No account_status column exists.
         case 'ban':
           await SupabaseService.client
               .from('users')
-              .update({'account_status': 'banned'}).eq('id', userId);
+              .update({'isBanned': true}).eq('uid', uid);
           break;
+        case 'unban':
+          await SupabaseService.client
+              .from('users')
+              .update({'isBanned': false}).eq('uid', uid);
+          break;
+        // Role changes use the live `role` text column.
         case 'role_admin':
           await SupabaseService.client
               .from('users')
-              .update({'role': 'admin'}).eq('id', userId);
+              .update({'role': 'admin'}).eq('uid', uid);
           break;
         case 'role_creator':
           await SupabaseService.client
               .from('users')
-              .update({'role': 'creator'}).eq('id', userId);
+              .update({'role': 'creator'}).eq('uid', uid);
           break;
       }
 
-      // Refresh user list
       ref.invalidate(adminUsersProvider);
 
       if (mounted) {
@@ -160,7 +171,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Action failed: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );
@@ -176,7 +187,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('User Management'),
+        title: const Text('User management'),
       ),
       body: Column(
         children: [
@@ -187,8 +198,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search users...',
-                prefixIcon:
-                    Icon(Iconsax.search_normal, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                prefixIcon: Icon(Iconsax.search_normal,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Iconsax.close_circle),
@@ -210,11 +221,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             child: users.when(
               data: (userList) {
                 if (userList.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No users found',
-                    ),
-                  );
+                  return const Center(child: Text('No users found'));
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -225,6 +232,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: PremiumCard(
                         onTap: () => _showUserActions(context, user),
+                        padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             CircleAvatar(
@@ -245,6 +253,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     user['name'] ?? 'Unknown',
@@ -252,29 +261,32 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     user['email'] ?? '',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: _getRoleColor(user['role'])
                                     .withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                user['role'] ?? 'user',
+                                (user['role'] ?? 'user').toString().toLowerCase(),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -303,7 +315,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 
   Color _getRoleColor(String? role) {
-    switch (role) {
+    switch (role?.toLowerCase()) {
       case 'admin':
         return AppColors.primary;
       case 'influencer':

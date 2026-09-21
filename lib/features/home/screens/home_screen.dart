@@ -1,521 +1,447 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/shimmer_loading.dart';
-import '../../../services/supabase_service.dart';
+import '../../notifications/providers/notifications_provider.dart';
+import '../../messages/providers/messages_provider.dart';
+import '../providers/banners_provider.dart';
 import '../providers/home_provider.dart';
-import '../widgets/campaign_card.dart';
-import '../widgets/category_chips.dart';
-import '../widgets/creator_card.dart';
+import '../widgets/featured_campaign_card.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+/// Home screen — matches the provided reference:
+/// a clean header (Home title + wallet / bell / inbox actions), a compact
+/// violet campaign banner carousel with dots, and a "Featured Campaigns"
+/// vertical list. No search, no categories, no products, no greeting.
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedTabIndex = 0; // 0 = Campaigns, 1 = Top Creators
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: bg,
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: AppColors.primary,
-          onRefresh: () async {
-            ref.invalidate(featuredCampaignsProvider);
-            ref.invalidate(trendingCreatorsProvider);
-            ref.invalidate(recentCampaignsProvider);
-            ref.invalidate(homeUserProfileProvider);
-          },
-          child: CustomScrollView(
-            slivers: [
-              // App Bar
-              _buildSliverAppBar(),
-              // Body content
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Email verification banner
-                    _buildEmailVerificationBanner(),
-                    const SizedBox(height: 16),
-                    _buildSearchBar(),
-                    const SizedBox(height: 16),
-                    const CategoryChips(),
-                    const SizedBox(height: 20),
-                    _buildToggleTabs(),
-                    const SizedBox(height: 16),
-                    if (_selectedTabIndex == 0) _buildCampaignsContent(ref),
-                    if (_selectedTabIndex == 1) _buildCreatorsContent(ref),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
+          onRefresh: () async => ref.invalidate(featuredCampaignsProvider),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              const _HomeHeader(),
+              const SizedBox(height: 8),
+              const _BannerCarousel(),
+              const SizedBox(height: 20),
+              const _FeaturedHeader(),
+              const SizedBox(height: 12),
+              _FeaturedList(),
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildSliverAppBar() {
-    final theme = Theme.of(context);
+// ─────────────────────────────────────────────────────────────────────────
+// Header
+// ─────────────────────────────────────────────────────────────────────────
+class _HomeHeader extends ConsumerWidget {
+  const _HomeHeader();
 
-    return SliverAppBar(
-      floating: true,
-      snap: true,
-      backgroundColor: theme.colorScheme.surface,
-      elevation: 0,
-      leading: IconButton(
-        onPressed: () {
-          context.push(AppRoutes.profile);
-        },
-        icon: Icon(
-          Iconsax.user,
-          color: theme.colorScheme.onSurface,
-        ),
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+
+    final unreadNotifs = ref.watch(unreadNotificationsCountProvider);
+    final unreadInbox = ref.watch(conversationsProvider).maybeWhen(
+          data: (list) =>
+              list.where((c) => c['is_read'] == false).length,
+          orElse: () => 0,
+        );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          // Title takes the remaining slack and ellipsizes so it can never
+          // push into or collide with the action icons at large text scale.
+          Flexible(
+            child: Text(
+              'Home',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          _HeaderIconButton(
+            icon: Iconsax.wallet_2,
+            onTap: () => context.push(AppRoutes.wallet),
+          ),
+          const SizedBox(width: 10),
+          _HeaderIconButton(
+            icon: Iconsax.notification,
+            badge: unreadNotifs,
+            onTap: () => context.push(AppRoutes.notifications),
+          ),
+          const SizedBox(width: 10),
+          _HeaderIconButton(
+            icon: Iconsax.sms,
+            badge: unreadInbox,
+            onTap: () => context.push(AppRoutes.messages),
+          ),
+        ],
       ),
-      centerTitle: true,
-      title: Text(
-        'Rexo',
-        style: GoogleFonts.poppins(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-        ),
+    );
+  }
+}
+
+/// Rounded white icon button with an optional unread count badge.
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final int badge;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkCard : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final cs = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: AppRadius.allMd,
+              border: Border.all(color: borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                  spreadRadius: -2,
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 20, color: cs.onSurface),
+          ),
+          if (badge > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: AppRadius.pillAll,
+                  border: Border.all(color: bg, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  badge > 99 ? '99+' : '$badge',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            context.push(AppRoutes.notifications);
-          },
-          icon: Icon(
-            Iconsax.notification,
-            color: theme.colorScheme.onSurface,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Banner carousel — renders admin-managed banners only (no demo fallback).
+// When there are no admin banners (or while loading) it renders nothing.
+// ─────────────────────────────────────────────────────────────────────────
+class _BannerCarousel extends ConsumerStatefulWidget {
+  const _BannerCarousel();
+
+  @override
+  ConsumerState<_BannerCarousel> createState() => _BannerCarouselState();
+}
+
+class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
+  final _controller = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Height reduced by 15% from original
+    final width = MediaQuery.of(context).size.width;
+    final bannerHeight = (width * 0.391).clamp(151.0, 177.0);
+
+    // Only real admin-managed banners are shown. If there are none (or the
+    // provider is still loading), hide the carousel entirely.
+    final liveBanners = ref.watch(bannersProvider);
+    final dbBanners = liveBanners.value ?? const <Map<String, dynamic>>[];
+    if (dbBanners.isEmpty) return const SizedBox.shrink();
+
+    final slideCount = dbBanners.length;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: bannerHeight,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: slideCount,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DbBannerSlide(banner: dbBanners[i]),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            slideCount,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: i == _page ? 20 : 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: i == _page
+                    ? AppColors.primary
+                    : AppColors.primary.withOpacity(0.22),
+                borderRadius: AppRadius.pillAll,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildSearchBar() {
-    final theme = Theme.of(context);
+/// A DB banner slide — shows the uploaded image and handles tap navigation.
+class _DbBannerSlide extends StatelessWidget {
+  final Map<String, dynamic> banner;
+  const _DbBannerSlide({required this.banner});
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.dividerColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              offset: const Offset(0, 1),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 16),
-            Icon(
-              Iconsax.search_normal,
-              size: 20,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Search campaigns...',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = banner['image_url'] as String? ?? '';
+    final linkType = banner['link_type'] as String? ?? 'none';
+    final campaignId = banner['link_campaign_id'] as String?;
+    final page = banner['link_page'] as String?;
 
-  Widget _buildToggleTabs() {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        height: 44,
-        decoration: BoxDecoration(
-          color: theme.dividerColor.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() => _selectedTabIndex = 0);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 40,
-                  margin: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _selectedTabIndex == 0
-                        ? AppColors.primary
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Campaigns',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _selectedTabIndex == 0
-                          ? Colors.white
-                          : theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() => _selectedTabIndex = 1);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 40,
-                  margin: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _selectedTabIndex == 1
-                        ? AppColors.primary
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Top Creators',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _selectedTabIndex == 1
-                          ? Colors.white
-                          : theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCampaignsContent(WidgetRef ref) {
-    final campaignsAsync = ref.watch(featuredCampaignsProvider);
-
-    return campaignsAsync.when(
-      data: (campaigns) {
-        if (campaigns.isEmpty) {
-          return _buildEmptyState('No campaigns available');
-        }
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: campaigns.length,
-          itemBuilder: (context, index) {
-            return CampaignCard(
-              campaign: campaigns[index],
-              isCompact: true,
-              onTap: () {
-                final id = campaigns[index]['id']?.toString();
-                if (id != null) {
-                  context.push('/campaigns/$id');
-                }
-              },
-            );
-          },
-        );
-      },
-      loading: () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: List.generate(
-            3,
-            (index) => const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: ShimmerCard(height: 200),
-            ),
-          ),
-        ),
-      ),
-      error: (error, _) => _buildErrorState('Failed to load campaigns'),
-    );
-  }
-
-  Widget _buildCreatorsContent(WidgetRef ref) {
-    final creatorsAsync = ref.watch(trendingCreatorsProvider);
-
-    return creatorsAsync.when(
-      data: (creators) {
-        if (creators.isEmpty) {
-          return _buildEmptyState('No creators found');
-        }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: creators.map((creator) {
-              return SizedBox(
-                width: (MediaQuery.of(context).size.width - 44) / 2,
-                child: CreatorCard(
-                  creator: creator,
-                  onTap: () {
-                    final userId = creator['user_id']?.toString();
-                    if (userId != null) {
-                      context.push('/creators/$userId');
-                    }
-                  },
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      },
-      loading: () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: List.generate(
-            4,
-            (index) => SizedBox(
-              width: (MediaQuery.of(context).size.width - 44) / 2,
-              height: 180,
-              child: const ShimmerCard(height: 180),
-            ),
-          ),
-        ),
-      ),
-      error: (error, _) => _buildErrorState('Failed to load creators'),
-    );
-  }
-
-  Widget _buildEmailVerificationBanner() {
-    final theme = Theme.of(context);
-
-    // Check if user's email is confirmed
-    try {
-      final user = SupabaseService.currentUser;
-      if (user == null) return const SizedBox.shrink();
-
-      // Supabase user has emailConfirmedAt which is null if not confirmed
-      final emailConfirmedAt = user.emailConfirmedAt;
-      if (emailConfirmedAt != null) {
-        return const SizedBox.shrink(); // Email is verified
+    void onTap() {
+      if (linkType == 'campaign' && campaignId != null) {
+        context.push('/campaigns/$campaignId');
+      } else if (linkType == 'page' && page != null && page.isNotEmpty) {
+        context.push(page);
       }
-
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Iconsax.sms,
-                color: AppColors.warning,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Verify your email',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Please check your inbox and verify your email address to access all features.',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    } catch (_) {
-      return const SizedBox.shrink();
     }
-  }
 
-  Widget _buildEmptyState(String message) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Iconsax.document,
-                size: 36,
-                color: theme.colorScheme.onSurface.withOpacity(0.3),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Pull to refresh or check back later',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
-              ),
-            ),
-          ],
-        ),
+    return GestureDetector(
+      onTap: linkType != 'none' ? onTap : null,
+      child: ClipRRect(
+        borderRadius: AppRadius.allLg,
+        child: imageUrl.isNotEmpty
+            ? Image.network(
+                imageUrl,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackContainer(),
+              )
+            : _fallbackContainer(),
       ),
-    ).animate().fadeIn(duration: 400.ms).scale(
-          begin: const Offset(0.95, 0.95),
-          end: const Offset(1, 1),
-          duration: 400.ms,
-          curve: Curves.easeOut,
-        );
+    );
   }
 
-  Widget _buildErrorState(String message) {
-    final theme = Theme.of(context);
+  Widget _fallbackContainer() => Container(
+        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+      );
+}
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Iconsax.warning_2,
-                size: 36,
-                color: AppColors.error.withOpacity(0.7),
-              ),
+// ─────────────────────────────────────────────────────────────────────────
+// Featured campaigns
+// ─────────────────────────────────────────────────────────────────────────
+class _FeaturedHeader extends StatelessWidget {
+  const _FeaturedHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            'Featured Campaigns',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+              letterSpacing: -0.3,
             ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Please try again',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: () {
-                ref.invalidate(featuredCampaignsProvider);
-                ref.invalidate(trendingCreatorsProvider);
-                ref.invalidate(recentCampaignsProvider);
-                ref.invalidate(homeUserProfileProvider);
-              },
-              icon: const Icon(Iconsax.refresh, size: 18),
-              label: Text(
-                'Retry',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: AppColors.primary.withOpacity(0.3),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => context.go(AppRoutes.campaigns),
+            behavior: HitTestBehavior.opaque,
+            child: const Row(
+              children: [
+                Text(
+                  'See all',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
                   ),
                 ),
-              ),
+                SizedBox(width: 2),
+                Icon(Iconsax.arrow_right_3, size: 15, color: AppColors.primary),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    ).animate().fadeIn(duration: 400.ms).scale(
-          begin: const Offset(0.95, 0.95),
-          end: const Offset(1, 1),
-          duration: 400.ms,
-          curve: Curves.easeOut,
-        );
+    );
   }
 }
+
+class _FeaturedList extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(featuredCampaignsProvider);
+    final saved = ref.watch(savedCampaignsProvider);
+
+    return async.when(
+      loading: () => Column(
+        children: [
+          for (int i = 0; i < 3; i++)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: ShimmerCard(height: 90),
+            ),
+        ],
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (rows) {
+        final items = rows.map(_mapCampaign).toList();
+        if (items.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Center(
+              child: Text(
+                'No campaigns yet',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+            ),
+          );
+        }
+        return Column(
+          children: [
+            for (final data in items)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: FeaturedCampaignCard(
+                  data: data,
+                  saved: saved.contains(data.id),
+                  onToggleSave: () {
+                    final notifier = ref.read(savedCampaignsProvider.notifier);
+                    final next = Set<String>.from(notifier.state);
+                    if (!next.add(data.id)) next.remove(data.id);
+                    notifier.state = next;
+                  },
+                  onTap: () => context.push('/campaigns/${data.id}'),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Mapping + sample data ─────────────────────────────────────────────────
+FeaturedCampaignData _mapCampaign(Map<String, dynamic> c) {
+  int asInt(dynamic v) =>
+      v is int ? v : (v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0);
+
+  final filled = asInt(c['filled_slots']);
+  final total = asInt(c['slots'] ?? c['total_slots']); // live: slots
+  final pct = total > 0 ? ((filled / total) * 100).round().clamp(0, 100) : 0;
+  final platform = (c['platform'] ?? '').toString();
+  // payout_per_creator is the confirmed live column; payoutPerCreator also exists
+  final perCreator = c['payout_per_creator'] ?? c['payoutPerCreator'];
+
+  return FeaturedCampaignData(
+    id: (c['id'] ?? '').toString(),
+    title: (c['title'] ?? 'Untitled Campaign').toString(),
+    category: (c['category'] ?? 'Campaign').toString(),
+    // cover_image confirmed live; coverImage also exists as fallback
+    imageUrl: (c['cover_image'] ?? c['coverImage'] ?? c['cover_image_url'] ?? '').toString(),
+    private: c['is_private'] == true || c['hidden'] == true,
+    platforms: platform.isEmpty ? const [] : [platform],
+    paidOutPercent: pct,
+    budgetText: _money(c['budget']),
+    rateText: _rate(perCreator),
+  );
+}
+
+String _grouped(double v) {
+  final s = v.toStringAsFixed(0);
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+    buf.write(s[i]);
+  }
+  return buf.toString();
+}
+
+String _money(dynamic value) {
+  final v = double.tryParse('${value ?? ''}') ?? 0;
+  return '₹${_grouped(v)}';
+}
+
+String _rate(dynamic value) {
+  final v = double.tryParse('${value ?? ''}') ?? 0;
+  if (v <= 0) return '—';
+  return '₹${_grouped(v)}';
+}
+
+// ── Mapping helpers ───────────────────────────────────────────────────────

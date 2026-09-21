@@ -32,11 +32,14 @@ class StatChip extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: chipColor, size: 24),
           const SizedBox(height: 12),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -46,6 +49,8 @@ class StatChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,

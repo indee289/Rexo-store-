@@ -4,7 +4,10 @@
     <application
         android:label="Rexo"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -25,6 +28,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- FCM: route background/killed-app notifications to the app's
+             high-importance channel so they show a heads-up banner + sound
+             (matches the channel created in PushNotificationService). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="rexo_high_importance" />
     </application>
     <queries>
         <intent>

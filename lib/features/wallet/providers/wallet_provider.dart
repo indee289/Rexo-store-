@@ -31,13 +31,15 @@ final transactionsProvider =
       .from('deposits')
       .select()
       .eq('user_id', user.id)
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(50);
 
   final withdrawals = await SupabaseService.client
       .from('withdrawals')
       .select()
       .eq('user_id', user.id)
-      .order('created_at', ascending: false);
+      .order('created_at', ascending: false)
+      .limit(50);
 
   final List<Map<String, dynamic>> combined = [
     ...List<Map<String, dynamic>>.from(deposits).map((d) => {
@@ -51,8 +53,10 @@ final transactionsProvider =
   ];
 
   combined.sort((a, b) {
-    final aDate = DateTime.parse(a['created_at'] as String);
-    final bDate = DateTime.parse(b['created_at'] as String);
+    final aDate =
+        DateTime.tryParse((a['created_at'] ?? '').toString()) ?? DateTime(1970);
+    final bDate =
+        DateTime.tryParse((b['created_at'] ?? '').toString()) ?? DateTime(1970);
     return bDate.compareTo(aDate);
   });
 

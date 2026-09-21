@@ -1,0 +1,392 @@
+# ============================================================
+# Phase 1 Critical Database Fixes - Prometheus Alert Rules
+# ============================================================
+# This file defines Prometheus alerting rules for monitoring
+# the Phase 1 database fixes with appropriate thresholds
+# and notification routing.
+# ============================================================
+
+groups:
+  - name: phase1_critical_database_fixes
+    rules:
+      # ============================================================
+      # SUBSCRIPTION PLANS MONITORING
+      # ============================================================
+      
+      - alert: SubscriptionPlansSchemaInvalid
+        expr: phase1_subscription_plans_schema_valid == 0
+        for: 0m
+        labels:
+          severity: critical
+          component: subscription_plans
+          service: rexo-marketplace
+        annotations:
+          summary: "Subscription plans schema validation failed"
+          description: "The subscription_plans table schema is invalid. The interval column may be missing or corrupted."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-plans-schema"
+          dashboard_url: "https://grafana.rexo.com/d/phase1-monitoring/phase1-critical-database-fixes"
+
+      - alert: SubscriptionPlansHighErrorRate
+        expr: rate(phase1_subscription_plans_errors_total[5m]) / rate(phase1_subscription_plans_operations_total[5m]) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          component: subscription_plans
+          service: rexo-marketplace
+        annotations:
+          summary: "High error rate in subscription plans operations"
+          description: "Subscription plans operations have an error rate of {{ $value }}% over the last 5 minutes."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-plans-errors"
+
+      - alert: SubscriptionPlansSlowOperations
+        expr: histogram_quantile(0.95, rate(phase1_subscription_plans_duration_seconds_bucket[5m])) * 1000 > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: subscription_plans
+          service: rexo-marketplace
+        annotations:
+          summary: "Slow subscription plans operations"
+          description: "95th percentile of subscription plans operations is {{ $value }}ms, exceeding 1000ms threshold."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-plans-performance"
+
+      - alert: SubscriptionPlansSeedingFailure
+        expr: increase(phase1_subscription_plans_seeding_failures_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: subscription_plans
+          service: rexo-marketplace
+        annotations:
+          summary: "Subscription plans seeding failed"
+          description: "Subscription plans seeding has failed {{ $value }} times in the last hour."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-plans-seeding"
+
+      # ============================================================
+      # WALLET FUNCTIONS MONITORING
+      # ============================================================
+
+      - alert: WalletFunctionsMissing
+        expr: phase1_wallet_functions_available == 0
+        for: 0m
+        labels:
+          severity: critical
+          component: wallet_functions
+          service: rexo-marketplace
+        annotations:
+          summary: "Wallet functions are not available"
+          description: "One or more wallet functions (credit_wallet, debit_wallet) are missing or not accessible."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/wallet-functions-missing"
+          dashboard_url: "https://grafana.rexo.com/d/phase1-monitoring/phase1-critical-database-fixes"
+
+      - alert: WalletFunctionsHighErrorRate
+        expr: rate(phase1_wallet_functions_errors_total[5m]) / rate(phase1_wallet_functions_operations_total[5m]) * 100 > 3
+        for: 2m
+        labels:
+          severity: warning
+          component: wallet_functions
+          service: rexo-marketplace
+        annotations:
+          summary: "High error rate in wallet functions"
+          description: "Wallet functions have an error rate of {{ $value }}% over the last 5 minutes."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/wallet-functions-errors"
+
+      - alert: WalletFunctionsSlowOperations
+        expr: histogram_quantile(0.95, rate(phase1_wallet_functions_duration_seconds_bucket[5m])) * 1000 > 2000
+        for: 5m
+        labels:
+          severity: warning
+          component: wallet_functions
+          service: rexo-marketplace
+        annotations:
+          summary: "Slow wallet function operations"
+          description: "95th percentile of wallet function operations is {{ $value }}ms, exceeding 2000ms threshold."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/wallet-functions-performance"
+
+      - alert: WalletBalanceInconsistency
+        expr: phase1_wallet_balance_discrepancies_total > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: wallet_functions
+          service: rexo-marketplace
+        annotations:
+          summary: "Wallet balance inconsistencies detected"
+          description: "{{ $value }} wallet balance discrepancies have been detected between old and new function implementations."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/wallet-balance-inconsistency"
+
+      # ============================================================
+      # SUBSCRIPTION PAYMENTS MONITORING
+      # ============================================================
+
+      - alert: SubscriptionPaymentsTableMissing
+        expr: phase1_subscription_payments_table_exists == 0
+        for: 0m
+        labels:
+          severity: critical
+          component: subscription_payments
+          service: rexo-marketplace
+        annotations:
+          summary: "Subscription payments table is missing"
+          description: "The subscription_payments table does not exist in the database."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-payments-table-missing"
+          dashboard_url: "https://grafana.rexo.com/d/phase1-monitoring/phase1-critical-database-fixes"
+
+      - alert: SubscriptionPaymentsHighErrorRate
+        expr: rate(phase1_subscription_payments_errors_total[5m]) / rate(phase1_subscription_payments_operations_total[5m]) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          component: subscription_payments
+          service: rexo-marketplace
+        annotations:
+          summary: "High error rate in subscription payments"
+          description: "Subscription payments operations have an error rate of {{ $value }}% over the last 5 minutes."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-payments-errors"
+
+      - alert: SubscriptionPaymentsNoActivity
+        expr: rate(phase1_subscription_payments_operations_total[1h]) == 0
+        for: 60m
+        labels:
+          severity: info
+          component: subscription_payments
+          service: rexo-marketplace
+        annotations:
+          summary: "No subscription payments activity"
+          description: "No subscription payment operations have been recorded in the last hour."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/subscription-payments-no-activity"
+
+      # ============================================================
+      # DATABASE HEALTH MONITORING
+      # ============================================================
+
+      - alert: Phase1DatabaseConnectionFailure
+        expr: phase1_database_connection_status == 0
+        for: 0m
+        labels:
+          severity: critical
+          component: database
+          service: rexo-marketplace
+        annotations:
+          summary: "Phase 1 monitoring cannot connect to database"
+          description: "The Phase 1 monitoring system has lost connection to the database."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/database-connection-failure"
+
+      - alert: Phase1HighDatabaseConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          service: rexo-marketplace
+        annotations:
+          summary: "High number of database connections"
+          description: "Database has {{ $value }} active connections, approaching the connection limit."
+          runbook_url: "https://docs.rexo.com/runbooks/database/high-connections"
+
+      - alert: Phase1DatabaseLockWaits
+        expr: rate(pg_stat_database_conflicts_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+          service: rexo-marketplace
+        annotations:
+          summary: "Database lock contention detected"
+          description: "Database is experiencing lock contention with {{ $value }} conflicts per second."
+          runbook_url: "https://docs.rexo.com/runbooks/database/lock-contention"
+
+      # ============================================================
+      # MIGRATION STATUS MONITORING
+      # ============================================================
+
+      - alert: Phase1MigrationInconsistency
+        expr: phase1_migration_consistency_check == 0
+        for: 0m
+        labels:
+          severity: critical
+          component: migrations
+          service: rexo-marketplace
+        annotations:
+          summary: "Phase 1 migration consistency check failed"
+          description: "The Phase 1 migrations are in an inconsistent state. Manual intervention may be required."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/migration-inconsistency"
+
+      - alert: Phase1RollbackRequired
+        expr: phase1_rollback_indicator > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: migrations
+          service: rexo-marketplace
+        annotations:
+          summary: "Phase 1 rollback may be required"
+          description: "Critical issues detected that may require Phase 1 rollback procedures."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/rollback-procedures"
+
+      # ============================================================
+      # PERFORMANCE MONITORING
+      # ============================================================
+
+      - alert: Phase1OverallHealthDegradation
+        expr: avg(phase1_component_health_score) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+          service: rexo-marketplace
+        annotations:
+          summary: "Phase 1 overall health degradation"
+          description: "Overall Phase 1 system health score is {{ $value }}, below the 0.8 threshold."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/overall-health"
+
+      - alert: Phase1MonitoringSystemDown
+        expr: up{job="phase1-monitoring"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: monitoring
+          service: rexo-marketplace
+        annotations:
+          summary: "Phase 1 monitoring system is down"
+          description: "The Phase 1 monitoring system is not responding to health checks."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/monitoring-system-down"
+
+      # ============================================================
+      # ALERT AGGREGATION RULES
+      # ============================================================
+
+      - alert: Phase1CriticalIssuesCount
+        expr: count by () (ALERTS{alertname=~".*", severity="critical", component=~"subscription_plans|wallet_functions|subscription_payments"}) >= 2
+        for: 0m
+        labels:
+          severity: critical
+          component: system
+          service: rexo-marketplace
+        annotations:
+          summary: "Multiple Phase 1 critical issues detected"
+          description: "{{ $value }} critical issues are currently active across Phase 1 components."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/multiple-critical-issues"
+
+      - alert: Phase1WarningsAccumulating
+        expr: count by () (ALERTS{alertname=~".*", severity="warning", component=~"subscription_plans|wallet_functions|subscription_payments"}) >= 5
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+          service: rexo-marketplace
+        annotations:
+          summary: "Multiple Phase 1 warnings accumulating"
+          description: "{{ $value }} warning-level issues are currently active across Phase 1 components."
+          runbook_url: "https://docs.rexo.com/runbooks/phase1/multiple-warnings"
+
+  # ============================================================
+  # RECORDING RULES FOR PERFORMANCE METRICS
+  # ============================================================
+  
+  - name: phase1_recording_rules
+    interval: 30s
+    rules:
+      # Success rates
+      - record: phase1:success_rate:5m
+        expr: rate(phase1_operations_success_total[5m]) / rate(phase1_operations_total[5m])
+        labels:
+          component: "{{ $labels.component }}"
+          operation_type: "{{ $labels.operation_type }}"
+
+      # Error rates  
+      - record: phase1:error_rate:5m
+        expr: rate(phase1_operations_errors_total[5m]) / rate(phase1_operations_total[5m])
+        labels:
+          component: "{{ $labels.component }}"
+          operation_type: "{{ $labels.operation_type }}"
+
+      # Average response times
+      - record: phase1:avg_response_time:5m
+        expr: rate(phase1_operations_duration_seconds_sum[5m]) / rate(phase1_operations_duration_seconds_count[5m])
+        labels:
+          component: "{{ $labels.component }}"
+          operation_type: "{{ $labels.operation_type }}"
+
+      # Component health scores (0-1 scale)
+      - record: phase1:component_health_score
+        expr: |
+          (
+            phase1:success_rate:5m * 0.4 +
+            (1 - phase1:error_rate:5m) * 0.4 +
+            (1 - min(phase1:avg_response_time:5m / 2, 1)) * 0.2
+          )
+        labels:
+          component: "{{ $labels.component }}"
+
+      # Aggregate health score
+      - record: phase1:overall_health_score
+        expr: avg by () (phase1:component_health_score)
+
+# ============================================================
+# ALERT ROUTING AND NOTIFICATION CONFIGURATION
+# ============================================================
+#
+# Add the following to your alertmanager.yml configuration:
+#
+# route:
+#   group_by: ['alertname', 'component']
+#   group_wait: 30s
+#   group_interval: 5m
+#   repeat_interval: 12h
+#   receiver: 'phase1-default'
+#   routes:
+#   - match:
+#       service: rexo-marketplace
+#       severity: critical
+#     receiver: 'phase1-critical'
+#     group_wait: 10s
+#     repeat_interval: 5m
+#   - match:
+#       service: rexo-marketplace
+#       severity: warning
+#     receiver: 'phase1-warning'
+#   - match:
+#       service: rexo-marketplace
+#       severity: info
+#     receiver: 'phase1-info'
+#
+# receivers:
+# - name: 'phase1-critical'
+#   email_configs:
+#   - to: 'critical-alerts@rexo.com'
+#     subject: '[CRITICAL] Phase 1 Alert: {{ .GroupLabels.alertname }}'
+#     body: |
+#       {{ range .Alerts }}
+#       Alert: {{ .Annotations.summary }}
+#       Component: {{ .Labels.component }}
+#       Description: {{ .Annotations.description }}
+#       Runbook: {{ .Annotations.runbook_url }}
+#       {{ end }}
+#   slack_configs:
+#   - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+#     channel: '#critical-alerts'
+#     color: 'danger'
+#   pagerduty_configs:
+#   - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+#     severity: 'critical'
+#
+# - name: 'phase1-warning'
+#   email_configs:
+#   - to: 'alerts@rexo.com'
+#     subject: '[WARNING] Phase 1 Alert: {{ .GroupLabels.alertname }}'
+#   slack_configs:
+#   - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+#     channel: '#alerts'
+#     color: 'warning'
+#
+# - name: 'phase1-info'
+#   slack_configs:
+#   - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+#     channel: '#notifications'
+#     color: 'good'
+#
+# - name: 'phase1-default'
+#   email_configs:
+#   - to: 'alerts@rexo.com'
+# ============================================================

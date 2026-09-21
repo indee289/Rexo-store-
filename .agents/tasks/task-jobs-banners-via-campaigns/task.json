@@ -1,0 +1,24 @@
+{
+  "task_id": "task-jobs-banners-via-campaigns",
+  "task_description": "Fix the persistent PGRST205 'table not in schema cache' for jobs/job_applications/banners by piggybacking their data on already-cached tables: store Jobs as campaigns rows tagged is_job=true, Job Applications as applications rows pointing at those campaigns, and Banners as a JSON array in a platform_settings row (key='home_banners'). Rewrite jobs_provider.dart and banners_provider.dart to use those cached tables (no .from('jobs')/.from('job_applications')/.from('banners')), keeping all provider names/return shapes so screens are unchanged. Exclude is_job rows from the real Campaigns/Home lists. Ship an idempotent supabase/JOBS_VIA_CAMPAIGNS.sql the user runs. Revert the temporary DBG3 passthrough in error_utils.dart. Do not break campaigns, wallet, or notifications; no mock data.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "skipped",
+    "tests": "skipped",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "Flutter/Dart not installed and DB unreachable under INTEGRATIONS_ONLY, so build/test/docker cannot run (per project constraints). Static verification passed: grep for .from('jobs')/.from('job_applications')/.from('banners') across lib/ returns ZERO; DBG3 removed from error_utils.dart and not-found branch restored ('The requested data was not found.'); is_job=false exclusion filters present on featured/filtered/recent campaign queries (home_provider.dart) and campaignsList/campaignDetail (campaigns_provider.dart); banners served via platform_settings key 'home_banners'; all job/banner provider names and notifier methods preserved; brace/paren/bracket balance exact in all changed Dart files; JOBS_VIA_CAMPAIGNS.sql is idempotent, creates no jobs/job_applications/banners tables, relaxes both status CHECKs, and ends with NOTIFY pgrst 'reload schema'."
+  },
+  "review": {
+    "passes": 2,
+    "final_verdict": "APPROVED",
+    "v1": "NEEDS_CHANGES - 6 issues: bidirectional application-list leakage (job apps in Campaigns list, campaign apps in My Jobs), lost server-side slot enforcement, duplicate-apply UX, unguarded deleteJob, non-atomic banner writes.",
+    "v2": "APPROVED - all must-fix issues resolved in commit a4160fb (myApplicationsProvider/appliedCampaignsProvider skip is_job==true; myJobApplicationsProvider skips null jobRow; idempotent enforce_job_slots BEFORE INSERT trigger on applications scoped to is_job campaigns; deleteJob guarded with .eq('is_job', true)). Remaining items (duplicate-apply handled by UNIQUE+UI gate+catch, non-atomic single-admin banner writes) accepted as non-blocking.",
+    "review_files": [
+      ".agents/tasks/task-jobs-banners-via-campaigns/2026-09-20-081332-review.md",
+      ".agents/tasks/task-jobs-banners-via-campaigns/2026-09-20-082212-review.md"
+    ]
+  }
+}

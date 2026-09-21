@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
 /// Provider for the current user's disputes list
@@ -88,7 +89,7 @@ class DisputeNotifier extends StateNotifier<DisputeFormState> {
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        error: e.toString(),
+        error: ErrorUtils.sanitize(e),
       );
       return false;
     }

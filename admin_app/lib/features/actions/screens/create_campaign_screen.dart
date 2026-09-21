@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
 import '../../admin/providers/admin_provider.dart';
@@ -25,7 +26,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
   String _selectedCategory = 'Logo';
   String _selectedPlatform = 'Instagram';
-  String _selectedGender = 'All';
+  String _selectedGender = 'all';
   String _selectedPageProfileCategory = 'Comedy';
   String? _coverImageUrl;
   bool _isSubmitting = false;
@@ -46,9 +47,9 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
   ];
 
   static const List<String> _genders = [
-    'All',
-    'Male',
-    'Female',
+    'all',
+    'male',
+    'female',
   ];
 
   static const List<String> _pageProfileCategories = [
@@ -77,7 +78,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
 
     try {
       final data = <String, dynamic>{
-        'brand_id': SupabaseService.currentUser?.id,
+        'brandId': SupabaseService.currentUser?.id, // live: brandId (camelCase)
         'title': _campaignNameController.text.trim(),
         'category': _selectedCategory,
         'platform': _selectedPlatform,
@@ -109,7 +110,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create campaign: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );
