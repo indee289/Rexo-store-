@@ -5,26 +5,29 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
 
-/// Provider for conversations list (unique sender/receiver pairs with latest message)
+/// Provider for conversations list.
+/// The `messages` table does not exist in the live DB yet.
+/// Returns empty list gracefully until the table is created.
 final conversationsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
-  // Fetch all messages where user is sender or receiver
-  final sentMessages = await SupabaseService.client
-      .from('messages')
-      .select('*, receiver:users!receiver_id(id, name, profileImage)') // live: profileImage
-      .eq('sender_id', user.id)
-      .order('created_at', ascending: false)
-      .limit(200);
+  try {
+    // Fetch all messages where user is sender or receiver
+    final sentMessages = await SupabaseService.client
+        .from('messages')
+        .select('*, receiver:users!receiver_id(id, name, profileImage)')
+        .eq('sender_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(200);
 
-  final receivedMessages = await SupabaseService.client
-      .from('messages')
-      .select('*, sender:users!sender_id(id, name, profileImage)') // live: profileImage
-      .eq('receiver_id', user.id)
-      .order('created_at', ascending: false)
-      .limit(200);
+    final receivedMessages = await SupabaseService.client
+        .from('messages')
+        .select('*, sender:users!sender_id(id, name, profileImage)')
+        .eq('receiver_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(200);
 
   // Build conversations map: other_user_id -> latest message info
   final Map<String, Map<String, dynamic>> conversationsMap = {};
@@ -100,6 +103,10 @@ final conversationsProvider =
   });
 
   return conversations;
+  } catch (_) {
+    // messages table doesn't exist yet — return empty list
+    return [];
+  }
 });
 
 /// Search public users by username or name to start a new chat (WhatsApp-style).
@@ -157,23 +164,24 @@ final chatMessagesProvider =
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
-  // Fetch the most recent 100 messages sent by current user to other user
-  final sent = await SupabaseService.client
-      .from('messages')
-      .select()
-      .eq('sender_id', user.id)
-      .eq('receiver_id', otherUserId)
-      .order('created_at', ascending: false)
-      .limit(100);
+  try {
+    // Fetch the most recent 100 messages sent by current user to other user
+    final sent = await SupabaseService.client
+        .from('messages')
+        .select()
+        .eq('sender_id', user.id)
+        .eq('receiver_id', otherUserId)
+        .order('created_at', ascending: false)
+        .limit(100);
 
-  // Fetch the most recent 100 messages received from other user
-  final received = await SupabaseService.client
-      .from('messages')
-      .select()
-      .eq('sender_id', otherUserId)
-      .eq('receiver_id', user.id)
-      .order('created_at', ascending: false)
-      .limit(100);
+    // Fetch the most recent 100 messages received from other user
+    final received = await SupabaseService.client
+        .from('messages')
+        .select()
+        .eq('sender_id', otherUserId)
+        .eq('receiver_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(100);
 
   // Combine and sort by created_at ascending
   final List<Map<String, dynamic>> allMessages = [
@@ -190,14 +198,17 @@ final chatMessagesProvider =
   });
 
   // Mark received messages as read
-  await SupabaseService.client
-      .from('messages')
-      .update({'is_read': true})
-      .eq('sender_id', otherUserId)
-      .eq('receiver_id', user.id)
-      .eq('is_read', false);
+    await SupabaseService.client
+        .from('messages')
+        .update({'is_read': true})
+        .eq('sender_id', otherUserId)
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
 
-  return allMessages;
+    return allMessages;
+  } catch (_) {
+    return []; // messages table doesn't exist yet
+  }
 });
 
 /// Realtime stream provider for chat messages.

@@ -317,7 +317,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'campaignId': jobId,     // live: camelCase
         'creatorId': user.id,    // live: camelCase
         'status': 'applied',
-        'created_at': now,
+        'createdAt': now,        // live: createdAt
       });
 
       state = const AsyncValue.data(null);
@@ -346,7 +346,7 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'submission_type': submissionType,
         'submission_url': submissionUrl,
         'submission_note': submissionNote,
-        'submitted_at': now,
+        'updatedAt': now, // live: updatedAt
       }).eq('id', applicationId);
 
       state = const AsyncValue.data(null);
@@ -562,10 +562,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status
+      // reviewed_at, reviewed_by not in live schema — use updatedAt + adminFeedback
       await SupabaseService.client.from('applications').update({
         'status': 'approved',
-        'reviewed_at': now,
-        'reviewed_by': admin.id,
+        'updatedAt': now,
       }).eq('id', applicationId);
 
       // 2) Credit wallet atomically
@@ -636,11 +636,12 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final now = DateTime.now().toIso8601String();
 
       // 1) Update application status + rejection reason
+      // rejection_reason, reviewed_at, reviewed_by not in live schema
+      // Use adminFeedback (confirmed live column) for rejection reason
       await SupabaseService.client.from('applications').update({
         'status': 'rejected',
-        'rejection_reason': rejectionReason,
-        'reviewed_at': now,
-        'reviewed_by': admin.id,
+        'adminFeedback': rejectionReason, // live column for feedback
+        'updatedAt': now,
       }).eq('id', applicationId);
 
       // 2) In-app notification

@@ -18,7 +18,7 @@ final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   // fails on this project's schema cache.
   var query = SupabaseService.client
       .from('campaigns')
-      .select('*, users!brandId(id, name, profileImage)'); // live FK: brandId (camelCase)
+      .select(); // SELECT * — avoid FK join that may fail with camelCase FK
 
   if (category != 'All') {
     query = query.eq('category', category);
@@ -41,7 +41,7 @@ final campaignDetailProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, id) async {
   final response = await SupabaseService.client
       .from('campaigns')
-      .select('*, users!brandId(id, name, profileImage)') // live FK: brandId (camelCase)
+      .select() // SELECT * — avoid FK join with camelCase FK
       .eq('id', id)
       .maybeSingle();
 
@@ -120,7 +120,7 @@ final appliedCampaignsProvider =
     try {
       final campaign = await SupabaseService.client
           .from('campaigns')
-          .select('*, users!brandId(id, name, profileImage)')
+          .select() // SELECT * — avoid FK join
           .eq('id', campaignId)
           .maybeSingle();
       if (campaign == null) continue;
@@ -173,21 +173,21 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
       }
 
       await SupabaseService.client.from('applications').insert({
-        'campaignId': campaignId,    // live: camelCase
-        'creatorId': user.id,        // live: camelCase
+        'campaignId': campaignId,     // live: camelCase
+        'creatorId': user.id,         // live: camelCase
         'pitch': pitch,
-        'portfolio_url': portfolioUrl,
-        'applicant_name': applicantName,
-        'location': location,
-        'category': category,
-        'city': city,
-        'state': state,
-        'contact_number': contactNumber,
-        'instagram_url': instagramUrl,
-        'followers_count': followersCount,
+        // Map to confirmed live columns:
+        'contentLink': portfolioUrl,  // closest live column for portfolio/proof URL
+        'creatorName': applicantName, // live: creatorName
+        'contact': contactNumber,     // live: contact (not contact_number)
+        'followers': followersCount,  // live: followers (not followers_count)
+        'email': null,                // live has email column
+        'category': category,         // live: category ✅
         'status': 'pending',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'createdAt': DateTime.now().toIso8601String(), // live: createdAt
+        'updatedAt': DateTime.now().toIso8601String(), // live: updatedAt
+        // Omitted columns not in live schema:
+        // location, city, state, instagram_url, portfolio_url, applicant_name
       });
 
       this.state = const AsyncValue.data(null);
@@ -222,7 +222,7 @@ final campaignApplicantsProvider =
       .select(
           '*, creator:users!creatorId(id, name, username, profileImage, isVerified)') // live columns
       .eq('campaignId', campaignId)   // live: camelCase
-      .order('created_at', ascending: false);
+      .order('createdAt', ascending: false); // live: createdAt
 
   return List<Map<String, dynamic>>.from(response);
 });
