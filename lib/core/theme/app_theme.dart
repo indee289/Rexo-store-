@@ -32,7 +32,7 @@ class AppTheme {
         primaryContainer: AppColors.primaryBg,
         onPrimaryContainer: AppColors.primaryDark,
         secondary: AppColors.primary,
-        surface: Colors.white,
+        surface: AppColors.surface,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
@@ -69,7 +69,7 @@ class AppTheme {
 
       // ── Instagram-style card (no shadow, just white) ─────────────────────
       cardTheme: CardTheme(
-        color: Colors.white,
+        color: AppColors.card,
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,

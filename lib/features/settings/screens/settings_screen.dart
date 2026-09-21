@@ -26,7 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   Color get _pageBg =>
       _isDark ? AppColors.darkBackground : AppColors.background;
-  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
+  Color get _cardBg => _isDark ? AppColors.darkCard : AppColors.card;
   Color get _borderColor =>
       _isDark ? AppColors.darkBorder : AppColors.border;
   Color get _dividerColor =>
@@ -318,7 +318,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     // Instagram-style profile row — flat, minimal, tappable.
     return Material(
-      color: Colors.white,
+      color: AppColors.card,
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const EditProfileScreen()),
@@ -410,7 +410,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _settingsCard(List<Widget> children) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card,
         border: Border(
           top: BorderSide(color: AppColors.border, width: 0.5),
           bottom: BorderSide(color: AppColors.border, width: 0.5),
@@ -547,7 +547,7 @@ Widget _item(
     // draws inset dividers), 14px vertical padding for generous breathing
     // room, 40px colored-icon tile leading, subtle chevron trailing.
     return Material(
-      color: Colors.white,
+      color: AppColors.card,
       child: InkWell(
         onTap: onTap,
         splashColor: Colors.transparent,
@@ -631,7 +631,7 @@ Widget _item(
     // Instagram-flat switch row — no internal border, matches _item spacing.
     return Container(
       constraints: const BoxConstraints(minHeight: 60),
-      color: Colors.white,
+      color: AppColors.card,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [

@@ -40,7 +40,7 @@ class _PremiumCardState extends State<PremiumCard> {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(widget.borderRadius);
-    final bg = widget.backgroundColor ?? Colors.white;
+    final bg = widget.backgroundColor ?? AppColors.card;
 
     Widget card = Container(
       decoration: BoxDecoration(

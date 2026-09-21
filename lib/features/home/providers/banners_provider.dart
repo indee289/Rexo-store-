@@ -60,7 +60,7 @@ final bannersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final all = await _readBanners();
     final visible =
-        all.where((b) => b['is_visible'] == true).toList();
+        all.where((b) => b['is_visible'] == true || b['is_visible'] == 'true').toList();
     visible.sort((a, b) => ((a['sort_order'] as num?) ?? 0)
         .compareTo((b['sort_order'] as num?) ?? 0));
     return visible;

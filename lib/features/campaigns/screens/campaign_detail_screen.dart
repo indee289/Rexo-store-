@@ -179,6 +179,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
     final coverImageUrl = (campaign['cover_image'] ?? '').toString();
     final description = (campaign['description'] ?? '').toString();
     final budget = campaign['budget'];
+    final payoutPerCreator = campaign['payout_per_creator'] ?? campaign['payoutPerCreator'];
     final platform = (campaign['platform'] ?? '').toString();
     // The stored platform value is a comma-joined string (e.g.
     // "Instagram,YouTube"); split it into one entry per platform.
@@ -219,7 +220,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
         isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final cardColor = isDark ? AppColors.darkCard : Colors.white;
+    final cardColor = isDark ? AppColors.darkCard : AppColors.card;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     // ── Brand subtitle (muted category tags) ──
@@ -234,7 +235,10 @@ class _CampaignDetailScrollView extends StatelessWidget {
         subtitleParts.isEmpty ? 'Brand' : subtitleParts.join(' • ');
 
     // ── Stat card values ──
-    final budgetValue =
+    final perCreatorValue = payoutPerCreator != null
+        ? '₹${_formatAmount(payoutPerCreator)}'
+        : null;
+    final totalBudgetValue =
         budget != null ? '₹${_formatAmount(budget)}' : null;
     final int? filled = filledSlots is int
         ? filledSlots
@@ -363,7 +367,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
                           Expanded(
                             child: _StatCard(
                               icon: Iconsax.wallet,
-                              value: budgetValue ?? 'N/A',
+                              value: perCreatorValue ?? 'N/A',
                               valueColor: AppColors.primary,
                               subtitle: 'Per creator',
                               cardColor: cardColor,
@@ -387,6 +391,40 @@ class _CampaignDetailScrollView extends StatelessWidget {
                           ),
                         ],
                       ),
+
+                      // Total budget row (if available and different from per-creator)
+                      if (totalBudgetValue != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBg,
+                            borderRadius: AppRadius.allMd,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Iconsax.chart_2,
+                                  size: 18, color: AppColors.primary),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                'Total Budget: ',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: textSecondary,
+                                ),
+                              ),
+                              Text(
+                                totalBudgetValue,
+                                style: AppTextStyles.headline.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
 
                       // Pills row.
                       if (pills.isNotEmpty) ...[

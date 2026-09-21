@@ -116,7 +116,7 @@ class WalletScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card,
         borderRadius: AppRadius.allXl,
         border: Border.all(color: AppColors.border, width: 0.5),
         boxShadow: [
@@ -209,7 +209,7 @@ class WalletScreen extends ConsumerWidget {
       BuildContext context, Map<String, dynamic> transaction) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cs = Theme.of(context).colorScheme;
-    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.card;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
     final type = transaction['type'] as String;
     final amount = (transaction['amount'] ?? 0).toDouble();

@@ -128,7 +128,7 @@ class _JobDetailScrollView extends StatelessWidget {
         isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final cardColor = isDark ? AppColors.darkCard : Colors.white;
+    final cardColor = isDark ? AppColors.darkCard : AppColors.card;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     // Slots value string.
