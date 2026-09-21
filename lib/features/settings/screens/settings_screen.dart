@@ -313,87 +313,151 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (profile == null) return const SizedBox(height: AppSpacing.lg);
 
     final name = profile['name'] ?? 'User';
-    final handle = profile['username'] ?? ''; // live: username
+    final handle = profile['username'] ?? '';
     final role = profile['role'] ?? 'creator';
-    final avatarUrl = profile['profileImage']; // live: profileImage
+    final avatarUrl = profile['profileImage'];
 
+    // Emerald gradient hero user card with layered depth.
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: AppRadius.allLg,
-          border: Border.all(color: _borderColor),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF10B981), Color(0xFF047857)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.30),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+              spreadRadius: -6,
+            ),
+          ],
         ),
-        child: Row(
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            PremiumAvatar(
-              imageUrl: avatarUrl,
-              name: name,
-              size: 56,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: _textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (handle.isNotEmpty)
-                    Text(
-                      '@$handle',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: _textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _isDark
-                          ? AppColors.darkSurfaceAlt
-                          : AppColors.primaryBg,
-                      borderRadius: AppRadius.pillAll,
-                    ),
-                    child: Text(
-                      _formatRole(role),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const EditProfileScreen()),
-              ),
-              child: const Text(
-                'Edit',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+            // Decorative blob
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.10),
                 ),
               ),
+            ),
+            Row(
+              children: [
+                // Avatar with white ring
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: Colors.white, width: 2.5),
+                  ),
+                  child: PremiumAvatar(
+                    imageUrl: avatarUrl,
+                    name: name,
+                    size: 54,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (handle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '@$handle',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.22),
+                          borderRadius: AppRadius.pillAll,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.35),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Iconsax.crown_1,
+                                size: 12, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatRole(role),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Circular edit button
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen()),
+                  ),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.22),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.35),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Iconsax.edit_2,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
