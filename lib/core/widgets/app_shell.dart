@@ -15,8 +15,10 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      // Fixed bottom bar — content sits above it (no overlap).
-      extendBody: false,
+      // extendBody lets the floating dock overlay the content edge so
+      // the frosted-glass effect shows through. Screens should ensure
+      // their bottom padding accounts for the nav bar height.
+      extendBody: true,
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {

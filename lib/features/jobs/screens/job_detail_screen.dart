@@ -437,7 +437,7 @@ class _CoverHeader extends StatelessWidget {
               vertical: 6,
             ),
             decoration: BoxDecoration(
-              color: isActive ? AppColors.accentOrange : AppColors.neutral,
+              color: isActive ? AppColors.primary : AppColors.neutral,
               borderRadius: AppRadius.pillAll,
               boxShadow: [
                 BoxShadow(
@@ -587,13 +587,13 @@ class _PaymentCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.accentOrange.withOpacity(0.12),
+              color: AppColors.primary.withOpacity(0.12),
               borderRadius: AppRadius.allMd,
             ),
             child: const Icon(
               Iconsax.wallet,
               size: 24,
-              color: AppColors.accentOrange,
+              color: AppColors.primary,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -614,7 +614,7 @@ class _PaymentCard extends StatelessWidget {
                   '₹${_formatAmount(amount)}',
                   style: AppTextStyles.h3.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.accentOrange,
+                    color: AppColors.primary,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -788,7 +788,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.accentOrange,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -886,7 +886,7 @@ class _SubmitChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.accentOrange),
+          Icon(icon, size: 16, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(
             label,

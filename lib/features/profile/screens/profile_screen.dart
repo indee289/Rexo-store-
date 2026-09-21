@@ -411,11 +411,10 @@ class _StatsRow extends ConsumerWidget {
     final following = ref.watch(currentUserFollowingCountProvider);
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _Stat(value: _fmt(campaigns), label: 'Campaigns'),
-        _Stat(value: _fmt(followers), label: 'Followers'),
-        _Stat(value: _fmt(following), label: 'Following'),
+        Expanded(child: _Stat(value: _fmt(campaigns), label: 'Campaigns')),
+        Expanded(child: _Stat(value: _fmt(followers), label: 'Followers')),
+        Expanded(child: _Stat(value: _fmt(following), label: 'Following')),
       ],
     );
   }
@@ -445,15 +444,17 @@ class _Stat extends StatelessWidget {
           style: AppTextStyles.title2.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontSize: 17,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
           label,
-          style: AppTextStyles.subheadline.copyWith(
-            color: AppColors.textPrimary,
+          style: AppTextStyles.footnote.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 12,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );

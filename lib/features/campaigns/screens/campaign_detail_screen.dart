@@ -364,7 +364,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
                             child: _StatCard(
                               icon: Iconsax.wallet,
                               value: budgetValue ?? 'N/A',
-                              valueColor: AppColors.accentOrange,
+                              valueColor: AppColors.primary,
                               subtitle: 'Per creator',
                               cardColor: cardColor,
                               borderColor: borderColor,
@@ -701,7 +701,7 @@ class _CoverHeader extends StatelessWidget {
                 vertical: 6,
               ),
               decoration: BoxDecoration(
-                color: isClosed ? AppColors.neutral : AppColors.accentOrange,
+                color: isClosed ? AppColors.neutral : AppColors.primary,
                 borderRadius: AppRadius.pillAll,
                 boxShadow: [
                   BoxShadow(
@@ -1073,7 +1073,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.accentOrange,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
