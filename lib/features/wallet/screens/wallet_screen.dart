@@ -158,19 +158,17 @@ class WalletScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '₹${_formatAmount(available)}',
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1.05,
-              ),
-              maxLines: 1,
+          // Use content-driven height with maxLines + overflow instead of
+          // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
+          Text(
+            '₹${_formatAmount(available)}',
+            style: const TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.05,
             ),
+            maxLines: 1,
           ),
           const SizedBox(height: AppSpacing.lg),
           Container(
@@ -356,89 +354,32 @@ class WalletScreen extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.10),
-                    borderRadius: AppRadius.pillAll,
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+const SizedBox(height: 4),
+        // Use content-driven height with maxLines + overflow instead of
+        // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
+        Text(
+          value,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
-        ],
-      ),
-    );
-  }
-
-  String _formatAmount(double amount) {
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(2)}M';
-    }
-    if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}K';
-    }
-    return amount.toStringAsFixed(2);
-  }
-}
-
-class _BalanceStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _BalanceStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 13, color: Colors.white70),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 4),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-            maxLines: 1,
+        // Use content-driven height with maxLines + overflow instead of
+        // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
+        Text(
+          value,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
       ],
