@@ -13,6 +13,7 @@ import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 
 class ApplyScreen extends ConsumerStatefulWidget {

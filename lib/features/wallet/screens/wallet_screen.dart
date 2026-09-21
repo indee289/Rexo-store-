@@ -354,30 +354,95 @@ class WalletScreen extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
                 ),
-const SizedBox(height: 4),
-        // Use content-driven height with maxLines + overflow instead of
-        // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
-        Text(
-          value,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.10),
+                    borderRadius: AppRadius.pillAll,
+                  ),
+                  child: Text(
+                    _capitalize(status),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Formats a numeric amount into a clean, Indian-grouped string
+  /// (e.g. 1234567.5 -> "12,34,567.5"). Falls back to a plain string
+  /// if formatting fails for any reason.
+  String _formatAmount(double amount) {
+    try {
+      return NumberFormat('#,##0.##', 'en_IN').format(amount);
+    } catch (_) {
+      return amount.toStringAsFixed(2);
+    }
+  }
+
+  /// Capitalizes the first letter of a status string for badge display.
+  String _capitalize(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1);
+  }
+}
+
+/// Compact stat cell shown on the gradient balance card (Escrow / Earnings).
+class _BalanceStat extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _BalanceStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: Colors.white70),
+            const SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        // Use content-driven height with maxLines + overflow instead of
-        // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
+        const SizedBox(height: 2),
         Text(
           value,
           maxLines: 1,
           softWrap: false,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),

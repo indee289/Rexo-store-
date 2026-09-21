@@ -6,7 +6,6 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_toggle.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../services/supabase_service.dart';
@@ -689,7 +688,7 @@ Widget _statusChip(String text, Color color, {bool isSmall = false}) {
           horizontal: isSmall ? 6 : 8, vertical: isSmall ? 2 : 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
-        borderRadius: isSmall ? AppRadius.pillSm : AppRadius.pillAll,
+        borderRadius: isSmall ? AppRadius.allSm : AppRadius.pillAll,
       ),
       child: Text(
         text,
