@@ -12,6 +12,7 @@ import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/utils/error_utils.dart';
 import '../providers/wallet_provider.dart';
 
 class WalletScreen extends ConsumerWidget {
@@ -48,7 +49,7 @@ class WalletScreen extends ConsumerWidget {
 
               // ── Transactions ────────────────────────────────────────────
               Text(
-                'Recent Transactions',
+                'Recent transactions',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -63,7 +64,8 @@ class WalletScreen extends ConsumerWidget {
                     return const EmptyState(
                       icon: Iconsax.receipt,
                       title: 'No transactions yet',
-                      subtitle: 'Your transactions will appear here.',
+                      subtitle:
+                          'Your deposits, withdrawals and earnings will show up here.',
                     );
                   }
                   return Column(
@@ -85,11 +87,13 @@ class WalletScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                error: (e, _) => Center(
-                  child: Text('Failed to load transactions',
-                      style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant)),
+                error: (e, _) => EmptyState(
+                  icon: Iconsax.warning_2,
+                  title: "Couldn't load your transactions",
+                  subtitle: ErrorUtils.sanitize(e),
+                  ctaLabel: 'Retry',
+                  ctaIcon: Iconsax.refresh,
+                  onCta: () => ref.invalidate(transactionsProvider),
                 ),
               ),
 
@@ -124,59 +128,126 @@ class WalletScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '₹${_formatAmount(available)}',
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: _BalanceStat(
-                    label: 'Escrow',
-                    value: '₹${_formatAmount(escrow)}'),
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  borderRadius: AppRadius.allSm,
+                ),
+                child: const Icon(Iconsax.wallet_2,
+                    size: 18, color: Colors.white),
               ),
-              const SizedBox(width: AppSpacing.xl),
-              Expanded(
-                child: _BalanceStat(
-                    label: 'Earnings',
-                    value: '₹${_formatAmount(earnings)}'),
+              const SizedBox(width: AppSpacing.sm),
+              const Expanded(
+                child: Text(
+                  'Total balance',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                    letterSpacing: 0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '₹${_formatAmount(available)}',
+              style: const TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.05,
+              ),
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.12),
+              borderRadius: AppRadius.allMd,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _BalanceStat(
+                      icon: Iconsax.lock,
+                      label: 'Escrow',
+                      value: '₹${_formatAmount(escrow)}'),
+                ),
+                Container(
+                  width: 1,
+                  height: 34,
+                  color: Colors.white.withOpacity(0.18),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _BalanceStat(
+                      icon: Iconsax.money_recive,
+                      label: 'Earnings',
+                      value: '₹${_formatAmount(earnings)}'),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          Row(
-            children: [
-              Expanded(
-                child: PremiumButton(
-                  label: 'Deposit',
-                  variant: PremiumButtonVariant.glass,
-                  icon: Iconsax.money_add,
-                  onPressed: () => context.push('/wallet/deposit'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: PremiumButton(
-                  label: 'Withdraw',
-                  variant: PremiumButtonVariant.glass,
-                  icon: Iconsax.money_send,
-                  onPressed: () => context.push('/wallet/withdraw'),
-                ),
-              ),
-            ],
+          // Deposit / Withdraw actions. On comfortable widths they sit
+          // side by side; on very narrow phones (or at the largest text
+          // scale) they stack full-width so the 'Withdraw' label is never
+          // clipped to 'Withdr...'. No fixed pixel width, no shrunken font.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final depositBtn = PremiumButton(
+                label: 'Deposit',
+                variant: PremiumButtonVariant.glass,
+                icon: Iconsax.money_add,
+                onPressed: () => context.push('/wallet/deposit'),
+              );
+              final withdrawBtn = PremiumButton(
+                label: 'Withdraw',
+                variant: PremiumButtonVariant.glass,
+                icon: Iconsax.money_send,
+                onPressed: () => context.push('/wallet/withdraw'),
+              );
+
+              // Estimate the width one button needs for its icon + full
+              // 'Withdraw' label at the current text scale. If two buttons
+              // plus the gap don't fit, stack them.
+              final scale = MediaQuery.textScalerOf(context).scale(15);
+              final estButtonWidth = 32 + 18 + 8 + ('Withdraw'.length * scale * 0.62);
+              final fitsSideBySide =
+                  constraints.maxWidth >= (estButtonWidth * 2) + 12;
+
+              if (fitsSideBySide) {
+                return Row(
+                  children: [
+                    Expanded(child: depositBtn),
+                    const SizedBox(width: 12),
+                    Expanded(child: withdrawBtn),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  depositBtn,
+                  const SizedBox(height: 12),
+                  withdrawBtn,
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -268,34 +339,44 @@ class WalletScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isDeposit ? '+' : '-'}₹${_formatAmount(amount)}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDeposit ? AppColors.success : AppColors.error,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.10),
-                  borderRadius: AppRadius.pillAll,
-                ),
-                child: Text(
-                  status,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isDeposit ? '+' : '-'}₹${_formatAmount(amount)}',
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDeposit ? AppColors.success : AppColors.error,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.10),
+                    borderRadius: AppRadius.pillAll,
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -314,33 +395,51 @@ class WalletScreen extends ConsumerWidget {
 }
 
 class _BalanceStat extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  const _BalanceStat({required this.label, required this.value});
+  const _BalanceStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        Row(
+          children: [
+            Icon(icon, size: 13, color: Colors.white70),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.white70,
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+            maxLines: 1,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

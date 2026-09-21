@@ -89,8 +89,8 @@ class _CleanBackButton extends StatelessWidget {
     return IconButton(
       onPressed: onTap,
       icon: Icon(
-        Icons.chevron_left,
-        size: 28,
+        Iconsax.arrow_left,
+        size: 24,
         color: color ?? AppColors.textPrimary,
       ),
     );

@@ -110,7 +110,7 @@ class FeaturedCampaignCard extends StatelessWidget {
                   onTap: onToggleSave,
                   behavior: HitTestBehavior.opaque,
                   child: Icon(
-                    saved ? Icons.bookmark : Icons.bookmark_border,
+                    Iconsax.bookmark,
                     size: 20,
                     color: saved ? AppColors.primary : cs.onSurfaceVariant,
                   ),
@@ -121,12 +121,16 @@ class FeaturedCampaignCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _metric(cs, 'Paid out',
-                    value: '${data.paidOutPercent}%',
-                    suffix: ' / ${data.budgetText}'),
-                const Spacer(),
-                _metric(cs, 'Rate',
-                    value: data.rateText, alignEnd: true),
+                Flexible(
+                  child: _metric(cs, 'Paid out',
+                      value: '${data.paidOutPercent}%',
+                      suffix: ' / ${data.budgetText}'),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: _metric(cs, 'Rate',
+                      value: data.rateText, alignEnd: true),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -250,6 +254,8 @@ class FeaturedCampaignCard extends StatelessWidget {
       children: [
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w500,
@@ -258,6 +264,9 @@ class FeaturedCampaignCard extends StatelessWidget {
         ),
         const SizedBox(height: 3),
         RichText(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
           text: TextSpan(
             children: [
               TextSpan(

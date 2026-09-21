@@ -230,14 +230,6 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   _buildMenuItem(
                     context,
-                    icon: Iconsax.bag_2,
-                    iconColor: AppColors.accentIndigo,
-                    title: 'My Orders',
-                    subtitle: 'Track your purchases',
-                    onTap: () => context.push('/orders'),
-                  ),
-                  _buildMenuItem(
-                    context,
                     icon: Iconsax.crown_1,
                     iconColor: AppColors.accentAmber,
                     title: 'Subscriptions',
@@ -389,7 +381,7 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant),
+              Icon(Iconsax.arrow_right_3, size: 20, color: cs.onSurfaceVariant),
             ],
           ),
         ),
@@ -406,22 +398,43 @@ class _StatCol extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: cs.onSurface,
+    // Each stat lives inside a bounded Expanded column. FittedBox keeps the
+    // value + label within their own width so a long label ('Campaigns',
+    // 'Following') can never cross the divider into the next stat, even at
+    // the largest allowed text scale.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
-        ),
-      ],
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

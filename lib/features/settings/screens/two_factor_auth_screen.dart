@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/error_utils.dart';
 // unused import kept for API compatibility - replaced with custom header
 // ignore: unused_import
 import '../../../services/supabase_service.dart';
@@ -103,7 +104,7 @@ class _TwoFactorAuthScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to check MFA status: ${e.toString()}';
+          _errorMessage = ErrorUtils.sanitize(e);
         });
       }
     } finally {
@@ -137,7 +138,7 @@ class _TwoFactorAuthScreenState
       if (!mounted) return;
       setState(() {
         _isEnrolling = false;
-        _errorMessage = 'Failed to enroll MFA: ${e.toString()}';
+        _errorMessage = ErrorUtils.sanitize(e);
       });
     }
   }
@@ -194,7 +195,7 @@ class _TwoFactorAuthScreenState
       if (!mounted) return;
       setState(() {
         _isVerifying = false;
-        _errorMessage = 'Verification failed: ${e.toString()}';
+        _errorMessage = "That code didn't work. Please try again.";
       });
     }
   }
@@ -256,7 +257,7 @@ class _TwoFactorAuthScreenState
       if (!mounted) return;
       setState(() {
         _isUnenrolling = false;
-        _errorMessage = 'Failed to disable 2FA: ${e.toString()}';
+        _errorMessage = ErrorUtils.sanitize(e);
       });
     }
   }
@@ -277,8 +278,8 @@ class _TwoFactorAuthScreenState
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Icons.chevron_left,
-                        size: 28, color: _cs.onSurface),
+                    icon: Icon(Iconsax.arrow_left,
+                        size: 24, color: _cs.onSurface),
                   ),
                   Expanded(
                     child: Text(

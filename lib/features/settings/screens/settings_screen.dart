@@ -57,8 +57,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Icons.chevron_left,
-                        size: 28, color: _textPrimary),
+                    icon: Icon(Iconsax.arrow_left,
+                        size: 24, color: _textPrimary),
                   ),
                   Expanded(
                     child: Text(
@@ -217,12 +217,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           iconColor: _textHint,
                           title: 'Terms of Service',
                           onTap: () => context.push('/terms-of-service')),
-                      _item(context,
-                          icon: Iconsax.info_circle,
-                          iconColor: _textHint,
-                          title: 'About Rexo',
-                          subtitle: 'Version 1.0.0',
-                          onTap: () => _showAbout(context)),
                     ]),
 
                     // ACCOUNT ACTIONS (danger)
@@ -601,12 +595,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              trailing ??
-                  Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: _textHint,
-                  ),
+              // Trailing control (chip / chevron / custom) lives OUTSIDE the
+              // Expanded text column so it can never overlap the title or
+              // subtitle. Constrain its max width so a chip like
+              // 'Recommended' keeps the text column its priority space and
+              // can't force a horizontal overflow on a narrow phone.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.34,
+                ),
+                child: trailing ??
+                    Icon(
+                      Iconsax.arrow_right_3,
+                      size: 18,
+                      color: _textHint,
+                    ),
+              ),
             ],
           ),
         ),
@@ -689,36 +693,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: color,
         ),
       ),
-    );
-  }
-
-  void _showAbout(BuildContext context) {
-    showAboutDialog(
-      context: context,
-      applicationName: 'Rexo',
-      applicationVersion: '1.0.0',
-      applicationIcon: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: AppRadius.allMd,
-        ),
-        child: const Icon(Iconsax.crown_1, color: Colors.white, size: 28),
-      ),
-      children: [
-        const Text(
-          'Rexo — a premium influencer marketing platform connecting brands '
-          'and creators for campaigns, collaborations and payouts.',
-          style: TextStyle(fontSize: 14, height: 1.5),
-        ),
-      ],
     );
   }
 

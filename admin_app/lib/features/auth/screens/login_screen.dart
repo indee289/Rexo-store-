@@ -77,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: const Icon(
-                        Icons.admin_panel_settings,
+                        Iconsax.lock,
                         size: 36,
                         color: Colors.white,
                       ),
@@ -87,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   // Title
                   Text(
-                    'Admin Login',
+                    'Admin login',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,

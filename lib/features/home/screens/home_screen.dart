@@ -72,16 +72,22 @@ class _HomeHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         children: [
-          Text(
-            'Home',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface,
-              letterSpacing: -0.5,
+          // Title takes the remaining slack and ellipsizes so it can never
+          // push into or collide with the action icons at large text scale.
+          Flexible(
+            child: Text(
+              'Home',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           _HeaderIconButton(
             icon: Iconsax.wallet_2,
             onTap: () => context.push(AppRoutes.wallet),
@@ -177,14 +183,9 @@ class _HeaderIconButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Banner carousel — uses live DB banners with static fallback
+// Banner carousel — renders admin-managed banners only (no demo fallback).
+// When there are no admin banners (or while loading) it renders nothing.
 // ─────────────────────────────────────────────────────────────────────────
-class _BannerSlideData {
-  final String title;
-  final String subtitle;
-  const _BannerSlideData(this.title, this.subtitle);
-}
-
 class _BannerCarousel extends ConsumerStatefulWidget {
   const _BannerCarousel();
 
@@ -195,15 +196,6 @@ class _BannerCarousel extends ConsumerStatefulWidget {
 class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
   final _controller = PageController();
   int _page = 0;
-
-  static const _fallbackSlides = [
-    _BannerSlideData('Create Content.\nEarn Rewards.',
-        'Collaborate with top brands\nand grow your influence.'),
-    _BannerSlideData('Top Brands\nAwait You.',
-        'Join campaigns from leading\nbrands and start earning.'),
-    _BannerSlideData('Grow Your\nInfluence.',
-        'Turn your creativity into\nreal, rewarding collaborations.'),
-  ];
 
   @override
   void dispose() {
@@ -217,12 +209,13 @@ class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
     final width = MediaQuery.of(context).size.width;
     final bannerHeight = (width * 0.391).clamp(151.0, 177.0);
 
-    // Use live DB banners if available, else fallback to static slides
+    // Only real admin-managed banners are shown. If there are none (or the
+    // provider is still loading), hide the carousel entirely.
     final liveBanners = ref.watch(bannersProvider);
-    final useDbBanners = liveBanners.value != null &&
-        liveBanners.value!.isNotEmpty;
-    final dbBanners = liveBanners.value ?? [];
-    final slideCount = useDbBanners ? dbBanners.length : _fallbackSlides.length;
+    final dbBanners = liveBanners.value ?? const <Map<String, dynamic>>[];
+    if (dbBanners.isEmpty) return const SizedBox.shrink();
+
+    final slideCount = dbBanners.length;
 
     return Column(
       children: [
@@ -234,9 +227,7 @@ class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
             onPageChanged: (i) => setState(() => _page = i),
             itemBuilder: (_, i) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: useDbBanners
-                  ? _DbBannerSlide(banner: dbBanners[i])
-                  : _BannerSlide(data: _fallbackSlides[i]),
+              child: _DbBannerSlide(banner: dbBanners[i]),
             ),
           ),
         ),
@@ -260,98 +251,6 @@ class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _BannerSlide extends StatelessWidget {
-  final _BannerSlideData data;
-  const _BannerSlide({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: AppRadius.allLg,
-      child: Container(
-        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
-        child: Stack(
-          children: [
-            // Decorative artwork on the right
-            Positioned(
-              right: -10,
-              top: 0,
-              bottom: 0,
-              child: _BannerArt(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        data.title,
-                        style: const TextStyle(
-                          fontSize: 21,
-                          height: 1.15,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.4,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        data.subtitle,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          height: 1.3,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  // Explore button
-                  GestureDetector(
-                    onTap: () => context.go(AppRoutes.campaigns),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: AppRadius.pillAll,
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Explore Campaigns',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDeep,
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          Icon(Iconsax.arrow_right_3,
-                              size: 16, color: AppColors.primaryDeep),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -395,47 +294,6 @@ class _DbBannerSlide extends StatelessWidget {
   Widget _fallbackContainer() => Container(
         decoration: const BoxDecoration(gradient: AppColors.heroGradient),
       );
-}
-
-/// Lightweight decorative artwork (gift + megaphone-ish speaker + badges)
-/// from icons so it needs no image asset while keeping the campaign vibe.
-class _BannerArt extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    Widget circle(double size, double opacity) => Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(opacity),
-            shape: BoxShape.circle,
-          ),
-        );
-
-    Widget bubble(IconData icon, Color color) => Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 14, color: color),
-        );
-
-    return SizedBox(
-      width: 130,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(right: 8, bottom: 14, child: circle(96, 0.10)),
-          Positioned(right: 60, top: 26, child: circle(26, 0.14)),
-          const Center(
-            child: Icon(Iconsax.gift, size: 64, color: Colors.white),
-          ),
-          Positioned(top: 22, right: 14, child: bubble(Iconsax.heart, AppColors.accentPink)),
-          Positioned(bottom: 30, right: 66, child: bubble(Iconsax.star_1, AppColors.accentAmber)),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────

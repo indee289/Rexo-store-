@@ -91,63 +91,73 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: AppSpacing.md),
-                            GridView.count(
-                              crossAxisCount: 2,
-                              shrinkWrap: true,
-                              physics:
-                                  const NeverScrollableScrollPhysics(),
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 1.3,
-                              children: [
-                                _StatCard(
-                                  label: 'Total Users',
-                                  value:
-                                      '${data['total_users'] ?? 0}',
-                                  icon: Iconsax.people,
-                                  color: AppColors.primary,
-                                ),
-                                _StatCard(
-                                  label: 'Active Campaigns',
-                                  value:
-                                      '${data['active_campaigns'] ?? 0}',
-                                  icon: Iconsax.briefcase,
-                                  color: AppColors.success,
-                                ),
-                                _StatCard(
-                                  label: 'Pending Deposits',
-                                  value:
-                                      '${data['pending_deposits'] ?? 0}',
-                                  icon: Iconsax.money_recive,
-                                  color: AppColors.warning,
-                                ),
-                                _StatCard(
-                                  label: 'Pending Withdrawals',
-                                  value:
-                                      '${data['pending_withdrawals'] ?? 0}',
-                                  icon: Iconsax.money_send,
-                                  color: AppColors.accentPurple,
-                                ),
-                                _StatCard(
-                                  label: 'Pending KYC',
-                                  value:
-                                      '${data['pending_kyc'] ?? 0}',
-                                  icon: Iconsax.document,
-                                  color: AppColors.accentTeal,
-                                ),
-                                _StatCard(
-                                  label: 'Revenue',
-                                  value:
-                                      '₹${data['total_earnings'] ?? 0}',
-                                  icon: Iconsax.chart_square,
-                                  color: AppColors.accentAmber,
-                                ),
-                              ],
+                            // Content-driven Wrap so large font/display scale
+                            // never clips a stat cell (a fixed-aspect grid does).
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                const spacing = 12.0;
+                                final columns =
+                                    constraints.maxWidth >= 560 ? 3 : 2;
+                                final itemWidth = (constraints.maxWidth -
+                                        spacing * (columns - 1)) /
+                                    columns;
+                                final cards = <Widget>[
+                                  _StatCard(
+                                    label: 'Total users',
+                                    value: '${data['total_users'] ?? 0}',
+                                    icon: Iconsax.people,
+                                    color: AppColors.primary,
+                                  ),
+                                  _StatCard(
+                                    label: 'Active campaigns',
+                                    value:
+                                        '${data['active_campaigns'] ?? 0}',
+                                    icon: Iconsax.briefcase,
+                                    color: AppColors.success,
+                                  ),
+                                  _StatCard(
+                                    label: 'Pending deposits',
+                                    value:
+                                        '${data['pending_deposits'] ?? 0}',
+                                    icon: Iconsax.money_recive,
+                                    color: AppColors.warning,
+                                  ),
+                                  _StatCard(
+                                    label: 'Pending withdrawals',
+                                    value:
+                                        '${data['pending_withdrawals'] ?? 0}',
+                                    icon: Iconsax.money_send,
+                                    color: AppColors.accentPurple,
+                                  ),
+                                  _StatCard(
+                                    label: 'Pending KYC',
+                                    value: '${data['pending_kyc'] ?? 0}',
+                                    icon: Iconsax.document,
+                                    color: AppColors.accentTeal,
+                                  ),
+                                  _StatCard(
+                                    label: 'Revenue',
+                                    value:
+                                        '₹${data['total_earnings'] ?? 0}',
+                                    icon: Iconsax.chart_square,
+                                    color: AppColors.accentAmber,
+                                  ),
+                                ];
+                                return Wrap(
+                                  spacing: spacing,
+                                  runSpacing: spacing,
+                                  children: [
+                                    for (final card in cards)
+                                      SizedBox(
+                                          width: itemWidth, child: card),
+                                  ],
+                                );
+                              },
                             ),
                             const SizedBox(height: AppSpacing.xl),
                             // Quick actions row
                             Text(
-                              'Quick Actions',
+                              'Quick actions',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,

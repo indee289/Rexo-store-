@@ -128,8 +128,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: Icon(Icons.chevron_left,
-                  size: 28, color: cs.onSurface),
+              icon: Icon(Iconsax.arrow_left,
+                  size: 24, color: cs.onSurface),
             ),
             PremiumAvatar(
               imageUrl: otherUserAvatar,
@@ -299,7 +299,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        _isSending ? Iconsax.timer : Icons.arrow_upward,
+                        _isSending ? Iconsax.timer : Iconsax.send_1,
                         color: Colors.white,
                         size: 20,
                       ),

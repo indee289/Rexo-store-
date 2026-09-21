@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../services/supabase_service.dart';
 import '../../admin/providers/admin_provider.dart';
@@ -109,7 +110,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create campaign: ${e.toString()}'),
+            content: Text(ErrorUtils.sanitize(e)),
             backgroundColor: AppColors.error,
           ),
         );

@@ -28,8 +28,6 @@ import '../../features/messages/screens/chat_screen.dart';
 import '../../features/messages/screens/messages_screen.dart';
 import '../../features/moderation/screens/moderation_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
-import '../../features/orders/screens/order_detail_screen.dart';
-import '../../features/orders/screens/orders_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/reviews/screens/reviews_screen.dart';
@@ -89,8 +87,6 @@ class AppRoutes {
   static const String termsOfService = '/terms-of-service';
   static const String helpSupport = '/help-support';
 
-  static const String orders = '/orders';
-  static const String orderDetail = '/orders/:id';
   static const String disputes = '/disputes';
   static const String disputesRaise = '/disputes/raise';
   static const String reviews = '/reviews/:targetId';
@@ -401,21 +397,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.twoFactorAuth,
         builder: (context, state) => const TwoFactorAuthScreen(),
-      ),
-
-      /// Orders screen
-      GoRoute(
-        path: AppRoutes.orders,
-        builder: (context, state) => const OrdersScreen(),
-      ),
-
-      /// Order Detail screen
-      GoRoute(
-        path: AppRoutes.orderDetail,
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return OrderDetailScreen(orderId: id);
-        },
       ),
 
       /// Disputes screen

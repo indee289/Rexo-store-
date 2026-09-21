@@ -255,8 +255,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Icon(
-                      Icons.chevron_left,
-                      size: 28,
+                      Iconsax.arrow_left,
+                      size: 24,
                       color: _cs.onSurface,
                     ),
                   ),

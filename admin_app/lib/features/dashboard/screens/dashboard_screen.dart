@@ -95,36 +95,31 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              // Stats grid
+              // Stats grid — content-driven height via Wrap so larger font /
+              // display scaling never clips a stat cell (fixed aspect grids do).
               stats.when(
-                data: (data) => GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.3,
-                  children: [
+                data: (data) {
+                  final chips = <Widget>[
                     StatChip(
-                      label: 'Total Users',
+                      label: 'Total users',
                       value: '${data['total_users'] ?? 0}',
                       icon: Iconsax.people,
                       color: AppColors.primary,
                     ),
                     StatChip(
-                      label: 'Active Campaigns',
+                      label: 'Active campaigns',
                       value: '${data['active_campaigns'] ?? 0}',
                       icon: Iconsax.briefcase,
                       color: AppColors.success,
                     ),
                     StatChip(
-                      label: 'Pending Deposits',
+                      label: 'Pending deposits',
                       value: '${data['pending_deposits'] ?? 0}',
                       icon: Iconsax.money_recive,
                       color: AppColors.warning,
                     ),
                     StatChip(
-                      label: 'Pending Withdrawals',
+                      label: 'Pending withdrawals',
                       value: '${data['pending_withdrawals'] ?? 0}',
                       icon: Iconsax.money_send,
                       color: Colors.purple,
@@ -141,8 +136,26 @@ class DashboardScreen extends ConsumerWidget {
                       icon: Iconsax.chart_square,
                       color: AppColors.secondary,
                     ),
-                  ],
-                ),
+                  ];
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      const spacing = 12.0;
+                      // Two columns on phones, three when there is room.
+                      final columns = constraints.maxWidth >= 560 ? 3 : 2;
+                      final itemWidth =
+                          (constraints.maxWidth - spacing * (columns - 1)) /
+                              columns;
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: spacing,
+                        children: [
+                          for (final chip in chips)
+                            SizedBox(width: itemWidth, child: chip),
+                        ],
+                      );
+                    },
+                  );
+                },
                 loading: () => const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),

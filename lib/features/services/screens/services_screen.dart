@@ -35,7 +35,7 @@ class ServicesScreen extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: AppSpacing.md,
               crossAxisSpacing: AppSpacing.md,
-              childAspectRatio: 1.0,
+              childAspectRatio: 1.15,
               children: [
                 _buildServiceCard(
                   context,
@@ -122,12 +122,16 @@ class ServicesScreen extends ConsumerWidget {
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             subtitle,
             style: AppTextStyles.caption,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

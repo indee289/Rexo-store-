@@ -15,6 +15,7 @@ class Iconsax {
   static const IconData arrow_right_3 = PhosphorIconsDuotone.caretRight;
   static const IconData award = PhosphorIconsDuotone.medal;
   static const IconData bag_2 = PhosphorIconsDuotone.shoppingBag;
+  static const IconData bookmark = PhosphorIconsDuotone.bookmarkSimple;
   static const IconData box = PhosphorIconsDuotone.package;
   static const IconData box_1 = PhosphorIconsDuotone.package;
   static const IconData briefcase = PhosphorIconsDuotone.briefcase;
@@ -33,6 +34,7 @@ class Iconsax {
   static const IconData close_circle = PhosphorIconsDuotone.xCircle;
   static const IconData cloud = PhosphorIconsDuotone.cloud;
   static const IconData copy = PhosphorIconsDuotone.copy;
+  static const IconData drag = PhosphorIconsDuotone.dotsSixVertical;
   static const IconData crown_1 = PhosphorIconsDuotone.crown;
   static const IconData document = PhosphorIconsDuotone.fileText;
   static const IconData document_text = PhosphorIconsDuotone.fileText;

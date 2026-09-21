@@ -164,7 +164,7 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
         child: Row(
           children: [
             // Drag handle
-            Icon(Icons.drag_handle,
+            Icon(Iconsax.drag,
                 size: 20,
                 color: isDark ? AppColors.darkTextHint : AppColors.textHint),
             const SizedBox(width: AppSpacing.sm),

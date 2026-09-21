@@ -107,8 +107,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           : AppColors.surfaceAlt,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.chevron_left,
-                        size: 26, color: _textPrimary),
+                    child: Icon(Iconsax.arrow_left,
+                        size: 24, color: _textPrimary),
                   ),
                 ),
 
