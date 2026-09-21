@@ -46,21 +46,15 @@ class CampaignsScreen extends ConsumerWidget {
   Widget _buildList(
       BuildContext context, List<Map<String, dynamic>> campaigns) {
     if (campaigns.isEmpty) {
-      return CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: EmptyState(
-              icon: Iconsax.document,
-              title: "You haven't applied yet",
-              subtitle:
-                  'Campaigns you apply to will show up here.',
-              ctaLabel: 'Browse campaigns',
-              onCta: () => context.go(AppRoutes.home),
-            ),
-          ),
-        ],
+      return Center(
+        child: EmptyState(
+          icon: Iconsax.document,
+          title: "You haven't applied yet",
+          subtitle:
+              'Campaigns you apply to will show up here.',
+          ctaLabel: 'Browse campaigns',
+          onCta: () => context.go(AppRoutes.home),
+        ),
       );
     }
 
@@ -72,7 +66,7 @@ class CampaignsScreen extends ConsumerWidget {
         AppSpacing.lg,
         AppSpacing.sm,
         AppSpacing.lg,
-        AppSpacing.xxl + 40, // extra for floating dock
+        AppSpacing.lg, // just enough for dock
       ),
       itemCount: campaigns.length,
       separatorBuilder: (_, __) =>
@@ -102,7 +96,7 @@ class CampaignsScreen extends ConsumerWidget {
         AppSpacing.lg,
         AppSpacing.sm,
         AppSpacing.lg,
-        AppSpacing.xxl + 40, // extra for floating dock
+        AppSpacing.lg, // just enough for dock
       ),
       itemCount: 5,
       itemBuilder: (context, index) =>

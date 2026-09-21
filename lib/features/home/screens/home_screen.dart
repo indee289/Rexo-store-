@@ -35,7 +35,9 @@ class HomeScreen extends ConsumerWidget {
             ref.invalidate(bannersProvider);
           },
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: ClampingScrollPhysics(),
+            ),
             slivers: [
               // Sticky Instagram-style header
               const SliverToBoxAdapter(child: _IgHeader()),
@@ -55,7 +57,7 @@ class HomeScreen extends ConsumerWidget {
               // Feed
               _FeedList(),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
             ],
           ),
         ),

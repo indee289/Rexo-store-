@@ -47,6 +47,20 @@ final campaignDetailProvider =
 
   // Not a real campaign if it's a job row.
   if (response != null && response['payout_model'] == 'job') return null;
+  if (response == null) return null;
+
+  // Manually fetch brand info since FK join fails with camelCase columns.
+  final brandId = response['brandId'] as String?;
+  if (brandId != null && brandId.isNotEmpty) {
+    try {
+      final brandProfile = await SupabaseService.getUserProfile(brandId);
+      if (brandProfile != null) {
+        return {...response, 'users': brandProfile};
+      }
+    } catch (_) {
+      // Brand lookup failed — return campaign without brand info.
+    }
+  }
   return response;
 });
 

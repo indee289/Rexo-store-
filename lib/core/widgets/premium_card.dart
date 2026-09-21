@@ -1,13 +1,15 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 
-/// Instagram-style card — flat white with a single hairline border.
+/// Frosted-glass card — iOS liquid glass / glassmorphism style.
 ///
-/// No shadow, no gradient. IG relies on the hairline + whitespace for
-/// visual separation. Backward compatible with prior gradient/glass params
-/// (they now just resolve to the flat white card).
+/// Translucent surface with BackdropFilter blur, matching the bottom
+/// navigation dock aesthetic. Cards blend seamlessly with the Sand Dune
+/// background instead of floating as opaque white boxes.
 class PremiumCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -22,7 +24,7 @@ class PremiumCard extends StatefulWidget {
     required this.child,
     this.padding,
     this.onTap,
-    this.borderRadius = AppRadius.md,
+    this.borderRadius = AppRadius.lg,
     this.gradient = false,
     this.glass = false,
     this.backgroundColor,
@@ -42,17 +44,23 @@ class _PremiumCardState extends State<PremiumCard> {
     final radius = BorderRadius.circular(widget.borderRadius);
     final bg = widget.backgroundColor ?? AppColors.card;
 
-    Widget card = Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: radius,
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Padding(
-          padding: widget.padding ?? EdgeInsets.zero,
-          child: widget.child,
+    Widget card = ClipRRect(
+      borderRadius: radius,
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: radius,
+            border: Border.all(
+              color: Colors.white.withOpacity(0.35),
+              width: 0.5,
+            ),
+          ),
+          child: Padding(
+            padding: widget.padding ?? EdgeInsets.zero,
+            child: widget.child,
+          ),
         ),
       ),
     );

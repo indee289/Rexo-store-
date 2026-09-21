@@ -48,15 +48,16 @@ class AppColors {
   // ── Instagram Light surfaces ───────────────────────────────────────────────
   /// App background — Sand Dune warm off-white for premium feel.
   static const Color background  = Color(0xFFF0EDE5); // SAND DUNE
-  /// Card/cell surface — pure white cards float on the sand background.
-  static const Color surface     = Color(0xFFFFFFFF);
-  static const Color card        = Color(0xFFFFFFFF);
-  /// Secondary fill for inputs/chips — slightly warmer gray.
-  static const Color surfaceAlt  = Color(0xFFE8E5DD); // warm sand input bg
+  /// Card/cell surface — frosted glass (semi-transparent warm white).
+  /// Used with BackdropFilter blur for the liquid-glass effect.
+  static const Color surface     = Color(0xCCFFFFFF); // 80% white
+  static const Color card        = Color(0xCCFFFFFF); // 80% white
+  /// Secondary fill for inputs/chips — slightly warmer, also translucent.
+  static const Color surfaceAlt  = Color(0xB3E8E5DD); // 70% warm sand
   /// Hairline separator — slightly warmer.
-  static const Color border      = Color(0xFFDBD8D0); // warm hairline
-  static const Color divider     = Color(0xFFE8E5DD);
-  static const Color separator   = Color(0xFFDBD8D0);
+  static const Color border      = Color(0x66DBD8D0); // 40% warm hairline
+  static const Color divider     = Color(0x66E8E5DD); // 40%
+  static const Color separator   = Color(0x66DBD8D0); // 40%
   /// Gray family (mostly for compat).
   static const Color systemGray  = Color(0xFF8E8E8E);
   static const Color systemGray2 = Color(0xFFA8A8A8);

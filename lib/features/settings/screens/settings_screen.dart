@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -316,10 +318,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final handle = profile['username'] ?? '';
     final avatarUrl = profile['profileImage'];
 
-    // Instagram-style profile row — flat, minimal, tappable.
-    return Material(
-      color: AppColors.card,
-      child: InkWell(
+    // Frosted glass profile row — blends with sand dune background.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ClipRRect(
+        borderRadius: AppRadius.allLg,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Material(
+            color: AppColors.card,
+            borderRadius: AppRadius.allLg,
+            child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const EditProfileScreen()),
         ),
@@ -383,6 +392,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -404,34 +416,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // Instagram flat list group — hairline top+bottom borders, white fill.
-  // No boxed card look; each item is separated by an inset hairline divider
-  // so the list breathes like Instagram's Settings screen.
+  // Frosted glass list group — matches the bottom dock's translucent style.
   Widget _settingsCard(List<Widget> children) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.card,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-          bottom: BorderSide(color: AppColors.border, width: 0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (int i = 0; i < children.length; i++) ...[
-            if (i > 0)
-              const Padding(
-                padding: EdgeInsets.only(left: 68),
-                child: Divider(
-                  height: 0.5,
-                  thickness: 0.5,
-                  color: AppColors.border,
-                ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: AppRadius.allLg,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: AppRadius.allLg,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.35),
+                width: 0.5,
               ),
-            children[i],
-          ],
-        ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (int i = 0; i < children.length; i++) ...[
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 68),
+                      child: Divider(
+                        height: 0.5,
+                        thickness: 0.5,
+                        color: Colors.white.withOpacity(0.25),
+                      ),
+                    ),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -547,7 +567,7 @@ Widget _item(
     // draws inset dividers), 14px vertical padding for generous breathing
     // room, 40px colored-icon tile leading, subtle chevron trailing.
     return Material(
-      color: AppColors.card,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         splashColor: Colors.transparent,
@@ -631,7 +651,7 @@ Widget _item(
     // Instagram-flat switch row — no internal border, matches _item spacing.
     return Container(
       constraints: const BoxConstraints(minHeight: 60),
-      color: AppColors.card,
+      color: Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [

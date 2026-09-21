@@ -308,6 +308,7 @@ class _CampaignDetailScrollView extends StatelessWidget {
       top: false,
       bottom: false,
       child: CustomScrollView(
+        physics: const ClampingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
