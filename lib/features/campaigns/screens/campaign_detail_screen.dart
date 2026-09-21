@@ -18,13 +18,17 @@ import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 
+/// Campaign detail screen — rewritten from scratch.
+///
+/// Shows ALL campaign information that a creator needs to understand the
+/// campaign. Layout: cover image → title + status → brand row → stat cards →
+/// info sections (description, requirements, deliverables, rules, demo asset,
+/// deadline, targeting). Sticky Apply Now button at bottom.
+///
+/// No save/share buttons. No unnecessary scrolling.
 class CampaignDetailScreen extends ConsumerWidget {
   final String campaignId;
-
-  const CampaignDetailScreen({
-    super.key,
-    required this.campaignId,
-  });
+  const CampaignDetailScreen({super.key, required this.campaignId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,29 +36,27 @@ class CampaignDetailScreen extends ConsumerWidget {
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.background,
       body: campaignAsync.when(
         data: (campaign) {
-          if (campaign == null) return _buildNotFound(context);
-          return _CampaignDetailScrollView(
-            campaign: campaign,
-            hasApplied: hasApplied.valueOrNull == true,
-          );
+          if (campaign == null) return _NotFound(onBack: () => context.pop());
+          return _DetailBody(campaign: campaign, hasApplied: hasApplied);
         },
-        loading: () => _buildLoading(),
-        error: (error, _) =>
-            _buildError(context, ref, ErrorUtils.sanitize(error)),
+        loading: () => _Loading(),
+        error: (e, _) => _Error(
+          message: ErrorUtils.sanitize(e),
+          onRetry: () => ref.invalidate(campaignDetailProvider(campaignId)),
+          onBack: () => context.pop(),
+        ),
       ),
+      // Sticky Apply Now bar at the very bottom — never scrolls.
       bottomNavigationBar: campaignAsync.whenOrNull(
         data: (campaign) {
           if (campaign == null) return null;
-          // Gate the sticky Apply CTA on the campaign's status/slot state,
-          // mirroring the Job Details screen's _ApplyBar. A Closed/inactive
-          // campaign must not present a live "Apply Now".
-          final status = (campaign['status'] as String? ?? '').toLowerCase();
+          final status = _str(campaign, 'status').toLowerCase();
           final isClosed = status == 'closed' || status == 'inactive';
-          final filled = _asInt(campaign['filled_slots']) ?? 0;
-          final total = _asInt(campaign['slots']);
+          final filled = _int(campaign, 'filled_slots') ?? 0;
+          final total = _int(campaign, 'slots');
           final isFull = total != null && total > 0 && filled >= total;
           return CampaignDetailBottomBar(
             campaignId: campaignId,
@@ -65,693 +67,288 @@ class CampaignDetailScreen extends ConsumerWidget {
       ),
     );
   }
-
-  static int? _asInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return null;
-  }
-
-  Widget _buildNotFound(BuildContext context) {
-    return SafeArea(
-      child: Stack(
-        children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: PremiumIconButton(
-                icon: Iconsax.arrow_left,
-                tooltip: 'Back',
-                onPressed: () => context.pop(),
-              ),
-            ),
-          ),
-          EmptyState(
-            icon: Iconsax.document,
-            title: 'Campaign not found',
-            subtitle: 'This campaign may have been removed.',
-            cta: PremiumButton(
-              label: 'Go Back',
-              icon: Iconsax.arrow_left,
-              expand: false,
-              onPressed: () => context.pop(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoading() {
-    return const SafeArea(
-      child: Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ShimmerCard(height: 200),
-            SizedBox(height: AppSpacing.lg),
-            ShimmerLine(width: 200, height: 20),
-            SizedBox(height: AppSpacing.md),
-            ShimmerLine(height: 14),
-            SizedBox(height: AppSpacing.sm),
-            ShimmerLine(width: 150, height: 14),
-            SizedBox(height: AppSpacing.xl),
-            ShimmerCard(height: 100),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
-    return SafeArea(
-      child: Stack(
-        children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: PremiumIconButton(
-                icon: Iconsax.arrow_left,
-                tooltip: 'Back',
-                onPressed: () => context.pop(),
-              ),
-            ),
-          ),
-          EmptyState(
-            icon: Iconsax.warning_2,
-            title: 'Failed to load campaign',
-            subtitle: error,
-            cta: PremiumButton(
-              label: 'Retry',
-              icon: Iconsax.refresh,
-              variant: PremiumButtonVariant.tonal,
-              expand: false,
-              onPressed: () =>
-                  ref.invalidate(campaignDetailProvider(campaignId)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// ─── Scrollable Body ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// DETAIL BODY — the main scrollable content
+// ═══════════════════════════════════════════════════════════════════════════════
 
-class _CampaignDetailScrollView extends StatelessWidget {
+class _DetailBody extends StatelessWidget {
   final Map<String, dynamic> campaign;
-  final bool hasApplied;
+  final AsyncValue<bool> hasApplied;
 
-  const _CampaignDetailScrollView({
-    required this.campaign,
-    required this.hasApplied,
-  });
+  const _DetailBody({required this.campaign, required this.hasApplied});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // ── Extract ALL fields with camelCase + snake_case fallbacks ──
+    final title = _str(campaign, 'title', fallback: 'Untitled Campaign');
+    final coverImage = _str(campaign, 'cover_image',
+        fallback: _str(campaign, 'coverImage', fallback: _str(campaign, 'bannerUrl')));
+    final description = _str(campaign, 'description');
+    final status = _str(campaign, 'status');
+    final category = _str(campaign, 'category');
+    final platform = _str(campaign, 'platform');
+    final brandName = _str(campaign, 'brandName',
+        fallback: _str(campaign, 'companyName',
+            fallback: _str(campaign, 'company_name',
+                fallback: (campaign['users'] as Map?)?['name']?.toString() ?? '')));
+    final brandAvatar = (campaign['users'] as Map?)?['profileImage'] as String?;
+    final budget = campaign['budget'] ?? campaign['totalBudget'] ?? campaign['total_budget'];
+    final perCreator = campaign['payout_per_creator'] ?? campaign['payoutPerCreator'];
+    final slots = _int(campaign, 'slots');
+    final filledSlots = _int(campaign, 'filled_slots') ?? 0;
+    final deadline = _str(campaign, 'deadline');
+    final requirements = _str(campaign, 'requirements');
+    final deliverables = _str(campaign, 'deliverables');
+    final rules = _str(campaign, 'rules');
+    final demoType = _str(campaign, 'demo_asset_type');
+    final demoUrl = _str(campaign, 'demo_asset_url');
+    final gender = _str(campaign, 'gender',
+        fallback: _str(campaign, 'targetGender', fallback: _str(campaign, 'target_gender')));
+    final minFollowers = _int(campaign, 'min_followers');
+    final pageCategory = _str(campaign, 'pageProfileCategory',
+        fallback: _str(campaign, 'page_profile_category'));
+    final createdAt = DateTime.tryParse(_str(campaign, 'createdAt',
+        fallback: _str(campaign, 'created_at')));
+    final deadlineDate = deadline.isNotEmpty ? DateTime.tryParse(deadline) : null;
 
-    // ── Read the EXACT keys the screen already reads (unchanged). ──
-    final title = (campaign['title'] ?? 'Untitled Campaign').toString();
-    final coverImageUrl = (campaign['cover_image'] ?? '').toString();
-    final description = (campaign['description'] ?? '').toString();
-    final budget = campaign['budget'];
-    final payoutPerCreator = campaign['payout_per_creator'] ?? campaign['payoutPerCreator'];
-    final platform = (campaign['platform'] ?? '').toString();
-    // The stored platform value is a comma-joined string (e.g.
-    // "Instagram,YouTube"); split it into one entry per platform.
-    final platforms = platform
-        .split(',')
-        .map((p) => p.trim())
-        .where((p) => p.isNotEmpty)
-        .toList();
-    final category = (campaign['category'] ?? '').toString();
-    final deadline = campaign['deadline'] as String?;
-    final guidelines = (campaign['guidelines'] ?? '').toString();
-    // New optional fields: read straight off the SELECT * map by key.
-    final rules = (campaign['rules'] ?? '').toString();
-    final demoType = (campaign['demo_asset_type'] ?? '').toString();
-    final demoUrl = (campaign['demo_asset_url'] ?? '').toString();
-    final minFollowers = campaign['min_followers'];
-    final filledSlots = campaign['filled_slots'];
-    final totalSlots = campaign['slots'];
-    final brandInfo = campaign['users'] as Map<String, dynamic>?;
-    final brandName = (brandInfo?['name'] ?? 'Unknown Brand').toString();
-    final brandAvatar = brandInfo?['profileImage'] as String?; // live: profileImage
-
-    // Optional keys — render ONLY when present on the map (do not invent DB
-    // columns). These render conditionally per the spec.
-    final status = (campaign['status'] ?? '').toString();
-    final gender = (campaign['gender'] ?? '').toString();
-    final location = (campaign['location'] ?? '').toString();
-    final hashtags = _hashtagsFrom(campaign['hashtags']);
-    final createdAt = campaign['createdAt'] != null
-        ? DateTime.tryParse(campaign['createdAt'].toString())
-        : (campaign['created_at'] != null                        // fallback snake_case
-            ? DateTime.tryParse(campaign['created_at'].toString())
-            : null);
-    final deadlineDate =
-        deadline != null ? DateTime.tryParse(deadline) : null;
-
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final cardColor = isDark ? AppColors.darkCard : AppColors.card;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-
-    // ── Brand subtitle (muted category tags) ──
-    // Display the split platform list (readable "Instagram, Facebook")
-    // rather than the raw comma-joined stored string.
-    final platformsLabel = platforms.join(', ');
-    final subtitleParts = <String>[
-      if (category.isNotEmpty) category,
-      if (platformsLabel.isNotEmpty) platformsLabel,
-    ];
-    final brandSubtitle =
-        subtitleParts.isEmpty ? 'Brand' : subtitleParts.join(' • ');
-
-    // ── Stat card values ──
-    final perCreatorValue = payoutPerCreator != null
-        ? '₹${_formatAmount(payoutPerCreator)}'
-        : null;
-    final totalBudgetValue =
-        budget != null ? '₹${_formatAmount(budget)}' : null;
-    final int? filled = filledSlots is int
-        ? filledSlots
-        : (filledSlots is num ? filledSlots.toInt() : null);
-    final int? total = totalSlots is int
-        ? totalSlots
-        : (totalSlots is num ? totalSlots.toInt() : null);
-    final slotsValue = (total != null && total > 0)
-        ? '${filled ?? 0}/$total'
-        : null;
-
-    // ── Details rows (only rows that have data) ──
-    final detailRows = <_DetailRowData>[];
-    if (deadlineDate != null || createdAt != null) {
-      final start = createdAt != null
-          ? DateFormat('d MMM').format(createdAt)
-          : null;
-      final end = deadlineDate != null
-          ? DateFormat('d MMM y').format(deadlineDate)
-          : null;
-      final value = (start != null && end != null)
-          ? '$start – $end'
-          : (end ?? start!);
-      detailRows.add(_DetailRowData(
-        icon: Iconsax.calendar,
-        label: 'Campaign Dates',
-        value: value,
-      ));
-    }
-    if (location.isNotEmpty) {
-      detailRows.add(_DetailRowData(
-        icon: Iconsax.location,
-        label: 'Target Location',
-        value: location,
-      ));
-    }
-    if (platform.isNotEmpty || category.isNotEmpty) {
-      final contentType = <String>[
-        if (platformsLabel.isNotEmpty) platformsLabel,
-        if (category.isNotEmpty) category,
-      ].join(' • ');
-      detailRows.add(_DetailRowData(
-        icon: Iconsax.document,
-        label: 'Content Type',
-        value: contentType,
-      ));
-    }
-    if (hashtags.isNotEmpty) {
-      detailRows.add(_DetailRowData(
-        icon: Iconsax.hashtag,
-        label: 'Hashtags',
-        value: hashtags.map((h) => h.startsWith('#') ? h : '#$h').join(' '),
-      ));
-    }
-
-    // ── Pills row (only fields that exist) ──
-    final pills = <_PillData>[
-      for (final p in platforms)
-        _PillData(icon: _platformIcon(p), label: p),
-      if (gender.isNotEmpty)
-        _PillData(icon: Iconsax.people, label: gender),
-      if (category.isNotEmpty)
-        _PillData(icon: Iconsax.category, label: category),
-    ];
+    // Platforms split
+    final platforms = platform.isNotEmpty
+        ? platform.split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList()
+        : <String>[];
 
     return SafeArea(
       top: false,
       bottom: false,
-      child: SingleChildScrollView(
+      child: ListView(
+        padding: EdgeInsets.zero,
         physics: const ClampingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-                // Cover header with overlaid app bar + status/category pill.
-                _CoverHeader(
-                  coverImageUrl: coverImageUrl,
-                  status: status,
-                  category: category,
+        children: [
+          // ── Cover image + back button + status badge ──
+          _CoverSection(
+            coverImage: coverImage,
+            status: status,
+            onBack: () => context.pop(),
+          ),
+
+          // ── Main content ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Applied banner
+                if (hasApplied.valueOrNull == true) ...[
+                  _InfoBanner(
+                    icon: Iconsax.tick_circle,
+                    text: 'You have already applied to this campaign',
+                    color: AppColors.success,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Title
+                Text(
+                  title,
+                  style: AppTextStyles.title1.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Brand row
+                if (brandName.isNotEmpty)
+                  _BrandRow(name: brandName, avatarUrl: brandAvatar),
+
+                const SizedBox(height: 20),
+
+                // ── Stat cards row ──
+                Row(
+                  children: [
+                    if (perCreator != null)
+                      Expanded(
+                        child: _StatTile(
+                          label: 'Per Creator',
+                          value: '₹${_fmtNum(perCreator)}',
+                          icon: Iconsax.wallet,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    if (perCreator != null && slots != null)
+                      const SizedBox(width: 10),
+                    if (slots != null)
+                      Expanded(
+                        child: _StatTile(
+                          label: 'Slots',
+                          value: '$filledSlots / $slots',
+                          icon: Iconsax.people,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                  ],
                 ),
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    0,
+                // Total budget
+                if (budget != null) ...[
+                  const SizedBox(height: 10),
+                  _StatTile(
+                    label: 'Total Budget',
+                    value: '₹${_fmtNum(budget)}',
+                    icon: Iconsax.chart_2,
+                    color: AppColors.primary,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+
+                // ── Tags row ──
+                if (platforms.isNotEmpty || category.isNotEmpty || gender.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
                     children: [
-                      // Applied banner
-                      if (hasApplied) ...[
-                        const _AppliedBanner(),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-
-                      // Title
-                      Text(
-                        title,
-                        style: AppTextStyles.h4.copyWith(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 23,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // Brand row: avatar + name + chevron + muted subtitle.
-                      _BrandRow(
-                        brandName: brandName,
-                        brandAvatar: brandAvatar,
-                        subtitle: brandSubtitle,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                      ),
-
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // Two side-by-side stat cards.
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Iconsax.wallet,
-                              value: perCreatorValue ?? 'N/A',
-                              valueColor: AppColors.primary,
-                              subtitle: 'Per creator',
-                              cardColor: cardColor,
-                              borderColor: borderColor,
-                              textPrimary: textPrimary,
-                              textSecondary: textSecondary,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Iconsax.people,
-                              value: slotsValue ?? '—',
-                              valueColor: textPrimary,
-                              subtitle: 'Creators needed',
-                              cardColor: cardColor,
-                              borderColor: borderColor,
-                              textPrimary: textPrimary,
-                              textSecondary: textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Total budget row (if available and different from per-creator)
-                      if (totalBudgetValue != null) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryBg,
-                            borderRadius: AppRadius.allMd,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Iconsax.chart_2,
-                                  size: 18, color: AppColors.primary),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(
-                                'Total Budget: ',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: textSecondary,
-                                ),
-                              ),
-                              Text(
-                                totalBudgetValue,
-                                style: AppTextStyles.headline.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      // Pills row.
-                      if (pills.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: [
-                            for (final p in pills)
-                              _Pill(
-                                icon: p.icon,
-                                label: p.label,
-                                isDark: isDark,
-                                textSecondary: textSecondary,
-                              ),
-                          ],
-                        ),
-                      ],
-
-                      // About Campaign.
-                      if (description.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'About Campaign',
-                          style: AppTextStyles.h6.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        _ExpandableText(
-                          text: description,
-                          textSecondary: textSecondary,
-                        ),
-                      ],
-
-                      // Details rows.
-                      if (detailRows.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        _DetailsCard(
-                          cardColor: cardColor,
-                          borderColor: borderColor,
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          rows: detailRows,
-                        ),
-                      ],
-
-                      // Requirements (guidelines) — keep existing data.
-                      if (guidelines.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'Requirements',
-                          style: AppTextStyles.h6.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: AppRadius.allLg,
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Text(
-                            guidelines,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: textSecondary,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      // Rules — new optional field. Render only when present.
-                      if (rules.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'Rules',
-                          style: AppTextStyles.h6.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: AppRadius.allLg,
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Text(
-                            rules,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: textSecondary,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      // Demo Asset — new optional field. Render only when both
-                      // the type and the value are present.
-                      if (demoType.isNotEmpty && demoUrl.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'Demo Asset',
-                          style: AppTextStyles.h6.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        DemoAssetView(type: demoType, value: demoUrl),
-                      ],
-
-                      // Minimum followers — keep existing data.
-                      if (minFollowers != null &&
-                          minFollowers is num &&
-                          minFollowers > 0) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.warning.withOpacity(0.08),
-                            borderRadius: AppRadius.allMd,
-                            border: Border.all(
-                              color: AppColors.warning.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Iconsax.people,
-                                  size: 18, color: AppColors.warning),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Text(
-                                  'Minimum ${NumberFormat.compact().format(minFollowers)} followers required',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.warning,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      // Bottom padding so content clears the sticky Apply bar.
-                      const SizedBox(height: AppSpacing.xxl),
+                      for (final p in platforms) _Tag(p),
+                      if (category.isNotEmpty) _Tag(category),
+                      if (gender.isNotEmpty) _Tag(gender),
+                      if (pageCategory.isNotEmpty) _Tag(pageCategory),
                     ],
                   ),
-                ),
+                ],
+
+                // ── Dates ──
+                if (deadlineDate != null || createdAt != null) ...[
+                  const SizedBox(height: 16),
+                  _InfoRow(
+                    icon: Iconsax.calendar,
+                    label: 'Deadline',
+                    value: deadlineDate != null
+                        ? DateFormat('d MMM yyyy').format(deadlineDate)
+                        : (createdAt != null
+                            ? 'Started ${DateFormat('d MMM').format(createdAt)}'
+                            : ''),
+                  ),
+                ],
+
+                // Min followers
+                if (minFollowers != null && minFollowers > 0) ...[
+                  const SizedBox(height: 10),
+                  _InfoBanner(
+                    icon: Iconsax.people,
+                    text: 'Minimum ${NumberFormat.compact().format(minFollowers)} followers required',
+                    color: AppColors.warning,
+                  ),
+                ],
+
+                // ── Description ──
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _Section(title: 'About This Campaign', body: description),
+                ],
+
+                // ── Requirements ──
+                if (requirements.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _Section(title: 'Requirements', body: requirements),
+                ],
+
+                // ── Deliverables ──
+                if (deliverables.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _Section(title: 'Deliverables', body: deliverables),
+                ],
+
+                // ── Rules ──
+                if (rules.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _Section(title: 'Rules', body: rules),
+                ],
+
+                // ── Demo Asset ──
+                if (demoType.isNotEmpty && demoUrl.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text('Demo Asset',
+                      style: AppTextStyles.headline
+                          .copyWith(color: AppColors.textPrimary)),
+                  const SizedBox(height: 8),
+                  DemoAssetView(type: demoType, value: demoUrl),
+                ],
+
+                // Bottom padding for the sticky Apply bar
+                const SizedBox(height: 32),
               ],
             ),
           ),
-      );
-    }
-
-  static List<String> _hashtagsFrom(dynamic raw) {
-    if (raw == null) return const [];
-    if (raw is List) {
-      return raw
-          .map((e) => e.toString().trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-    }
-    if (raw is String) {
-      return raw
-          .split(RegExp(r'[,\s]+'))
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-    }
-    return const [];
-  }
-
-  static IconData _platformIcon(String platform) {
-    final p = platform.toLowerCase();
-    if (p.contains('insta')) return Iconsax.instagram;
-    if (p.contains('face')) return Iconsax.facebook;
-    if (p.contains('you')) return Iconsax.youtube;
-    return Iconsax.global;
-  }
-
-  static String _formatAmount(dynamic amount) {
-    final value = amount is num ? amount : num.tryParse(amount.toString());
-    if (value == null) return amount.toString();
-    if (value >= 1000) return NumberFormat('#,##0').format(value);
-    return value.toStringAsFixed(
-        value.truncateToDouble() == value ? 0 : 2);
+        ],
+      ),
+    );
   }
 }
 
-// ─── Cover Header ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// COVER IMAGE SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
 
-class _CoverHeader extends StatelessWidget {
-  final String coverImageUrl;
+class _CoverSection extends StatelessWidget {
+  final String coverImage;
   final String status;
-  final String category;
+  final VoidCallback onBack;
 
-  const _CoverHeader({
-    required this.coverImageUrl,
+  const _CoverSection({
+    required this.coverImage,
     required this.status,
-    required this.category,
+    required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
 
-    // Prefer status if available, else category, for the pill.
-    // Match the Job Details screen: orange for Active/open and the
-    // category-only case, neutral grey for the Closed state.
-    String? pillText;
-    bool isClosed = false;
-    if (status.isNotEmpty) {
-      final s = status.toLowerCase();
-      if (s == 'active' || s == 'open') {
-        pillText = 'Active';
-      } else if (s == 'closed' || s == 'inactive') {
-        pillText = 'Closed';
-        isClosed = true;
-      } else {
-        pillText = status;
-      }
-    } else if (category.isNotEmpty) {
-      pillText = category;
-    }
-
     return Stack(
       children: [
-        // Cover image / gradient placeholder.
-        SizedBox(
+        CampaignCoverHeader(
+          coverImageUrl: coverImage,
           height: 200 + topPad,
-          width: double.infinity,
-          child: CampaignCoverHeader(
-            coverImageUrl: coverImageUrl,
-            height: 200 + topPad,
-            overlay: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.45),
-                      Colors.transparent,
-                    ],
-                  ),
+          overlay: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.black.withOpacity(0.4), Colors.transparent],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-
-        // Top overlay row: back, bookmark + share.
+        // Back button only — NO save/share
         Positioned(
-          top: topPad + AppSpacing.sm,
-          left: AppSpacing.sm,
-          right: AppSpacing.sm,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              PremiumIconButton(
-                icon: Iconsax.arrow_left,
-                background: true,
-                color: Colors.white,
-                tooltip: 'Back',
-                onPressed: () => context.pop(),
-              ),
-              Row(
-                children: [
-                  PremiumIconButton(
-                    icon: Iconsax.save_2,
-                    background: true,
-                    color: Colors.white,
-                    tooltip: 'Save',
-                    onPressed: () {},
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  PremiumIconButton(
-                    icon: Iconsax.share,
-                    background: true,
-                    color: Colors.white,
-                    tooltip: 'Share',
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ],
+          top: topPad + 8,
+          left: 8,
+          child: PremiumIconButton(
+            icon: Iconsax.arrow_left,
+            background: true,
+            color: Colors.white,
+            onPressed: onBack,
           ),
         ),
-
-        // Status/category pill (top-right, below the app bar row).
-        if (pillText != null)
+        // Status badge
+        if (status.isNotEmpty)
           Positioned(
-            top: topPad + 64,
-            right: AppSpacing.lg,
+            top: topPad + 12,
+            right: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: isClosed ? AppColors.neutral : AppColors.primary,
-                borderRadius: AppRadius.pillAll,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                color: _statusColor(status),
+                borderRadius: AppRadius.allSm,
               ),
               child: Text(
-                pillText,
+                _statusLabel(status),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -759,206 +356,90 @@ class _CoverHeader extends StatelessWidget {
       ],
     );
   }
-}
 
-// ─── Applied Banner ───────────────────────────────────────────────────────────
+  Color _statusColor(String s) {
+    final lower = s.toLowerCase();
+    if (lower == 'active' || lower == 'open') return AppColors.success;
+    if (lower == 'closed' || lower == 'inactive') return AppColors.neutral;
+    return AppColors.primary;
+  }
 
-class _AppliedBanner extends StatelessWidget {
-  const _AppliedBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.08),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: AppColors.success.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: const [
-          Icon(Iconsax.tick_circle, size: 20, color: AppColors.success),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              "You've applied to this campaign",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.success,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _statusLabel(String s) {
+    if (s.isEmpty) return '';
+    return s[0].toUpperCase() + s.substring(1);
   }
 }
 
-// ─── Brand Row ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// BRAND ROW
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class _BrandRow extends StatelessWidget {
-  final String brandName;
-  final String? brandAvatar;
-  final String subtitle;
-  final Color textPrimary;
-  final Color textSecondary;
+  final String name;
+  final String? avatarUrl;
 
-  const _BrandRow({
-    required this.brandName,
-    required this.brandAvatar,
-    required this.subtitle,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
+  const _BrandRow({required this.name, this.avatarUrl});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        PremiumAvatar(
-          imageUrl: brandAvatar,
-          name: brandName,
-          size: 44,
-        ),
-        const SizedBox(width: AppSpacing.md),
+        PremiumAvatar(imageUrl: avatarUrl, name: name, size: 36),
+        const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                brandName,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: textSecondary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          child: Text(
+            name,
+            style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        Icon(Iconsax.arrow_right_3, size: 18, color: textSecondary),
       ],
     );
   }
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// STAT TILE
+// ═══════════════════════════════════════════════════════════════════════════════
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
+class _StatTile extends StatelessWidget {
+  final String label;
   final String value;
-  final Color valueColor;
-  final String subtitle;
-  final Color cardColor;
-  final Color borderColor;
-  final Color textPrimary;
-  final Color textSecondary;
-
-  const _StatCard({
-    required this.icon,
-    required this.value,
-    required this.valueColor,
-    required this.subtitle,
-    required this.cardColor,
-    required this.borderColor,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: textSecondary),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: AppTextStyles.h4.copyWith(
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Pill ─────────────────────────────────────────────────────────────────────
-
-class _PillData {
   final IconData icon;
-  final String label;
+  final Color color;
 
-  const _PillData({required this.icon, required this.label});
-}
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isDark;
-  final Color textSecondary;
-
-  const _Pill({
-    required this.icon,
+  const _StatTile({
     required this.label,
-    required this.isDark,
-    required this.textSecondary,
+    required this.value,
+    required this.icon,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-        borderRadius: AppRadius.pillAll,
+        color: AppColors.card,
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: AppColors.border, width: 0.5),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: textSecondary,
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: AppTextStyles.headline.copyWith(color: color)),
+                const SizedBox(height: 2),
+                Text(label,
+                    style: AppTextStyles.footnote
+                        .copyWith(color: AppColors.textSecondary)),
+              ],
             ),
           ),
         ],
@@ -967,164 +448,137 @@ class _Pill extends StatelessWidget {
   }
 }
 
-// ─── Details Card ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAG CHIP
+// ═══════════════════════════════════════════════════════════════════════════════
 
-class _DetailRowData {
-  final IconData icon;
+class _Tag extends StatelessWidget {
   final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _DetailRowData({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-}
-
-class _DetailsCard extends StatelessWidget {
-  final Color cardColor;
-  final Color borderColor;
-  final Color textPrimary;
-  final Color textSecondary;
-  final List<_DetailRowData> rows;
-
-  const _DetailsCard({
-    required this.cardColor,
-    required this.borderColor,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.rows,
-  });
+  const _Tag(this.label);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: borderColor),
+        color: AppColors.surfaceAlt,
+        borderRadius: AppRadius.pillAll,
       ),
-      child: Column(
+      child: Text(
+        label,
+        style: AppTextStyles.footnote.copyWith(color: AppColors.textPrimary),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INFO ROW (icon + label + value)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Text('$label: ',
+            style: AppTextStyles.subheadline
+                .copyWith(color: AppColors.textSecondary)),
+        Expanded(
+          child: Text(value,
+              style: AppTextStyles.subheadline
+                  .copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INFO BANNER (colored bar with icon + text)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _InfoBanner extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const _InfoBanner({required this.icon, required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
         children: [
-          for (int i = 0; i < rows.length; i++) ...[
-            if (i > 0) Divider(height: 1, color: borderColor),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(rows[i].icon, size: 18, color: textSecondary),
-                  const SizedBox(width: AppSpacing.md),
-                  Text(
-                    rows[i].label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      rows[i].value,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: rows[i].valueColor ?? textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: AppTextStyles.subheadline.copyWith(color: color)),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─── Expandable Description ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION (title + body text)
+// ═══════════════════════════════════════════════════════════════════════════════
 
-class _ExpandableText extends StatefulWidget {
-  final String text;
-  final Color textSecondary;
+class _Section extends StatelessWidget {
+  final String title;
+  final String body;
 
-  const _ExpandableText({required this.text, required this.textSecondary});
-
-  @override
-  State<_ExpandableText> createState() => _ExpandableTextState();
-}
-
-class _ExpandableTextState extends State<_ExpandableText> {
-  bool _expanded = false;
-
-  static const int _collapsedLines = 4;
+  const _Section({required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {
-    final style = AppTextStyles.bodyMedium.copyWith(
-      color: widget.textSecondary,
-      height: 1.6,
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final tp = TextPainter(
-              text: TextSpan(text: widget.text, style: style),
-              maxLines: _collapsedLines,
-              textDirection: Directionality.of(context),
-            )..layout(maxWidth: constraints.maxWidth);
-            final overflows = tp.didExceedMaxLines;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.text,
-                  style: style,
-                  maxLines: _expanded ? null : _collapsedLines,
-                  overflow: _expanded
-                      ? TextOverflow.visible
-                      : TextOverflow.ellipsis,
-                ),
-                if (overflows) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => setState(() => _expanded = !_expanded),
-                    child: Text(
-                      _expanded ? 'Read less' : 'Read more',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            );
-          },
+        Text(title,
+            style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: AppRadius.allMd,
+            border: Border.all(color: AppColors.border, width: 0.5),
+          ),
+          child: Text(
+            body,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-// ─── Sticky Apply Bar ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOTTOM BAR — sticky Apply Now
+// ═══════════════════════════════════════════════════════════════════════════════
 
-/// Sticky bottom apply bar — full-width orange Apply Now with a right arrow.
 class CampaignDetailBottomBar extends ConsumerWidget {
   final String campaignId;
   final bool isClosed;
@@ -1140,186 +594,228 @@ class CampaignDetailBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md + MediaQuery.of(context).padding.bottom,
+        16, 12, 16, 12 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        color: AppColors.background,
+        border: const Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
       child: _buildButton(context, hasApplied),
     );
   }
 
-  Widget _buildButton(
-    BuildContext context,
-    AsyncValue<bool> hasApplied,
-  ) {
-    // Closed/inactive campaign — disabled neutral state, mirroring the Job
-    // Details screen so a Closed campaign never presents a live Apply CTA.
+  Widget _buildButton(BuildContext context, AsyncValue<bool> hasApplied) {
     if (isClosed) {
-      return const _StatusButton(
-        label: 'Closed',
-        icon: Iconsax.slash,
-        color: AppColors.neutral,
-      );
+      return _StatusBtn(label: 'Closed', color: AppColors.neutral);
     }
-    // Slots full — disabled red state (parallels the Job Details gate).
     if (isFull) {
-      return const _StatusButton(
-        label: 'Slots Full',
-        icon: Iconsax.slash,
-        color: AppColors.error,
-      );
+      return _StatusBtn(label: 'Slots Full', color: AppColors.error);
     }
     return hasApplied.when(
       data: (applied) {
         if (applied) {
-          return const _StatusButton(
-            label: 'Already Applied',
-            icon: Iconsax.tick_circle,
-            color: AppColors.success,
-          );
+          return _StatusBtn(label: 'Already Applied', color: AppColors.success);
         }
-        return _ApplyNowButton(
-          loading: false,
+        return _ApplyBtn(
           onPressed: () => context.push('/campaigns/$campaignId/apply'),
         );
       },
-      loading: () => const _ApplyNowButton(loading: true),
-      error: (_, __) => _ApplyNowButton(
-        loading: false,
+      loading: () => _ApplyBtn(loading: true),
+      error: (_, __) => _ApplyBtn(
         onPressed: () => context.push('/campaigns/$campaignId/apply'),
       ),
     );
   }
 }
 
-/// Instagram-blue "Apply Now" CTA — flat, tight, 48px tall (bounded so it
-/// cannot expand to fill the full sticky bar area).
-class _ApplyNowButton extends StatefulWidget {
-  final bool loading;
+class _ApplyBtn extends StatelessWidget {
   final VoidCallback? onPressed;
+  final bool loading;
 
-  const _ApplyNowButton({required this.loading, this.onPressed});
-
-  @override
-  State<_ApplyNowButton> createState() => _ApplyNowButtonState();
-}
-
-class _ApplyNowButtonState extends State<_ApplyNowButton> {
-  bool _pressed = false;
+  const _ApplyBtn({this.onPressed, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.loading ? null : widget.onPressed,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.7 : 1.0,
-        child: Container(
-          // Fixed height (was minHeight — that could expand in a Column
-          // with unbounded height, causing the button to fill the screen).
-          height: 48,
-          width: double.infinity,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: AppRadius.allMd,
-          ),
-          child: widget.loading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Apply Now',
-                      style: AppTextStyles.button.copyWith(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(Iconsax.arrow_right_3,
-                        size: 18, color: Colors.white),
-                  ],
+      onTap: loading ? null : onPressed,
+      child: Container(
+        height: 48,
+        width: double.infinity,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: AppRadius.allMd,
+        ),
+        child: loading
+            ? const SizedBox(
+                height: 20, width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Apply Now',
+                      style: AppTextStyles.button
+                          .copyWith(color: Colors.white, fontSize: 15)),
+                  const SizedBox(width: 6),
+                  const Icon(Iconsax.arrow_right_3,
+                      size: 18, color: Colors.white),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _StatusBtn extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusBtn({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      width: double.infinity,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: AppRadius.allMd,
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(label,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOADING / ERROR / NOT FOUND
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _Loading extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const SafeArea(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShimmerCard(height: 200),
+            SizedBox(height: 16),
+            ShimmerLine(width: 200, height: 20),
+            SizedBox(height: 12),
+            ShimmerLine(height: 14),
+            SizedBox(height: 8),
+            ShimmerLine(width: 150, height: 14),
+          ],
         ),
       ),
     );
   }
 }
 
-/// A disabled, tinted status button (Already Applied).
-class _StatusButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
+class _Error extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
 
-  const _StatusButton({
-    required this.label,
-    required this.icon,
-    required this.color,
+  const _Error({
+    required this.message,
+    required this.onRetry,
+    required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 52),
-      width: double.infinity,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: color.withOpacity(0.30)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return SafeArea(
+      child: Stack(
         children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: color,
+          Positioned(
+            top: 8, left: 8,
+            child: PremiumIconButton(
+              icon: Iconsax.arrow_left,
+              onPressed: onBack,
+            ),
+          ),
+          Center(
+            child: EmptyState(
+              icon: Iconsax.warning_2,
+              title: 'Failed to load campaign',
+              subtitle: message,
+              ctaLabel: 'Retry',
+              onCta: onRetry,
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class _NotFound extends StatelessWidget {
+  final VoidCallback onBack;
+  const _NotFound({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Stack(
+        children: [
+          Positioned(
+            top: 8, left: 8,
+            child: PremiumIconButton(
+              icon: Iconsax.arrow_left,
+              onPressed: onBack,
+            ),
+          ),
+          const Center(
+            child: EmptyState(
+              icon: Iconsax.document,
+              title: 'Campaign not found',
+              subtitle: 'This campaign may have been removed.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Safe string extraction with multiple key fallbacks.
+String _str(Map<String, dynamic> m, String key, {String fallback = ''}) {
+  final v = m[key];
+  if (v != null && v.toString().trim().isNotEmpty) return v.toString().trim();
+  return fallback;
+}
+
+/// Safe int extraction.
+int? _int(Map<String, dynamic> m, String key) {
+  final v = m[key];
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
+  return null;
+}
+
+/// Format a number with Indian grouping.
+String _fmtNum(dynamic v) {
+  final d = double.tryParse(v.toString()) ?? 0;
+  try {
+    return NumberFormat('#,##0', 'en_IN').format(d);
+  } catch (_) {
+    return d.toStringAsFixed(0);
   }
 }
