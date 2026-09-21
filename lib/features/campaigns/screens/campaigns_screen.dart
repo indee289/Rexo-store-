@@ -26,21 +26,6 @@ class CampaignsScreen extends ConsumerWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
         title: 'My campaigns',
-        actions: [
-          TextButton.icon(
-            onPressed: () => context.go(AppRoutes.home),
-            icon: const Icon(Iconsax.search_normal,
-                size: 16, color: AppColors.primary),
-            label: const Text(
-              'Browse',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -71,12 +56,8 @@ class CampaignsScreen extends ConsumerWidget {
               title: "You haven't applied yet",
               subtitle:
                   'Campaigns you apply to will show up here.',
-              cta: PremiumButton(
-                label: 'Browse campaigns',
-                icon: Iconsax.search_normal,
-                expand: false,
-                onPressed: () => context.go(AppRoutes.home),
-              ),
+              ctaLabel: 'Browse campaigns',
+              onCta: () => context.go(AppRoutes.home),
             ),
           ),
         ],
@@ -84,12 +65,14 @@ class CampaignsScreen extends ConsumerWidget {
     }
 
     return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: ClampingScrollPhysics(),
+      ),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
+        AppSpacing.sm,
         AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xxl,
+        AppSpacing.xxl + 40, // extra for floating dock
       ),
       itemCount: campaigns.length,
       separatorBuilder: (_, __) =>
@@ -112,12 +95,14 @@ class CampaignsScreen extends ConsumerWidget {
 
   Widget _buildLoading() {
     return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: ClampingScrollPhysics(),
+      ),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
+        AppSpacing.sm,
         AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xxl,
+        AppSpacing.xxl + 40, // extra for floating dock
       ),
       itemCount: 5,
       itemBuilder: (context, index) =>

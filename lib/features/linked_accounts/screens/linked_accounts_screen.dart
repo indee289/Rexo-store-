@@ -345,20 +345,53 @@ class _LinkedAccountsScreenState
 
   Widget _buildError(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Iconsax.warning_2,
-              size: 48, color: _cs.onSurfaceVariant),
-          const SizedBox(height: 12),
-          Text('Failed to load accounts',
-              style: TextStyle(color: _cs.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => ref.invalidate(linkedAccountsProvider),
-            child: const Text('Retry'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.textPrimary, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Iconsax.link_2, size: 32, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Could not load accounts',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Check your connection and try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => ref.invalidate(linkedAccountsProvider),
+              child: const Text(
+                'Try again',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

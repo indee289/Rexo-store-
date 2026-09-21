@@ -200,23 +200,45 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         loading: () =>
                             const ShimmerLoading(height: 320),
-                        error: (error, _) => Center(
+                        error: (error, _) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                           child: Column(
                             children: [
-                              const SizedBox(height: 40),
-                              const Icon(Iconsax.warning_2,
-                                  size: 48, color: AppColors.error),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Failed to load stats',
-                                style: TextStyle(
-                                    color: cs.onSurfaceVariant),
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.textPrimary, width: 1.5),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(Iconsax.chart_2, size: 28, color: AppColors.textPrimary),
                               ),
-                              const SizedBox(height: 8),
-                              TextButton(
-                                onPressed: () => ref.invalidate(
-                                    adminStatsProvider),
-                                child: const Text('Retry'),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Could not load stats',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Check your connection and try again.',
+                                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(height: 14),
+                              GestureDetector(
+                                onTap: () => ref.invalidate(adminStatsProvider),
+                                child: const Text(
+                                  'Try again',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               ),
                             ],
                           ),

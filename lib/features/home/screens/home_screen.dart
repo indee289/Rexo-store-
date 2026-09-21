@@ -316,7 +316,7 @@ class _FeedList extends ConsumerWidget {
       loading: () => SliverList(
         delegate: SliverChildBuilderDelegate(
           (_, __) => const Padding(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 16),
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: ShimmerCard(height: 320),
           ),
           childCount: 3,
@@ -328,7 +328,7 @@ class _FeedList extends ConsumerWidget {
         if (items.isEmpty) {
           return const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(24, 40, 24, 40),
+              padding: EdgeInsets.fromLTRB(20, 40, 20, 40),
               child: Center(
                 child: Text(
                   'No campaigns yet',
@@ -344,7 +344,7 @@ class _FeedList extends ConsumerWidget {
         return SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) => Padding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: FeaturedCampaignCard(
                 data: items[index],
                 saved: saved.contains(items[index].id),

@@ -489,11 +489,12 @@ class _IgButtonState extends State<_IgButton> {
         duration: const Duration(milliseconds: 100),
         opacity: _pressed ? 0.5 : 1.0,
         child: Container(
-          height: 32,
+          height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppColors.surfaceAlt,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border, width: 0.5),
           ),
           child: Text(
             widget.label,
@@ -533,11 +534,12 @@ class _IgIconButtonState extends State<_IgIconButton> {
         duration: const Duration(milliseconds: 100),
         opacity: _pressed ? 0.5 : 1.0,
         child: Container(
-          width: 32,
-          height: 32,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: AppColors.surfaceAlt,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border, width: 0.5),
           ),
           alignment: Alignment.center,
           child: Icon(widget.icon, size: 18, color: AppColors.textPrimary),
@@ -677,7 +679,7 @@ class _TabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 44,
-      color: Colors.white,
+      color: AppColors.background, // match sand dune background
       child: Row(
         children: [
           _tabIcon(context, Iconsax.category, active: true),
