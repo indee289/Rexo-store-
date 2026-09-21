@@ -46,17 +46,17 @@ class AppColors {
   static const Color info    = primary;
 
   // ── Instagram Light surfaces ───────────────────────────────────────────────
-  /// IG background — pure white always.
-  static const Color background  = Color(0xFFFFFFFF);
-  /// Card/cell surface — same white.
+  /// App background — Sand Dune warm off-white for premium feel.
+  static const Color background  = Color(0xFFF0EDE5); // SAND DUNE
+  /// Card/cell surface — pure white cards float on the sand background.
   static const Color surface     = Color(0xFFFFFFFF);
   static const Color card        = Color(0xFFFFFFFF);
-  /// Secondary fill for inputs/chips — IG's very light gray.
-  static const Color surfaceAlt  = Color(0xFFEFEFEF); // IG input bg
-  /// IG hairline separator.
-  static const Color border      = Color(0xFFDBDBDB); // IG hairline
-  static const Color divider     = Color(0xFFEFEFEF);
-  static const Color separator   = Color(0xFFDBDBDB);
+  /// Secondary fill for inputs/chips — slightly warmer gray.
+  static const Color surfaceAlt  = Color(0xFFE8E5DD); // warm sand input bg
+  /// Hairline separator — slightly warmer.
+  static const Color border      = Color(0xFFDBD8D0); // warm hairline
+  static const Color divider     = Color(0xFFE8E5DD);
+  static const Color separator   = Color(0xFFDBD8D0);
   /// Gray family (mostly for compat).
   static const Color systemGray  = Color(0xFF8E8E8E);
   static const Color systemGray2 = Color(0xFFA8A8A8);
@@ -72,7 +72,7 @@ class AppColors {
   static const Color darkSurfaceAlt    = surfaceAlt;
   static const Color darkBorder        = border;
   static const Color darkDivider       = divider;
-  static const Color darkTextPrimary   = Color(0xFF000000);
+  static const Color darkTextPrimary   = Color(0xFF1A1A1A);
   static const Color darkTextSecondary = Color(0xFF737373);
   static const Color darkTextHint      = Color(0xFFA8A8A8);
 

@@ -43,8 +43,8 @@ class AppBottomNav extends StatelessWidget {
           child: Container(
             height: 60,
             decoration: BoxDecoration(
-              // Semi-transparent white — frosted glass effect
-              color: Colors.white.withOpacity(0.85),
+              // Semi-transparent warm white — frosted glass on sand dune bg
+              color: const Color(0xFFFAF8F3).withOpacity(0.88),
               borderRadius: AppRadius.pillAll,
               border: Border.all(
                 color: AppColors.border.withOpacity(0.5),

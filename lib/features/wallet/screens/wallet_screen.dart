@@ -111,143 +111,99 @@ class WalletScreen extends ConsumerWidget {
     final escrow = (wallet?['escrow_balance'] ?? 0).toDouble();
     final earnings = (wallet?['total_earnings'] ?? 0).toDouble();
 
+    // Clean white card floating on Sand Dune background.
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.heroGradient,
+        color: Colors.white,
         borderRadius: AppRadius.allXl,
+        border: Border.all(color: AppColors.border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // "Total balance" label
+          Text(
+            'Total balance',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Big balance number
+          Text(
+            '₹${_formatAmount(available)}',
+            style: const TextStyle(
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              height: 1.1,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 1,
+          ),
+          const SizedBox(height: 20),
+
+          // Escrow + Earnings row — two stat pills side by side
           Row(
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.18),
-                  borderRadius: AppRadius.allSm,
+              Expanded(
+                child: _WalletStatPill(
+                  icon: Iconsax.lock,
+                  label: 'Escrow',
+                  value: '₹${_formatAmount(escrow)}',
+                  color: AppColors.primary,
                 ),
-                child: const Icon(Iconsax.wallet_2,
-                    size: 18, color: Colors.white),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              const Expanded(
-                child: Text(
-                  'Total balance',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white70,
-                    letterSpacing: 0.2,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _WalletStatPill(
+                  icon: Iconsax.money_recive,
+                  label: 'Earnings',
+                  value: '₹${_formatAmount(earnings)}',
+                  color: AppColors.accentGreen,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          // Use content-driven height with maxLines + overflow instead of
-          // FittedBox.scaleDown which aggressively shrinks fonts at large text scale.
-          Text(
-            '₹${_formatAmount(available)}',
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              height: 1.05,
-            ),
-            maxLines: 1,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: AppRadius.allMd,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _BalanceStat(
-                      icon: Iconsax.lock,
-                      label: 'Escrow',
-                      value: '₹${_formatAmount(escrow)}'),
-                ),
-                Container(
-                  width: 1,
-                  height: 34,
-                  color: Colors.white.withOpacity(0.18),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: _BalanceStat(
-                      icon: Iconsax.money_recive,
-                      label: 'Earnings',
-                      value: '₹${_formatAmount(earnings)}'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          // Deposit / Withdraw actions. On comfortable widths they sit
-          // side by side; on very narrow phones (or at the largest text
-          // scale) they stack full-width so the 'Withdraw' label is never
-          // clipped to 'Withdr...'. No fixed pixel width, no shrunken font.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final depositBtn = PremiumButton(
-                label: 'Deposit',
-                variant: PremiumButtonVariant.glass,
-                icon: Iconsax.money_add,
-                onPressed: () => context.push('/wallet/deposit'),
-              );
-              final withdrawBtn = PremiumButton(
-                label: 'Withdraw',
-                variant: PremiumButtonVariant.glass,
-                icon: Iconsax.money_send,
-                onPressed: () => context.push('/wallet/withdraw'),
-              );
+          const SizedBox(height: 18),
 
-              // Estimate the width one button needs for its icon + full
-              // 'Withdraw' label at the current text scale. If two buttons
-              // plus the gap don't fit, stack them.
-              final scale = MediaQuery.textScalerOf(context).scale(15);
-              final estButtonWidth = 32 + 18 + 8 + ('Withdraw'.length * scale * 0.62);
-              final fitsSideBySide =
-                  constraints.maxWidth >= (estButtonWidth * 2) + 12;
-
-              if (fitsSideBySide) {
-                return Row(
-                  children: [
-                    Expanded(child: depositBtn),
-                    const SizedBox(width: 12),
-                    Expanded(child: withdrawBtn),
-                  ],
-                );
-              }
-              return Column(
-                children: [
-                  depositBtn,
-                  const SizedBox(height: 12),
-                  withdrawBtn,
-                ],
-              );
-            },
+          // Deposit + Withdraw — ALWAYS horizontal, equal width
+          Row(
+            children: [
+              Expanded(
+                child: _WalletActionButton(
+                  label: 'Deposit',
+                  icon: Iconsax.money_add,
+                  filled: true,
+                  onTap: () => context.push('/wallet/deposit'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _WalletActionButton(
+                  label: 'Withdraw',
+                  icon: Iconsax.money_send,
+                  filled: false,
+                  onTap: () => context.push('/wallet/withdraw'),
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
       ),
     );
   }
@@ -399,55 +355,134 @@ class WalletScreen extends ConsumerWidget {
   }
 }
 
-/// Compact stat cell shown on the gradient balance card (Escrow / Earnings).
-class _BalanceStat extends StatelessWidget {
+/// Compact stat pill shown on the balance card (Escrow / Earnings).
+class _WalletStatPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final Color color;
 
-  const _BalanceStat({
+  const _WalletStatPill({
     required this.icon,
     required this.label,
     required this.value,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 14, color: Colors.white70),
-            const SizedBox(width: AppSpacing.xs),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: AppRadius.allMd,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Wallet action button — filled (blue) or outlined (bordered).
+class _WalletActionButton extends StatefulWidget {
+  final String label;
+  final IconData icon;
+  final bool filled;
+  final VoidCallback onTap;
+
+  const _WalletActionButton({
+    required this.label,
+    required this.icon,
+    required this.filled,
+    required this.onTap,
+  });
+
+  @override
+  State<_WalletActionButton> createState() => _WalletActionButtonState();
+}
+
+class _WalletActionButtonState extends State<_WalletActionButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.7 : 1.0,
+        child: Container(
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: widget.filled ? AppColors.primary : Colors.white,
+            borderRadius: AppRadius.allMd,
+            border: widget.filled
+                ? null
+                : Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                widget.icon,
+                size: 18,
+                color: widget.filled
+                    ? Colors.white
+                    : AppColors.textPrimary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: widget.filled
+                      ? Colors.white
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
