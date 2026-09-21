@@ -587,7 +587,6 @@ class _CampaignDetailScrollView extends StatelessWidget {
               ],
             ),
           ),
-        ),
       );
     }
 
