@@ -267,20 +267,20 @@ class ProfileScreen extends ConsumerWidget {
           error: (_, __) => '0',
         );
 
-    final divider = Container(
-      width: 1,
-      height: 28,
-      color: Theme.of(context).dividerColor,
-    );
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Expanded(child: _StatCol(label: 'Campaigns', value: fmt(campaignsAsync))),
-        divider,
-        Expanded(child: _StatCol(label: 'Followers', value: fmt(followersAsync))),
-        divider,
-        Expanded(child: _StatCol(label: 'Following', value: fmt(followingAsync))),
+        Expanded(
+          child: _StatColBig(label: 'Campaigns', value: fmt(campaignsAsync)),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: _StatColBig(label: 'Followers', value: fmt(followersAsync)),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: _StatColBig(label: 'Following', value: fmt(followingAsync)),
+        ),
       ],
     );
   }
@@ -390,47 +390,44 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _StatCol extends StatelessWidget {
+class _StatColBig extends StatelessWidget {
   final String label;
   final String value;
-  const _StatCol({required this.label, required this.value});
+  const _StatColBig({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    // Each stat lives inside a bounded Expanded column. FittedBox keeps the
-    // value + label within their own width so a long label ('Campaigns',
-    // 'Following') can never cross the divider into the next stat, even at
-    // the largest allowed text scale.
+    // Each stat lives inside a bounded Expanded column. No FittedBox.scaleDown
+    // so labels never shrink aggressively. Use maxLines + overflow to contain
+    // within the column width, with the divider between columns preventing
+    // label bleed at any font/display size.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              maxLines: 1,
-              softWrap: false,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: cs.onSurface,
-              ),
+          Text(
+            value,
+            maxLines: 1,
+            softWrap: false,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              softWrap: false,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+          Text(
+            label,
+            maxLines: 1,
+            softWrap: false,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: cs.onSurfaceVariant,
             ),
           ),
         ],
