@@ -2,6 +2,8 @@ name: Flutter Build
 
 on:
   push:
+    branches: [Rexo-Kotlin, Rexo-Kotlin-ui-refresh, main]
+  pull_request:
     branches: [Rexo-Kotlin, main]
   workflow_dispatch:
 
