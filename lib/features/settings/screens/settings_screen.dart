@@ -105,7 +105,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push('/settings/two-factor'),
               ),
               _SettingsItem(
-                icon: Iconsax.monitor_mobbile,
+                icon: Iconsax.monitor,
                 title: 'Active Sessions',
                 subtitle: 'Manage active sessions',
                 onTap: () => context.push('/sessions'),
