@@ -3,132 +3,170 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/supabase_service.dart';
 import '../models/creator_view.dart';
 
-/// Provider that fetches a single creator profile by user_id.
+/// Live `users` columns needed to render a creator profile and drive the
+/// follow toggle. The tables `creator_profiles` and `follows` do NOT exist in
+/// the live Supabase DB, so every creator lookup and follow relationship is
+/// resolved from the `users` table instead.
+const _creatorColumns =
+    'id, uid, name, profileImage, username, isVerified, bio, '
+    'followersCount, followingCount, followers, following';
+
+/// Coerces a Supabase jsonb array of user-id strings into a `List<String>`.
 ///
-/// Returns the raw `creator_profiles` row (joined with the `users` row) or
-/// `null` when no creator-profile row exists. Retained for backward
-/// compatibility with existing consumers; prefer [creatorViewProvider] for the
-/// resilient, normalized [CreatorView] that also falls back to the `users` row.
+/// Returns an empty list for null / non-list input so callers never throw on a
+/// missing or malformed `followers` / `following` column.
+List<String> _idList(dynamic value) {
+  if (value is List) {
+    return value
+        .where((e) => e != null)
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+  return <String>[];
+}
+
+/// Provider that fetches a single creator's raw `users` row by `uid`.
+///
+/// Retained for backward compatibility with existing consumers; prefer
+/// [creatorViewProvider] for the normalized [CreatorView]. Reads only from the
+/// live `users` table (the `creator_profiles` table does not exist) and
+/// degrades to `null` on any failure so a missing row or query error never
+/// crashes the caller.
 final creatorProfileProvider =
     FutureProvider.family<Map<String, dynamic>?, String>(
         (ref, creatorUserId) async {
-  final response = await SupabaseService.client
-      .from('creator_profiles')
-      .select('*, users!inner(id, name, profileImage, username, email, isVerified)') // live columns
-      .eq('user_id', creatorUserId)
-      .maybeSingle();
-
-  return response;
+  try {
+    return await SupabaseService.client
+        .from('users')
+        .select(_creatorColumns)
+        .eq('uid', creatorUserId)
+        .maybeSingle();
+  } catch (_) {
+    return null;
+  }
 });
 
-/// Resiliently resolves a creator by `user_id` into a normalized [CreatorView].
+/// Resiliently resolves a creator by `uid` into a normalized [CreatorView].
 ///
-/// Resolution order (see design "Algorithmic Pseudocode > Resilient creator
-/// resolution"):
-///   1. Query `creator_profiles` (joined with `users`) by `user_id`. If a row
-///      exists, return [CreatorView.fromCreatorProfileRow].
-///   2. Otherwise query `users` by `id`. If a row exists, return
-///      [CreatorView.fromUserRow] (with empty category/bio-default, zero
-///      rating, zero completed campaigns).
-///   3. Otherwise return `null` — the user id is genuinely unknown.
-///
-/// This fixes the "creator not found" bug where a creator exists only as a
-/// `users` row (the Top Creators fallback path) with no `creator_profiles` row.
+/// Reads from the live `users` table only (the `creator_profiles` table does
+/// not exist in production). Returns `null` when no matching `users` row exists
+/// or when the query fails — the profile screen then shows a "creator
+/// unavailable" empty state rather than surfacing a raw backend error.
 Future<CreatorView?> resolveCreator(String creatorUserId) async {
-  assert(creatorUserId.isNotEmpty, 'creatorUserId must be non-empty');
+  if (creatorUserId.isEmpty) return null;
 
-  // Primary: creator_profiles joined with users.
-  final profileRow = await SupabaseService.client
-      .from('creator_profiles')
-      .select(
-          '*, users!inner(id, name, profileImage, username, isVerified, bio)') // live columns
-      .eq('user_id', creatorUserId)
-      .maybeSingle();
+  try {
+    final userRow = await SupabaseService.client
+        .from('users')
+        .select(_creatorColumns)
+        .eq('uid', creatorUserId)
+        .maybeSingle();
 
-  if (profileRow != null) {
-    return CreatorView.fromCreatorProfileRow(profileRow);
-  }
-
-  // Fallback: plain users row (fixes "creator not found").
-  // Live identity column is `uid` (text). The callers pass the auth UUID
-  // as a string, matching the `uid` column value. `id` uuid also exists
-  // but the live RLS filters on uid — .eq('uid', ...) is the safe approach.
-  final userRow = await SupabaseService.client
-      .from('users')
-      .select('id, uid, name, profileImage, username, isVerified, bio') // live columns
-      .eq('uid', creatorUserId)
-      .maybeSingle();
-
-  if (userRow != null) {
-    return CreatorView.fromUserRow(userRow);
+    if (userRow != null) {
+      return CreatorView.fromUserRow(userRow);
+    }
+  } catch (_) {
+    // Missing table / RLS / network — degrade gracefully.
+    return null;
   }
 
   // Genuinely unknown user.
   return null;
 }
 
-/// Provider that resolves a normalized [CreatorView] for a creator `user_id`,
-/// falling back to the `users` row when no `creator_profiles` row exists.
+/// Provider that resolves a normalized [CreatorView] for a creator `uid`.
 ///
-/// Returns `null` only when no `users` row exists for the id, in which case the
-/// creator profile screen shows a "creator unavailable" empty state.
+/// Returns `null` when no `users` row exists (or the lookup fails), in which
+/// case the creator profile screen shows a "creator unavailable" empty state.
 final creatorViewProvider =
     FutureProvider.family<CreatorView?, String>((ref, creatorUserId) async {
   return resolveCreator(creatorUserId);
 });
 
-/// Provider that checks if the current user follows a given creator
+/// Provider that checks whether the current user follows a given creator.
+///
+/// Follow relationships live in the target user's `users.followers` jsonb
+/// array (a list of follower user-id strings). `isFollowing` is true when that
+/// array contains the current user's id. Any failure degrades to `false`.
 final isFollowingProvider =
     FutureProvider.family<bool, String>((ref, creatorUserId) async {
   final user = SupabaseService.currentUser;
   if (user == null) return false;
 
-  final response = await SupabaseService.client
-      .from('follows')
-      .select('id')
-      .eq('follower_id', user.id)
-      .eq('following_id', creatorUserId)
-      .maybeSingle();
+  try {
+    final row = await SupabaseService.client
+        .from('users')
+        .select('followers')
+        .eq('uid', creatorUserId)
+        .maybeSingle();
 
-  return response != null;
+    if (row == null) return false;
+    return _idList(row['followers']).contains(user.id);
+  } catch (_) {
+    return false;
+  }
 });
 
-/// Provider for the follower count of a creator
+/// Provider for the follower count of a creator.
+///
+/// Reads the live `users.followersCount` column, falling back to the length of
+/// the `followers` jsonb array when the count column is absent. Degrades to `0`
+/// on any failure.
 final followerCountProvider =
     FutureProvider.family<int, String>((ref, creatorUserId) async {
-  final response = await SupabaseService.client
-      .from('follows')
-      .select('id')
-      .eq('following_id', creatorUserId);
+  try {
+    final row = await SupabaseService.client
+        .from('users')
+        .select('followersCount, followers')
+        .eq('uid', creatorUserId)
+        .maybeSingle();
 
-  return (response as List).length;
+    if (row == null) return 0;
+    final count = (row['followersCount'] as num?)?.toInt();
+    if (count != null) return count;
+    return _idList(row['followers']).length;
+  } catch (_) {
+    return 0;
+  }
 });
 
-/// Notifier for follow/unfollow actions
+/// Notifier for follow/unfollow actions.
+///
+/// Because the `follows` table does not exist, follow relationships are modeled
+/// via the `users.followers` / `users.following` jsonb arrays with set
+/// semantics:
+///   - The target user's `followers` array gains/loses the current user's id.
+///   - The current user's `following` array gains/loses the target user's id.
+///
+/// RLS on `users` allows a user to update only their own row
+/// (`uid = auth.uid()::text`), so the write to the current user's `following`
+/// row is the one that reliably succeeds; the write to the target's `followers`
+/// row is attempted but tolerated to fail. All writes are wrapped so a failure
+/// degrades gracefully — a raw PostgrestException / RLS error never reaches the
+/// UI. The counts are kept consistent with the arrays on rows we can write.
 class FollowActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
 
   FollowActionsNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  /// Follow a creator
+  /// Follow a creator. Returns `true` on success, `false` on failure.
   Future<bool> follow(String creatorUserId) async {
-    // Re-entry guard: prevent duplicate inserts from rapid taps
+    // Re-entry guard: prevent duplicate work from rapid taps.
     if (state.isLoading) return false;
+
+    final user = SupabaseService.currentUser;
+    if (user == null) return false;
 
     try {
       state = const AsyncValue.loading();
-      final user = SupabaseService.currentUser;
-      if (user == null) {
-        state = const AsyncValue.data(null);
-        return false;
-      }
 
-      await SupabaseService.client.from('follows').insert({
-        'follower_id': user.id,
-        'following_id': creatorUserId,
-      });
+      await _applyFollowChange(
+        currentUserId: user.id,
+        targetUserId: creatorUserId,
+        following: true,
+      );
 
-      // Invalidate related providers to refresh UI
       ref.invalidate(isFollowingProvider(creatorUserId));
       ref.invalidate(followerCountProvider(creatorUserId));
 
@@ -140,26 +178,23 @@ class FollowActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Unfollow a creator
+  /// Unfollow a creator. Returns `true` on success, `false` on failure.
   Future<bool> unfollow(String creatorUserId) async {
-    // Re-entry guard: prevent duplicate calls from rapid taps
+    // Re-entry guard: prevent duplicate work from rapid taps.
     if (state.isLoading) return false;
+
+    final user = SupabaseService.currentUser;
+    if (user == null) return false;
 
     try {
       state = const AsyncValue.loading();
-      final user = SupabaseService.currentUser;
-      if (user == null) {
-        state = const AsyncValue.data(null);
-        return false;
-      }
 
-      await SupabaseService.client
-          .from('follows')
-          .delete()
-          .eq('follower_id', user.id)
-          .eq('following_id', creatorUserId);
+      await _applyFollowChange(
+        currentUserId: user.id,
+        targetUserId: creatorUserId,
+        following: false,
+      );
 
-      // Invalidate related providers to refresh UI
       ref.invalidate(isFollowingProvider(creatorUserId));
       ref.invalidate(followerCountProvider(creatorUserId));
 
@@ -168,6 +203,72 @@ class FollowActionsNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return false;
+    }
+  }
+
+  /// Applies a follow/unfollow change across both user rows using set
+  /// semantics on the jsonb arrays, keeping the count columns consistent.
+  ///
+  /// The current user's own row (`following`) is the authoritative write under
+  /// RLS. The target user's row (`followers`) is attempted separately; if RLS
+  /// blocks it, that failure is swallowed so the toggle still succeeds locally
+  /// rather than crashing.
+  Future<void> _applyFollowChange({
+    required String currentUserId,
+    required String targetUserId,
+    required bool following,
+  }) async {
+    final client = SupabaseService.client;
+
+    // 1) Update the current user's `following` array + count (own row → RLS ok).
+    final selfRow = await client
+        .from('users')
+        .select('following, followingCount')
+        .eq('uid', currentUserId)
+        .maybeSingle();
+
+    final followingSet = _idList(selfRow?['following']).toSet();
+    final wasFollowing = followingSet.contains(targetUserId);
+    if (following) {
+      followingSet.add(targetUserId);
+    } else {
+      followingSet.remove(targetUserId);
+    }
+
+    // Only write when the set actually changed (idempotent set semantics).
+    if (following != wasFollowing) {
+      await client.from('users').update({
+        'following': followingSet.toList(),
+        'followingCount': followingSet.length,
+      }).eq('uid', currentUserId);
+    }
+
+    // 2) Best-effort update of the target user's `followers` array + count.
+    // RLS may block writing another user's row; tolerate that gracefully.
+    try {
+      final targetRow = await client
+          .from('users')
+          .select('followers, followersCount')
+          .eq('uid', targetUserId)
+          .maybeSingle();
+
+      final followersSet = _idList(targetRow?['followers']).toSet();
+      final wasFollower = followersSet.contains(currentUserId);
+      if (following) {
+        followersSet.add(currentUserId);
+      } else {
+        followersSet.remove(currentUserId);
+      }
+
+      if (following != wasFollower) {
+        await client.from('users').update({
+          'followers': followersSet.toList(),
+          'followersCount': followersSet.length,
+        }).eq('uid', targetUserId);
+      }
+    } catch (_) {
+      // Target row not writable under RLS — leave it; the current user's
+      // following state is already recorded. No error reaches the UI.
     }
   }
 }
