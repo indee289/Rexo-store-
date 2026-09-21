@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../icons/app_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
-import '../theme/app_motion.dart';
 
-/// Premium empty state with a self-contained, asset-free "illustration":
-/// an oversized duotone icon inside a soft gradient circle that gently
-/// floats + scales in a continuous loop (pure Flutter animation — no Lottie
-/// assets required). One reusable widget used across the whole app.
+/// Modern empty state — "hero card" design.
+///
+/// Instead of the classic centered illustration, this shows a large tilted
+/// rounded-square icon tile with layered gradient shadows, a big bold title,
+/// a two-line subtitle, and an optional pill-shaped CTA. Uses gentle rotation
+/// + scale animation for subtle life.
 class EmptyState extends StatefulWidget {
   final IconData icon;
   final String title;
@@ -30,7 +30,10 @@ class EmptyState extends StatefulWidget {
     this.onCta,
     this.ctaIcon,
     this.cta,
-    this.padding = const EdgeInsets.all(AppSpacing.xl),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.xl,
+      vertical: AppSpacing.xxl,
+    ),
   });
 
   @override
@@ -40,7 +43,7 @@ class EmptyState extends StatefulWidget {
 class _EmptyStateState extends State<EmptyState>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _float;
+  late final Animation<double> _rotation;
   late final Animation<double> _scale;
 
   @override
@@ -48,12 +51,12 @@ class _EmptyStateState extends State<EmptyState>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 3200),
     )..repeat(reverse: true);
-    _float = Tween<double>(begin: -6, end: 6).animate(
+    _rotation = Tween<double>(begin: -0.04, end: 0.04).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-    _scale = Tween<double>(begin: 0.97, end: 1.03).animate(
+    _scale = Tween<double>(begin: 0.98, end: 1.02).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -68,7 +71,7 @@ class _EmptyStateState extends State<EmptyState>
   Widget build(BuildContext context) {
     final Widget? ctaWidget = widget.cta ??
         ((widget.ctaLabel != null && widget.onCta != null)
-            ? _CtaButton(
+            ? _PillCta(
                 label: widget.ctaLabel!,
                 icon: widget.ctaIcon,
                 onPressed: widget.onCta!,
@@ -82,69 +85,115 @@ class _EmptyStateState extends State<EmptyState>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // Big tilted icon tile
             AnimatedBuilder(
               animation: _controller,
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, _float.value),
+              builder: (context, child) => Transform.rotate(
+                angle: _rotation.value,
                 child: Transform.scale(scale: _scale.value, child: child),
               ),
-              child: Container(
-                width: 108,
-                height: 108,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withOpacity(0.18),
-                      AppColors.primary.withOpacity(0.06),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: AppColors.primaryGradient,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.35),
-                        blurRadius: 22,
-                        offset: const Offset(0, 10),
-                        spreadRadius: -6,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Layered soft shadow blob behind
+                  Positioned(
+                    top: 24,
+                    left: 24,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary.withOpacity(0.10),
                       ),
-                    ],
+                    ),
                   ),
-                  child: Icon(widget.icon, size: 34, color: Colors.white),
-                ),
+                  // Big rounded-square icon tile
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF34D399),
+                          Color(0xFF10B981),
+                          Color(0xFF059669),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.35),
+                          blurRadius: 30,
+                          offset: const Offset(0, 16),
+                          spreadRadius: -8,
+                        ),
+                        BoxShadow(
+                          color: AppColors.primaryDark.withOpacity(0.25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      widget.icon,
+                      size: 52,
+                      color: Colors.white,
+                    ),
+                  ),
+                  // Highlight dot top-right for depth
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.35),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: 32),
+
+            // Title
             Text(
               widget.title,
               textAlign: TextAlign.center,
-              style: AppTextStyles.h6.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
+              style: AppTextStyles.title2.copyWith(
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: -0.3,
               ),
             ),
+
+            // Subtitle
             if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                widget.subtitle!,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  widget.subtitle!,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.callout.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.45,
+                  ),
                 ),
               ),
             ],
+
+            // CTA
             if (ctaWidget != null) ...[
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: 28),
               ctaWidget,
             ],
           ],
@@ -154,22 +203,23 @@ class _EmptyStateState extends State<EmptyState>
   }
 }
 
-class _CtaButton extends StatefulWidget {
+/// Pill-shaped CTA button — full rounded, gradient background, layered glow.
+class _PillCta extends StatefulWidget {
   final String label;
   final IconData? icon;
   final VoidCallback onPressed;
 
-  const _CtaButton({
+  const _PillCta({
     required this.label,
     required this.onPressed,
     this.icon,
   });
 
   @override
-  State<_CtaButton> createState() => _CtaButtonState();
+  State<_PillCta> createState() => _PillCtaState();
 }
 
-class _CtaButtonState extends State<_CtaButton> {
+class _PillCtaState extends State<_PillCta> {
   bool _pressed = false;
 
   @override
@@ -181,23 +231,27 @@ class _CtaButtonState extends State<_CtaButton> {
       onTapCancel: () => setState(() => _pressed = false),
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: AppMotion.fast,
-        curve: AppMotion.standard,
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
+            horizontal: 28,
+            vertical: 14,
           ),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: AppRadius.allMd,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF059669)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: AppRadius.pillAll,
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.35),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-                spreadRadius: -2,
+                color: AppColors.primary.withOpacity(0.40),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+                spreadRadius: -4,
               ),
             ],
           ),
@@ -206,14 +260,13 @@ class _CtaButtonState extends State<_CtaButton> {
             children: [
               if (widget.icon != null) ...[
                 Icon(widget.icon, size: 18, color: Colors.white),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: 8),
               ],
               Text(
                 widget.label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.headline.copyWith(
                   color: Colors.white,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
