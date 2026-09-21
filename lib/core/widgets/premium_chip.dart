@@ -1,42 +1,22 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
-import '../theme/app_glass.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-/// A premium, iOS-style filter / selection chip (Layer-2 primitive).
+/// iOS-style filter / selection chip.
 ///
-/// Replaces `Chip` and the ad-hoc filter chips scattered across feature
-/// screens. It renders a frosted, translucent pill (consistent with the
-/// [AppGlass] tokens) so the UI reads as clean and glassy in both light and
-/// dark themes:
+/// A pill-shaped button with:
+///   * **Unselected** – system-gray filled pill with primary label
+///   * **Selected**   – tinted emerald pill with the accent as text/icon
 ///
-///   * **Unselected** – a subtle frosted-glass fill with a hairline rim.
-///   * **Selected** – a primary-tinted translucent fill with a primary rim and
-///     primary-colored label/icon.
-///
-/// Optional affordances:
-///   * a leading Iconsax [icon],
-///   * a trailing [count] badge (e.g. the number of items in a filter).
-///
-/// The chip is fully token-driven (no raw color literals, no inline fonts).
-class PremiumChip extends StatelessWidget {
-  /// The chip label.
+/// Optional leading [icon] and trailing [count] badge supported.
+class PremiumChip extends StatefulWidget {
   final String label;
-
-  /// Whether the chip is in its selected state.
   final bool selected;
-
-  /// Optional leading icon. Prefer an `Iconsax.*` glyph.
   final IconData? icon;
-
-  /// Optional trailing count badge. When null, no badge is rendered.
   final int? count;
-
-  /// Tap handler. When null the chip renders but does not react to taps.
   final VoidCallback? onTap;
 
   const PremiumChip({
@@ -49,76 +29,70 @@ class PremiumChip extends StatelessWidget {
   });
 
   @override
+  State<PremiumChip> createState() => _PremiumChipState();
+}
+
+class _PremiumChipState extends State<PremiumChip> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final primary = theme.colorScheme.primary;
-
-    // Frosted fill + rim derived from the glass tokens. When selected we tint
-    // the frosted surface with the brand primary so it reads as "active"
-    // without becoming a flat, opaque Material chip.
-    final Color fill = selected
-        ? primary.withOpacity(isDark ? 0.24 : 0.14)
-        : AppGlass.button(isDark);
-    final Color rim =
-        selected ? primary.withOpacity(0.60) : AppGlass.border(isDark);
+    final Color fill = widget.selected
+        ? AppColors.primaryBg
+        : AppColors.surfaceAlt;
     final Color foreground =
-        selected ? primary : theme.colorScheme.onSurface.withOpacity(0.75);
+        widget.selected ? AppColors.primaryDeep : AppColors.textPrimary;
 
-    final chip = ClipRRect(
-      borderRadius: AppRadius.pillAll,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: AppGlass.blurSigmaSubtle,
-          sigmaY: AppGlass.blurSigmaSubtle,
-        ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+    final chip = AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md + 2,
+        vertical: AppSpacing.sm + 1,
+      ),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: AppRadius.pillAll,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.icon != null) ...[
+            Icon(widget.icon, size: 15, color: foreground),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            widget.label,
+            style: AppTextStyles.footnote.copyWith(
+              color: foreground,
+              fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
+            ),
           ),
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: AppRadius.pillAll,
-            border: Border.all(color: rim, width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16, color: foreground),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              Text(
-                label,
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: foreground,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-              if (count != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                _CountBadge(count: count!, selected: selected),
-              ],
-            ],
-          ),
-        ),
+          if (widget.count != null) ...[
+            const SizedBox(width: 6),
+            _CountBadge(count: widget.count!, selected: widget.selected),
+          ],
+        ],
       ),
     );
 
-    if (onTap == null) return chip;
+    if (widget.onTap == null) return chip;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
       behavior: HitTestBehavior.opaque,
-      child: chip,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.6 : 1.0,
+        child: chip,
+      ),
     );
   }
 }
 
-/// Small trailing count badge used inside [PremiumChip].
 class _CountBadge extends StatelessWidget {
   final int count;
   final bool selected;
@@ -127,12 +101,9 @@ class _CountBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-
     final Color bg =
-        selected ? primary : theme.colorScheme.onSurface.withOpacity(0.10);
-    final Color fg = selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
+        selected ? AppColors.primary : AppColors.systemGray4;
+    final Color fg = Colors.white;
 
     return Container(
       constraints: const BoxConstraints(minWidth: 18),
@@ -145,9 +116,9 @@ class _CountBadge extends StatelessWidget {
       child: Text(
         '$count',
         textAlign: TextAlign.center,
-        style: AppTextStyles.labelSmall.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: fg,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
