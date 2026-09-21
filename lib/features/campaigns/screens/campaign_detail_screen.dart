@@ -587,9 +587,9 @@ class _CampaignDetailScrollView extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      );
-    }
+      ),
+    );
+  }
 
   static List<String> _hashtagsFrom(dynamic raw) {
     if (raw == null) return const [];
