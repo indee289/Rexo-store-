@@ -387,33 +387,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  // Instagram-style small gray uppercase section header with generous
+  // top-spacing so groups feel visually separated (fixes 'chipke huye' issue).
   Widget _sectionLabel(String label, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 10),
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color ?? _textHint,
-          letterSpacing: 0.8,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color ?? AppColors.textSecondary,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
+  // Instagram flat list group — hairline top+bottom borders, white fill.
+  // No boxed card look; each item is separated by an inset hairline divider
+  // so the list breathes like Instagram's Settings screen.
   Widget _settingsCard(List<Widget> children) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: AppRadius.allLg,
-          border: Border.all(color: _borderColor),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.border, width: 0.5),
+          bottom: BorderSide(color: AppColors.border, width: 0.5),
         ),
-        child: Column(children: children),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (int i = 0; i < children.length; i++) ...[
+            if (i > 0)
+              const Padding(
+                padding: EdgeInsets.only(left: 68),
+                child: Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: AppColors.border,
+                ),
+              ),
+            children[i],
+          ],
+        ],
       ),
     );
   }
@@ -525,32 +543,31 @@ Widget _item(
     Widget? trailing,
     required VoidCallback onTap,
   }) {
+    // Instagram-flat list item — no internal border (parent _settingsCard
+    // draws inset dividers), 14px vertical padding for generous breathing
+    // room, 40px colored-icon tile leading, subtle chevron trailing.
     return Material(
-      color: Colors.transparent,
+      color: Colors.white,
       child: InkWell(
         onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: AppColors.surfaceAlt,
         child: Container(
-          // Use constraints + padding instead of fixed height so the row grows
-          // with the system font scale instead of clipping text.
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: _dividerColor, width: 1),
-            ),
-          ),
+          constraints: const BoxConstraints(minHeight: 60),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
-                  borderRadius: AppRadius.allSm,
+                  color: iconColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                alignment: Alignment.center,
                 child: Icon(icon, size: 18, color: iconColor),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,21 +575,23 @@ Widget _item(
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: const TextStyle(
+                        fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: _textPrimary,
+                        color: AppColors.textPrimary,
+                        height: 1.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _textSecondary,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          height: 1.25,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -582,18 +601,15 @@ Widget _item(
                 ),
               ),
               const SizedBox(width: 8),
-              // Trailing element lives outside the Expanded text column so it
-              // never overlaps the title/subtitle. Use flexible width so it scales
-              // with font size and doesn't cause horizontal overflow on narrow phones.
               trailing ??
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.sizeOf(context).width * 0.28,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Iconsax.arrow_right_3,
                       size: 18,
-                      color: _textHint,
+                      color: AppColors.textHint,
                     ),
                   ),
             ],
@@ -612,27 +628,24 @@ Widget _item(
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    // Instagram-flat switch row — no internal border, matches _item spacing.
     return Container(
-      // Use constraints + padding instead of fixed height so the row grows
-      // with the system font scale instead of clipping text.
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border(
-            bottom: BorderSide(color: _dividerColor, width: 1)),
-      ),
+      constraints: const BoxConstraints(minHeight: 60),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
-              borderRadius: AppRadius.allSm,
+              color: iconColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(8),
             ),
+            alignment: Alignment.center,
             child: Icon(icon, size: 18, color: iconColor),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -640,20 +653,22 @@ Widget _item(
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: const TextStyle(
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: _textPrimary,
+                    color: AppColors.textPrimary,
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _textSecondary,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.25,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -661,7 +676,7 @@ Widget _item(
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           AppToggle(value: value, onChanged: onChanged),
         ],
       ),

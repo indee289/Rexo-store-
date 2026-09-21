@@ -10,17 +10,15 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../notifications/providers/notifications_provider.dart';
 import '../../messages/providers/messages_provider.dart';
-import '../../profile/providers/profile_provider.dart';
 import '../providers/banners_provider.dart';
 import '../providers/home_provider.dart';
 import '../widgets/featured_campaign_card.dart';
 
-/// Instagram-style Home feed.
+/// Instagram-style Home feed — no stories row.
 ///
-/// Top: white app bar with the 'Rexo' logo left-aligned + notification/inbox
-/// icons right. Then: horizontal 'Stories' row of banner/campaign highlights
-/// (with the iconic story-ring gradient around each avatar). Then: vertical
-/// feed of featured campaign cards, Instagram post-style.
+/// Top: 'Rexo' logo left-aligned + wallet/heart/DM icons right, hairline
+/// separator, banner carousel (admin-managed), and a vertical feed of
+/// featured campaign cards.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -42,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
               // Sticky Instagram-style header
               const SliverToBoxAdapter(child: _IgHeader()),
 
-              // Hairline separator
+              // Hairline separator under header
               const SliverToBoxAdapter(
                 child: Divider(
                   height: 0.5,
@@ -51,16 +49,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Stories row
-              const SliverToBoxAdapter(child: _StoriesRow()),
-
-              const SliverToBoxAdapter(
-                child: Divider(
-                  height: 0.5,
-                  thickness: 0.5,
-                  color: AppColors.border,
-                ),
-              ),
+              // Banner carousel (admin-managed banners)
+              const SliverToBoxAdapter(child: _BannerCarousel()),
 
               // Feed
               _FeedList(),
@@ -93,7 +83,7 @@ class _IgHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
       child: Row(
         children: [
-          // Rexo "logo" — bold left-aligned wordmark (IG's Billabong style)
+          // Rexo "logo" — bold left-aligned wordmark
           Text(
             'Rexo',
             style: AppTextStyles.largeTitle.copyWith(
@@ -104,20 +94,17 @@ class _IgHeader extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          // Wallet icon (Rexo-specific)
           _HeaderIcon(
             icon: Iconsax.wallet_2,
             onTap: () => context.push(AppRoutes.wallet),
           ),
           const SizedBox(width: 4),
-          // Notifications (IG heart)
           _HeaderIcon(
             icon: Iconsax.notification,
             badge: unreadNotifs,
             onTap: () => context.push(AppRoutes.notifications),
           ),
           const SizedBox(width: 4),
-          // DM / messages (IG paper plane)
           _HeaderIcon(
             icon: Iconsax.send_2,
             badge: unreadInbox,
@@ -178,8 +165,7 @@ class _HeaderIconState extends State<_HeaderIcon> {
                   decoration: BoxDecoration(
                     color: AppColors.accentPink,
                     borderRadius: AppRadius.pillAll,
-                    border:
-                        Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -201,221 +187,119 @@ class _HeaderIconState extends State<_HeaderIcon> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Stories row — horizontal scroll of banner "stories" with IG rings
+// Banner carousel (admin-managed)
 // ─────────────────────────────────────────────────────────────────────────
 
-class _StoriesRow extends ConsumerWidget {
-  const _StoriesRow();
+class _BannerCarousel extends ConsumerStatefulWidget {
+  const _BannerCarousel();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final banners = ref.watch(bannersProvider).value ??
-        const <Map<String, dynamic>>[];
-    final profile = ref.watch(currentUserProfileProvider).value?.profile;
+  ConsumerState<_BannerCarousel> createState() => _BannerCarouselState();
+}
 
-    if (banners.isEmpty && profile == null) {
-      return const SizedBox(height: 0);
-    }
+class _BannerCarouselState extends ConsumerState<_BannerCarousel> {
+  final _controller = PageController();
+  int _page = 0;
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: SizedBox(
-        height: 96,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          physics: const BouncingScrollPhysics(),
-          children: [
-            // "Your story" — user avatar with plus badge
-            if (profile != null)
-              _StoryCircle.user(
-                name: (profile['name'] ?? 'You').toString(),
-                imageUrl: profile['profileImage'] as String?,
-                label: 'Your story',
-              ),
-            // Banner stories
-            for (final b in banners)
-              _StoryCircle(
-                imageUrl: (b['image_url'] ?? '').toString(),
-                label: (b['title'] ?? 'Story').toString(),
-                onTap: () {
-                  final linkType = b['link_type'] as String? ?? 'none';
-                  final campaignId = b['link_campaign_id'] as String?;
-                  final page = b['link_page'] as String?;
-                  if (linkType == 'campaign' && campaignId != null) {
-                    context.push('/campaigns/$campaignId');
-                  } else if (linkType == 'page' &&
-                      page != null &&
-                      page.isNotEmpty) {
-                    context.push(page);
-                  }
-                },
-              ),
-          ],
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
-}
-
-/// A single Instagram-style story circle with the iconic gradient ring.
-class _StoryCircle extends StatefulWidget {
-  final String? imageUrl;
-  final String label;
-  final VoidCallback? onTap;
-  final bool isUser;
-  final String? name;
-
-  const _StoryCircle({
-    required this.imageUrl,
-    required this.label,
-    this.onTap,
-    this.isUser = false,
-    this.name,
-  });
-
-  const _StoryCircle.user({
-    required String name,
-    required String? imageUrl,
-    required this.label,
-  })  : imageUrl = imageUrl,
-        onTap = null,
-        isUser = true,
-        name = name;
-
-  @override
-  State<_StoryCircle> createState() => _StoryCircleState();
-}
-
-class _StoryCircleState extends State<_StoryCircle> {
-  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.6 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _RingedAvatar(
-                imageUrl: widget.imageUrl,
-                name: widget.name,
-                isUser: widget.isUser,
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: 72,
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+    final width = MediaQuery.of(context).size.width;
+    final bannerHeight = (width * 0.42).clamp(160.0, 190.0);
 
-class _RingedAvatar extends StatelessWidget {
-  final String? imageUrl;
-  final String? name;
-  final bool isUser;
+    final liveBanners = ref.watch(bannersProvider);
+    final dbBanners = liveBanners.value ?? const <Map<String, dynamic>>[];
+    if (dbBanners.isEmpty) return const SizedBox.shrink();
 
-  const _RingedAvatar({
-    required this.imageUrl,
-    required this.name,
-    required this.isUser,
-  });
+    final slideCount = dbBanners.length;
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
+    return Column(
       children: [
-        // Story gradient ring
-        Container(
-          width: 64,
-          height: 64,
-          padding: const EdgeInsets.all(2.5),
-          decoration: BoxDecoration(
-            gradient: isUser ? null : AppColors.storyGradient,
-            color: isUser ? AppColors.border : null,
-            shape: BoxShape.circle,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: ClipOval(
-              child: (imageUrl != null && imageUrl!.isNotEmpty)
-                  ? Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _initialFallback(name ?? '?'),
-                    )
-                  : _initialFallback(name ?? '?'),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: bannerHeight,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: slideCount,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DbBannerSlide(banner: dbBanners[i]),
             ),
           ),
         ),
-        // Plus badge for "your story"
-        if (isUser)
-          Positioned(
-            right: -2,
-            bottom: -2,
-            child: Container(
-              width: 22,
-              height: 22,
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            slideCount,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: i == _page ? 20 : 6,
+              height: 6,
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Iconsax.add,
-                size: 14,
-                color: Colors.white,
+                color: i == _page
+                    ? AppColors.textPrimary
+                    : AppColors.systemGray4,
+                borderRadius: AppRadius.pillAll,
               ),
             ),
           ),
+        ),
+        const SizedBox(height: 12),
       ],
     );
   }
+}
 
-  Widget _initialFallback(String n) {
-    final letter = n.trim().isEmpty ? '?' : n.trim()[0].toUpperCase();
-    return Container(
-      color: AppColors.surfaceAlt,
-      alignment: Alignment.center,
-      child: Text(
-        letter,
-        style: AppTextStyles.title3.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w600,
-        ),
+class _DbBannerSlide extends StatelessWidget {
+  final Map<String, dynamic> banner;
+  const _DbBannerSlide({required this.banner});
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = banner['image_url'] as String? ?? '';
+    final linkType = banner['link_type'] as String? ?? 'none';
+    final campaignId = banner['link_campaign_id'] as String?;
+    final page = banner['link_page'] as String?;
+
+    void onTap() {
+      if (linkType == 'campaign' && campaignId != null) {
+        context.push('/campaigns/$campaignId');
+      } else if (linkType == 'page' && page != null && page.isNotEmpty) {
+        context.push(page);
+      }
+    }
+
+    return GestureDetector(
+      onTap: linkType != 'none' ? onTap : null,
+      child: ClipRRect(
+        borderRadius: AppRadius.allLg,
+        child: imageUrl.isNotEmpty
+            ? Image.network(
+                imageUrl,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackContainer(),
+              )
+            : _fallbackContainer(),
       ),
     );
   }
+
+  Widget _fallbackContainer() => Container(
+        color: AppColors.surfaceAlt,
+        child: const Center(
+          child: Icon(Iconsax.gallery,
+              color: AppColors.textSecondary, size: 32),
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -484,7 +368,7 @@ class _FeedList extends ConsumerWidget {
   }
 }
 
-// ── Data mapping helpers (unchanged) ─────────────────────────────────────
+// ── Data mapping helpers ─────────────────────────────────────────────────
 
 FeaturedCampaignData _mapCampaign(Map<String, dynamic> c) {
   int asInt(dynamic v) =>
