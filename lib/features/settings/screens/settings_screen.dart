@@ -8,6 +8,7 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_toggle.dart';
 import '../../../core/widgets/premium_avatar.dart';
 import '../../../services/supabase_service.dart';
@@ -16,6 +17,15 @@ import '../../profile/providers/profile_provider.dart';
 import '../../profile/screens/edit_profile_screen.dart';
 import '../providers/settings_provider.dart';
 
+/// Settings screen — rewritten from scratch.
+///
+/// Layout matches the reference UI:
+/// - App bar with centered "Profile" title
+/// - Dark header card with user info + "Upgrade to Pro" banner
+/// - Grouped sections with white/glass card backgrounds
+/// - Each item has icon + title + chevron
+/// - Switches for toggles
+/// - Red logout/delete section at bottom
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -24,705 +34,195 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  // ── Theme-aware color helpers ────────────────────────────────────────────
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _pageBg =>
-      _isDark ? AppColors.darkBackground : AppColors.background;
-  Color get _cardBg => _isDark ? AppColors.darkCard : AppColors.card;
-  Color get _borderColor =>
-      _isDark ? AppColors.darkBorder : AppColors.border;
-  Color get _dividerColor =>
-      _isDark ? AppColors.darkDivider : AppColors.divider;
-  Color get _textPrimary =>
-      _isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-  Color get _textSecondary =>
-      _isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-  Color get _textHint => _isDark ? AppColors.darkTextHint : AppColors.textHint;
-
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          physics: const ClampingScrollPhysics(),
           children: [
-            // ── AppBar ────────────────────────────────────────────────────
-            Container(
-              constraints: const BoxConstraints(minHeight: 56),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              color: _pageBg,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left,
-                        size: 24, color: _textPrimary),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Settings',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _textPrimary,
-                      ),
+            // ── App bar ──
+            _AppBar(onBack: () => context.pop()),
+
+            // ── Dark user header card ──
+            profileAsync.whenOrNull(
+                  data: (ps) => _UserHeaderCard(
+                    profile: ps.profile,
+                    onEdit: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen()),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                ) ??
+                const SizedBox(height: 16),
+
+            // ── Upgrade banner ──
+            _UpgradeBanner(onTap: () => context.push('/subscriptions')),
+
+            const SizedBox(height: 20),
+
+            // ── ACCOUNT section ──
+            _SectionTitle('ACCOUNT'),
+            _GroupCard(children: [
+              _SettingsItem(
+                icon: Iconsax.edit,
+                title: 'Edit Profile',
+                subtitle: 'Update name, photo, bio',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const EditProfileScreen()),
+                ),
+              ),
+              _SettingsItem(
+                icon: Iconsax.link_2,
+                title: 'Linked Accounts',
+                subtitle: 'Instagram, YouTube, TikTok',
+                onTap: () => context.push('/linked-accounts'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.verify,
+                title: 'KYC Verification',
+                subtitle: 'Verify your identity',
+                onTap: () => context.push('/kyc'),
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
+            // ── SECURITY section ──
+            _SectionTitle('SECURITY'),
+            _GroupCard(children: [
+              _SettingsItem(
+                icon: Iconsax.shield_tick,
+                title: 'Two-Factor Auth',
+                subtitle: 'Secure your account with TOTP',
+                trailing: _RecommendedBadge(),
+                onTap: () => context.push('/settings/two-factor'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.monitor_mobbile,
+                title: 'Active Sessions',
+                subtitle: 'Manage active sessions',
+                onTap: () => context.push('/sessions'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.eye,
+                title: 'Security Logs',
+                subtitle: 'View account activity',
+                onTap: () => context.push('/security-logs'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.lock,
+                title: 'Change Password',
+                subtitle: 'Send password reset email',
+                onTap: () => _handleChangePassword(context),
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
+            // ── NOTIFICATIONS section ──
+            _SectionTitle('NOTIFICATIONS'),
+            _GroupCard(children: [
+              _ToggleItem(
+                icon: Iconsax.notification,
+                title: 'Push Notifications',
+                value: settings.notificationsEnabled,
+                onChanged: (v) => ref
+                    .read(settingsProvider.notifier)
+                    .setNotificationsEnabled(v),
+              ),
+              _ToggleItem(
+                icon: Iconsax.sms,
+                title: 'Email Notifications',
+                value: settings.emailNotificationsEnabled,
+                onChanged: (v) => ref
+                    .read(settingsProvider.notifier)
+                    .setEmailNotificationsEnabled(v),
+              ),
+              _ToggleItem(
+                icon: Iconsax.send_2,
+                title: 'Campaign Updates',
+                value: settings.campaignUpdatesEnabled,
+                onChanged: (v) => ref
+                    .read(settingsProvider.notifier)
+                    .setCampaignUpdatesEnabled(v),
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
+            // ── PRIVACY section ──
+            _SectionTitle('PRIVACY'),
+            _GroupCard(children: [
+              _ToggleItem(
+                icon: Iconsax.user,
+                title: 'Public Profile',
+                value: settings.publicProfileEnabled,
+                onChanged: (v) => ref
+                    .read(settingsProvider.notifier)
+                    .setPublicProfileEnabled(v),
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
+            // ── SUPPORT section ──
+            _SectionTitle('SUPPORT'),
+            _GroupCard(children: [
+              _SettingsItem(
+                icon: Iconsax.message_question,
+                title: 'Help & Support',
+                subtitle: 'FAQs and contact',
+                onTap: () => context.push('/help-support'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.shield_tick,
+                title: 'Privacy Policy',
+                onTap: () => context.push('/privacy-policy'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.document_text,
+                title: 'Terms of Service',
+                onTap: () => context.push('/terms-of-service'),
+              ),
+            ]),
+
+            const SizedBox(height: 24),
+
+            // ── Logout + Delete ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _DangerButton(
+                    icon: Iconsax.logout,
+                    label: 'Log Out',
+                    onTap: () => _handleLogout(context, ref),
+                  ),
+                  const SizedBox(height: 10),
+                  _DangerButton(
+                    icon: Iconsax.trash,
+                    label: 'Delete Account',
+                    onTap: () => _handleDeleteAccount(context),
+                  ),
                 ],
               ),
             ),
 
-            // ── Content ───────────────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // User card
-                    profileAsync.whenOrNull(
-                          data: (profileState) =>
-                              _buildUserCard(context, profileState),
-                        ) ??
-                        const SizedBox(height: AppSpacing.lg),
-
-                    // APPEARANCE section — removed by product decision.
-                    // Rexo is light-only; no theme picker is shown to the
-                    // user. The underlying settingsProvider still exposes
-                    // themeMode for backward compatibility, but the picker
-                    // UI is intentionally hidden.
-
-                    // ACCOUNT section
-                    _sectionLabel('ACCOUNT'),
-                    _settingsCard([
-                      _item(context,
-                          icon: Iconsax.edit,
-                          iconColor: AppColors.primary,
-                          title: 'Edit Profile',
-                          subtitle: 'Update name, photo, bio',
-                          onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const EditProfileScreen()),
-                              )),
-                      _item(context,
-                          icon: Iconsax.link_2,
-                          iconColor: AppColors.accentTeal,
-                          title: 'Linked Accounts',
-                          subtitle: 'Instagram, YouTube, TikTok',
-                          onTap: () => context.push('/linked-accounts')),
-                      _item(context,
-                          icon: Iconsax.verify,
-                          iconColor: AppColors.success,
-                          title: 'KYC Verification',
-                          subtitle: 'Verify your identity',
-                          onTap: () => context.push('/kyc')),
-                    ]),
-
-                    // SECURITY section
-                    _sectionLabel('SECURITY'),
-                    _settingsCard([
-                      _item(context,
-                          icon: Iconsax.shield_tick,
-                          iconColor: AppColors.primary,
-                          title: 'Two-Factor Auth',
-                          subtitle: 'Secure your account with TOTP',
-                          trailing: _statusChip('Recommended', AppColors.success,
-                              isSmall: true),
-                          onTap: () => context.push('/two-factor-auth')),
-                      _item(context,
-                          icon: Iconsax.mobile,
-                          iconColor: AppColors.accentIndigo,
-                          title: 'Active Sessions',
-                          subtitle: 'Manage active sessions',
-                          onTap: () => context.push('/sessions')),
-                      _item(context,
-                          icon: Iconsax.document_text,
-                          iconColor: AppColors.warning,
-                          title: 'Security Logs',
-                          subtitle: 'View account activity',
-                          onTap: () => context.push('/security-logs')),
-                      _item(context,
-                          icon: Iconsax.lock_1,
-                          iconColor: _textSecondary,
-                          title: 'Change Password',
-                          subtitle: 'Send password reset email',
-                          onTap: () => _handleChangePassword(context)),
-                    ]),
-
-                    // NOTIFICATIONS section
-                    _sectionLabel('NOTIFICATIONS'),
-                    _settingsCard([
-                      _switchItem(context,
-                          icon: Iconsax.notification,
-                          iconColor: AppColors.accentOrange,
-                          title: 'Push Notifications',
-                          subtitle: 'Receive push notifications',
-                          value: settings.notificationsEnabled,
-                          onChanged: (v) => ref
-                              .read(settingsProvider.notifier)
-                              .setNotificationsEnabled(v)),
-                      _switchItem(context,
-                          icon: Iconsax.sms,
-                          iconColor: AppColors.primary,
-                          title: 'Email Notifications',
-                          subtitle: 'Receive email updates',
-                          value: settings.emailNotificationsEnabled,
-                          onChanged: (v) => ref
-                              .read(settingsProvider.notifier)
-                              .setEmailNotificationsEnabled(v)),
-                      _switchItem(context,
-                          icon: Iconsax.briefcase,
-                          iconColor: AppColors.accentTeal,
-                          title: 'Campaign Updates',
-                          subtitle: 'New campaigns & deadlines',
-                          value: settings.campaignUpdatesEnabled,
-                          onChanged: (v) => ref
-                              .read(settingsProvider.notifier)
-                              .setCampaignUpdatesEnabled(v)),
-                    ]),
-
-                    // PRIVACY section
-                    _sectionLabel('PRIVACY'),
-                    _settingsCard([
-                      _switchItem(context,
-                          icon: Iconsax.eye,
-                          iconColor: _textSecondary,
-                          title: 'Public Profile',
-                          subtitle: 'Allow others to find your profile',
-                          value: settings.publicProfileEnabled,
-                          onChanged: (v) => ref
-                              .read(settingsProvider.notifier)
-                              .setPublicProfileEnabled(v)),
-                    ]),
-
-                    // SUPPORT section
-                    _sectionLabel('SUPPORT'),
-                    _settingsCard([
-                      _item(context,
-                          icon: Iconsax.message_question,
-                          iconColor: AppColors.accentTeal,
-                          title: 'Help & Support',
-                          subtitle: 'FAQs and contact',
-                          onTap: () => context.push('/help-support')),
-                      _item(context,
-                          icon: Iconsax.shield_tick,
-                          iconColor: _textHint,
-                          title: 'Privacy Policy',
-                          onTap: () => context.push('/privacy-policy')),
-                      _item(context,
-                          icon: Iconsax.document_text,
-                          iconColor: _textHint,
-                          title: 'Terms of Service',
-                          onTap: () => context.push('/terms-of-service')),
-                    ]),
-
-                    // ACCOUNT ACTIONS (danger)
-                    _sectionLabel('ACCOUNT ACTIONS',
-                        color: AppColors.error.withOpacity(0.7)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _cardBg,
-                          borderRadius: AppRadius.allLg,
-                          border: Border.all(
-                              color: AppColors.error.withOpacity(0.2)),
-                        ),
-                        child: Column(
-                          children: [
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () =>
-                                    _handleLogout(context, ref),
-                                borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(AppRadius.lg)),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 16),
-                                  child: Row(
-                                    children: [
-                                      Icon(Iconsax.logout,
-                                          color: AppColors.error, size: 20),
-                                      SizedBox(width: 12),
-                                      Text(
-                                        'Log Out',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: AppColors.error,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Divider(height: 1, color: _dividerColor),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () =>
-                                    _handleDeleteAccount(context),
-                                borderRadius: const BorderRadius.vertical(
-                                    bottom:
-                                        Radius.circular(AppRadius.lg)),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 16),
-                                  child: Row(
-                                    children: [
-                                      Icon(Iconsax.trash,
-                                          color: AppColors.error, size: 20),
-                                      SizedBox(width: 12),
-                                      Text(
-                                        'Delete Account',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: AppColors.error,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUserCard(BuildContext context, ProfileState profileState) {
-    final profile = profileState.profile;
-    if (profile == null) return const SizedBox(height: AppSpacing.lg);
-
-    final name = profile['name'] ?? 'User';
-    final handle = profile['username'] ?? '';
-    final avatarUrl = profile['profileImage'];
-
-    // Frosted glass profile row — blends with sand dune background.
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
-        borderRadius: AppRadius.allLg,
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Material(
-            color: AppColors.card,
-            borderRadius: AppRadius.allLg,
-            child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-        ),
-        splashColor: Colors.transparent,
-        highlightColor: AppColors.surfaceAlt,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              PremiumAvatar(
-                imageUrl: avatarUrl,
-                name: name,
-                size: 56,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (handle.toString().isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        '@$handle',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    const SizedBox(height: 4),
-                    const Text(
-                      'View your profile',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Iconsax.arrow_right_3,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-            ],
-          ),
-        ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Instagram-style small gray uppercase section header with generous
-  // top-spacing so groups feel visually separated (fixes 'chipke huye' issue).
-  Widget _sectionLabel(String label, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 10),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color ?? AppColors.textSecondary,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  // Frosted glass list group — matches the bottom dock's translucent style.
-  Widget _settingsCard(List<Widget> children) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ClipRRect(
-        borderRadius: AppRadius.allLg,
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: AppRadius.allLg,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.35),
-                width: 0.5,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (int i = 0; i < children.length; i++) ...[
-                  if (i > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 68),
-                      child: Divider(
-                        height: 0.5,
-                        thickness: 0.5,
-                        color: Colors.white.withOpacity(0.25),
-                      ),
-                    ),
-                  children[i],
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Appearance (theme mode) selector ──────────────────────────────────────
-  Widget _appearanceItem(ThemeMode mode) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
-                  borderRadius: AppRadius.allSm,
-                ),
-                child: const Icon(Iconsax.moon,
-                    size: 18, color: AppColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Theme',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: _textPrimary,
-                      ),
-                    ),
-                    Text(
-                      'Choose how Rexo looks',
-                      style: TextStyle(fontSize: 12, color: _textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _themeChoice('System', Iconsax.mobile, ThemeMode.system, mode),
-              const SizedBox(width: 8),
-              _themeChoice('Light', Iconsax.sun_1, ThemeMode.light, mode),
-              const SizedBox(width: 8),
-              _themeChoice('Dark', Iconsax.moon, ThemeMode.dark, mode),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _themeChoice(
-      String label, IconData icon, ThemeMode value, ThemeMode current) {
-    final selected = value == current;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => ref.read(settingsProvider.notifier).setThemeMode(value),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary
-                : (_isDark
-                    ? AppColors.darkSurfaceAlt
-                    : AppColors.surfaceAlt),
-            borderRadius: AppRadius.allMd,
-            border: Border.all(
-              color: selected ? AppColors.primary : Colors.transparent,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon,
-                  size: 18,
-                  color: selected ? Colors.white : _textSecondary),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : _textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-Widget _item(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-    required VoidCallback onTap,
-  }) {
-    // Instagram-flat list item — no internal border (parent _settingsCard
-    // draws inset dividers), 14px vertical padding for generous breathing
-    // room, 40px colored-icon tile leading, subtle chevron trailing.
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: Colors.transparent,
-        highlightColor: AppColors.surfaceAlt,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 60),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Icon(icon, size: 18, color: iconColor),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              trailing ??
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.sizeOf(context).width * 0.28,
-                    ),
-                    child: const Icon(
-                      Iconsax.arrow_right_3,
-                      size: 18,
-                      color: AppColors.textHint,
-                    ),
-                  ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _switchItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    // Instagram-flat switch row — no internal border, matches _item spacing.
-    return Container(
-      constraints: const BoxConstraints(minHeight: 60),
-      color: Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 18, color: iconColor),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.25,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          AppToggle(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-
-Widget _statusChip(String text, Color color, {bool isSmall = false}) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-          horizontal: isSmall ? 6 : 8, vertical: isSmall ? 2 : 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: isSmall ? AppRadius.allSm : AppRadius.pillAll,
-      ),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: isSmall ? 10 : 12,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
+  // ── Actions ──
 
   Future<void> _handleChangePassword(BuildContext context) async {
     final user = SupabaseService.currentUser;
@@ -741,7 +241,7 @@ Widget _statusChip(String text, Color color, {bool isSmall = false}) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to send reset email. Try again.'),
+            content: Text('Failed to send reset email.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -779,24 +279,448 @@ Widget _statusChip(String text, Color color, {bool isSmall = false}) {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Account'),
         content: const Text(
-          'This action is permanent and cannot be undone.\n\n'
-          'Please contact support at support@rexo.app to complete account deletion.',
+          'This action is permanent.\n\n'
+          'Contact support@rexo.app to complete deletion.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
+}
 
-  /// Converts a role string to sentence case (e.g. "creator" → "Creator").
-  String _formatRole(String role) {
-    if (role.isEmpty) return 'Creator';
-    return role[0].toUpperCase() + role.substring(1).toLowerCase();
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP BAR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _AppBar extends StatelessWidget {
+  final VoidCallback onBack;
+  const _AppBar({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 16, 4),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Iconsax.arrow_left, size: 24),
+          ),
+          const Expanded(
+            child: Text(
+              'Profile',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// DARK USER HEADER CARD (like reference)
+// ═══════════════════════════════════════════════════════════════════════════════
 
+class _UserHeaderCard extends StatelessWidget {
+  final Map<String, dynamic>? profile;
+  final VoidCallback onEdit;
+
+  const _UserHeaderCard({required this.profile, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    if (profile == null) return const SizedBox(height: 16);
+
+    final name = (profile!['name'] ?? 'User').toString();
+    final email = (profile!['email'] ?? '').toString();
+    final avatarUrl = profile!['profileImage'] as String?;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: GestureDetector(
+        onTap: onEdit,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              PremiumAvatar(imageUrl: avatarUrl, name: name, size: 48),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (email.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.6),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(Iconsax.arrow_right_3,
+                  size: 18, color: Colors.white54),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPGRADE BANNER (dark card with CTA)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _UpgradeBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _UpgradeBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0095F6), Color(0xFF5856D6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              const Icon(Iconsax.crown_1, size: 28, color: Colors.white),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Plan & Subscription',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Manage your subscription plan',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: AppRadius.pillAll,
+                ),
+                child: const Text(
+                  'View ›',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION TITLE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: Text(
+        title,
+        style: AppTextStyles.footnote.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GROUP CARD (frosted glass container for a section)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _GroupCard extends StatelessWidget {
+  final List<Widget> children;
+  const _GroupCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < children.length; i++) ...[
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 52),
+                      child: Divider(
+                        height: 0.5,
+                        thickness: 0.5,
+                        color: AppColors.border,
+                      ),
+                    ),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SETTINGS ITEM (icon + title + subtitle + chevron)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _SettingsItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback onTap;
+
+  const _SettingsItem({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: AppColors.textPrimary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            trailing ??
+                const Icon(Iconsax.arrow_right_3,
+                    size: 16, color: AppColors.textHint),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOGGLE ITEM (icon + title + switch)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _ToggleItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _ToggleItem({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: AppColors.textPrimary),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          AppToggle(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RECOMMENDED BADGE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _RecommendedBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.accentGreen.withOpacity(0.1),
+        borderRadius: AppRadius.pillAll,
+      ),
+      child: const Text(
+        'Recommended',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppColors.accentGreen,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DANGER BUTTON (logout / delete)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _DangerButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _DangerButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.error.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.error),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.error,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
