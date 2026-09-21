@@ -130,7 +130,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           iconColor: AppColors.primary,
                           title: 'Two-Factor Auth',
                           subtitle: 'Secure your account with TOTP',
-                          trailing: _statusChip('Recommended', AppColors.success),
+                          trailing: _statusChip('Recommended', AppColors.success,
+                              isSmall: true),
                           onTap: () => context.push('/two-factor-auth')),
                       _item(context,
                           icon: Iconsax.mobile,
@@ -530,7 +531,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _item(
+Widget _item(
     BuildContext context, {
     required IconData icon,
     required Color iconColor,
@@ -544,13 +545,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          // Use padding instead of fixed height so the row grows with
-          // the system font scale instead of clipping text.
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          // Use constraints + padding instead of fixed height so the row grows
+          // with the system font scale instead of clipping text.
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(color: _dividerColor, width: 1)),
+              bottom: BorderSide(color: _dividerColor, width: 1),
+            ),
           ),
           child: Row(
             children: [
@@ -580,7 +582,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         subtitle,
                         style: TextStyle(
@@ -595,22 +597,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Trailing control (chip / chevron / custom) lives OUTSIDE the
-              // Expanded text column so it can never overlap the title or
-              // subtitle. Constrain its max width so a chip like
-              // 'Recommended' keeps the text column its priority space and
-              // can't force a horizontal overflow on a narrow phone.
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.sizeOf(context).width * 0.34,
-                ),
-                child: trailing ??
-                    Icon(
+              // Trailing element lives outside the Expanded text column so it
+              // never overlaps the title/subtitle. Use flexible width so it scales
+              // with font size and doesn't cause horizontal overflow on narrow phones.
+              trailing ??
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.28,
+                    ),
+                    child: Icon(
                       Iconsax.arrow_right_3,
                       size: 18,
                       color: _textHint,
                     ),
-              ),
+                  ),
             ],
           ),
         ),
@@ -683,20 +683,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _statusChip(String text, Color color) {
+Widget _statusChip(String text, Color color, {bool isSmall = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(
+          horizontal: isSmall ? 6 : 8, vertical: isSmall ? 2 : 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
-        borderRadius: AppRadius.pillAll,
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: isSmall ? AppRadius.pillSm : AppRadius.pillAll,
       ),
       child: Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: isSmall ? 10 : 12,
           fontWeight: FontWeight.w600,
           color: color,
         ),

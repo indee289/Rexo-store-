@@ -19,12 +19,21 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final kycResponse =
       await client.from('kyc_documents').select('id').eq('status', 'pending');
 
+  final totalUsers = List<Map<String, dynamic>>.from(usersResponse).length;
+  final activeCampaigns =
+      List<Map<String, dynamic>>.from(campaignsResponse).length;
+  final pendingDeposits =
+      List<Map<String, dynamic>>.from(depositsResponse).length;
+  final pendingWithdrawals =
+      List<Map<String, dynamic>>.from(withdrawalsResponse).length;
+  final pendingKyc = List<Map<String, dynamic>>.from(kycResponse).length;
+
   return {
-    'total_users': (usersResponse as List).length,
-    'active_campaigns': (campaignsResponse as List).length,
-    'pending_deposits': (depositsResponse as List).length,
-    'pending_withdrawals': (withdrawalsResponse as List).length,
-    'pending_kyc': (kycResponse as List).length,
+    'total_users': totalUsers,
+    'active_campaigns': activeCampaigns,
+    'pending_deposits': pendingDeposits,
+    'pending_withdrawals': pendingWithdrawals,
+    'pending_kyc': pendingKyc,
     'total_earnings': 0,
   };
 });

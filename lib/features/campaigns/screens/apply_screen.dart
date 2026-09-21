@@ -126,14 +126,39 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                             style: AppTextStyles.labelLarge.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                   );
                 },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: ShimmerCard(height: 80),
+                ),
+                error: (error, _) => Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Iconsax.warning_2,
+                          size: 28, color: AppColors.error),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Failed to load campaign',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: () =>
+                            ref.invalidate(campaignDetailProvider(widget.campaignId)),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
 
