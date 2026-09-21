@@ -88,11 +88,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ) ??
                         const SizedBox(height: AppSpacing.lg),
 
-                    // APPEARANCE section
-                    _sectionLabel('APPEARANCE'),
-                    _settingsCard([
-                      _appearanceItem(settings.themeMode),
-                    ]),
+                    // APPEARANCE section — removed by product decision.
+                    // Rexo is light-only; no theme picker is shown to the
+                    // user. The underlying settingsProvider still exposes
+                    // themeMode for backward compatibility, but the picker
+                    // UI is intentionally hidden.
 
                     // ACCOUNT section
                     _sectionLabel('ACCOUNT'),
