@@ -1,23 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/admin/providers/is_admin_provider.dart';
-import '../../features/subscriptions/providers/subscriptions_provider.dart';
-import '../router/app_router.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
 import 'app_bottom_nav.dart';
 
-/// App shell with bottom nav + subscription paywall gate.
+/// App shell — bottom nav only. NO paywall gate here.
 ///
-/// IMPORTANT: This widget ONLY wraps the StatefulShellRoute (authenticated
-/// bottom-nav screens: Home, Campaigns, Jobs, Profile). Routes like /login,
-/// /register, /splash, /subscriptions, /wallet etc. are OUTSIDE this shell
-/// and never go through the paywall. No infinite redirect is possible.
-///
-/// Admin users bypass the paywall entirely.
-class AppShell extends ConsumerWidget {
+/// The app is freely accessible to all users. The subscription paywall
+/// is enforced ONLY at the point of campaign/job application (Apply button).
+/// Admin users are never paywalled.
+class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   const AppShell({
@@ -26,35 +17,7 @@ class AppShell extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Admins bypass the paywall entirely
-    final isAdmin = ref.watch(isAdminProvider);
-    if (isAdmin) {
-      return _buildMainApp(context);
-    }
-
-    final subscriptionAsync = ref.watch(hasApprovedSubscriptionProvider);
-
-    return subscriptionAsync.when(
-      // While checking subscription status, show loading
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      // If check fails, let user through (don't lock out on error)
-      error: (_, __) => _buildMainApp(context),
-      data: (hasSubscription) {
-        if (!hasSubscription) {
-          // No subscription — show paywall
-          return _PaywallGate(
-            onSubscribe: () => context.push(AppRoutes.subscriptions),
-          );
-        }
-        return _buildMainApp(context);
-      },
-    );
-  }
-
-  Widget _buildMainApp(BuildContext context) {
+  Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
       extendBody: true,
@@ -66,75 +29,6 @@ class AppShell extends ConsumerWidget {
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-      ),
-    );
-  }
-}
-
-/// Paywall screen shown when user has no approved subscription.
-///
-/// This screen is rendered INSIDE the StatefulShellRoute context.
-/// The "View Plans" button pushes /subscriptions which is a ROOT-LEVEL
-/// GoRoute OUTSIDE this shell — so there's no infinite redirect risk.
-class _PaywallGate extends StatelessWidget {
-  final VoidCallback onSubscribe;
-
-  const _PaywallGate({required this.onSubscribe});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.lock_outline_rounded,
-                  size: 64, color: AppColors.primary),
-              const SizedBox(height: 24),
-              Text(
-                'Subscription Required',
-                style: AppTextStyles.title1.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'To access the Rexo marketplace, you need an active subscription. Choose a plan to get started.',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: onSubscribe,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'View Plans',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
