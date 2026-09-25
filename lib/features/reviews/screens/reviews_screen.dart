@@ -38,7 +38,6 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   Widget build(BuildContext context) {
     final param = ReviewsParam(
       targetId: widget.targetId,
-      targetType: widget.targetType,
     );
     final reviewsAsync = ref.watch(reviewsProvider(param));
 
@@ -178,7 +177,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     final success =
         await ref.read(reviewNotifierProvider.notifier).submitReview(
               targetId: widget.targetId,
-              targetType: widget.targetType,
+              
               rating: rating,
               comment: comment.trim(),
             );
@@ -190,7 +189,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     if (success) {
       ref.invalidate(reviewsProvider(ReviewsParam(
         targetId: widget.targetId,
-        targetType: widget.targetType,
+        
       )));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -234,7 +233,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       onCta: () {
         ref.invalidate(reviewsProvider(ReviewsParam(
           targetId: widget.targetId,
-          targetType: widget.targetType,
+          
         )));
       },
     );

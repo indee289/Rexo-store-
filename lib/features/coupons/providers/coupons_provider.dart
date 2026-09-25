@@ -6,16 +6,20 @@ import '../../../services/supabase_service.dart';
 /// Provider for available coupons (active and not expired)
 final availableCouponsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final now = DateTime.now().toIso8601String();
+  try {
+    final now = DateTime.now().toIso8601String();
 
-  final response = await SupabaseService.client
-      .from('coupons')
-      .select()
-      .eq('is_active', true)
-      .gt('expires_at', now)
-      .order('created_at', ascending: false);
+    final response = await SupabaseService.client
+        .from('coupons')
+        .select()
+        .eq('is_active', true)
+        .gt('expires_at', now)
+        .order('created_at', ascending: false);
 
-  return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Provider for user's reward points

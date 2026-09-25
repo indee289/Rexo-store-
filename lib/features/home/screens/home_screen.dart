@@ -324,7 +324,29 @@ class _FeedList extends ConsumerWidget {
           childCount: 3,
         ),
       ),
-      error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+      error: (_, __) => SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.textHint),
+                const SizedBox(height: 12),
+                Text(
+                  'Something went wrong',
+                  style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pull down to retry',
+                  style: AppTextStyles.subheadline.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       data: (rows) {
         final items = rows.map(_mapCampaign).toList();
         if (items.isEmpty) {

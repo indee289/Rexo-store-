@@ -7,19 +7,21 @@ final selectedCategoryProvider = StateProvider<String>((ref) => 'All');
 
 /// Provider for featured campaigns (active, ordered by newest)
 final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  // SELECT * works; job rows filtered out in Dart (server-side .neq on
-  // payout_model fails on this project's schema cache).
-  final response = await SupabaseService.client
-      .from('campaigns')
-      .select()
-      .eq('status', 'active')
-      .order('createdAt', ascending: false) // live: createdAt (camelCase)
-      .limit(30);
+  try {
+    final response = await SupabaseService.client
+        .from('campaigns')
+        .select()
+        .eq('status', 'active')
+        .order('createdAt', ascending: false)
+        .limit(30);
 
-  return List<Map<String, dynamic>>.from(response)
-      .where((row) => row['payout_model'] != 'job')
-      .take(10)
-      .toList();
+    return List<Map<String, dynamic>>.from(response)
+        .where((row) => row['payout_model'] != 'job')
+        .take(10)
+        .toList();
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Provider for trending creators (ordered by followers desc)
@@ -39,7 +41,7 @@ final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
         .from('users')
         .select()
         .eq('role', 'creator')
-        .order('created_at', ascending: false)
+        .order('createdAt', ascending: false)
         .limit(10);
     final fallbackRows = List<Map<String, dynamic>>.from(fallback);
     return fallbackRows.map((row) => <String, dynamic>{
@@ -68,7 +70,7 @@ final filteredCampaignsProvider = FutureProvider.autoDispose.family<List<Map<Str
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false).limit(40);
+  final response = await query.order('createdAt', ascending: false).limit(40);
 
   return List<Map<String, dynamic>>.from(response)
       .where((row) => row['payout_model'] != 'job')
@@ -89,7 +91,7 @@ final recentCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false).limit(40);
+  final response = await query.order('createdAt', ascending: false).limit(40);
 
   return List<Map<String, dynamic>>.from(response)
       .where((row) => row['payout_model'] != 'job')

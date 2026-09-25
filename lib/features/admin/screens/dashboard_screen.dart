@@ -170,8 +170,19 @@ class DashboardScreen extends ConsumerWidget {
                                 _QuickAction(
                                   label: 'Users',
                                   icon: Iconsax.people,
-                                  onTap: () =>
-                                      context.push('/admin/users'),
+                                  onTap: () {
+                                    // Users is tab index 1 in AdminShell.
+                                    // The parent AdminShell manages the tab index,
+                                    // so we use the bottom nav directly.
+                                    // This quick-link is a visual shortcut — user
+                                    // taps the "Users" icon in the admin bottom nav.
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Tap "Users" in the bottom nav below'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
                                 ),
                                 const SizedBox(width: 8),
                                 _QuickAction(

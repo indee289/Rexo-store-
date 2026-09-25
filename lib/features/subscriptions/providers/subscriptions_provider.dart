@@ -4,6 +4,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
+/// Provider that checks if the current user has an approved subscription payment.
+/// Returns true if the user has at least one approved subscription_payment row.
+/// Used by AppShell to gate access behind the subscription paywall.
+final hasApprovedSubscriptionProvider = FutureProvider<bool>((ref) async {
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return false;
+
+    final response = await SupabaseService.client
+        .from('subscription_payments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .limit(1);
+
+    return (response as List).isNotEmpty;
+  } catch (_) {
+    // If the query fails (table doesn't exist, RLS, etc.), let user through
+    // so the app doesn't lock them out due to a transient error.
+    return true;
+  }
+});
+
 /// Default subscription plans returned when DB is empty or unavailable
 const List<Map<String, dynamic>> _defaultPlans = [
   {
@@ -242,11 +265,9 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionActionState> {
       await SupabaseService.client.from('subscription_payments').insert({
         'user_id': user.id,
         'plan_id': planId,
-        'plan_name': planName,
         'amount': amount,
         'duration_days': durationDays,
-        'payment_method': paymentMethod,
-        'transaction_ref': transactionRef,
+        'payment_ref': transactionRef,
         'proof_url': proofUrl,
         'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),

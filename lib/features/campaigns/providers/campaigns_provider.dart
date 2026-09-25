@@ -10,30 +10,31 @@ final campaignSearchProvider = StateProvider<String>((ref) => '');
 
 /// Provider for all active campaigns list
 final campaignsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final category = ref.watch(campaignFilterProvider);
-  final searchTerm = ref.watch(campaignSearchProvider);
+  try {
+    final category = ref.watch(campaignFilterProvider);
+    final searchTerm = ref.watch(campaignSearchProvider);
 
-  // Fetch active campaigns (SELECT * works through PostgREST). Job rows are
-  // excluded in Dart because filtering .neq('payout_model',...) server-side
-  // fails on this project's schema cache.
-  var query = SupabaseService.client
-      .from('campaigns')
-      .select(); // SELECT * — avoid FK join that may fail with camelCase FK
+    var query = SupabaseService.client
+        .from('campaigns')
+        .select();
 
-  if (category != 'All') {
-    query = query.eq('category', category);
+    if (category != 'All') {
+      query = query.eq('category', category);
+    }
+
+    if (searchTerm.isNotEmpty) {
+      query = query.ilike('title', '%$searchTerm%');
+    }
+
+    final response = await query.order('createdAt', ascending: false).limit(100);
+
+    return List<Map<String, dynamic>>.from(response)
+        .where((row) => row['payout_model'] != 'job')
+        .take(50)
+        .toList();
+  } catch (_) {
+    return [];
   }
-
-  if (searchTerm.isNotEmpty) {
-    query = query.ilike('title', '%$searchTerm%');
-  }
-
-  final response = await query.order('createdAt', ascending: false).limit(100); // live: createdAt
-
-  return List<Map<String, dynamic>>.from(response)
-      .where((row) => row['payout_model'] != 'job')
-      .take(50)
-      .toList();
 });
 
 /// Provider for single campaign detail with brand info
@@ -276,15 +277,19 @@ final applyPrefillProfileProvider =
 
 /// Check if user has already applied to a specific campaign
 final hasAppliedProvider = FutureProvider.family<bool, String>((ref, campaignId) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return false;
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return false;
 
-  final response = await SupabaseService.client
-      .from('applications')
-      .select('id')
-      .eq('campaignId', campaignId)   // live: camelCase
-      .eq('creatorId', user.id)       // live: camelCase
-      .maybeSingle();
+    final response = await SupabaseService.client
+        .from('applications')
+        .select('id')
+        .eq('campaignId', campaignId)
+        .eq('creatorId', user.id)
+        .maybeSingle();
 
-  return response != null;
+    return response != null;
+  } catch (_) {
+    return false;
+  }
 });

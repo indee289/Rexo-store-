@@ -102,7 +102,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Two-Factor Auth',
                 subtitle: 'Secure your account with TOTP',
                 trailing: _RecommendedBadge(),
-                onTap: () => context.push('/settings/two-factor'),
+                onTap: () => context.push('/two-factor-auth'),
               ),
               _SettingsItem(
                 icon: Iconsax.monitor,
@@ -180,6 +180,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Help & Support',
                 subtitle: 'FAQs and contact',
                 onTap: () => context.push('/help-support'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.warning_2,
+                title: 'My Disputes',
+                subtitle: 'View raised disputes',
+                onTap: () => context.push('/disputes'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.location,
+                title: 'My Addresses',
+                subtitle: 'Manage saved addresses',
+                onTap: () => context.push('/addresses'),
               ),
               _SettingsItem(
                 icon: Iconsax.shield_tick,

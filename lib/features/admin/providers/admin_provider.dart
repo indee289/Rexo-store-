@@ -7,167 +7,226 @@ import '../../../services/supabase_service.dart';
 // ============================================================
 
 final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final client = SupabaseService.client;
+  try {
+    final client = SupabaseService.client;
 
-  final usersResponse = await client.from('users').select('id');
-  final campaignsResponse =
-      await client.from('campaigns').select('id').eq('status', 'active');
-  final depositsResponse =
-      await client.from('deposits').select('id').eq('status', 'pending');
-  final withdrawalsResponse =
-      await client.from('withdrawals').select('id').eq('status', 'pending');
-  final kycResponse =
-      await client.from('kyc_documents').select('id').eq('status', 'pending');
+    final usersResponse = await client.from('users').select('id');
+    final campaignsResponse =
+        await client.from('campaigns').select('id').eq('status', 'active');
+    final depositsResponse =
+        await client.from('deposits').select('id').eq('status', 'pending');
+    final withdrawalsResponse =
+        await client.from('withdrawals').select('id').eq('status', 'pending');
+    final kycResponse =
+        await client.from('kyc_documents').select('id').eq('status', 'pending');
 
-  final totalUsers = List<Map<String, dynamic>>.from(usersResponse).length;
-  final activeCampaigns =
-      List<Map<String, dynamic>>.from(campaignsResponse).length;
-  final pendingDeposits =
-      List<Map<String, dynamic>>.from(depositsResponse).length;
-  final pendingWithdrawals =
-      List<Map<String, dynamic>>.from(withdrawalsResponse).length;
-  final pendingKyc = List<Map<String, dynamic>>.from(kycResponse).length;
+    final totalUsers = List<Map<String, dynamic>>.from(usersResponse).length;
+    final activeCampaigns =
+        List<Map<String, dynamic>>.from(campaignsResponse).length;
+    final pendingDeposits =
+        List<Map<String, dynamic>>.from(depositsResponse).length;
+    final pendingWithdrawals =
+        List<Map<String, dynamic>>.from(withdrawalsResponse).length;
+    final pendingKyc = List<Map<String, dynamic>>.from(kycResponse).length;
 
-  return {
-    'total_users': totalUsers,
-    'active_campaigns': activeCampaigns,
-    'pending_deposits': pendingDeposits,
-    'pending_withdrawals': pendingWithdrawals,
-    'pending_kyc': pendingKyc,
-    'total_earnings': 0,
-  };
+    return {
+      'total_users': totalUsers,
+      'active_campaigns': activeCampaigns,
+      'pending_deposits': pendingDeposits,
+      'pending_withdrawals': pendingWithdrawals,
+      'pending_kyc': pendingKyc,
+      'total_earnings': 0,
+    };
+  } catch (_) {
+    return {
+      'total_users': 0,
+      'active_campaigns': 0,
+      'pending_deposits': 0,
+      'pending_withdrawals': 0,
+      'pending_kyc': 0,
+      'total_earnings': 0,
+    };
+  }
 });
 
 final adminUsersProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>(
         (ref, search) async {
-  final client = SupabaseService.client;
-  var query = client.from('users').select();
-  if (search.isNotEmpty) {
-    query = query.or('name.ilike.%$search%,email.ilike.%$search%');
+  try {
+    final client = SupabaseService.client;
+    var query = client.from('users').select();
+    if (search.isNotEmpty) {
+      query = query.or('name.ilike.%$search%,email.ilike.%$search%');
+    }
+    final response = await query.order('createdAt', ascending: false).limit(100); // live: createdAt
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
   }
-  final response = await query.order('createdAt', ascending: false).limit(100); // live: createdAt
-  return List<Map<String, dynamic>>.from(response);
 });
 
 final adminCampaignsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('campaigns')
-      .select()
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('campaigns')
+        .select()
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminSubmissionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('submissions')
-      .select()
-      .eq('status', 'pending')
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('submissions')
+        .select()
+        .eq('status', 'pending')
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminDepositsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('deposits')
-      .select()
-      .eq('status', 'pending')
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('deposits')
+        .select()
+        .eq('status', 'pending')
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Pending subscription payments awaiting admin review. Joins the user's name
 /// and email for display. Falls back to the raw row if the join is unavailable.
 final adminSubscriptionPaymentsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('subscription_payments')
-      .select('*, users(name, email)')
-      .eq('status', 'pending')
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('subscription_payments')
+        .select('*, users(name, email)')
+        .eq('status', 'pending')
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminWithdrawalsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('withdrawals')
-      .select()
-      .eq('status', 'pending')
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('withdrawals')
+        .select()
+        .eq('status', 'pending')
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminDisputesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('disputes')
-      .select()
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('disputes')
+        .select()
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminKycProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('kyc_documents')
-      .select()
-      .eq('status', 'pending')
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('kyc_documents')
+        .select()
+        .eq('status', 'pending')
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminWalletsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client.from('wallets').select().limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client.from('wallets').select().limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminAuditLogsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('audit_logs')
-      .select()
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('audit_logs')
+        .select()
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminOrdersProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client
-      .from('orders')
-      .select()
-      .order('created_at', ascending: false)
-      .limit(100);
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client
+        .from('orders')
+        .select()
+        .order('createdAt', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 final adminPlatformSettingsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final client = SupabaseService.client;
-  final response = await client.from('platform_settings').select();
-  return List<Map<String, dynamic>>.from(response);
+  try {
+    final client = SupabaseService.client;
+    final response = await client.from('platform_settings').select();
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 // ============================================================
