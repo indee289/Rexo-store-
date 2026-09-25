@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/admin_provider.dart';
+import 'admin_shell.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -171,17 +172,8 @@ class DashboardScreen extends ConsumerWidget {
                                   label: 'Users',
                                   icon: Iconsax.people,
                                   onTap: () {
-                                    // Users is tab index 1 in AdminShell.
-                                    // The parent AdminShell manages the tab index,
-                                    // so we use the bottom nav directly.
-                                    // This quick-link is a visual shortcut — user
-                                    // taps the "Users" icon in the admin bottom nav.
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Tap "Users" in the bottom nav below'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
+                                    // Switch to Users tab (index 1) via shared provider
+                                    ref.read(adminTabIndexProvider.notifier).state = 1;
                                   },
                                 ),
                                 const SizedBox(width: 8),

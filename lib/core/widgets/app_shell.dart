@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/admin/providers/is_admin_provider.dart';
 import '../../features/subscriptions/providers/subscriptions_provider.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
@@ -10,9 +11,12 @@ import 'app_bottom_nav.dart';
 
 /// App shell with bottom nav + subscription paywall gate.
 ///
-/// Before showing the main app, checks if the user has an approved
-/// subscription payment. If not, redirects to the subscriptions screen.
-/// Admin users bypass the paywall (they need full access for management).
+/// IMPORTANT: This widget ONLY wraps the StatefulShellRoute (authenticated
+/// bottom-nav screens: Home, Campaigns, Jobs, Profile). Routes like /login,
+/// /register, /splash, /subscriptions, /wallet etc. are OUTSIDE this shell
+/// and never go through the paywall. No infinite redirect is possible.
+///
+/// Admin users bypass the paywall entirely.
 class AppShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -23,6 +27,12 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Admins bypass the paywall entirely
+    final isAdmin = ref.watch(isAdminProvider);
+    if (isAdmin) {
+      return _buildMainApp(context);
+    }
+
     final subscriptionAsync = ref.watch(hasApprovedSubscriptionProvider);
 
     return subscriptionAsync.when(
@@ -62,6 +72,10 @@ class AppShell extends ConsumerWidget {
 }
 
 /// Paywall screen shown when user has no approved subscription.
+///
+/// This screen is rendered INSIDE the StatefulShellRoute context.
+/// The "View Plans" button pushes /subscriptions which is a ROOT-LEVEL
+/// GoRoute OUTSIDE this shell — so there's no infinite redirect risk.
 class _PaywallGate extends StatelessWidget {
   final VoidCallback onSubscribe;
 

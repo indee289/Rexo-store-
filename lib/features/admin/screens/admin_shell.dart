@@ -13,26 +13,21 @@ import 'dashboard_screen.dart';
 import 'settings_screen.dart';
 import 'users_screen.dart';
 
+/// Riverpod provider that holds the current admin tab index.
+/// DashboardScreen (and other children) can write to this to switch tabs.
+final adminTabIndexProvider = StateProvider<int>((ref) => 0);
+
 /// The single entry point for the Admin Center inside the user app.
 ///
 /// It hosts the five admin sections (Dashboard, Users, Actions, Settings,
-/// Profile) in an [IndexedStack] driven by a bottom navigation bar — replacing
-/// the standalone admin app's go_router `StatefulShellRoute`. All deeper admin
-/// screens are reached from these sections via `Navigator.push`.
+/// Profile) in an [IndexedStack] driven by a bottom navigation bar.
+///
+/// Tab indexes: 0=Dashboard, 1=Users, 2=Actions, 3=Settings, 4=Profile
 ///
 /// ADMIN GUARD: this screen is only reachable from the gated "Admin Center"
-/// entry in the Profile screen, but it also guards itself. If the resolved
-/// user is NOT an admin, it redirects to `/home`. A user whose email matches
-/// [kAdminEmail] is allowed immediately; everyone else must have `role == 'admin'`.
-class AdminShell extends ConsumerStatefulWidget {
+/// entry in the Profile screen, but it also guards itself.
+class AdminShell extends ConsumerWidget {
   const AdminShell({super.key});
-
-  @override
-  ConsumerState<AdminShell> createState() => _AdminShellState();
-}
-
-class _AdminShellState extends ConsumerState<AdminShell> {
-  int _index = 0;
 
   static const _screens = <Widget>[
     DashboardScreen(),
@@ -43,7 +38,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final email = ref.watch(currentUserProvider)?.email?.toLowerCase().trim();
     final emailIsAdmin = email == kAdminEmail;
 
@@ -51,8 +46,6 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     if (!emailIsAdmin) {
       final profileAsync = ref.watch(currentUserProfileProvider);
 
-      // Wait for the profile before making a decision so a real admin is not
-      // bounced out while their role is still loading.
       if (profileAsync.isLoading) {
         return const Scaffold(
           body: Center(
@@ -63,7 +56,6 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 
       final isAdmin = profileAsync.valueOrNull?.isAdmin ?? false;
       if (!isAdmin) {
-        // Not an admin — bounce to home after this frame.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (context.mounted) context.go('/home');
         });
@@ -73,14 +65,17 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       }
     }
 
+    // Watch the shared tab index provider
+    final currentIndex = ref.watch(adminTabIndexProvider);
+
     return Scaffold(
       body: IndexedStack(
-        index: _index,
+        index: currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: AdminBottomNav(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+        currentIndex: currentIndex,
+        onTap: (i) => ref.read(adminTabIndexProvider.notifier).state = i,
       ),
     );
   }

@@ -46,7 +46,7 @@ final conversationsProvider =
     final rooms = await SupabaseService.client
         .from('chat_rooms')
         .select()
-        .contains('participants', [user.id])
+        .filter('participants', 'cs', '["${user.id}"]')
         .order('lastMessageAt', ascending: false)
         .limit(200);
 
@@ -188,7 +188,7 @@ Future<String?> _findRoomId(String selfId, String otherUserId) async {
     final rooms = await SupabaseService.client
         .from('chat_rooms')
         .select('id, participants')
-        .contains('participants', [selfId])
+        .filter('participants', 'cs', '["$selfId"]')
         .limit(200);
 
     for (final room in List<Map<String, dynamic>>.from(rooms)) {
