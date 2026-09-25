@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as dev;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,7 +17,8 @@ const String _bannersKey = 'home_banners';
 /// Read all banners from the platform_settings row.
 ///
 /// Returns an empty list when the row is missing, the value is null/empty, or
-/// the stored JSON cannot be parsed.
+/// the stored JSON cannot be parsed. Logs errors so RLS issues are visible
+/// during development instead of being silently swallowed.
 Future<List<Map<String, dynamic>>> _readBanners() async {
   try {
     final row = await SupabaseService.client
@@ -25,20 +27,31 @@ Future<List<Map<String, dynamic>>> _readBanners() async {
         .eq('key', _bannersKey)
         .maybeSingle();
 
-    if (row == null) return <Map<String, dynamic>>[];
+    if (row == null) {
+      dev.log('[Banners] No platform_settings row found for key=$_bannersKey');
+      return <Map<String, dynamic>>[];
+    }
 
     final value = row['value'];
     if (value == null || (value is String && value.isEmpty)) {
+      dev.log('[Banners] platform_settings row exists but value is empty');
       return <Map<String, dynamic>>[];
     }
 
     final decoded = jsonDecode(value as String);
-    if (decoded is! List) return <Map<String, dynamic>>[];
+    if (decoded is! List) {
+      dev.log('[Banners] Decoded value is not a List: ${decoded.runtimeType}');
+      return <Map<String, dynamic>>[];
+    }
 
     return decoded
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
-  } catch (_) {
+  } catch (e) {
+    // Log the error so RLS / permission issues are visible during development.
+    // A common cause: the platform_settings SELECT RLS policy is missing or
+    // restricts non-admin users.
+    dev.log('[Banners] Error reading banners from platform_settings: $e');
     return <Map<String, dynamic>>[];
   }
 }

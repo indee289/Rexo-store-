@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
+import '../../auth/providers/auth_provider.dart';
 
 /// Profile state model
 class ProfileState {
@@ -47,9 +48,17 @@ class ProfileState {
 /// Provider for the full user profile with role-specific data.
 /// All secondary queries (roleProfile, wallet, follows) are wrapped in
 /// try/catch so a single missing table never crashes the whole profile.
+///
+/// Watches [authProvider] so Riverpod automatically re-executes this provider
+/// when the user signs in/out — preventing stale profile data after switching
+/// accounts.
 final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) {
+  // ── Reactive dependency on auth state ──
+  // When auth changes (logout → login as new user), this provider is
+  // automatically re-evaluated with the new user's ID.
+  final authState = ref.watch(authProvider);
+  final user = authState.user;
+  if (user == null || !authState.isAuthenticated) {
     return const ProfileState(error: 'Not authenticated');
   }
 
@@ -101,16 +110,35 @@ final currentUserProfileProvider = FutureProvider<ProfileState>((ref) async {
   return ProfileState(profile: profile, roleProfile: roleProfile, wallet: wallet);
 });
 
-/// Number of campaigns the current user has applied to.
+/// Number of campaigns associated with the current user.
+/// For brand/admin users: counts campaigns they CREATED (in `campaigns` table).
+/// For creator users: counts campaigns they APPLIED TO (in `applications` table).
+/// Watches [authProvider] to auto-refresh on login/logout.
 final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return 0;
+  final authState = ref.watch(authProvider);
+  final user = authState.user;
+  if (user == null || !authState.isAuthenticated) return 0;
+
   try {
-    final response = await SupabaseService.client
-        .from('applications')
-        .select('id')
-        .eq('creatorId', user.id); // live: camelCase
-    return (response as List).length;
+    // First, determine the user's role from their profile
+    final profile = await SupabaseService.getUserProfile(user.id);
+    final role = (profile?['role'] ?? 'creator').toString().toLowerCase();
+
+    if (role == 'brand' || role == 'admin') {
+      // Brand/Admin: count campaigns they CREATED
+      final response = await SupabaseService.client
+          .from('campaigns')
+          .select('id')
+          .eq('brandId', user.id); // live: camelCase
+      return (response as List).length;
+    } else {
+      // Creator: count campaigns they APPLIED TO
+      final response = await SupabaseService.client
+          .from('applications')
+          .select('id')
+          .eq('creatorId', user.id); // live: camelCase
+      return (response as List).length;
+    }
   } catch (_) {
     return 0;
   }
@@ -118,9 +146,11 @@ final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
 
 /// Followers count — reads from users.followersCount (live column).
 /// The `follows` table does not exist in the live DB.
+/// Watches [authProvider] to auto-refresh on login/logout.
 final currentUserFollowersCountProvider = FutureProvider<int>((ref) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return 0;
+  final authState = ref.watch(authProvider);
+  final user = authState.user;
+  if (user == null || !authState.isAuthenticated) return 0;
   try {
     final row = await SupabaseService.getUserProfile(user.id);
     return (row?['followersCount'] as num?)?.toInt() ?? 0;
@@ -130,9 +160,11 @@ final currentUserFollowersCountProvider = FutureProvider<int>((ref) async {
 });
 
 /// Following count — reads from users.followingCount (live column).
+/// Watches [authProvider] to auto-refresh on login/logout.
 final currentUserFollowingCountProvider = FutureProvider<int>((ref) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return 0;
+  final authState = ref.watch(authProvider);
+  final user = authState.user;
+  if (user == null || !authState.isAuthenticated) return 0;
   try {
     final row = await SupabaseService.getUserProfile(user.id);
     return (row?['followingCount'] as num?)?.toInt() ?? 0;

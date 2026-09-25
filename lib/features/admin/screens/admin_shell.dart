@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../auth/providers/auth_provider.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/is_admin_provider.dart';
 import '../widgets/admin_bottom_nav.dart';
@@ -39,30 +38,27 @@ class AdminShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final email = ref.watch(currentUserProvider)?.email?.toLowerCase().trim();
-    final emailIsAdmin = email == kAdminEmail;
+    // Admin access is determined purely from the database role via
+    // isAdminProvider (no hardcoded emails). While the profile is loading,
+    // show a spinner; once loaded, redirect non-admins to /home.
+    final isAdmin = ref.watch(isAdminProvider);
+    final profileAsync = ref.watch(currentUserProfileProvider);
 
-    // If not the hardcoded admin email, decide based on the profile role.
-    if (!emailIsAdmin) {
-      final profileAsync = ref.watch(currentUserProfileProvider);
+    if (profileAsync.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
 
-      if (profileAsync.isLoading) {
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-        );
-      }
-
-      final isAdmin = profileAsync.valueOrNull?.isAdmin ?? false;
-      if (!isAdmin) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) context.go('/home');
-        });
-        return const Scaffold(
-          body: Center(child: Text('Access denied')),
-        );
-      }
+    if (!isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/home');
+      });
+      return const Scaffold(
+        body: Center(child: Text('Access denied')),
+      );
     }
 
     // Watch the shared tab index provider

@@ -16,7 +16,7 @@ import '../../../core/widgets/premium_card.dart';
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
-  static const String _supportEmail = AppConstants.adminEmail;
+  static const String _supportEmail = AppConstants.supportEmail;
 
   Future<void> _emailSupport(BuildContext context) async {
     final uri = Uri(

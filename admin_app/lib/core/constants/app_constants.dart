@@ -73,8 +73,8 @@ class AppConstants {
     defaultValue: '',
   );
 
-  /// Admin email
-  static const String adminEmail = 'rexoagency.in@gmail.com';
+  /// Support contact email (admin access is determined from database, not this email)
+  static const String supportEmail = 'rexoagency.in@gmail.com';
 
   /// Animation durations
   static const Duration animationFast = Duration(milliseconds: 200);

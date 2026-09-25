@@ -83,8 +83,10 @@ class AppConstants {
     defaultValue: '',
   );
 
-  /// Admin email
-  static const String adminEmail = 'rexoagency.in@gmail.com';
+  /// Support contact email (used in Help & Support screen).
+  /// NOTE: Admin access is determined from the database `users.role` field,
+  /// NOT from this email. This is purely a contact address.
+  static const String supportEmail = 'rexoagency.in@gmail.com';
 
   /// Animation durations
   static const Duration animationFast = Duration(milliseconds: 200);
