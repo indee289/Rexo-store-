@@ -24,10 +24,45 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- ── Deep links ─────────────────────────────────────────────
+                 Custom-scheme fallback: rexo://<anything>/<path>. The host is
+                 ignored by GoRouter (it matches on the URI PATH), so links such
+                 as rexo://app/campaigns/123 resolve to the /campaigns/:id route.
+                 A custom scheme is never Android-verified, so it always opens
+                 the app when installed. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rexo" />
+            </intent-filter>
+
+            <!-- HTTPS Android App Links for the production domain. autoVerify
+                 makes Android open these links directly in the app ONLY after
+                 https://<host>/.well-known/assetlinks.json is deployed and
+                 verification succeeds (see android/APP_LINKS.md). The host is a
+                 build placeholder (REXO_APP_LINK_HOST, default rexoagency.in) —
+                 it MUST be confirmed as the real production domain before
+                 release. Paths mirror the GoRouter routes (e.g. /campaigns/:id,
+                 /creators/:id, /profile/:handle, /messages/:userId). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${appLinkHost}" />
+                <data android:scheme="https" android:host="${appLinkHostWww}" />
+            </intent-filter>
         </activity>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Route incoming deep-link intents to the Flutter framework so
+             GoRouter can resolve them (cold start, warm start, and while the
+             app is already running). -->
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="true" />
         <!-- FCM: route background/killed-app notifications to the app's
              high-importance channel so they show a heads-up banner + sound
              (matches the channel created in PushNotificationService). -->

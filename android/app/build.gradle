@@ -100,6 +100,23 @@ android {
         targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        // ─────────────────────────────────────────────────────────────────
+        // App Links host for the HTTPS deep-link intent-filter in
+        // AndroidManifest.xml. NOT invented: defaults to the only domain found
+        // in the repo (the rexoagency.in contact/privacy domain). This is an
+        // ASSUMED production domain — CONFIRM it and deploy assetlinks.json
+        // (see android/APP_LINKS.md) before relying on App Links verification.
+        // Override in CI/local with:  -PrexoAppLinkHost=links.yourdomain.com
+        // or the REXO_APP_LINK_HOST environment variable.
+        // ─────────────────────────────────────────────────────────────────
+        def appLinkHost = (project.findProperty('rexoAppLinkHost')
+                ?: System.getenv('REXO_APP_LINK_HOST')
+                ?: 'rexoagency.in').toString()
+        manifestPlaceholders += [
+            appLinkHost   : appLinkHost,
+            appLinkHostWww: "www.${appLinkHost}".toString(),
+        ]
     }
 
     signingConfigs {

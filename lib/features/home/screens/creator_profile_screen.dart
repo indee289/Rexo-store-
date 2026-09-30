@@ -214,9 +214,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   /// Copies a **safe** profile link that references the creator handle and
   /// excludes internal user ids (Requirement 8.4).
   ///
-  /// Format: `rexo://profile/@{handle}`. When the handle is empty we fall back
-  /// to a name-derived slug, and finally to a generic `rexo://profile` link —
-  /// never the internal `userId`.
+  /// Format: `rexo://app/profile/{handle}` — a routable custom-scheme deep link
+  /// whose PATH (`/profile/{handle}`) matches the GoRouter publicProfile route
+  /// (`/profile/:handle`); the `app` host is ignored by GoRouter. When the
+  /// handle is empty we fall back to a name-derived slug, and finally to
+  /// `rexo://app/home` — never the internal `userId`.
   void _copyProfileLink(CreatorView creator) {
     final link = _buildProfileLink(creator);
     Clipboard.setData(ClipboardData(text: link));
@@ -232,7 +234,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   String _buildProfileLink(CreatorView creator) {
     final handle = creator.handle.trim();
     if (handle.isNotEmpty) {
-      return 'rexo://profile/@$handle';
+      // Bare handle (no '@'): the /profile/:handle route looks up `username`,
+      // which is stored without the leading '@'.
+      return 'rexo://app/profile/$handle';
     }
 
     final slug = creator.name
@@ -241,9 +245,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
         .replaceAll(RegExp(r'^-+|-+$'), '');
     if (slug.isNotEmpty) {
-      return 'rexo://profile/$slug';
+      return 'rexo://app/profile/$slug';
     }
 
-    return 'rexo://profile';
+    return 'rexo://app/home';
   }
 }

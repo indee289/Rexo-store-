@@ -48,7 +48,10 @@ UGC MODERATION             PASS (admin queue now fed by user reports)
 REPORT                     PASS (implemented)
 BLOCK                      PASS (implemented)
 NOTIFICATIONS              PASS (unchanged)
-DEEP LINKS                 FAIL (no manifest App Links / custom-scheme intent-filter)
+DEEP LINKS                 NOT VERIFIABLE (implemented: custom-scheme + HTTPS App
+                                 Links intent-filters, GoRouter resolution,
+                                 auth-preserving redirect; App Links verification
+                                 needs assetlinks.json deployed + device test)
 IMAGE PERFORMANCE          PASS (cached_network_image; unchanged)
 PAGINATION                 PASS (existing paginated providers; unchanged)
 RECOVERY SERVICE           PASS (unchanged; not runtime re-tested)
@@ -64,8 +67,13 @@ PLAY CONSOLE TESTING       NOT VERIFIABLE (see PLAY_CONSOLE_CHECKLIST.md)
   deletion / report / block test on the live project.
 - Enable public HTTPS Privacy Policy + account-deletion URLs; paste into Console.
 - Capture real phone screenshots; complete Play Console forms.
-- Deep links: add Android App Links / custom-scheme intent-filters + go_router
-  deep-link handling if OS-level deep links are required.
+- Deep links (implemented this pass): confirm the **production domain** for
+  HTTPS App Links (manifest placeholder `${appLinkHost}` defaults to the
+  repo-derived `rexoagency.in`), paste the **release SHA-256 fingerprint** into
+  `docs/.well-known/assetlinks.json`, deploy it at
+  `https://<domain>/.well-known/assetlinks.json`, and run the device tests in
+  `android/DEEP_LINK_TESTS.md`. The custom `rexo://` scheme already works
+  without any domain. See `android/APP_LINKS.md`.
 
 ## Final status
 **NOT READY** for production submission. The four code-level blockers are
