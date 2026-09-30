@@ -78,12 +78,17 @@ def hasReleaseSigning =
 android {
     namespace "com.rexo.marketplace"
     compileSdk 36
-    ndkVersion flutter.ndkVersion
+    // Several plugins (firebase_*, onesignal_flutter, app_links, …) require NDK
+    // 27; use it explicitly instead of the older flutter.ndkVersion default.
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         // AGP 8.9 / compileSdk 36 toolchain — build on JDK 17.
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        // Required by flutter_local_notifications 17.x (and other plugins that
+        // use java.time APIs) so they work down to minSdk 21.
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -168,4 +173,8 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    // Core library desugaring runtime — pairs with
+    // coreLibraryDesugaringEnabled above (required by flutter_local_notifications).
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
+}
