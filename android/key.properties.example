@@ -1,0 +1,14 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Rexo Collab — Android release signing (EXAMPLE / TEMPLATE)
+#
+# Copy this file to `android/key.properties` and fill in real values.
+# DO NOT commit the real key.properties or the keystore — both are git-ignored.
+#
+# `storeFile` may be an absolute path or a path relative to the `android/`
+# directory (where key.properties lives).
+# ─────────────────────────────────────────────────────────────────────────────
+
+storeFile=/absolute/path/to/rexo-release.jks
+storePassword=CHANGE_ME_store_password
+keyAlias=rexo
+keyPassword=CHANGE_ME_key_password

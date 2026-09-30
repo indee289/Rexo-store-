@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/icons/app_icons.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../reports/providers/report_provider.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -276,6 +277,23 @@ class _DetailBody extends StatelessWidget {
                   const SizedBox(height: 8),
                   DemoAssetView(type: demoType, value: demoUrl),
                 ],
+
+                // ── Report this campaign ──
+                const SizedBox(height: 24),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => context.push('/report', extra: {
+                      'targetType': ReportTargetType.campaign,
+                      'targetId': (campaign['id'] ?? '').toString(),
+                      'targetLabel': title,
+                    }),
+                    icon: const Icon(Iconsax.flag, size: 18),
+                    label: const Text('Report this campaign'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
 
                 // Bottom padding for the sticky Apply bar
                 const SizedBox(height: 32),

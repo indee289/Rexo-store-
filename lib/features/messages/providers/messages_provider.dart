@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
+import '../../blocks/providers/block_provider.dart';
 
 /// Messaging providers backed by the live `chat_rooms` + `chat_messages`
 /// tables.
@@ -53,11 +54,14 @@ final conversationsProvider =
     final roomRows = List<Map<String, dynamic>>.from(rooms);
     if (roomRows.isEmpty) return [];
 
+    // Hide conversations with users in a block relationship (either direction).
+    final blockedIds = await fetchBlockRelationIds();
+
     // Resolve peer ids (the other participant of each room).
     final peerIds = <String>{};
     for (final room in roomRows) {
       final peerId = _otherParticipant(room, user.id);
-      if (peerId != null) peerIds.add(peerId);
+      if (peerId != null && !blockedIds.contains(peerId)) peerIds.add(peerId);
     }
 
     // Fetch peer public rows in one query (users.uid == participant id string).
@@ -76,7 +80,7 @@ final conversationsProvider =
   final conversations = <Map<String, dynamic>>[];
   for (final room in roomRows) {
     final peerId = _otherParticipant(room, user.id);
-    if (peerId == null) continue;
+    if (peerId == null || blockedIds.contains(peerId)) continue;
     final peer = peersById[peerId];
 
     conversations.add({
@@ -158,7 +162,14 @@ final userSearchProvider =
   }
 
   final response = await request.limit(20);
-  return List<Map<String, dynamic>>.from(response);
+  final results = List<Map<String, dynamic>>.from(response);
+
+  // Exclude users in a block relationship (either direction).
+  final blockedIds = await fetchBlockRelationIds();
+  if (blockedIds.isEmpty) return results;
+  return results
+      .where((u) => !blockedIds.contains((u['uid'] ?? '').toString()))
+      .toList();
 });
 
 /// Fetches the public profile row for a chat peer by user id.
@@ -317,6 +328,10 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       final trimmed = content.trim();
       if (trimmed.isEmpty) return false;
+
+      // Block enforcement: refuse to send if either party has blocked the
+      // other. This complements RLS and keeps blocked users from messaging.
+      if (await isBlockRelation(receiverId)) return false;
 
       final now = DateTime.now().toIso8601String();
 

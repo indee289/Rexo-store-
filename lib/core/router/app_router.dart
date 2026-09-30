@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/account/screens/delete_account_screen.dart';
 import '../../features/addresses/screens/add_address_screen.dart';
+import '../../features/blocks/screens/blocked_accounts_screen.dart';
 import '../../features/addresses/screens/addresses_screen.dart';
 import '../../features/admin/screens/admin_shell.dart';
 import '../../features/auth/providers/auth_provider.dart';
@@ -30,6 +32,8 @@ import '../../features/moderation/screens/moderation_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/public_profile_screen.dart';
+import '../../features/reports/providers/report_provider.dart';
+import '../../features/reports/screens/report_screen.dart';
 import '../../features/reviews/screens/reviews_screen.dart';
 import '../../features/security/screens/security_logs_screen.dart';
 import '../../features/sellers/screens/seller_profile_screen.dart';
@@ -79,6 +83,8 @@ class AppRoutes {
   static const String myCampaigns = '/my-campaigns';
   static const String createCampaign = '/create-campaign';
   static const String settings = '/settings';
+  static const String deleteAccount = '/settings/delete-account';
+  static const String blockedAccounts = '/settings/blocked-accounts';
   static const String linkedAccounts = '/linked-accounts';
   static const String kyc = '/kyc';
   static const String addresses = '/addresses';
@@ -101,6 +107,7 @@ class AppRoutes {
   static const String securityLogs = '/security-logs';
   static const String warnings = '/warnings';
   static const String moderation = '/moderation';
+  static const String report = '/report';
   static const String publicProfile = '/profile/:handle';
 
   static const String creatorProfile = '/creators/:id';
@@ -346,6 +353,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsScreen(),
       ),
 
+      /// Delete Account screen (full-screen, routed — not a dialog)
+      GoRoute(
+        path: AppRoutes.deleteAccount,
+        builder: (context, state) => const DeleteAccountScreen(),
+      ),
+
+      /// Blocked Accounts management screen
+      GoRoute(
+        path: AppRoutes.blockedAccounts,
+        builder: (context, state) => const BlockedAccountsScreen(),
+      ),
+
       /// Linked Accounts screen
       GoRoute(
         path: AppRoutes.linkedAccounts,
@@ -502,6 +521,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.moderation,
         builder: (context, state) => const ModerationScreen(),
+      ),
+
+      /// Report screen (full-screen, routed — not a dialog).
+      /// Expects a Map extra: { 'targetType': ReportTargetType,
+      /// 'targetId': String, 'targetLabel': String }.
+      GoRoute(
+        path: AppRoutes.report,
+        builder: (context, state) {
+          final extra = (state.extra as Map<String, dynamic>?) ?? const {};
+          return ReportScreen(
+            targetType:
+                extra['targetType'] as ReportTargetType? ?? ReportTargetType.user,
+            targetId: (extra['targetId'] ?? '').toString(),
+            targetLabel: (extra['targetLabel'] ?? '').toString(),
+          );
+        },
       ),
 
       /// Admin Center (merged admin app) — full-screen, outside the storefront

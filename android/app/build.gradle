@@ -23,6 +23,23 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASE SIGNING CONFIGURATION
+//
+// Signing secrets are resolved from TWO sources, in priority order:
+//   1. Environment variables (preferred for CI):
+//        REXO_KEYSTORE_PATH, REXO_KEYSTORE_PASSWORD, REXO_KEY_ALIAS, REXO_KEY_PASSWORD
+//   2. android/key.properties (preferred for local developer machines):
+//        storeFile, storePassword, keyAlias, keyPassword
+//
+// NEITHER the keystore (*.jks/*.keystore) NOR key.properties is committed —
+// both are covered by .gitignore. No password or path is hardcoded here.
+//
+// If a RELEASE artifact (assembleRelease / bundleRelease) is requested and no
+// valid signing material is found, the build FAILS with a clear error instead
+// of silently falling back to the debug keystore (which Google Play rejects).
+// See android/key.properties.example and SIGNING.md for setup instructions.
+// ─────────────────────────────────────────────────────────────────────────────
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -31,9 +48,36 @@ if (keystorePropertiesFile.exists()) {
     }
 }
 
+// Resolve each signing value from env first, then key.properties.
+def resolveSigning = { String envKey, String propKey ->
+    def envValue = System.getenv(envKey)
+    if (envValue != null && !envValue.trim().isEmpty()) {
+        return envValue.trim()
+    }
+    def propValue = keystoreProperties[propKey]
+    if (propValue != null && !propValue.toString().trim().isEmpty()) {
+        return propValue.toString().trim()
+    }
+    return null
+}
+
+def releaseStorePath = resolveSigning('REXO_KEYSTORE_PATH', 'storeFile')
+def releaseStorePassword = resolveSigning('REXO_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = resolveSigning('REXO_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = resolveSigning('REXO_KEY_PASSWORD', 'keyPassword')
+
+// True only when every piece of signing material is present AND the keystore
+// file actually exists on disk.
+def hasReleaseSigning =
+        releaseStorePath != null &&
+        releaseStorePassword != null &&
+        releaseKeyAlias != null &&
+        releaseKeyPassword != null &&
+        file(releaseStorePath).exists()
+
 android {
     namespace "com.rexo.marketplace"
-    compileSdk 34
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -52,26 +96,53 @@ android {
     defaultConfig {
         applicationId "com.rexo.marketplace"
         minSdk 21
-        targetSdk 34
+        targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
+            if (hasReleaseSigning) {
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // Always attach the real release signing config. When signing
+            // material is missing, the taskGraph guard below fails the build,
+            // so we NEVER ship a release signed with the debug key.
+            signingConfig signingConfigs.release
         }
+    }
+}
+
+// Fail fast (with an actionable message) if a release artifact is requested but
+// no valid signing material was provided. This is the guard that prevents a
+// silent debug-signed release AAB/APK.
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any { t ->
+        def n = t.name
+        n.contains('Release') && (n.startsWith('assemble') || n.startsWith('bundle') || n.startsWith('package'))
+    }
+    if (wantsRelease && !hasReleaseSigning) {
+        throw new GradleException(
+            "\n\n============================================================\n" +
+            "RELEASE SIGNING NOT CONFIGURED — refusing to build an unsigned/\n" +
+            "debug-signed release artifact.\n\n" +
+            "Provide signing material via EITHER:\n" +
+            "  (CI) env vars: REXO_KEYSTORE_PATH, REXO_KEYSTORE_PASSWORD,\n" +
+            "                 REXO_KEY_ALIAS, REXO_KEY_PASSWORD\n" +
+            "  (local) android/key.properties with keys: storeFile,\n" +
+            "                 storePassword, keyAlias, keyPassword\n\n" +
+            "The keystore file referenced must exist on disk. See SIGNING.md\n" +
+            "and android/key.properties.example for full instructions.\n" +
+            "============================================================\n")
     }
 }
 

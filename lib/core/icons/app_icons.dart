@@ -41,6 +41,7 @@ class Iconsax {
   static const IconData document_upload = PhosphorIconsDuotone.fileArrowUp;
   static const IconData edit = PhosphorIconsDuotone.pencilSimple;
   static const IconData facebook = PhosphorIconsDuotone.facebookLogo;
+  static const IconData flag = PhosphorIconsDuotone.flag;
   static const IconData edit_2 = PhosphorIconsDuotone.pencilSimple;
   static const IconData export_1 = PhosphorIconsDuotone.export;
   static const IconData eye = PhosphorIconsDuotone.eye;
@@ -75,6 +76,7 @@ class Iconsax {
   static const IconData money_recive = PhosphorIconsDuotone.handCoins;
   static const IconData money_send = PhosphorIconsDuotone.coins;
   static const IconData monitor = PhosphorIconsDuotone.monitor;
+  static const IconData more = PhosphorIconsDuotone.dotsThreeVertical;
   static const IconData moon = PhosphorIconsDuotone.moon;
   static const IconData music = PhosphorIconsDuotone.musicNote;
   static const IconData notification = PhosphorIconsDuotone.bell;

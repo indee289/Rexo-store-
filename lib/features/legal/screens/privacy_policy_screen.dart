@@ -18,7 +18,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Last Updated: January 1, 2024',
+              'Last Updated: September 21, 2026',
               style: AppTextStyles.caption.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
               ),

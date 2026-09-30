@@ -168,6 +168,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     .read(settingsProvider.notifier)
                     .setPublicProfileEnabled(v),
               ),
+              _SettingsItem(
+                icon: Iconsax.user_remove,
+                title: 'Blocked Accounts',
+                subtitle: 'Manage users you have blocked',
+                onTap: () => context.push('/settings/blocked-accounts'),
+              ),
             ]),
 
             const SizedBox(height: 20),
@@ -285,23 +291,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _handleDeleteAccount(BuildContext context) async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'This action is permanent.\n\n'
-          'Contact support@rexo.app to complete deletion.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+  void _handleDeleteAccount(BuildContext context) {
+    // Full-screen, routed deletion flow (not a dialog). The screen explains
+    // what happens, requires explicit confirmation, and performs the real
+    // server-side deletion.
+    context.push('/settings/delete-account');
   }
 }
 

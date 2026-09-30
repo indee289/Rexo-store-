@@ -12,6 +12,7 @@ import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/premium_sheet.dart';
 import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/user_actions_menu.dart';
 import '../../../services/supabase_service.dart';
 import '../models/message_view.dart';
 import '../providers/messages_provider.dart';
@@ -178,6 +179,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
         actions: [
+          UserActionsMenu(
+            targetUserId: widget.otherUserId,
+            targetLabel: displayName,
+          ),
           const SizedBox(width: AppSpacing.sm),
         ],
       ),
