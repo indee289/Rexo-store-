@@ -2,8 +2,13 @@
 
 Environment note: this audit ran in a build sandbox **without a Flutter/Dart
 SDK, Android build tools, or an emulator**. Code was verified by inspection.
-Anything requiring a real build, a live URL, a deployed backend, or a running
-app is marked **NOT VERIFIABLE / NOT VERIFIED**, never PASS.
+Anything requiring a live URL, a deployed backend, or a running app is marked
+**NOT VERIFIABLE / NOT VERIFIED**, never PASS.
+
+CI verification: GitHub Actions **run 36763340880** (commit `dbcec30`) is
+**green** — it builds the release **APK + AAB** against `compileSdk/targetSdk 36`
+(AGP 8.9.1 / Gradle 8.11.1 / JDK 17) and the `Verify release AAB` step confirmed
+the AAB is **release-signed (not debug, not unsigned)**.
 
 ## The four stated blockers — status
 1. **Release signing** — `android/app/build.gradle` resolves signing from
@@ -32,9 +37,9 @@ app is marked **NOT VERIFIABLE / NOT VERIFIED**, never PASS.
 
 ## Release matrix
 ```
-TARGET API 36+             PASS (static config; build NOT VERIFIABLE here)
-RELEASE SIGNING            PASS (fail-fast guard; no debug fallback; secrets external)
-AAB BUILD                  NOT VERIFIABLE (no Flutter SDK; CI builds + verifies)
+TARGET API 36+             PASS (compiles against SDK 36; CI run 36763340880 green)
+RELEASE SIGNING            PASS (fail-fast guard; CI verified AAB not debug/unsigned)
+AAB BUILD                  PASS (built + signature-verified by CI run 36763340880)
 SECRETS                    PASS (git-ignored; env/dart-define; none hardcoded)
 SUPABASE RLS               PASS (new tables RLS-scoped; no broad USING(true))
 STORAGE SECURITY           PASS (deletion scoped to caller's own folder only)
@@ -61,8 +66,9 @@ PLAY CONSOLE TESTING       NOT VERIFIABLE (see PLAY_CONSOLE_CHECKLIST.md)
 ```
 
 ## Remaining blockers (outside this sandbox)
-- Green CI build of the **signed AAB** (verify the new AGP 8.9.1 / Flutter 3.29
-  toolchain builds; the `Verify release AAB` step must pass).
+- ~~Green CI build of the signed AAB~~ — DONE: CI run 36763340880 is green and
+  the AAB is signature-verified. (Confirm the CI signing secret used is the
+  intended production upload key.)
 - Deploy migrations + the `delete-account` Edge Function; run a real end-to-end
   deletion / report / block test on the live project.
 - Enable public HTTPS Privacy Policy + account-deletion URLs; paste into Console.
