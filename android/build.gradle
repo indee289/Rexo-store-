@@ -5,14 +5,20 @@ allprojects {
     }
 }
 
-rootProject.buildDir = '../build'
+// Modern Gradle layout API. The legacy `rootProject.buildDir = ...` setter is
+// deprecated on Gradle 8.x (removed on Gradle 9), which we now run to support
+// AGP 8.9.1 / compileSdk 36.
+rootProject.layout.buildDirectory.set(new File(rootProject.projectDir, "../build"))
+
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.layout.buildDirectory.set(
+        rootProject.layout.buildDirectory.dir(project.name)
+    )
 }
 subprojects {
     project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }

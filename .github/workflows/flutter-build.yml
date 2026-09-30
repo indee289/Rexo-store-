@@ -15,10 +15,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # JDK 17 is required by Android Gradle Plugin 8.9.1 (compileSdk 36).
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Flutter 3.29.x ships the Android embedding compatible with AGP 8.9.1
+      # and can compile against API 36.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
+          flutter-version: '3.29.0'
           channel: stable
 
       - name: Get dependencies
@@ -102,19 +111,38 @@ jobs:
             FCM_KEY_ENCODED=""
           fi
 
-          flutter build apk --release \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-            --dart-define=R2_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
-            --dart-define=R2_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
-            --dart-define=R2_ACCOUNT_ID="$R2_ACCOUNT_ID" \
-            --dart-define=R2_BUCKET_NAME="$R2_BUCKET_NAME" \
-            --dart-define=R2_PUBLIC_URL="$R2_PUBLIC_URL" \
-            --dart-define=FCM_PROJECT_ID="$FCM_PROJECT_ID" \
-            --dart-define=FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL" \
-            --dart-define=FCM_PRIVATE_KEY="$FCM_KEY_ENCODED" \
-            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" \
+          DEFINES=(
+            --dart-define=SUPABASE_URL="$SUPABASE_URL"
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+            --dart-define=R2_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+            --dart-define=R2_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+            --dart-define=R2_ACCOUNT_ID="$R2_ACCOUNT_ID"
+            --dart-define=R2_BUCKET_NAME="$R2_BUCKET_NAME"
+            --dart-define=R2_PUBLIC_URL="$R2_PUBLIC_URL"
+            --dart-define=FCM_PROJECT_ID="$FCM_PROJECT_ID"
+            --dart-define=FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL"
+            --dart-define=FCM_PRIVATE_KEY="$FCM_KEY_ENCODED"
+            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
             --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL_APP_ID"
+          )
+
+          # APK (internal sideload testing) …
+          flutter build apk --release "${DEFINES[@]}"
+          # … and the AAB uploaded to the Play Store.
+          flutter build appbundle --release "${DEFINES[@]}"
+
+      - name: Verify release AAB is release-signed (not debug, not unsigned)
+        run: |
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          test -f "$AAB" || { echo "AAB missing"; exit 1; }
+          OUT=$(jarsigner -verify -verbose -certs "$AAB" 2>/dev/null || true)
+          if echo "$OUT" | grep -qi "jar is unsigned"; then
+            echo "ERROR: release AAB is UNSIGNED — signing is not configured."; exit 1
+          fi
+          if echo "$OUT" | grep -qi "CN=Android Debug"; then
+            echo "ERROR: release AAB is signed with the DEBUG certificate."; exit 1
+          fi
+          echo "OK: release AAB is release-signed (not debug, not unsigned)."
 
       - name: Rename APK
         run: |
@@ -126,3 +154,9 @@ jobs:
         with:
           name: Rexoumpire
           path: build/app/outputs/flutter-apk/Rexoumpire.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rexo-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab

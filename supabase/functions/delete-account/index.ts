@@ -65,12 +65,19 @@ Deno.serve(async (req: Request) => {
     return json({ error: "anonymization_failed", detail: rpcErr.message }, 500);
   }
 
-  // Step 2 — hard-delete the auth user with the service role. This also
-  // cascades to any auth-owned rows and prevents future sign-in.
+  // Service-role client for storage cleanup + auth-user deletion.
   const adminClient = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // Step 1b — delete ONLY the caller's own Storage objects (scoped to the
+  // `<userId>/…` folder in each bucket; never an arbitrary path). Best-effort:
+  // the DB data is already anonymized, so a storage hiccup must not block the
+  // account deletion.
+  await purgeUserStorage(adminClient, userId);
+
+  // Step 2 — hard-delete the auth user with the service role. This also
+  // cascades to any auth-owned rows and prevents future sign-in.
   const { error: delErr } = await adminClient.auth.admin.deleteUser(userId);
   if (delErr) {
     // The account is already anonymized + locked (isBanned) at this point, so
@@ -95,4 +102,46 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...CORS, "Content-Type": "application/json" },
   });
+}
+
+// Buckets that may hold user-owned objects under a `<userId>/…` prefix.
+const USER_BUCKETS = [
+  "avatars",
+  "kyc-documents",
+  "deposit-proofs",
+  "campaign-assets",
+  "product-images",
+];
+
+// deno-lint-ignore no-explicit-any
+async function purgeUserStorage(admin: any, userId: string): Promise<void> {
+  for (const bucket of USER_BUCKETS) {
+    try {
+      await walkAndRemove(admin, bucket, userId);
+    } catch (_) {
+      // Ignore per-bucket errors — deletion of DB data already succeeded.
+    }
+  }
+}
+
+// deno-lint-ignore no-explicit-any
+async function walkAndRemove(admin: any, bucket: string, prefix: string): Promise<void> {
+  const { data, error } = await admin.storage.from(bucket).list(prefix, {
+    limit: 1000,
+  });
+  if (error || !data) return;
+
+  const files: string[] = [];
+  for (const entry of data) {
+    const full = `${prefix}/${entry.name}`;
+    // Directory entries have null id/metadata → recurse; files are removed.
+    if (entry.id == null && entry.metadata == null) {
+      await walkAndRemove(admin, bucket, full);
+    } else {
+      files.push(full);
+    }
+  }
+  if (files.length > 0) {
+    await admin.storage.from(bucket).remove(files);
+  }
 }
