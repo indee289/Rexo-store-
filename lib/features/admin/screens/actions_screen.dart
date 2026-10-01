@@ -6,7 +6,6 @@ import '../widgets/premium_card.dart';
 import 'campaign_control_screen.dart';
 import 'deposit_queue_screen.dart';
 import 'disputes_screen.dart';
-import 'kyc_verification_screen.dart';
 import 'push_broadcast_screen.dart';
 import 'rexo_program_screen.dart';
 import 'manage_banners_screen.dart';
@@ -146,17 +145,6 @@ class ActionsScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const DisputesScreen()),
-              ),
-            ),
-            _ActionTile(
-              icon: Iconsax.document,
-              title: 'KYC Verification',
-              subtitle: 'Verify identity documents',
-              color: AppColors.accentIndigo,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const KycVerificationScreen()),
               ),
             ),
             _ActionTile(

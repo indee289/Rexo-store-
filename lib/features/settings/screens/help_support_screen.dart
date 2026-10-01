@@ -108,12 +108,6 @@ class HelpSupportScreen extends StatelessWidget {
                 'Wallet screen.',
           ),
           const _FaqTile(
-            question: 'How do I verify my account (KYC)?',
-            answer:
-                'Go to Settings → KYC Verification and upload the requested '
-                'documents. Our team reviews submissions and updates your status.',
-          ),
-          const _FaqTile(
             question: 'How do I contact a brand or creator?',
             answer:
                 'Use the Inbox tab. Tap the new-chat button to search for a user '

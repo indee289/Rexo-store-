@@ -131,12 +131,6 @@ class DashboardScreen extends ConsumerWidget {
                                     color: AppColors.accentPurple,
                                   ),
                                   _StatCard(
-                                    label: 'Pending KYC',
-                                    value: '${data['pending_kyc'] ?? 0}',
-                                    icon: Iconsax.document,
-                                    color: AppColors.accentTeal,
-                                  ),
-                                  _StatCard(
                                     label: 'Revenue',
                                     value:
                                         '₹${data['total_earnings'] ?? 0}',
@@ -175,13 +169,6 @@ class DashboardScreen extends ConsumerWidget {
                                     // Switch to Users tab (index 1) via shared provider
                                     ref.read(adminTabIndexProvider.notifier).state = 1;
                                   },
-                                ),
-                                const SizedBox(width: 8),
-                                _QuickAction(
-                                  label: 'KYC',
-                                  icon: Iconsax.verify,
-                                  onTap: () =>
-                                      context.push('/kyc'),
                                 ),
                                 const SizedBox(width: 8),
                                 _QuickAction(

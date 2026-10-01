@@ -32,7 +32,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Account Registration',
-              '1. You must be at least 18 years old to create an account on the Platform.\n\n2. You agree to provide accurate, current, and complete information during registration and to update such information as necessary.\n\n3. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.\n\n4. You must complete KYC (Know Your Customer) verification before accessing certain features including campaign payments and withdrawals.\n\n5. We reserve the right to suspend or terminate accounts that violate these Terms, provide false information, or engage in fraudulent activity.',
+              '1. You must be at least 18 years old to create an account on the Platform.\n\n2. You agree to provide accurate, current, and complete information during registration and to update such information as necessary.\n\n3. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.\n\n4. We reserve the right to suspend or terminate accounts that violate these Terms, provide false information, or engage in fraudulent activity.',
             ),
             _buildSection(
               context,
@@ -62,7 +62,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Account Suspension and Termination',
-              '1. We may suspend or terminate your account for:\n- Violation of these Terms\n- Fraudulent activity or fake engagement\n- Failure to complete KYC verification when required\n- Inactivity for more than 12 months\n- At our sole discretion for safety or legal reasons\n\n2. Upon termination:\n- Pending payments will be processed according to their status\n- You lose access to all Platform features\n- Your data will be retained per our Privacy Policy\n\n3. You may appeal a suspension through the in-app appeal process within 30 days.',
+              '1. We may suspend or terminate your account for:\n- Violation of these Terms\n- Fraudulent activity or fake engagement\n- Inactivity for more than 12 months\n- At our sole discretion for safety or legal reasons\n\n2. Upon termination:\n- Pending payments will be processed according to their status\n- You lose access to all Platform features\n- Your data will be retained per our Privacy Policy\n\n3. You may appeal a suspension through the in-app appeal process within 30 days.',
             ),
             _buildSection(
               context,

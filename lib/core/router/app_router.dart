@@ -22,7 +22,6 @@ import '../../features/disputes/screens/disputes_screen.dart';
 import '../../features/disputes/screens/raise_dispute_screen.dart';
 import '../../features/home/screens/creator_profile_screen.dart';
 import '../../features/home/screens/home_screen.dart';
-import '../../features/kyc/screens/kyc_upload_screen.dart';
 import '../../features/legal/screens/privacy_policy_screen.dart';
 import '../../features/legal/screens/terms_of_service_screen.dart';
 import '../../features/linked_accounts/screens/linked_accounts_screen.dart';
@@ -86,7 +85,6 @@ class AppRoutes {
   static const String deleteAccount = '/settings/delete-account';
   static const String blockedAccounts = '/settings/blocked-accounts';
   static const String linkedAccounts = '/linked-accounts';
-  static const String kyc = '/kyc';
   static const String addresses = '/addresses';
   static const String addAddress = '/add-address';
   static const String privacyPolicy = '/privacy-policy';
@@ -409,12 +407,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.linkedAccounts,
         builder: (context, state) => const LinkedAccountsScreen(),
-      ),
-
-      /// KYC Upload screen
-      GoRoute(
-        path: AppRoutes.kyc,
-        builder: (context, state) => const KycUploadScreen(),
       ),
 
       /// Addresses screen

@@ -65,7 +65,7 @@ Privacy: privacy@rexoagency.in
 - **Privacy Policy URL:** `<<https://YOUR-DOMAIN/privacy-policy.html>>`
   (see §D — must be public, HTTPS, no login)
 - **Account deletion URL:** `<<https://YOUR-DOMAIN/account-deletion.html>>`
-  (the page `web/account-deletion.html` in this repo — host it publicly)
+  (the page `docs/account-deletion.html` in this repo — host it publicly)
 
 ---
 
@@ -90,7 +90,7 @@ features that don't exist.
 | 8 | Settings (safety) | `/settings` → `settings_screen.dart` | "Control privacy, blocking and account deletion" |
 
 > Optional (do NOT include if not enrolling those surfaces): Subscriptions
-> screen, KYC screen. Admin/Moderation screens are staff-only — do NOT put them
+> screen. Admin/Moderation screens are staff-only — do NOT put them
 > in the public listing.
 
 **Feature-graphic-free tablet note:** tablet screenshots are optional; only add

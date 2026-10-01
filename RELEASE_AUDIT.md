@@ -25,7 +25,7 @@ the AAB is **release-signed (not debug, not unsigned)**.
    EXECUTE only to `authenticated`, `auth.uid()`-scoped) that anonymizes PII and
    purges personal data; **the caller's Storage objects are now also deleted**
    (added this pass); the auth user is hard-deleted (anonymized + banned on
-   failure). Web request page: `web/account-deletion.html`. RLS not disabled.
+   failure). Web request page: `docs/account-deletion.html`. RLS not disabled.
 3. **Report + Block** — user reports feed `moderation_queue` (full-screen
    `/report`); `user_blocks` with scoped RLS + self-block CHECK; block filtering
    in conversations, message send, new-chat search and follow; block/unblock UI

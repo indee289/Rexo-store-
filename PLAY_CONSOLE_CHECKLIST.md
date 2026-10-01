@@ -23,8 +23,8 @@ evidence in-repo.**
 - [ ] NOT VERIFIED — Google Play App Signing enrolled.
 
 ## App content / policy declarations (Play Console)
-- [ ] NOT VERIFIED — Privacy Policy URL set (host `web/privacy-policy.html` publicly; paste HTTPS URL).
-- [ ] NOT VERIFIED — Account deletion URL set (host `web/account-deletion.html` publicly; paste HTTPS URL).
+- [ ] NOT VERIFIED — Privacy Policy URL set (host `docs/privacy-policy.html` publicly; paste HTTPS URL).
+- [ ] NOT VERIFIED — Account deletion URL set (host `docs/account-deletion.html` publicly; paste HTTPS URL).
 - [x] VERIFIED — In-app account deletion exists (Settings → Delete Account → `/settings/delete-account`, RPC `request_account_deletion` + Edge Function).
 - [ ] NOT VERIFIED — Data Safety form completed & submitted (draft mapping in `store/PLAY_STORE_LISTING.md` §E).
 - [ ] NOT VERIFIED — Content rating (IARC questionnaire) completed.

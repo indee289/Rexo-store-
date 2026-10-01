@@ -84,12 +84,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Instagram, YouTube, TikTok',
                 onTap: () => context.push('/linked-accounts'),
               ),
-              _SettingsItem(
-                icon: Iconsax.verify,
-                title: 'KYC Verification',
-                subtitle: 'Verify your identity',
-                onTap: () => context.push('/kyc'),
-              ),
             ]),
 
             const SizedBox(height: 20),

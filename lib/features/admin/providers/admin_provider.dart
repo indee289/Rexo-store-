@@ -17,8 +17,6 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
         await client.from('deposits').select('id').eq('status', 'pending');
     final withdrawalsResponse =
         await client.from('withdrawals').select('id').eq('status', 'pending');
-    final kycResponse =
-        await client.from('kyc_documents').select('id').eq('status', 'pending');
 
     final totalUsers = List<Map<String, dynamic>>.from(usersResponse).length;
     final activeCampaigns =
@@ -27,14 +25,12 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
         List<Map<String, dynamic>>.from(depositsResponse).length;
     final pendingWithdrawals =
         List<Map<String, dynamic>>.from(withdrawalsResponse).length;
-    final pendingKyc = List<Map<String, dynamic>>.from(kycResponse).length;
 
     return {
       'total_users': totalUsers,
       'active_campaigns': activeCampaigns,
       'pending_deposits': pendingDeposits,
       'pending_withdrawals': pendingWithdrawals,
-      'pending_kyc': pendingKyc,
       'total_earnings': 0,
     };
   } catch (_) {
@@ -43,7 +39,6 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
       'active_campaigns': 0,
       'pending_deposits': 0,
       'pending_withdrawals': 0,
-      'pending_kyc': 0,
       'total_earnings': 0,
     };
   }
@@ -153,22 +148,6 @@ final adminDisputesProvider =
     final response = await client
         .from('disputes')
         .select()
-        .order('createdAt', ascending: false)
-        .limit(100);
-    return List<Map<String, dynamic>>.from(response);
-  } catch (_) {
-    return [];
-  }
-});
-
-final adminKycProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  try {
-    final client = SupabaseService.client;
-    final response = await client
-        .from('kyc_documents')
-        .select()
-        .eq('status', 'pending')
         .order('createdAt', ascending: false)
         .limit(100);
     return List<Map<String, dynamic>>.from(response);
@@ -550,34 +529,6 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
           .from('withdrawals')
           .update({'status': 'rejected'}).eq('id', withdrawalId);
       ref.invalidate(adminWithdrawalsProvider);
-      ref.invalidate(adminStatsProvider);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  Future<void> approveKyc(String kycId) async {
-    state = const AsyncValue.loading();
-    try {
-      await SupabaseService.client
-          .from('kyc_documents')
-          .update({'status': 'approved'}).eq('id', kycId);
-      ref.invalidate(adminKycProvider);
-      ref.invalidate(adminStatsProvider);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  Future<void> rejectKyc(String kycId) async {
-    state = const AsyncValue.loading();
-    try {
-      await SupabaseService.client
-          .from('kyc_documents')
-          .update({'status': 'rejected'}).eq('id', kycId);
-      ref.invalidate(adminKycProvider);
       ref.invalidate(adminStatsProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {
