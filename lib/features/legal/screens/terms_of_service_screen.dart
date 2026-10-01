@@ -27,7 +27,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Acceptance of Terms',
-              'By accessing and using the Rexo Marketplace platform ("Platform"), you accept and agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must not use the Platform. These Terms constitute a legally binding agreement between you and Rexo Agency ("Company," "we," "our," or "us").',
+              'By accessing and using the Kixo platform ("Platform"), you accept and agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must not use the Platform. These Terms constitute a legally binding agreement between you and Kixo ("Company," "we," "our," or "us").',
             ),
             _buildSection(
               context,
@@ -37,7 +37,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Platform Usage',
-              'The Rexo Marketplace connects brands with content creators and influencers for marketing campaigns. By using the Platform:\n\n1. Creators agree to:\n- Provide authentic follower and engagement data\n- Complete campaign deliverables within agreed timelines\n- Create original content that complies with advertising standards\n- Disclose sponsored content as per FTC/ASCI guidelines\n- Not use bots, fake engagement, or fraudulent methods\n\n2. Brands agree to:\n- Provide clear campaign briefs and expectations\n- Make timely payments for completed work\n- Not request content that violates laws or platform guidelines\n- Respect intellectual property rights of creators\n\n3. All users agree to:\n- Not harass, abuse, or threaten other users\n- Not post misleading, false, or defamatory content\n- Not attempt to circumvent Platform fees by transacting outside the Platform\n- Not use the Platform for any unlawful purpose',
+              'Kixo connects brands with content creators and influencers for marketing campaigns. By using the Platform:\n\n1. Creators agree to:\n- Provide authentic follower and engagement data\n- Complete campaign deliverables within agreed timelines\n- Create original content that complies with advertising standards\n- Disclose sponsored content as per FTC/ASCI guidelines\n- Not use bots, fake engagement, or fraudulent methods\n\n2. Brands agree to:\n- Provide clear campaign briefs and expectations\n- Make timely payments for completed work\n- Not request content that violates laws or platform guidelines\n- Respect intellectual property rights of creators\n\n3. All users agree to:\n- Not harass, abuse, or threaten other users\n- Not post misleading, false, or defamatory content\n- Not attempt to circumvent Platform fees by transacting outside the Platform\n- Not use the Platform for any unlawful purpose',
             ),
             _buildSection(
               context,
@@ -52,7 +52,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Intellectual Property',
-              '1. Creators retain ownership of their original content unless otherwise agreed in a specific campaign brief.\n\n2. By posting content on the Platform, you grant us a non-exclusive, worldwide license to display, reproduce, and distribute such content for Platform operation and promotion.\n\n3. Brands receive a license to use creator content as specified in the campaign agreement.\n\n4. You must not infringe on third-party intellectual property rights. Content that violates copyright will be removed.\n\n5. The Rexo name, logo, and Platform design are our trademarks and may not be used without permission.',
+              '1. Creators retain ownership of their original content unless otherwise agreed in a specific campaign brief.\n\n2. By posting content on the Platform, you grant us a non-exclusive, worldwide license to display, reproduce, and distribute such content for Platform operation and promotion.\n\n3. Brands receive a license to use creator content as specified in the campaign agreement.\n\n4. You must not infringe on third-party intellectual property rights. Content that violates copyright will be removed.\n\n5. The Kixo name, logo, and Platform design are our trademarks and may not be used without permission.',
             ),
             _buildSection(
               context,
@@ -82,7 +82,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Contact Information',
-              'For questions about these Terms of Service, please contact us:\n\nEmail: legal@rexoagency.in\nAddress: Rexo Agency, India\nSupport: Available through the Help & Support section in the app.',
+              'For questions about these Terms of Service, please contact us:\n\nEmail: infokixoads@gmail.com\nSupport: Available through the Help & Support section in the app.',
             ),
             const SizedBox(height: 40),
           ],

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Native launch (windowBackground) color — matches the red Flutter
-         splash so there is no blue/white flash before Flutter renders.
-         Resource name kept as splash_orange so the launch_background
-         drawables continue to resolve. -->
-    <color name="splash_orange">#FFF5334F</color>
+    <!-- Native launch (windowBackground) color — matches the app's warm-sand
+         background (AppColors.background #F0EDE5) so there is no colored flash
+         before Flutter renders. Resource name kept as splash_orange so the
+         launch_background drawables continue to resolve. -->
+    <color name="splash_orange">#FFF0EDE5</color>
 </resources>

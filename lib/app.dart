@@ -19,7 +19,7 @@ class RexoApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Rexo',
+      title: 'Kixo',
       debugShowCheckedModeBanner: false,
       // ── Light-only theme by product decision ──────────────────────────────
       // The user-facing "Appearance" picker in settings still reads/writes

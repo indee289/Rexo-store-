@@ -171,7 +171,7 @@ class ActionsScreen extends StatelessWidget {
             ),
             _ActionTile(
               icon: Iconsax.award,
-              title: 'Rexo Program Review',
+              title: 'Kixo Program Review',
               subtitle: 'Review program applications',
               color: AppColors.accentAmber,
               onTap: () => Navigator.push(

@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     width: 64,
                     height: 64,
                     errorBuilder: (_, __, ___) => Text(
-                      'Rexo',
+                      'Kixo',
                       style: AppTextStyles.largeTitle.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w800,

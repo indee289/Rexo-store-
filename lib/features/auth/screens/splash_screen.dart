@@ -67,7 +67,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Rexo',
+                    'Kixo',
                     style: AppTextStyles.headline.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,

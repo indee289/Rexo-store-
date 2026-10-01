@@ -85,9 +85,9 @@ class _IgHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
       child: Row(
         children: [
-          // Rexo "logo" — bold left-aligned wordmark
+          // Kixo "logo" — bold left-aligned wordmark
           Text(
-            'Rexo',
+            'Kixo',
             style: AppTextStyles.largeTitle.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w800,
