@@ -11,6 +11,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_toggle.dart';
 import '../../../core/widgets/premium_avatar.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../profile/providers/profile_provider.dart';
@@ -89,6 +90,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Refer & Earn',
                 subtitle: 'Invite friends, earn rewards',
                 onTap: () => context.push('/referrals'),
+              ),
+              _SettingsItem(
+                icon: Iconsax.global,
+                title: 'Language',
+                subtitle: 'English / हिन्दी',
+                onTap: () => _showLanguagePicker(context, ref),
               ),
             ]),
 
@@ -265,6 +272,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     }
+  }
+
+  Future<void> _showLanguagePicker(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(localeProvider)?.languageCode;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        Widget tile(String label, String? code) {
+          final selected = current == code;
+          return ListTile(
+            title: Text(label),
+            trailing: selected
+                ? const Icon(Iconsax.tick_circle, color: AppColors.primary)
+                : null,
+            onTap: () {
+              ref.read(localeProvider.notifier).setLocale(
+                    code == null ? null : Locale(code),
+                  );
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Language updated')),
+              );
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Language',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              tile('System default', null),
+              tile('English', 'en'),
+              tile('हिन्दी (Hindi)', 'hi'),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {

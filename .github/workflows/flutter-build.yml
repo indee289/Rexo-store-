@@ -35,6 +35,13 @@ jobs:
           flutter pub get
           cd admin_app && flutter pub get
 
+      # Generate the localization sources (AppLocalizations) from the ARB files
+      # before analyze/build. `flutter pub get` normally triggers this when
+      # `generate: true`, but we run it explicitly so the generated
+      # lib/l10n/app_localizations.dart always exists for the compile.
+      - name: Generate localizations
+        run: flutter gen-l10n
+
       - name: Analyze code
         run: flutter analyze --no-pub lib/
         continue-on-error: true

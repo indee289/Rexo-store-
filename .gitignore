@@ -86,6 +86,9 @@ bun.lock
 .env.*
 !.env.example
 
+# Generated localizations (flutter gen-l10n)
+lib/l10n/app_localizations*.dart
+
 # Android signing
 key.properties
 

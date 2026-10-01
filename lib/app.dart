@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/providers/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 
 class RexoApp extends ConsumerWidget {
   const RexoApp({super.key});
@@ -17,10 +19,17 @@ class RexoApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
       title: 'Kixo',
       debugShowCheckedModeBanner: false,
+      // ── Localization (English + Hindi) ────────────────────────────────────
+      // `locale == null` follows the device language; the in-app Language
+      // picker (Settings → Language) overrides it via [localeProvider].
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       // ── Light-only theme by product decision ──────────────────────────────
       // The user-facing "Appearance" picker in settings still reads/writes
       // ThemeMode via [settingsProvider] for backward compatibility, but the
