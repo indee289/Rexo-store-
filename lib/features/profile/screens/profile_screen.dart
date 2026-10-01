@@ -11,6 +11,7 @@ import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../admin/providers/is_admin_provider.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/profile_completeness.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import 'edit_profile_screen.dart';
 
@@ -171,6 +172,16 @@ class _Body extends ConsumerWidget {
                     onTap: () => context.push('/linked-accounts'),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // Profile completeness nudge (hidden when 100% complete)
+          SliverToBoxAdapter(
+            child: ProfileCompletenessCard(
+              profile: profile,
+              onComplete: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
               ),
             ),
           ),

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../widgets/premium_card.dart';
 import 'campaign_control_screen.dart';
 import 'deposit_queue_screen.dart';
+import 'fraud_review_screen.dart';
 import 'disputes_screen.dart';
 import 'push_broadcast_screen.dart';
 import 'rexo_program_screen.dart';
@@ -156,6 +157,17 @@ class ActionsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                     builder: (context) => const WalletsEscrowScreen()),
+              ),
+            ),
+            _ActionTile(
+              icon: Iconsax.shield_cross,
+              title: 'Risk & Fraud',
+              subtitle: 'Review flagged wallet activity',
+              color: AppColors.error,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const FraudReviewScreen()),
               ),
             ),
             _ActionTile(

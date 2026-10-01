@@ -84,6 +84,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Instagram, YouTube, TikTok',
                 onTap: () => context.push('/linked-accounts'),
               ),
+              _SettingsItem(
+                icon: Iconsax.gift,
+                title: 'Refer & Earn',
+                subtitle: 'Invite friends, earn rewards',
+                onTap: () => context.push('/referrals'),
+              ),
             ]),
 
             const SizedBox(height: 20),

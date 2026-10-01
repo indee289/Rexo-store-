@@ -33,6 +33,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/reports/providers/report_provider.dart';
 import '../../features/reports/screens/report_screen.dart';
+import '../../features/referrals/screens/referrals_screen.dart';
 import '../../features/reviews/screens/reviews_screen.dart';
 import '../../features/security/screens/security_logs_screen.dart';
 import '../../features/sellers/screens/seller_profile_screen.dart';
@@ -95,6 +96,7 @@ class AppRoutes {
   static const String disputesRaise = '/disputes/raise';
   static const String reviews = '/reviews/:targetId';
   static const String coupons = '/coupons';
+  static const String referrals = '/referrals';
   static const String sellerProfile = '/seller/:id';
   static const String services = '/services';
   static const String servicesRateCalculator = '/services/rate-calculator';
@@ -480,6 +482,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.coupons,
         builder: (context, state) => const CouponsScreen(),
+      ),
+
+      /// Refer & Earn screen
+      GoRoute(
+        path: AppRoutes.referrals,
+        builder: (context, state) => const ReferralsScreen(),
       ),
 
       /// Seller Profile screen
