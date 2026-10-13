@@ -48,7 +48,7 @@ class PushNotificationService {
       AndroidNotificationChannel(
     'rexo_high_importance',
     'General',
-    description: 'General notifications from Kixo',
+    description: 'General notifications from Campster',
     importance: Importance.high,
   );
 
@@ -245,7 +245,7 @@ class PushNotificationService {
       // Prefer the notification payload, fall back to data payload.
       final title = notification?.title ??
           (data['title'] as String?) ??
-          'Kixo';
+          'Campster';
       final body = notification?.body ??
           (data['body'] as String?) ??
           (data['message'] as String?) ??

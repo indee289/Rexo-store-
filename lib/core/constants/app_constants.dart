@@ -2,7 +2,7 @@ class AppConstants {
   AppConstants._();
 
   /// App name
-  static const String appName = 'Kixo';
+  static const String appName = 'Campster';
 
   /// Supabase configuration
   static const String supabaseUrl = String.fromEnvironment(

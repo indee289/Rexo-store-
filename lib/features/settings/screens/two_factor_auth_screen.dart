@@ -68,8 +68,8 @@ class _TwoFactorAuthScreenState
     if (_otpAuthUri != null && _otpAuthUri!.isNotEmpty) return _otpAuthUri;
     if (_secret != null && _secret!.isNotEmpty) {
       final account = SupabaseService.currentUser?.email ?? 'account';
-      return 'otpauth://totp/Kixo:$account'
-          '?secret=$_secret&issuer=Kixo&algorithm=SHA1&digits=6&period=30';
+      return 'otpauth://totp/Campster:$account'
+          '?secret=$_secret&issuer=Campster&algorithm=SHA1&digits=6&period=30';
     }
     return null;
   }
@@ -121,8 +121,8 @@ class _TwoFactorAuthScreenState
     try {
       final response = await SupabaseService.client.auth.mfa.enroll(
         factorType: FactorType.totp,
-        issuer: 'Kixo',
-        friendlyName: 'Kixo ${DateTime.now().millisecondsSinceEpoch}',
+        issuer: 'Campster',
+        friendlyName: 'Campster ${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (!mounted) return;

@@ -87,7 +87,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
-                      'This permanently deletes your Kixo account. '
+                      'This permanently deletes your Campster account. '
                       'This action cannot be undone.',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.error,

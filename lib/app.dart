@@ -22,7 +22,7 @@ class RexoApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'Kixo',
+      title: 'Campster',
       debugShowCheckedModeBanner: false,
       // ── Localization (English + Hindi) ────────────────────────────────────
       // `locale == null` follows the device language; the in-app Language

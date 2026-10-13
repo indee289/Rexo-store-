@@ -88,7 +88,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     'You and your friend each earn reward points when they join '
-                    'Kixo with your code.',
+                    'Campster with your code.',
                     style: AppTextStyles.bodyMedium
                         .copyWith(color: Colors.white.withOpacity(0.9)),
                   ),
@@ -143,7 +143,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                 variant: PremiumButtonVariant.outline,
                 onPressed: () async {
                   final message =
-                      'Join me on Kixo! Use my referral code "$code" when you '
+                      'Join me on Campster! Use my referral code "$code" when you '
                       'sign up and we both earn rewards.';
                   try {
                     await Share.share(message);

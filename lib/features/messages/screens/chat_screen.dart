@@ -32,6 +32,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isSending = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Mark the conversation as read as soon as the chat screen opens.
+    // Use addPostFrameCallback so ref is available after first build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(messageActionsProvider.notifier)
+          .markConversationRead(widget.otherUserId);
+    });
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
@@ -65,7 +76,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               content: content,
             );
 
-    if (success) _scrollToBottom();
+    if (success) {
+      _scrollToBottom();
+      // Also mark as read since we just sent — our own messages count as read.
+      ref.read(messageActionsProvider.notifier)
+          .markConversationRead(widget.otherUserId);
+    }
     if (mounted) setState(() => _isSending = false);
   }
 

@@ -27,7 +27,7 @@ class RexoProgramScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(
-        title: 'Kixo Program Review',
+        title: 'Campster Program Review',
       ),
       body: applications.when(
         data: (list) {

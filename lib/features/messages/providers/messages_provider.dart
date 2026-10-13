@@ -399,6 +399,43 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Mark the conversation with [otherUserId] as read.
+  ///
+  /// Resets the current user's unreadCount to 0 in the chat_rooms row,
+  /// then refreshes conversationsProvider so the inbox dot disappears.
+  Future<void> markConversationRead(String otherUserId) async {
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return;
+
+      final roomId = await _findRoomId(user.id, otherUserId);
+      if (roomId == null) return;
+
+      // Fetch current unreadCount map and set our slot to 0.
+      final room = await SupabaseService.client
+          .from('chat_rooms')
+          .select('unreadCount')
+          .eq('id', roomId)
+          .maybeSingle();
+      if (room == null) return;
+
+      final unread = (room['unreadCount'] as Map?)?.cast<String, dynamic>() ?? {};
+      if ((unread[user.id] ?? 0) == 0) return; // already read, skip update
+
+      final updated = Map<String, dynamic>.from(unread);
+      updated[user.id] = 0;
+
+      await SupabaseService.client
+          .from('chat_rooms')
+          .update({'unreadCount': updated})
+          .eq('id', roomId);
+
+      ref.invalidate(conversationsProvider);
+    } catch (_) {
+      // Non-fatal — just means the badge may linger briefly.
+    }
+  }
+
   /// Edit a message previously sent by the current user.
   ///
   /// Requires non-empty content and the current user to be the sender. Sets

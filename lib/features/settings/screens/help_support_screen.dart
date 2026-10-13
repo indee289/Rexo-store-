@@ -22,7 +22,7 @@ class HelpSupportScreen extends StatelessWidget {
     final uri = Uri(
       scheme: 'mailto',
       path: _supportEmail,
-      query: 'subject=${Uri.encodeComponent('Kixo Support Request')}',
+      query: 'subject=${Uri.encodeComponent('Campster Support Request')}',
     );
     var launched = false;
     try {
@@ -63,7 +63,7 @@ class HelpSupportScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Reach out to the Kixo team and we\'ll get back to you as soon as we can.',
+            'Reach out to the Campster team and we\'ll get back to you as soon as we can.',
             style: AppTextStyles.bodySmall.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),

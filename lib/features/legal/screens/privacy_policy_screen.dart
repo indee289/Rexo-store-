@@ -27,7 +27,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               'Introduction',
-              'Welcome to Kixo ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our influencer marketing platform and mobile application. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the application.',
+              'Welcome to Campster ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our influencer marketing platform and mobile application. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the application.',
             ),
             _buildSection(
               context,
