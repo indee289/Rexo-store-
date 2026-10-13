@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
 
@@ -11,28 +10,19 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   try {
     final client = SupabaseService.client;
 
-    // Use FetchOptions(count: CountOption.exact, head: true) — returns only
-    // the count without fetching rows, avoiding slow full-table scans.
-    final usersResponse = await client
-        .from('users')
-        .select('*', const FetchOptions(count: CountOption.exact, head: true));
-    final campaignsResponse = await client
-        .from('campaigns')
-        .select('*', const FetchOptions(count: CountOption.exact, head: true))
-        .eq('status', 'active');
-    final depositsResponse = await client
-        .from('deposits')
-        .select('*', const FetchOptions(count: CountOption.exact, head: true))
-        .eq('status', 'pending');
-    final withdrawalsResponse = await client
-        .from('withdrawals')
-        .select('*', const FetchOptions(count: CountOption.exact, head: true))
-        .eq('status', 'pending');
+    // Fetch minimal 'id' column for each table to count rows.
+    final usersResponse = await client.from('users').select('id');
+    final campaignsResponse =
+        await client.from('campaigns').select('id').eq('status', 'active');
+    final depositsResponse =
+        await client.from('deposits').select('id').eq('status', 'pending');
+    final withdrawalsResponse =
+        await client.from('withdrawals').select('id').eq('status', 'pending');
 
-    final totalUsers = usersResponse.count ?? 0;
-    final activeCampaigns = campaignsResponse.count ?? 0;
-    final pendingDeposits = depositsResponse.count ?? 0;
-    final pendingWithdrawals = withdrawalsResponse.count ?? 0;
+    final totalUsers = (usersResponse as List).length;
+    final activeCampaigns = (campaignsResponse as List).length;
+    final pendingDeposits = (depositsResponse as List).length;
+    final pendingWithdrawals = (withdrawalsResponse as List).length;
 
     final paymentsResponse = await client
         .from('subscription_payments')
