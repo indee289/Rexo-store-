@@ -37,81 +37,102 @@ String _directRoomId(String a, String b) {
 /// activity first. Each entry uses the keys the UI already expects:
 /// `other_user_id`, `other_user_name`, `other_user_avatar`, `last_message`,
 /// `last_message_at`, `is_read`.
+///
+/// Implemented as a StreamProvider so the inbox updates in real-time when
+/// chat_rooms rows change (new messages, room creation, etc.).
 final conversationsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
   final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  if (user == null) return Stream.value([]);
 
-  try {
-    // Rooms where the current user's id string is inside participants jsonb.
-    final rooms = await SupabaseService.client
-        .from('chat_rooms')
-        .select()
-        .filter('participants', 'cs', '["${user.id}"]')
-        .order('lastMessageAt', ascending: false)
-        .limit(200);
+  final controller = StreamController<List<Map<String, dynamic>>>();
+  RealtimeChannel? channel;
 
-    final roomRows = List<Map<String, dynamic>>.from(rooms);
-    if (roomRows.isEmpty) return [];
+  Future<void> fetchConversations() async {
+    try {
+      final rooms = await SupabaseService.client
+          .from('chat_rooms')
+          .select()
+          .filter('participants', 'cs', '["${user.id}"]')
+          .order('lastMessageAt', ascending: false)
+          .limit(200);
 
-    // Hide conversations with users in a block relationship (either direction).
-    final blockedIds = await fetchBlockRelationIds();
+      final roomRows = List<Map<String, dynamic>>.from(rooms);
 
-    // Resolve peer ids (the other participant of each room).
-    final peerIds = <String>{};
-    for (final room in roomRows) {
-      final peerId = _otherParticipant(room, user.id);
-      if (peerId != null && !blockedIds.contains(peerId)) peerIds.add(peerId);
-    }
+      final blockedIds = await fetchBlockRelationIds();
 
-    // Fetch peer public rows in one query (users.uid == participant id string).
-    final peersById = <String, Map<String, dynamic>>{};
-    if (peerIds.isNotEmpty) {
-      final peers = await SupabaseService.client
-          .from('users')
-          .select('uid, name, username, profileImage')
-          .inFilter('uid', peerIds.toList());
-      for (final p in List<Map<String, dynamic>>.from(peers)) {
-        final id = (p['uid'] ?? '').toString();
-        if (id.isNotEmpty) peersById[id] = p;
+      final peerIds = <String>{};
+      for (final room in roomRows) {
+        final peerId = _otherParticipant(room, user.id);
+        if (peerId != null && !blockedIds.contains(peerId))
+          peerIds.add(peerId);
       }
+
+      final peersById = <String, Map<String, dynamic>>{};
+      if (peerIds.isNotEmpty) {
+        final peers = await SupabaseService.client
+            .from('users')
+            .select('uid, name, username, profileImage')
+            .inFilter('uid', peerIds.toList());
+        for (final p in List<Map<String, dynamic>>.from(peers)) {
+          final id = (p['uid'] ?? '').toString();
+          if (id.isNotEmpty) peersById[id] = p;
+        }
+      }
+
+      final conversations = <Map<String, dynamic>>[];
+      for (final room in roomRows) {
+        final peerId = _otherParticipant(room, user.id);
+        if (peerId == null || blockedIds.contains(peerId)) continue;
+        final peer = peersById[peerId];
+        conversations.add({
+          'other_user_id': peerId,
+          'other_user_name':
+              (peer?['name'] ?? peer?['username'] ?? 'User').toString(),
+          'other_user_avatar': peer?['profileImage'] as String?,
+          'last_message': (room['lastMessage'] ?? '').toString(),
+          'last_message_at':
+              (room['lastMessageAt'] ?? room['lastUpdate'] ?? '').toString(),
+          'is_read': _unreadFor(room, user.id) == 0,
+        });
+      }
+
+      conversations.sort((a, b) {
+        final aDate =
+            DateTime.tryParse((a['last_message_at'] ?? '').toString()) ??
+                DateTime(1970);
+        final bDate =
+            DateTime.tryParse((b['last_message_at'] ?? '').toString()) ??
+                DateTime(1970);
+        return bDate.compareTo(aDate);
+      });
+
+      if (!controller.isClosed) controller.add(conversations);
+
+      channel ??= SupabaseService.client
+          .channel('chat_rooms_${user.id}')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'chat_rooms',
+            callback: (_) => fetchConversations(),
+          )
+          .subscribe();
+    } catch (_) {
+      if (!controller.isClosed) controller.add([]);
     }
-
-  final conversations = <Map<String, dynamic>>[];
-  for (final room in roomRows) {
-    final peerId = _otherParticipant(room, user.id);
-    if (peerId == null || blockedIds.contains(peerId)) continue;
-    final peer = peersById[peerId];
-
-    conversations.add({
-      'other_user_id': peerId,
-      'other_user_name': (peer?['name'] ?? peer?['username'] ?? 'User')
-          .toString(),
-      'other_user_avatar': peer?['profileImage'] as String?,
-      'last_message': (room['lastMessage'] ?? '').toString(),
-      'last_message_at': (room['lastMessageAt'] ?? room['lastUpdate'] ?? '')
-          .toString(),
-      'is_read': _unreadFor(room, user.id) == 0,
-    });
   }
 
-  conversations.sort((a, b) {
-    final aDate =
-        DateTime.tryParse((a['last_message_at'] ?? '').toString()) ??
-            DateTime(1970);
-    final bDate =
-        DateTime.tryParse((b['last_message_at'] ?? '').toString()) ??
-            DateTime(1970);
-    return bDate.compareTo(aDate);
+  fetchConversations();
+
+  ref.onDispose(() {
+    controller.close();
+    if (channel != null) {
+      SupabaseService.client.removeChannel(channel!);
+    }
   });
 
-  return conversations;
-  } catch (_) {
-    // Query failed — table might be empty, RLS mismatch, or jsonb
-    // containment issue. Return empty list so the UI shows "No messages"
-    // instead of crashing with "Something went wrong".
-    return [];
-  }
+  return controller.stream;
 });
 
 /// Returns the id of the participant that is not [selfId], or `null` when the

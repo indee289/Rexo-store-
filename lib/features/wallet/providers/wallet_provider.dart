@@ -5,6 +5,10 @@ import '../../../services/supabase_service.dart';
 /// Realtime stream provider for the user's wallet data.
 /// Subscribes to Supabase Realtime so admin actions (deposit approvals,
 /// withdrawal completions) reflect immediately without app restart.
+///
+/// Also injects a computed `total_earnings` key by summing
+/// `payout_per_creator` from approved applications where the current
+/// user is the creator — the `wallets` table has no such column.
 final walletProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   final user = SupabaseService.currentUser;
   if (user == null) return Stream.value(null);
@@ -13,9 +17,32 @@ final walletProvider = StreamProvider<Map<String, dynamic>?>((ref) {
       .from('wallets')
       .stream(primaryKey: ['id'])
       .eq('user_id', user.id)
-      .map((List<Map<String, dynamic>> rows) {
+      .asyncMap((List<Map<String, dynamic>> rows) async {
         if (rows.isEmpty) return null;
-        return rows.first;
+        final walletMap = Map<String, dynamic>.from(rows.first);
+
+        // Compute total earnings from approved applications.
+        try {
+          final earningsResponse = await SupabaseService.client
+              .from('applications')
+              .select('payout_per_creator')
+              .eq('creatorId', user.id)
+              .eq('status', 'approved');
+          final totalEarnings =
+              List<Map<String, dynamic>>.from(earningsResponse)
+                  .fold<double>(
+                      0.0,
+                      (sum, row) =>
+                          sum +
+                          ((row['payout_per_creator'] as num?)
+                                  ?.toDouble() ??
+                              0.0));
+          walletMap['total_earnings'] = totalEarnings;
+        } catch (_) {
+          walletMap['total_earnings'] = 0.0;
+        }
+
+        return walletMap;
       });
 });
 

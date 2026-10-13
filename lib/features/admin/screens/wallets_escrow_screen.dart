@@ -63,7 +63,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Status: ${wallet['status'] ?? 'active'}',
+                                  'Status: ${wallet['is_frozen'] == true ? 'Frozen' : 'Active'}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),

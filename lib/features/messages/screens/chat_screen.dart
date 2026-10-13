@@ -72,7 +72,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final messagesAsync =
-        ref.watch(chatMessagesProvider(widget.otherUserId));
+        ref.watch(chatMessagesStreamProvider(widget.otherUserId));
     final conversationsAsync = ref.watch(conversationsProvider);
 
     // Resolve header name/avatar
@@ -152,26 +152,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: AppColors.success,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'online',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.success,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -484,7 +464,7 @@ class _MessageActionsSheetState
   }
 
   void _closeOnSuccess() {
-    ref.invalidate(chatMessagesProvider(widget.otherUserId));
+    ref.invalidate(chatMessagesStreamProvider(widget.otherUserId));
     Navigator.of(context).maybePop();
   }
 
