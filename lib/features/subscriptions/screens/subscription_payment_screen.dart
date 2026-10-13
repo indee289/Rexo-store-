@@ -50,15 +50,33 @@ class _SubscriptionPaymentScreenState
   XFile? _proofFile;
   bool _isSubmitting = false;
 
+  Map<String, dynamic>? _paymentSettings;
+  bool _loadingSettings = true;
+  String? _settingsError;
+
   final List<String> _paymentMethods = ['UPI', 'Bank Transfer', 'Other'];
 
-  // Merchant payment details users pay to. Kept in one place so it matches the
-  // instructions shown for deposits.
-  static const String _payUpiId = 'rexoagency@upi';
-  static const String _payAccountName = 'Rexo Agency';
-  static const String _payAccountNumber = '1234567890';
-  static const String _payIfsc = 'HDFC0001234';
-  static const String _payBankName = 'HDFC Bank';
+  @override
+  void initState() {
+    super.initState();
+    _loadPaymentSettings();
+  }
+
+  Future<void> _loadPaymentSettings() async {
+    try {
+      final result = await SupabaseService.client
+          .from('platform_settings')
+          .select('key, value')
+          .inFilter('key', ['upi_id', 'bank_account', 'ifsc_code', 'bank_name', 'account_name']);
+      final Map<String, dynamic> settings = {};
+      for (final row in List<Map<String, dynamic>>.from(result)) {
+        settings[row['key'] as String] = row['value'];
+      }
+      if (mounted) setState(() { _paymentSettings = settings; _loadingSettings = false; });
+    } catch (e) {
+      if (mounted) setState(() { _settingsError = 'Could not load payment details'; _loadingSettings = false; });
+    }
+  }
 
   @override
   void dispose() {
@@ -239,6 +257,11 @@ class _SubscriptionPaymentScreenState
               // Payment instructions (UPI / bank details)
               Text('Pay to', style: AppTextStyles.labelLarge),
               const SizedBox(height: 8),
+              if (_loadingSettings)
+                const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              else if (_settingsError != null)
+                Text(_settingsError!, style: const TextStyle(color: AppColors.error))
+              else
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -250,12 +273,12 @@ class _SubscriptionPaymentScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _detailRow('UPI ID', _payUpiId),
+                    _detailRow('UPI ID', _paymentSettings?['upi_id'] ?? '—'),
                     const Divider(height: 20),
-                    _detailRow('Account Name', _payAccountName),
-                    _detailRow('Account Number', _payAccountNumber),
-                    _detailRow('IFSC', _payIfsc),
-                    _detailRow('Bank', _payBankName),
+                    _detailRow('Account Name', _paymentSettings?['account_name'] ?? '—'),
+                    _detailRow('Account Number', _paymentSettings?['bank_account'] ?? '—'),
+                    _detailRow('IFSC', _paymentSettings?['ifsc_code'] ?? '—'),
+                    _detailRow('Bank', _paymentSettings?['bank_name'] ?? '—'),
                     const SizedBox(height: 8),
                     Text(
                       'Pay the exact amount above, then enter your transaction '

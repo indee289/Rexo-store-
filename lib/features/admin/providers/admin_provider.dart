@@ -26,12 +26,19 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     final pendingWithdrawals =
         List<Map<String, dynamic>>.from(withdrawalsResponse).length;
 
+    final paymentsResponse = await client
+        .from('subscription_payments')
+        .select('amount')
+        .eq('status', 'approved');
+    final totalEarnings = List<Map<String, dynamic>>.from(paymentsResponse)
+        .fold<double>(0.0, (sum, row) => sum + ((row['amount'] as num?)?.toDouble() ?? 0.0));
+
     return {
       'total_users': totalUsers,
       'active_campaigns': activeCampaigns,
       'pending_deposits': pendingDeposits,
       'pending_withdrawals': pendingWithdrawals,
-      'total_earnings': 0,
+      'total_earnings': totalEarnings,
     };
   } catch (_) {
     return {
