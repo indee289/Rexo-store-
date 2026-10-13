@@ -148,6 +148,7 @@ class ServicesScreen extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: PremiumCard(
+        onTap: () => _showServiceDetail(context, service),
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(
           children: [
@@ -218,6 +219,60 @@ class ServicesScreen extends ConsumerWidget {
                 color: AppColors.primary,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showServiceDetail(BuildContext context, Map<String, dynamic> service) {
+    final title = service['title'] as String? ?? 'Service';
+    final description = service['description'] as String? ?? '';
+    final price = (service['price'] as num?)?.toDouble() ?? 0.0;
+    final serviceType = service['service_type'] as String? ?? '';
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(title, style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.w700)),
+            if (serviceType.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(serviceType, style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
+            ],
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(description, style: AppTextStyles.bodyMedium),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Price', style: AppTextStyles.labelLarge),
+                Text('₹${price.toStringAsFixed(0)}',
+                    style: AppTextStyles.h5.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
           ],
         ),
       ),

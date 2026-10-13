@@ -160,6 +160,7 @@ class _JobDetailScrollView extends StatelessWidget {
                 _CoverHeader(
                   coverUrl: coverUrl,
                   isActive: isActive,
+                  jobId: jobId,
                 ),
 
                 Padding(
@@ -359,14 +360,19 @@ class _JobDetailScrollView extends StatelessWidget {
 
 // ─── Cover Header ─────────────────────────────────────────────────────────────
 
-class _CoverHeader extends StatelessWidget {
+class _CoverHeader extends ConsumerWidget {
   final String? coverUrl;
   final bool isActive;
+  final String jobId;
 
-  const _CoverHeader({required this.coverUrl, required this.isActive});
+  const _CoverHeader({
+    required this.coverUrl,
+    required this.isActive,
+    required this.jobId,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPad = MediaQuery.of(context).padding.top;
     final hasCover = coverUrl != null && coverUrl!.isNotEmpty;
 
@@ -420,12 +426,24 @@ class _CoverHeader extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              PremiumIconButton(
-                icon: Iconsax.save_2,
-                background: true,
-                color: Colors.white,
-                tooltip: 'Save',
-                onPressed: () {},
+              Consumer(
+                builder: (context, ref, _) {
+                  final saved = ref.watch(savedJobsProvider);
+                  final isSaved = saved.contains(jobId);
+                  return PremiumIconButton(
+                    icon: isSaved ? Iconsax.save_add : Iconsax.save_2,
+                    background: true,
+                    color: isSaved ? AppColors.primary : Colors.white,
+                    tooltip: isSaved ? 'Saved' : 'Save',
+                    onPressed: () {
+                      ref.read(savedJobsProvider.notifier).update((s) {
+                        final next = Set<String>.from(s);
+                        if (isSaved) { next.remove(jobId); } else { next.add(jobId); }
+                        return next;
+                      });
+                    },
+                  );
+                },
               ),
             ],
           ),

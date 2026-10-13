@@ -674,3 +674,7 @@ final jobsActionsProvider =
     StateNotifierProvider<JobsActionsNotifier, AsyncValue<void>>((ref) {
   return JobsActionsNotifier(ref);
 });
+
+/// Local in-memory set of saved/bookmarked job ids.
+/// Toggled from the Job Detail screen bookmark icon.
+final savedJobsProvider = StateProvider<Set<String>>((ref) => <String>{});

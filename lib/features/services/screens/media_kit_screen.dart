@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -185,7 +186,12 @@ class MediaKitScreen extends ConsumerWidget {
                   label: 'Share media kit',
                   variant: PremiumButtonVariant.outline,
                   icon: Iconsax.export_1,
-                  onPressed: () {},
+                  onPressed: () {
+                    final shareHandle = handle.isNotEmpty ? '@$handle' : name;
+                    Share.share(
+                      'Check out my Kixo Media Kit: $shareHandle\nhttps://kixo.app/creator/$handle',
+                    );
+                  },
                 ),
               ],
             ),
