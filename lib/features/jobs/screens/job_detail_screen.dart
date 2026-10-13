@@ -431,7 +431,7 @@ class _CoverHeader extends ConsumerWidget {
                   final saved = ref.watch(savedJobsProvider);
                   final isSaved = saved.contains(jobId);
                   return PremiumIconButton(
-                    icon: isSaved ? Iconsax.save_add : Iconsax.save_2,
+                    icon: isSaved ? Iconsax.bookmark : Iconsax.save_2,
                     background: true,
                     color: isSaved ? AppColors.primary : Colors.white,
                     tooltip: isSaved ? 'Saved' : 'Save',

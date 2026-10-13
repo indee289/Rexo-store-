@@ -11,6 +11,8 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   try {
     final client = SupabaseService.client;
 
+    // Use FetchOptions(count: CountOption.exact, head: true) — returns only
+    // the count without fetching rows, avoiding slow full-table scans.
     final usersResponse = await client
         .from('users')
         .select('*', const FetchOptions(count: CountOption.exact, head: true));
