@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
 
@@ -10,21 +11,26 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   try {
     final client = SupabaseService.client;
 
-    final usersResponse = await client.from('users').select('id');
-    final campaignsResponse =
-        await client.from('campaigns').select('id').eq('status', 'active');
-    final depositsResponse =
-        await client.from('deposits').select('id').eq('status', 'pending');
-    final withdrawalsResponse =
-        await client.from('withdrawals').select('id').eq('status', 'pending');
+    final usersResponse = await client
+        .from('users')
+        .select('*', const FetchOptions(count: CountOption.exact, head: true));
+    final campaignsResponse = await client
+        .from('campaigns')
+        .select('*', const FetchOptions(count: CountOption.exact, head: true))
+        .eq('status', 'active');
+    final depositsResponse = await client
+        .from('deposits')
+        .select('*', const FetchOptions(count: CountOption.exact, head: true))
+        .eq('status', 'pending');
+    final withdrawalsResponse = await client
+        .from('withdrawals')
+        .select('*', const FetchOptions(count: CountOption.exact, head: true))
+        .eq('status', 'pending');
 
-    final totalUsers = List<Map<String, dynamic>>.from(usersResponse).length;
-    final activeCampaigns =
-        List<Map<String, dynamic>>.from(campaignsResponse).length;
-    final pendingDeposits =
-        List<Map<String, dynamic>>.from(depositsResponse).length;
-    final pendingWithdrawals =
-        List<Map<String, dynamic>>.from(withdrawalsResponse).length;
+    final totalUsers = usersResponse.count ?? 0;
+    final activeCampaigns = campaignsResponse.count ?? 0;
+    final pendingDeposits = depositsResponse.count ?? 0;
+    final pendingWithdrawals = withdrawalsResponse.count ?? 0;
 
     final paymentsResponse = await client
         .from('subscription_payments')

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -140,15 +141,21 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                 label: 'Share invite',
                 icon: Iconsax.send_2,
                 variant: PremiumButtonVariant.outline,
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(
-                    text:
-                        'Join me on Kixo! Use my referral code "$code" when you '
-                        'sign up and we both earn rewards.',
-                  ));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invite message copied — paste it anywhere')),
-                  );
+                onPressed: () async {
+                  final message =
+                      'Join me on Kixo! Use my referral code "$code" when you '
+                      'sign up and we both earn rewards.';
+                  try {
+                    await Share.share(message);
+                  } catch (_) {
+                    // Fallback to clipboard if share sheet fails
+                    await Clipboard.setData(ClipboardData(text: message));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invite message copied — paste it anywhere')),
+                      );
+                    }
+                  }
                 },
               ),
             const SizedBox(height: AppSpacing.xl),

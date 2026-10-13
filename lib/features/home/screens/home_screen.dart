@@ -312,7 +312,7 @@ class _FeedList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(featuredCampaignsProvider);
-    final saved = ref.watch(savedCampaignsProvider);
+    final saved = ref.watch(savedCampaignsProvider).valueOrNull ?? {};
 
     return async.when(
       loading: () => SliverList(
@@ -373,13 +373,9 @@ class _FeedList extends ConsumerWidget {
                 data: items[index],
                 saved: saved.contains(items[index].id),
                 onToggleSave: () {
-                  final notifier =
-                      ref.read(savedCampaignsProvider.notifier);
-                  final next = Set<String>.from(notifier.state);
-                  if (!next.add(items[index].id)) {
-                    next.remove(items[index].id);
-                  }
-                  notifier.state = next;
+                  ref
+                      .read(savedCampaignsProvider.notifier)
+                      .toggle(items[index].id);
                 },
                 onTap: () => context.push('/campaigns/${items[index].id}'),
               ),

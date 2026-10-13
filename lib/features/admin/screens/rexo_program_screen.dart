@@ -108,11 +108,22 @@ class RexoProgramScreen extends ConsumerWidget {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () async {
-                                await SupabaseService.client
-                                    .from('rexo_program_applications')
-                                    .update({'status': 'approved'}).eq(
-                                        'id', app['id']);
-                                ref.invalidate(_rexoProgramProvider);
+                                try {
+                                  await SupabaseService.client
+                                      .from('rexo_program_applications')
+                                      .update({'status': 'approved'}).eq(
+                                          'id', app['id']);
+                                  ref.invalidate(_rexoProgramProvider);
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to approve: ${e.toString()}'),
+                                        backgroundColor: AppColors.error,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.success,
@@ -125,11 +136,22 @@ class RexoProgramScreen extends ConsumerWidget {
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () async {
-                                await SupabaseService.client
-                                    .from('rexo_program_applications')
-                                    .update({'status': 'rejected'}).eq(
-                                        'id', app['id']);
-                                ref.invalidate(_rexoProgramProvider);
+                                try {
+                                  await SupabaseService.client
+                                      .from('rexo_program_applications')
+                                      .update({'status': 'rejected'}).eq(
+                                          'id', app['id']);
+                                  ref.invalidate(_rexoProgramProvider);
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to reject: ${e.toString()}'),
+                                        backgroundColor: AppColors.error,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.error,
