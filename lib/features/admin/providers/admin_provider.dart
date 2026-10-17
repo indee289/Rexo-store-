@@ -86,13 +86,26 @@ final adminWithdrawalsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final client = SupabaseService.client;
+    // The withdrawals table uses snake_case `created_at` (see submitWithdrawal).
+    // Do NOT .order() on a possibly-wrong column — that errors and silently
+    // returns []. Fetch unordered and sort client-side so the admin queue
+    // always shows pending requests.
     final response = await client
         .from('withdrawals')
         .select()
         .eq('status', 'pending')
-        .order('createdAt', ascending: false)
         .limit(100);
-    return List<Map<String, dynamic>>.from(response);
+    final list = List<Map<String, dynamic>>.from(response);
+    list.sort((a, b) {
+      final ad = DateTime.tryParse(
+              (a['created_at'] ?? a['createdAt'] ?? '').toString()) ??
+          DateTime(1970);
+      final bd = DateTime.tryParse(
+              (b['created_at'] ?? b['createdAt'] ?? '').toString()) ??
+          DateTime(1970);
+      return bd.compareTo(ad);
+    });
+    return list;
   } catch (_) {
     return [];
   }
@@ -128,10 +141,11 @@ final adminAuditLogsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final client = SupabaseService.client;
+    // audit_logs uses snake_case created_at (see createAuditLog insert).
     final response = await client
         .from('audit_logs')
         .select()
-        .order('createdAt', ascending: false)
+        .order('created_at', ascending: false)
         .limit(100);
     return List<Map<String, dynamic>>.from(response);
   } catch (_) {
