@@ -1,0 +1,10 @@
+# Flutter gen-l10n configuration.
+# Generated AppLocalizations is emitted into lib/l10n (no synthetic package) so
+# it can be imported as package:rexo_marketplace/l10n/app_localizations.dart.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+output-dir: lib/l10n
+synthetic-package: false
+nullable-getter: false

@@ -1,10 +1,8 @@
-import 'dart:convert';
-
 class AppConstants {
   AppConstants._();
 
   /// App name
-  static const String appName = 'Rexo';
+  static const String appName = 'Campster';
 
   /// Supabase configuration
   static const String supabaseUrl = String.fromEnvironment(
@@ -48,6 +46,25 @@ class AppConstants {
     defaultValue: '',
   );
 
+  /// Validates R2 storage credentials at startup.
+  /// In debug mode, throws AssertionError if credentials are missing.
+  /// In release mode, logs a warning instead.
+  static void validateR2Config() {
+    final missing = r2AccessKeyId.isEmpty ||
+        r2SecretAccessKey.isEmpty ||
+        r2AccountId.isEmpty ||
+        r2BucketName.isEmpty;
+    if (missing) {
+      assert(
+        false,
+        'R2 credentials not provided via --dart-define. Image uploads will fail.',
+      );
+      // In release mode, assert is a no-op — log warning instead.
+      // ignore: avoid_print
+      print('[AppConstants] WARNING: R2 credentials not provided. Image uploads will fail.');
+    }
+  }
+
   /// Firebase Cloud Messaging configuration (server-side credentials)
   static const String fcmProjectId = String.fromEnvironment(
     'FCM_PROJECT_ID',
@@ -59,32 +76,13 @@ class AppConstants {
     defaultValue: '',
   );
 
-  /// FCM private key is passed as base64-encoded via dart-define to avoid
-  /// issues with newlines in PEM keys breaking the command line.
-  static const String _fcmPrivateKeyEncoded = String.fromEnvironment(
-    'FCM_PRIVATE_KEY',
-    defaultValue: '',
-  );
+  // FCM private key must only be used server-side (Supabase Edge Function).
+  // It has been removed from the client bundle for security reasons.
 
-  /// Decoded FCM private key (base64 decoded at runtime).
-  static String get fcmPrivateKey {
-    if (_fcmPrivateKeyEncoded.isEmpty) return '';
-    try {
-      return utf8.decode(base64Decode(_fcmPrivateKeyEncoded));
-    } catch (_) {
-      // If decoding fails, return as-is (may already be plaintext in dev)
-      return _fcmPrivateKeyEncoded;
-    }
-  }
-
-  /// Gemini AI API Key
-  static const String geminiApiKey = String.fromEnvironment(
-    'GEMINI_API_KEY',
-    defaultValue: '',
-  );
-
-  /// Admin email
-  static const String adminEmail = 'rexoagency.in@gmail.com';
+  /// Support contact email (used in Help & Support screen).
+  /// NOTE: Admin access is determined from the database `users.role` field,
+  /// NOT from this email. This is purely a contact address.
+  static const String supportEmail = 'rexoagency.in@gmail.com';
 
   /// Animation durations
   static const Duration animationFast = Duration(milliseconds: 200);

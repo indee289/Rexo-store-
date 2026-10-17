@@ -1,55 +1,48 @@
 import 'package:flutter/material.dart';
 
-/// Corner-radius scale (Theme_System token set).
+/// Instagram-inspired corner radius scale.
 ///
-/// Tuned for the modern minimal look: generous, soft rounding on cards,
-/// buttons, inputs and sheets.
+/// Instagram uses very tight, minimal radii: small chips are pills, buttons
+/// are 6-8px, cards are unrounded (feed) or 8px (highlights). Story rings
+/// and avatars are full circles.
 abstract class AppRadius {
   AppRadius._();
 
-  static const double sm = 10; // chips, badges, small tiles
-  static const double md = 14; // buttons, inputs
-  static const double lg = 20; // cards
-  static const double xl = 28; // bottom sheets, large surfaces
+  static const double sm = 6;   // chips, small tags, badges (IG uses ~4-6)
+  static const double md = 8;   // IG buttons, inputs, action pills
+  static const double lg = 12;  // IG cards, small containers
+  static const double xl = 16;  // IG bottom sheets, larger surfaces
   static const double pill = 999; // fully rounded pills / avatars
 
-  /// Pre-built `BorderRadius` helpers for the common sizes.
+  /// Pre-built `BorderRadius` helpers.
   static const BorderRadius allSm = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius allMd = BorderRadius.all(Radius.circular(md));
   static const BorderRadius allLg = BorderRadius.all(Radius.circular(lg));
   static const BorderRadius allXl = BorderRadius.all(Radius.circular(xl));
   static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 
-  /// Top-only radius (used by bottom sheets / the floating dock).
+  /// Top-only radius for bottom sheets / modals.
   static const BorderRadius topXl =
       BorderRadius.vertical(top: Radius.circular(xl));
 }
 
-/// Soft elevation shadows (Theme_System token set).
+/// Instagram-inspired elevation.
 ///
-/// Diffuse, low-opacity shadows give floating cards a gentle lift in light
-/// mode and a subtle depth in dark mode.
+/// Instagram uses **almost no shadows** — depth comes from hairline
+/// borders and the flat white surface. These tokens return empty lists so
+/// existing call-sites keep compiling but produce zero visual shadow.
 abstract class AppElevation {
   AppElevation._();
 
-  /// Card shadow — soft and diffuse.
-  static List<BoxShadow> card(bool isDark) => [
-        BoxShadow(
-          color: Colors.black.withOpacity(isDark ? 0.28 : 0.05),
-          offset: const Offset(0, 4),
-          blurRadius: 16,
-          spreadRadius: -2,
-        ),
-      ];
+  /// Card shadow — none. Instagram cards use just a hairline border.
+  static List<BoxShadow> card(bool isDark) => const [];
 
-  /// Slightly stronger shadow for floating/raised surfaces (dock, sticky CTAs,
-  /// sheets, dialogs).
+  /// Raised — a barely-there lift for sticky bars.
   static List<BoxShadow> raised(bool isDark) => [
         BoxShadow(
-          color: Colors.black.withOpacity(isDark ? 0.45 : 0.10),
-          offset: const Offset(0, 10),
-          blurRadius: 30,
-          spreadRadius: -4,
+          color: Colors.black.withOpacity(0.04),
+          offset: const Offset(0, -0.5),
+          blurRadius: 0,
         ),
       ];
 }

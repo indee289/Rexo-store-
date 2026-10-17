@@ -9,6 +9,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/user_actions_menu.dart';
+import '../../../services/supabase_service.dart';
 import '../models/creator_view.dart';
 import '../providers/creators_provider.dart';
 import '../widgets/creator_profile_header.dart';
@@ -64,9 +66,29 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     final int displayedCount = _optimisticCount ??
         followerCountAsync.maybeWhen<int>(data: (v) => v, orElse: () => 0);
 
+    final currentUserId = SupabaseService.currentUser?.id;
+    final isSelf = currentUserId != null && currentUserId == _creatorUserId;
+    final creatorLabel = creatorAsync.maybeWhen(
+      data: (c) => c == null
+          ? 'this creator'
+          : (c.handle.trim().isNotEmpty ? '@${c.handle.trim()}' : c.name),
+      orElse: () => 'this creator',
+    );
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Creator Profile', showBack: true),
+      appBar: PremiumAppBar(
+        title: 'Creator Profile',
+        showBack: true,
+        actions: isSelf
+            ? null
+            : [
+                UserActionsMenu(
+                  targetUserId: _creatorUserId,
+                  targetLabel: creatorLabel,
+                ),
+              ],
+      ),
       body: creatorAsync.when(
         data: (creator) {
           // Genuinely unknown user id → creator unavailable (Req 7.4).
@@ -192,9 +214,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   /// Copies a **safe** profile link that references the creator handle and
   /// excludes internal user ids (Requirement 8.4).
   ///
-  /// Format: `rexo://profile/@{handle}`. When the handle is empty we fall back
-  /// to a name-derived slug, and finally to a generic `rexo://profile` link —
-  /// never the internal `userId`.
+  /// Format: `rexo://app/profile/{handle}` — a routable custom-scheme deep link
+  /// whose PATH (`/profile/{handle}`) matches the GoRouter publicProfile route
+  /// (`/profile/:handle`); the `app` host is ignored by GoRouter. When the
+  /// handle is empty we fall back to a name-derived slug, and finally to
+  /// `rexo://app/home` — never the internal `userId`.
   void _copyProfileLink(CreatorView creator) {
     final link = _buildProfileLink(creator);
     Clipboard.setData(ClipboardData(text: link));
@@ -210,7 +234,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   String _buildProfileLink(CreatorView creator) {
     final handle = creator.handle.trim();
     if (handle.isNotEmpty) {
-      return 'rexo://profile/@$handle';
+      // Bare handle (no '@'): the /profile/:handle route looks up `username`,
+      // which is stored without the leading '@'.
+      return 'rexo://app/profile/$handle';
     }
 
     final slug = creator.name
@@ -219,9 +245,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
         .replaceAll(RegExp(r'^-+|-+$'), '');
     if (slug.isNotEmpty) {
-      return 'rexo://profile/$slug';
+      return 'rexo://app/profile/$slug';
     }
 
-    return 'rexo://profile';
+    return 'rexo://app/home';
   }
 }

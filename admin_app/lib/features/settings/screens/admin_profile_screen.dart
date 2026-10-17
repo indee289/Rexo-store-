@@ -142,7 +142,7 @@ class AdminProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 subtitle: Text(
-                  currentUser?.email ?? 'rexoagency.in@gmail.com',
+                  currentUser?.email ?? 'No email',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

@@ -1,5 +1,5 @@
 name: rexo_marketplace
-description: Rexo Marketplace - Premium Influencer Marketing Platform
+description: Kixo - Creator & Brand Marketplace
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -8,6 +8,8 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   supabase_flutter: ^2.3.0
   go_router: ^13.0.0
@@ -24,6 +26,7 @@ dependencies:
   uuid: ^4.2.0
   crypto: ^3.0.0
   http: ^1.1.0
+  share_plus: ^10.0.0
   firebase_core: ^2.24.0
   firebase_messaging: ^14.7.0
   flutter_local_notifications: ^17.2.3
@@ -39,6 +42,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - assets/logo.png
     - assets/images/

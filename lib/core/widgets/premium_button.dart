@@ -4,10 +4,18 @@ import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_text_styles.dart';
 
-/// Visual variants for [PremiumButton].
+/// Visual variants for [PremiumButton] — mapped to Instagram button styles.
+///
+/// - [filled]: IG "Follow" style — solid blue with white text
+/// - [tonal]: Same as filled (kept for API compat)
+/// - [outline]: IG "Following" / "Message" style — white with hairline border
+/// - [ghost]: IG plain text button (blue text)
+/// - [glass]: Kept for compat — renders as outline
 enum PremiumButtonVariant { filled, tonal, outline, ghost, glass }
 
-/// Clean teal button with variants matching the Instagram-style design system.
+/// Instagram-style button — flat, tight, no shadow.
+///
+/// Height 44 (IG standard). No ripple, opacity press feedback.
 class PremiumButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -35,7 +43,7 @@ class PremiumButton extends StatefulWidget {
 class _PremiumButtonState extends State<PremiumButton> {
   bool _pressed = false;
 
-  static const double _height = 46;
+  static const double _height = 44;
 
   bool get _enabled => widget.onPressed != null && !widget.loading;
 
@@ -46,15 +54,14 @@ class _PremiumButtonState extends State<PremiumButton> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final style = _resolveStyle(isDark);
+    final style = _resolveStyle();
 
     final Widget content = widget.loading
         ? SizedBox(
-            height: 20,
-            width: 20,
+            height: 18,
+            width: 18,
             child: CircularProgressIndicator(
-              strokeWidth: 2.5,
+              strokeWidth: 2.2,
               valueColor: AlwaysStoppedAnimation<Color>(style.foreground),
             ),
           )
@@ -64,7 +71,7 @@ class _PremiumButtonState extends State<PremiumButton> {
             children: [
               if (widget.icon != null) ...[
                 Icon(widget.icon, size: 18, color: style.foreground),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
               Flexible(
                 child: Text(
@@ -74,7 +81,7 @@ class _PremiumButtonState extends State<PremiumButton> {
                   textAlign: TextAlign.center,
                   style: AppTextStyles.button.copyWith(
                     color: style.foreground,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -89,34 +96,10 @@ class _PremiumButtonState extends State<PremiumButton> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: style.fill,
-        gradient: style.gradientDecoration,
         borderRadius: AppRadius.allMd,
         border: style.border,
-        boxShadow:
-            (widget.variant == PremiumButtonVariant.filled && _enabled)
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.30),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                      spreadRadius: -2,
-                    ),
-                  ]
-                : null,
       ),
       child: content,
-    );
-
-    Widget styled = Opacity(
-      opacity: (widget.onPressed == null) ? 0.5 : 1.0,
-      child: surface,
-    );
-
-    Widget scaled = AnimatedScale(
-      scale: _pressed ? 0.97 : 1.0,
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOut,
-      child: styled,
     );
 
     return GestureDetector(
@@ -125,39 +108,33 @@ class _PremiumButtonState extends State<PremiumButton> {
       onTapUp: (_) => _setPressed(false),
       onTapCancel: () => _setPressed(false),
       onTap: _enabled ? widget.onPressed : null,
-      child: scaled,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: !_enabled ? 0.4 : (_pressed ? 0.7 : 1.0),
+        child: surface,
+      ),
     );
   }
 
-  _ButtonStyle _resolveStyle(bool isDark) {
+  _ButtonStyle _resolveStyle() {
     switch (widget.variant) {
       case PremiumButtonVariant.filled:
-        return const _ButtonStyle(
-          fill: null,
-          gradientDecoration: AppColors.primaryGradient,
-          foreground: Colors.white,
-        );
       case PremiumButtonVariant.tonal:
-        return _ButtonStyle(
-          fill: isDark ? AppColors.darkSurfaceAlt : AppColors.primaryBg,
-          foreground: isDark ? AppColors.primaryLight : AppColors.primaryDeep,
+        return const _ButtonStyle(
+          fill: AppColors.primary,
+          foreground: Colors.white,
         );
       case PremiumButtonVariant.outline:
-        return _ButtonStyle(
-          fill: Colors.transparent,
-          foreground: AppColors.primary,
-          border: Border.all(color: AppColors.primary, width: 1.5),
-        );
-      case PremiumButtonVariant.ghost:
-        return _ButtonStyle(
-          fill: Colors.transparent,
-          foreground: AppColors.primary,
-        );
       case PremiumButtonVariant.glass:
         return _ButtonStyle(
-          fill: Colors.white.withOpacity(isDark ? 0.08 : 0.15),
-          foreground: Colors.white,
-          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+          fill: Colors.white,
+          foreground: AppColors.textPrimary,
+          border: Border.all(color: AppColors.border, width: 1),
+        );
+      case PremiumButtonVariant.ghost:
+        return const _ButtonStyle(
+          fill: Colors.transparent,
+          foreground: AppColors.primary,
         );
     }
   }
@@ -165,13 +142,11 @@ class _PremiumButtonState extends State<PremiumButton> {
 
 class _ButtonStyle {
   final Color? fill;
-  final Gradient? gradientDecoration;
   final Color foreground;
   final BoxBorder? border;
 
   const _ButtonStyle({
     this.fill,
-    this.gradientDecoration,
     required this.foreground,
     this.border,
   });

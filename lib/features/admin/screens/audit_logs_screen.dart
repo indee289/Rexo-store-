@@ -74,15 +74,15 @@ class AuditLogsScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              log['action'] ?? 'Unknown action',
+                              log['action_type'] ?? 'Unknown action',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            if (log['details'] != null)
+                            if (log['reason'] != null)
                               Text(
-                                log['details'],
+                                log['reason'],
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),

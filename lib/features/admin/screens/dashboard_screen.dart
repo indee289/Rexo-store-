@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -8,6 +7,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/admin_provider.dart';
+import 'admin_shell.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -116,31 +116,11 @@ class DashboardScreen extends ConsumerWidget {
                                     color: AppColors.success,
                                   ),
                                   _StatCard(
-                                    label: 'Pending deposits',
-                                    value:
-                                        '${data['pending_deposits'] ?? 0}',
-                                    icon: Iconsax.money_recive,
-                                    color: AppColors.warning,
-                                  ),
-                                  _StatCard(
                                     label: 'Pending withdrawals',
                                     value:
                                         '${data['pending_withdrawals'] ?? 0}',
                                     icon: Iconsax.money_send,
                                     color: AppColors.accentPurple,
-                                  ),
-                                  _StatCard(
-                                    label: 'Pending KYC',
-                                    value: '${data['pending_kyc'] ?? 0}',
-                                    icon: Iconsax.document,
-                                    color: AppColors.accentTeal,
-                                  ),
-                                  _StatCard(
-                                    label: 'Revenue',
-                                    value:
-                                        '₹${data['total_earnings'] ?? 0}',
-                                    icon: Iconsax.chart_square,
-                                    color: AppColors.accentAmber,
                                   ),
                                 ];
                                 return Wrap(
@@ -170,29 +150,25 @@ class DashboardScreen extends ConsumerWidget {
                                 _QuickAction(
                                   label: 'Users',
                                   icon: Iconsax.people,
-                                  onTap: () =>
-                                      context.push('/admin/users'),
+                                  onTap: () => ref
+                                      .read(adminTabIndexProvider.notifier)
+                                      .state = 1,
                                 ),
                                 const SizedBox(width: 8),
                                 _QuickAction(
-                                  label: 'KYC',
-                                  icon: Iconsax.verify,
-                                  onTap: () =>
-                                      context.push('/kyc'),
+                                  label: 'Actions',
+                                  icon: Iconsax.task_square,
+                                  onTap: () => ref
+                                      .read(adminTabIndexProvider.notifier)
+                                      .state = 2,
                                 ),
                                 const SizedBox(width: 8),
                                 _QuickAction(
-                                  label: 'Wallets',
-                                  icon: Iconsax.wallet_1,
-                                  onTap: () =>
-                                      context.push('/wallet'),
-                                ),
-                                const SizedBox(width: 8),
-                                _QuickAction(
-                                  label: 'Campaigns',
-                                  icon: Iconsax.briefcase,
-                                  onTap: () =>
-                                      context.push('/campaigns'),
+                                  label: 'Settings',
+                                  icon: Iconsax.setting_2,
+                                  onTap: () => ref
+                                      .read(adminTabIndexProvider.notifier)
+                                      .state = 3,
                                 ),
                               ],
                             ),
@@ -200,23 +176,45 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         loading: () =>
                             const ShimmerLoading(height: 320),
-                        error: (error, _) => Center(
+                        error: (error, _) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                           child: Column(
                             children: [
-                              const SizedBox(height: 40),
-                              const Icon(Iconsax.warning_2,
-                                  size: 48, color: AppColors.error),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Failed to load stats',
-                                style: TextStyle(
-                                    color: cs.onSurfaceVariant),
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.textPrimary, width: 1.5),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(Iconsax.chart_2, size: 28, color: AppColors.textPrimary),
                               ),
-                              const SizedBox(height: 8),
-                              TextButton(
-                                onPressed: () => ref.invalidate(
-                                    adminStatsProvider),
-                                child: const Text('Retry'),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Could not load stats',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Check your connection and try again.',
+                                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(height: 14),
+                              GestureDetector(
+                                onTap: () => ref.invalidate(adminStatsProvider),
+                                child: const Text(
+                                  'Try again',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -255,7 +253,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
+        color: isDark ? AppColors.darkCard : AppColors.card,
         borderRadius: AppRadius.allLg,
         border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.border),

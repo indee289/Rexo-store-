@@ -5,7 +5,7 @@ name: Deploy Supabase Edge Functions
 on:
   workflow_dispatch:
   push:
-    branches: [Rexo-Kotlin]
+    branches: [Rexo-Kotlin, Rexo-Kotlin-ui-refresh, main]
     paths:
       - 'supabase/functions/**'
       - '.github/workflows/deploy-edge-functions.yml'
@@ -49,3 +49,8 @@ jobs:
 
       - name: Deploy send-broadcast function
         run: supabase functions deploy send-broadcast --project-ref "$PROJECT_REF"
+
+      # Account-deletion function. Uses only the platform-injected
+      # SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY.
+      - name: Deploy delete-account function
+        run: supabase functions deploy delete-account --project-ref "$PROJECT_REF"

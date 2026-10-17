@@ -8,6 +8,9 @@ import '../../../services/onesignal_service.dart';
 import '../../../services/push_notification_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../device_fingerprint/providers/device_fingerprint_provider.dart';
+import '../../profile/providers/profile_provider.dart';
+import '../../home/providers/home_provider.dart';
+import '../../home/providers/banners_provider.dart';
 
 /// Auth state enum
 ///
@@ -312,6 +315,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await OneSignalService.onUserLogout();
 
       await SupabaseService.signOut();
+
+      // ── Invalidate ALL cached user data so the next login starts fresh ──
+      // Without this, Riverpod's FutureProvider cache survives across logins
+      // and the new user sees the old user's stale profile/stats.
+      _ref.invalidate(currentUserProfileProvider);
+      _ref.invalidate(currentUserCampaignsCountProvider);
+      _ref.invalidate(currentUserFollowersCountProvider);
+      _ref.invalidate(currentUserFollowingCountProvider);
+      _ref.invalidate(featuredCampaignsProvider);
+      _ref.invalidate(bannersProvider);
+
       state = const AuthState(status: AuthStatus.unauthenticated);
     } catch (e) {
       state = AuthState(

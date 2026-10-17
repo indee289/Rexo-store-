@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../services/supabase_service.dart';
+import '../../blocks/providers/block_provider.dart';
 import '../models/creator_view.dart';
 
 /// Live `users` columns needed to render a creator profile and drive the
@@ -160,6 +161,12 @@ class FollowActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
     try {
       state = const AsyncValue.loading();
+
+      // Do not allow following a user in a block relationship (either way).
+      if (await isBlockRelation(creatorUserId)) {
+        state = const AsyncValue.data(null);
+        return false;
+      }
 
       await _applyFollowChange(
         currentUserId: user.id,

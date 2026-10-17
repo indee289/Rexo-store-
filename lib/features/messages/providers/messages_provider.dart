@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
+import '../../blocks/providers/block_provider.dart';
 
 /// Messaging providers backed by the live `chat_rooms` + `chat_messages`
 /// tables.
@@ -36,71 +37,102 @@ String _directRoomId(String a, String b) {
 /// activity first. Each entry uses the keys the UI already expects:
 /// `other_user_id`, `other_user_name`, `other_user_avatar`, `last_message`,
 /// `last_message_at`, `is_read`.
+///
+/// Implemented as a StreamProvider so the inbox updates in real-time when
+/// chat_rooms rows change (new messages, room creation, etc.).
 final conversationsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
   final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  if (user == null) return Stream.value([]);
 
-  // Rooms where the current user's id string is inside participants jsonb.
-  final rooms = await SupabaseService.client
-      .from('chat_rooms')
-      .select()
-      .contains('participants', [user.id])
-      .order('lastMessageAt', ascending: false)
-      .limit(200);
+  final controller = StreamController<List<Map<String, dynamic>>>();
+  RealtimeChannel? channel;
 
-  final roomRows = List<Map<String, dynamic>>.from(rooms);
-  if (roomRows.isEmpty) return [];
+  Future<void> fetchConversations() async {
+    try {
+      final rooms = await SupabaseService.client
+          .from('chat_rooms')
+          .select()
+          .filter('participants', 'cs', '["${user.id}"]')
+          .order('lastMessageAt', ascending: false)
+          .limit(200);
 
-  // Resolve peer ids (the other participant of each room).
-  final peerIds = <String>{};
-  for (final room in roomRows) {
-    final peerId = _otherParticipant(room, user.id);
-    if (peerId != null) peerIds.add(peerId);
-  }
+      final roomRows = List<Map<String, dynamic>>.from(rooms);
 
-  // Fetch peer public rows in one query (users.uid == participant id string).
-  final peersById = <String, Map<String, dynamic>>{};
-  if (peerIds.isNotEmpty) {
-    final peers = await SupabaseService.client
-        .from('users')
-        .select('uid, name, username, profileImage')
-        .inFilter('uid', peerIds.toList());
-    for (final p in List<Map<String, dynamic>>.from(peers)) {
-      final id = (p['uid'] ?? '').toString();
-      if (id.isNotEmpty) peersById[id] = p;
+      final blockedIds = await fetchBlockRelationIds();
+
+      final peerIds = <String>{};
+      for (final room in roomRows) {
+        final peerId = _otherParticipant(room, user.id);
+        if (peerId != null && !blockedIds.contains(peerId))
+          peerIds.add(peerId);
+      }
+
+      final peersById = <String, Map<String, dynamic>>{};
+      if (peerIds.isNotEmpty) {
+        final peers = await SupabaseService.client
+            .from('users')
+            .select('uid, name, username, profileImage')
+            .inFilter('uid', peerIds.toList());
+        for (final p in List<Map<String, dynamic>>.from(peers)) {
+          final id = (p['uid'] ?? '').toString();
+          if (id.isNotEmpty) peersById[id] = p;
+        }
+      }
+
+      final conversations = <Map<String, dynamic>>[];
+      for (final room in roomRows) {
+        final peerId = _otherParticipant(room, user.id);
+        if (peerId == null || blockedIds.contains(peerId)) continue;
+        final peer = peersById[peerId];
+        conversations.add({
+          'other_user_id': peerId,
+          'other_user_name':
+              (peer?['name'] ?? peer?['username'] ?? 'User').toString(),
+          'other_user_avatar': peer?['profileImage'] as String?,
+          'last_message': (room['lastMessage'] ?? '').toString(),
+          'last_message_at':
+              (room['lastMessageAt'] ?? room['lastUpdate'] ?? '').toString(),
+          'is_read': _unreadFor(room, user.id) == 0,
+        });
+      }
+
+      conversations.sort((a, b) {
+        final aDate =
+            DateTime.tryParse((a['last_message_at'] ?? '').toString()) ??
+                DateTime(1970);
+        final bDate =
+            DateTime.tryParse((b['last_message_at'] ?? '').toString()) ??
+                DateTime(1970);
+        return bDate.compareTo(aDate);
+      });
+
+      if (!controller.isClosed) controller.add(conversations);
+
+      channel ??= SupabaseService.client
+          .channel('chat_rooms_${user.id}')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'chat_rooms',
+            callback: (_) => fetchConversations(),
+          )
+          .subscribe();
+    } catch (_) {
+      if (!controller.isClosed) controller.add([]);
     }
   }
 
-  final conversations = <Map<String, dynamic>>[];
-  for (final room in roomRows) {
-    final peerId = _otherParticipant(room, user.id);
-    if (peerId == null) continue;
-    final peer = peersById[peerId];
+  fetchConversations();
 
-    conversations.add({
-      'other_user_id': peerId,
-      'other_user_name': (peer?['name'] ?? peer?['username'] ?? 'User')
-          .toString(),
-      'other_user_avatar': peer?['profileImage'] as String?,
-      'last_message': (room['lastMessage'] ?? '').toString(),
-      'last_message_at': (room['lastMessageAt'] ?? room['lastUpdate'] ?? '')
-          .toString(),
-      'is_read': _unreadFor(room, user.id) == 0,
-    });
-  }
-
-  conversations.sort((a, b) {
-    final aDate =
-        DateTime.tryParse((a['last_message_at'] ?? '').toString()) ??
-            DateTime(1970);
-    final bDate =
-        DateTime.tryParse((b['last_message_at'] ?? '').toString()) ??
-            DateTime(1970);
-    return bDate.compareTo(aDate);
+  ref.onDispose(() {
+    controller.close();
+    if (channel != null) {
+      SupabaseService.client.removeChannel(channel!);
+    }
   });
 
-  return conversations;
+  return controller.stream;
 });
 
 /// Returns the id of the participant that is not [selfId], or `null` when the
@@ -151,7 +183,14 @@ final userSearchProvider =
   }
 
   final response = await request.limit(20);
-  return List<Map<String, dynamic>>.from(response);
+  final results = List<Map<String, dynamic>>.from(response);
+
+  // Exclude users in a block relationship (either direction).
+  final blockedIds = await fetchBlockRelationIds();
+  if (blockedIds.isEmpty) return results;
+  return results
+      .where((u) => !blockedIds.contains((u['uid'] ?? '').toString()))
+      .toList();
 });
 
 /// Fetches the public profile row for a chat peer by user id.
@@ -177,20 +216,24 @@ final chatPeerProvider =
 /// Resolves the chat room id shared by the current user and [otherUserId], if
 /// one already exists. Returns `null` when the two have never chatted.
 Future<String?> _findRoomId(String selfId, String otherUserId) async {
-  final rooms = await SupabaseService.client
-      .from('chat_rooms')
-      .select('id, participants')
-      .contains('participants', [selfId])
-      .limit(200);
+  try {
+    final rooms = await SupabaseService.client
+        .from('chat_rooms')
+        .select('id, participants')
+        .filter('participants', 'cs', '["$selfId"]')
+        .limit(200);
 
-  for (final room in List<Map<String, dynamic>>.from(rooms)) {
-    final participants = (room['participants'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        const <String>[];
-    if (participants.contains(otherUserId)) {
-      return (room['id'] ?? '').toString();
+    for (final room in List<Map<String, dynamic>>.from(rooms)) {
+      final participants = (room['participants'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const <String>[];
+      if (participants.contains(otherUserId)) {
+        return (room['id'] ?? '').toString();
+      }
     }
+  } catch (_) {
+    // Query failed — return null (no room found)
   }
   return null;
 }
@@ -202,20 +245,24 @@ Future<String?> _findRoomId(String selfId, String otherUserId) async {
 final chatMessagesProvider =
     FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, otherUserId) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return [];
 
-  final roomId = await _findRoomId(user.id, otherUserId);
-  if (roomId == null) return [];
+    final roomId = await _findRoomId(user.id, otherUserId);
+    if (roomId == null) return [];
 
-  final messages = await SupabaseService.client
-      .from('chat_messages')
-      .select()
-      .eq('chatRoomId', roomId)
-      .order('timestamp', ascending: true)
-      .limit(200);
+    final messages = await SupabaseService.client
+        .from('chat_messages')
+        .select()
+        .eq('chatRoomId', roomId)
+        .order('timestamp', ascending: true)
+        .limit(200);
 
-  return List<Map<String, dynamic>>.from(messages);
+    return List<Map<String, dynamic>>.from(messages);
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Realtime stream provider for chat messages with [otherUserId].
@@ -303,6 +350,10 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final trimmed = content.trim();
       if (trimmed.isEmpty) return false;
 
+      // Block enforcement: refuse to send if either party has blocked the
+      // other. This complements RLS and keeps blocked users from messaging.
+      if (await isBlockRelation(receiverId)) return false;
+
       final now = DateTime.now().toIso8601String();
 
       // Resolve or create the shared room.
@@ -345,6 +396,43 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return false;
+    }
+  }
+
+  /// Mark the conversation with [otherUserId] as read.
+  ///
+  /// Resets the current user's unreadCount to 0 in the chat_rooms row,
+  /// then refreshes conversationsProvider so the inbox dot disappears.
+  Future<void> markConversationRead(String otherUserId) async {
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return;
+
+      final roomId = await _findRoomId(user.id, otherUserId);
+      if (roomId == null) return;
+
+      // Fetch current unreadCount map and set our slot to 0.
+      final room = await SupabaseService.client
+          .from('chat_rooms')
+          .select('unreadCount')
+          .eq('id', roomId)
+          .maybeSingle();
+      if (room == null) return;
+
+      final unread = (room['unreadCount'] as Map?)?.cast<String, dynamic>() ?? {};
+      if ((unread[user.id] ?? 0) == 0) return; // already read, skip update
+
+      final updated = Map<String, dynamic>.from(unread);
+      updated[user.id] = 0;
+
+      await SupabaseService.client
+          .from('chat_rooms')
+          .update({'unreadCount': updated})
+          .eq('id', roomId);
+
+      ref.invalidate(conversationsProvider);
+    } catch (_) {
+      // Non-fatal — just means the badge may linger briefly.
     }
   }
 

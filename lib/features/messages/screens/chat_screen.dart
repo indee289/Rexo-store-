@@ -12,6 +12,7 @@ import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/premium_sheet.dart';
 import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/user_actions_menu.dart';
 import '../../../services/supabase_service.dart';
 import '../models/message_view.dart';
 import '../providers/messages_provider.dart';
@@ -29,6 +30,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark the conversation as read as soon as the chat screen opens.
+    // Use addPostFrameCallback so ref is available after first build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(messageActionsProvider.notifier)
+          .markConversationRead(widget.otherUserId);
+    });
+  }
 
   @override
   void dispose() {
@@ -64,14 +76,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               content: content,
             );
 
-    if (success) _scrollToBottom();
+    if (success) {
+      _scrollToBottom();
+      // Also mark as read since we just sent — our own messages count as read.
+      ref.read(messageActionsProvider.notifier)
+          .markConversationRead(widget.otherUserId);
+    }
     if (mounted) setState(() => _isSending = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final messagesAsync =
-        ref.watch(chatMessagesProvider(widget.otherUserId));
+        ref.watch(chatMessagesStreamProvider(widget.otherUserId));
     final conversationsAsync = ref.watch(conversationsProvider);
 
     // Resolve header name/avatar
@@ -152,32 +169,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: AppColors.success,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'online',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
           ],
         ),
         actions: [
+          UserActionsMenu(
+            targetUserId: widget.otherUserId,
+            targetLabel: displayName,
+          ),
           const SizedBox(width: AppSpacing.sm),
         ],
       ),
@@ -479,7 +480,7 @@ class _MessageActionsSheetState
   }
 
   void _closeOnSuccess() {
-    ref.invalidate(chatMessagesProvider(widget.otherUserId));
+    ref.invalidate(chatMessagesStreamProvider(widget.otherUserId));
     Navigator.of(context).maybePop();
   }
 

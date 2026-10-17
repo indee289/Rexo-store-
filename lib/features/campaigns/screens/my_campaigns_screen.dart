@@ -20,13 +20,34 @@ final myCampaignsListProvider =
   final user = SupabaseService.currentUser;
   if (user == null) return [];
 
-  final response = await SupabaseService.client
-      .from('campaigns')
-      .select('*, applications(id)')
-      .eq('brandId', user.id)          // live: brandId (camelCase)
-      .order('createdAt', ascending: false); // live: createdAt
+  // The campaigns table has historically stored the owner under BOTH
+  // `brandId` (camelCase) and `brand_id` (snake_case), so union both and
+  // dedupe by id. Sort client-side so a missing order column never breaks it.
+  final byId = <String, Map<String, dynamic>>{};
+  for (final col in ['brandId', 'brand_id']) {
+    try {
+      final r = await SupabaseService.client
+          .from('campaigns')
+          .select('*, applications(id)')
+          .eq(col, user.id);
+      for (final row in List<Map<String, dynamic>>.from(r)) {
+        final id = (row['id'] ?? '').toString();
+        if (id.isNotEmpty) byId[id] = row;
+      }
+    } catch (_) {}
+  }
 
-  return List<Map<String, dynamic>>.from(response);
+  final list = byId.values.toList();
+  list.sort((a, b) {
+    final ad = DateTime.tryParse(
+            (a['createdAt'] ?? a['created_at'] ?? '').toString()) ??
+        DateTime(1970);
+    final bd = DateTime.tryParse(
+            (b['createdAt'] ?? b['created_at'] ?? '').toString()) ??
+        DateTime(1970);
+    return bd.compareTo(ad);
+  });
+  return list;
 });
 
 /// Provider for current user's role

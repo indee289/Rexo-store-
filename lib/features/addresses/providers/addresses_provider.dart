@@ -5,17 +5,21 @@ import '../../../services/supabase_service.dart';
 /// Provider to fetch addresses for the current user
 final addressesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final user = SupabaseService.currentUser;
-  if (user == null) return [];
+  try {
+    final user = SupabaseService.currentUser;
+    if (user == null) return [];
 
-  final response = await SupabaseService.client
-      .from('addresses')
-      .select()
-      .eq('user_id', user.id)
-      .order('is_default', ascending: false)
-      .order('created_at', ascending: false);
+    final response = await SupabaseService.client
+        .from('addresses')
+        .select()
+        .eq('user_id', user.id)
+        .order('is_default', ascending: false)
+        .order('created_at', ascending: false);
 
-  return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Addresses actions notifier for CRUD

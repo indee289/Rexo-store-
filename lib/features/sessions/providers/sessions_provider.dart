@@ -58,14 +58,16 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
 
   SessionsNotifier(this._ref) : super(const SessionsState());
 
-  /// Terminate a specific session by ID
+  /// Terminate a specific session by ID — hard-deletes the row so it
+  /// actually disappears (a soft `is_active=false` update could silently
+  /// affect 0 rows and the session would reappear on refresh).
   Future<void> terminateSession(String sessionId) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       await SupabaseService.client
           .from('user_sessions')
-          .update({'is_active': false})
+          .delete()
           .eq('id', sessionId);
 
       _ref.invalidate(userSessionsProvider);
@@ -78,7 +80,10 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     }
   }
 
-  /// Terminate all sessions except the current one
+  /// Terminate all sessions except the current (most recently active) one.
+  /// The current session is identified as the most recent `last_active_at`
+  /// row (the Supabase JWT access token is NOT the session row id, so it
+  /// cannot be used to exclude the current row).
   Future<void> terminateAllOtherSessions() async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -89,15 +94,23 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     }
 
     try {
-      // Get current session ID from Supabase auth
-      final currentSessionToken = SupabaseService.client.auth.currentSession?.accessToken;
-
-      await SupabaseService.client
+      // Fetch this user's sessions, newest first; keep the newest (current).
+      final rows = await SupabaseService.client
           .from('user_sessions')
-          .update({'is_active': false})
+          .select('id')
           .eq('user_id', userId)
-          .eq('is_active', true)
-          .neq('id', currentSessionToken ?? '');
+          .order('last_active_at', ascending: false);
+
+      final list = List<Map<String, dynamic>>.from(rows);
+      // Skip the first (current) session; delete the rest by id.
+      for (var i = 1; i < list.length; i++) {
+        final id = (list[i]['id'] ?? '').toString();
+        if (id.isEmpty) continue;
+        await SupabaseService.client
+            .from('user_sessions')
+            .delete()
+            .eq('id', id);
+      }
 
       _ref.invalidate(userSessionsProvider);
       state = state.copyWith(isLoading: false);

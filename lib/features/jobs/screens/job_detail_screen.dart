@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/icons/app_icons.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -128,7 +130,7 @@ class _JobDetailScrollView extends StatelessWidget {
         isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final cardColor = isDark ? AppColors.darkCard : Colors.white;
+    final cardColor = isDark ? AppColors.darkCard : AppColors.card;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     // Slots value string.
@@ -156,6 +158,7 @@ class _JobDetailScrollView extends StatelessWidget {
                 _CoverHeader(
                   coverUrl: coverUrl,
                   isActive: isActive,
+                  jobId: jobId,
                 ),
 
                 Padding(
@@ -355,14 +358,19 @@ class _JobDetailScrollView extends StatelessWidget {
 
 // ─── Cover Header ─────────────────────────────────────────────────────────────
 
-class _CoverHeader extends StatelessWidget {
+class _CoverHeader extends ConsumerWidget {
   final String? coverUrl;
   final bool isActive;
+  final String jobId;
 
-  const _CoverHeader({required this.coverUrl, required this.isActive});
+  const _CoverHeader({
+    required this.coverUrl,
+    required this.isActive,
+    required this.jobId,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPad = MediaQuery.of(context).padding.top;
     final hasCover = coverUrl != null && coverUrl!.isNotEmpty;
 
@@ -416,12 +424,24 @@ class _CoverHeader extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              PremiumIconButton(
-                icon: Iconsax.save_2,
-                background: true,
-                color: Colors.white,
-                tooltip: 'Save',
-                onPressed: () {},
+              Consumer(
+                builder: (context, ref, _) {
+                  final saved = ref.watch(savedJobsProvider);
+                  final isSaved = saved.contains(jobId);
+                  return PremiumIconButton(
+                    icon: isSaved ? Iconsax.bookmark : Iconsax.save_2,
+                    background: true,
+                    color: isSaved ? AppColors.primary : Colors.white,
+                    tooltip: isSaved ? 'Saved' : 'Save',
+                    onPressed: () {
+                      ref.read(savedJobsProvider.notifier).update((s) {
+                        final next = Set<String>.from(s);
+                        if (isSaved) { next.remove(jobId); } else { next.add(jobId); }
+                        return next;
+                      });
+                    },
+                  );
+                },
               ),
             ],
           ),
@@ -437,7 +457,7 @@ class _CoverHeader extends StatelessWidget {
               vertical: 6,
             ),
             decoration: BoxDecoration(
-              color: isActive ? AppColors.accentOrange : AppColors.neutral,
+              color: isActive ? AppColors.primary : AppColors.neutral,
               borderRadius: AppRadius.pillAll,
               boxShadow: [
                 BoxShadow(
@@ -587,13 +607,13 @@ class _PaymentCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.accentOrange.withOpacity(0.12),
+              color: AppColors.primary.withOpacity(0.12),
               borderRadius: AppRadius.allMd,
             ),
             child: const Icon(
               Iconsax.wallet,
               size: 24,
-              color: AppColors.accentOrange,
+              color: AppColors.primary,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -614,7 +634,7 @@ class _PaymentCard extends StatelessWidget {
                   '₹${_formatAmount(amount)}',
                   style: AppTextStyles.h3.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.accentOrange,
+                    color: AppColors.primary,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -788,7 +808,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.accentOrange,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -886,7 +906,7 @@ class _SubmitChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.accentOrange),
+          Icon(icon, size: 16, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(
             label,
@@ -981,7 +1001,7 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
         color: AppColors.neutral,
       );
     }
-    // Active — orange Apply Now CTA.
+    // Active — show Apply button directly.
     return _ApplyNowButton(loading: _applying, onPressed: _apply);
   }
 
@@ -1015,59 +1035,69 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
   }
 }
 
-/// The orange "Apply Now" CTA with paper-plane icon and loading state.
-class _ApplyNowButton extends StatelessWidget {
+/// Instagram-blue "Apply Now" CTA — flat, tight, 48px tall (bounded so it
+/// cannot expand to fill the full sticky bar area).
+class _ApplyNowButton extends StatefulWidget {
   final bool loading;
   final VoidCallback onPressed;
 
   const _ApplyNowButton({required this.loading, required this.onPressed});
 
   @override
+  State<_ApplyNowButton> createState() => _ApplyNowButtonState();
+}
+
+class _ApplyNowButtonState extends State<_ApplyNowButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: loading ? null : onPressed,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 52),
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppColors.accentOrange,
-          borderRadius: AppRadius.allMd,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.accentOrange.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: loading
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Iconsax.send_1, size: 20, color: Colors.white),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    'Apply Now',
-                    style: AppTextStyles.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+      onTap: widget.loading ? null : widget.onPressed,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.7 : 1.0,
+        child: Container(
+          // Fixed height (was minHeight — that could expand in Column with
+          // unbounded height, causing the button to fill the screen).
+          height: 48,
+          width: double.infinity,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: AppRadius.allMd,
+          ),
+          child: widget.loading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-                ],
-              ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Iconsax.send_1, size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Apply Now',
+                      style: AppTextStyles.button.copyWith(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

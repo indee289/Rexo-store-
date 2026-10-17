@@ -375,8 +375,6 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         return false;
       }
 
-      final now = DateTime.now().toIso8601String();
-
       // The live `campaigns` table is a quirky legacy table with many
       // NOT-NULL-without-default and CHECK-constrained columns. This insert is
       // intentionally MINIMAL: it sends only the columns we are confident exist
@@ -416,18 +414,21 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'rules': data['rules'],
         'demo_asset_type': data['demo_asset_type'],
         'demo_asset_url': data['demo_asset_url'],
-        'brandId': user.id,           // live: brandId (camelCase)
-        // NOTE: brandName is intentionally NOT written here. PostgREST's schema
-        // cache does not expose a 'brandName' column (PGRST204), so referencing
-        // it in an insert fails. POST_JOB_FIX.sql drops the NOT NULL on any such
-        // legacy column so this minimal insert succeeds without it.
+        // Write BOTH owner columns, exactly like the (working) admin campaign
+        // create form: `brand_id` (snake_case — the NOT-NULL column the
+        // campaigns INSERT RLS policy checks via auth.uid() = brand_id) AND
+        // `brandId` (camelCase — read by the jobs/campaign-detail code).
+        // Writing only brandId left brand_id NULL, which failed the NOT NULL
+        // constraint + the RLS WITH CHECK → generic "something went wrong".
+        'brand_id': user.id,
+        'brandId': user.id,
         'status': 'active',
         // Valid positive number (not 0) to survive any budget CHECK constraint.
         'budget': budget,
-        // Only send snake_case created_at; the legacy camelCase createdAt is
-        // intentionally NOT written (POST_JOB_FIX.sql drops its NOT NULL).
-        'created_at': now,
-        'updated_at': now,
+        // NOTE: timestamps are intentionally NOT written — the campaigns table
+        // defaults created_at/updated_at itself (the admin campaign create form
+        // writes no timestamp and succeeds). Writing a snake_case `created_at`
+        // when the live column is camelCase (or vice-versa) was a failure path.
       });
 
       state = const AsyncValue.data(null);
@@ -674,3 +675,7 @@ final jobsActionsProvider =
     StateNotifierProvider<JobsActionsNotifier, AsyncValue<void>>((ref) {
   return JobsActionsNotifier(ref);
 });
+
+/// Local in-memory set of saved/bookmarked job ids.
+/// Toggled from the Job Detail screen bookmark icon.
+final savedJobsProvider = StateProvider<Set<String>>((ref) => <String>{});

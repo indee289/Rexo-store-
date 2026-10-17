@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../services/supabase_service.dart';
 
@@ -7,54 +8,60 @@ final selectedCategoryProvider = StateProvider<String>((ref) => 'All');
 
 /// Provider for featured campaigns (active, ordered by newest)
 final featuredCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  // SELECT * works; job rows filtered out in Dart (server-side .neq on
-  // payout_model fails on this project's schema cache).
-  final response = await SupabaseService.client
-      .from('campaigns')
-      .select()
-      .eq('status', 'active')
-      .order('createdAt', ascending: false) // live: createdAt (camelCase)
-      .limit(30);
+  try {
+    final response = await SupabaseService.client
+        .from('campaigns')
+        .select()
+        .eq('status', 'active')
+        .order('createdAt', ascending: false)
+        .limit(30);
 
-  return List<Map<String, dynamic>>.from(response)
-      .where((row) => row['payout_model'] != 'job')
-      .take(10)
-      .toList();
+    return List<Map<String, dynamic>>.from(response)
+        .where((row) => row['payout_model'] != 'job')
+        .take(10)
+        .toList();
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Provider for trending creators (ordered by followers desc)
 final trendingCreatorsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final response = await SupabaseService.client
-      .from('creator_profiles')
-      .select('*, users!inner(name, profileImage, username, isVerified)') // live columns
-      .order('followers', ascending: false)
-      .limit(10);
-
-  final results = List<Map<String, dynamic>>.from(response);
-
-  // Fallback: if no creator_profiles exist, fetch users with role='creator'
-  // and normalize shape to match the primary query's nested structure
-  if (results.isEmpty) {
-    final fallback = await SupabaseService.client
-        .from('users')
-        .select()
-        .eq('role', 'creator')
-        .order('created_at', ascending: false)
+  try {
+    final response = await SupabaseService.client
+        .from('creator_profiles')
+        .select('*, users!inner(name, profileImage, username, isVerified)') // live columns
+        .order('followers', ascending: false)
         .limit(10);
-    final fallbackRows = List<Map<String, dynamic>>.from(fallback);
-    return fallbackRows.map((row) => <String, dynamic>{
-      'users': {
-        'name': row['name'],
-        'profileImage': row['profileImage'],  // live: profileImage
-        'username': row['username'],           // live: username
-        'isVerified': row['isVerified'],
-      },
-      'followers': 0,
-      'user_id': row['id'],
-    }).toList();
-  }
 
-  return results;
+    final results = List<Map<String, dynamic>>.from(response);
+
+    // Fallback: if no creator_profiles exist, fetch users with role='creator'
+    // and normalize shape to match the primary query's nested structure
+    if (results.isEmpty) {
+      final fallback = await SupabaseService.client
+          .from('users')
+          .select()
+          .eq('role', 'creator')
+          .order('createdAt', ascending: false)
+          .limit(10);
+      final fallbackRows = List<Map<String, dynamic>>.from(fallback);
+      return fallbackRows.map((row) => <String, dynamic>{
+        'users': {
+          'name': row['name'],
+          'profileImage': row['profileImage'],  // live: profileImage
+          'username': row['username'],           // live: username
+          'isVerified': row['isVerified'],
+        },
+        'followers': 0,
+        'user_id': row['id'],
+      }).toList();
+    }
+
+    return results;
+  } catch (_) {
+    return [];
+  }
 });
 
 /// Provider for campaigns filtered by category
@@ -68,7 +75,7 @@ final filteredCampaignsProvider = FutureProvider.autoDispose.family<List<Map<Str
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false).limit(40);
+  final response = await query.order('createdAt', ascending: false).limit(40);
 
   return List<Map<String, dynamic>>.from(response)
       .where((row) => row['payout_model'] != 'job')
@@ -89,7 +96,7 @@ final recentCampaignsProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
     query = query.eq('category', category);
   }
 
-  final response = await query.order('created_at', ascending: false).limit(40);
+  final response = await query.order('createdAt', ascending: false).limit(40);
 
   return List<Map<String, dynamic>>.from(response)
       .where((row) => row['payout_model'] != 'job')
@@ -106,8 +113,35 @@ final homeUserProfileProvider = FutureProvider<Map<String, dynamic>?>((ref) asyn
 });
 
 
-/// Local (in-memory) set of bookmarked/saved campaign ids for the Home screen.
-/// Toggled by the bookmark icon on each featured campaign card. Kept in
-/// Riverpod so the saved state survives rebuilds without extra dependencies.
+/// Notifier that persists bookmarked campaign ids to SharedPreferences.
+class SavedCampaignsNotifier extends AsyncNotifier<Set<String>> {
+  static const _key = 'saved_campaigns';
+
+  @override
+  Future<Set<String>> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_key) ?? [];
+    return Set<String>.from(list);
+  }
+
+  Future<void> toggle(String campaignId) async {
+    final current = state.valueOrNull ?? {};
+    final next = Set<String>.from(current);
+    if (next.contains(campaignId)) {
+      next.remove(campaignId);
+    } else {
+      next.add(campaignId);
+    }
+    state = AsyncData(next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_key, next.toList());
+  }
+
+  bool isSaved(String campaignId) {
+    return state.valueOrNull?.contains(campaignId) ?? false;
+  }
+}
+
 final savedCampaignsProvider =
-    StateProvider<Set<String>>((ref) => <String>{});
+    AsyncNotifierProvider<SavedCampaignsNotifier, Set<String>>(
+        SavedCampaignsNotifier.new);

@@ -7,32 +7,32 @@ import '../../../services/supabase_service.dart';
 /// Parameter class for fetching reviews
 class ReviewsParam {
   final String targetId;
-  final String targetType;
 
-  const ReviewsParam({required this.targetId, required this.targetType});
+  const ReviewsParam({required this.targetId});
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ReviewsParam &&
-          other.targetId == targetId &&
-          other.targetType == targetType;
+      other is ReviewsParam && other.targetId == targetId;
 
   @override
-  int get hashCode => targetId.hashCode ^ targetType.hashCode;
+  int get hashCode => targetId.hashCode;
 }
 
 /// Provider for reviews of a specific target
 final reviewsProvider = FutureProvider.family<List<Map<String, dynamic>>,
     ReviewsParam>((ref, param) async {
-  final response = await SupabaseService.client
-      .from('reviews')
-      .select()
-      .eq('target_id', param.targetId)
-      .eq('target_type', param.targetType)
-      .order('created_at', ascending: false);
+  try {
+    final response = await SupabaseService.client
+        .from('reviews')
+        .select()
+        .eq('targetId', param.targetId)
+        .order('createdAt', ascending: false);
 
-  return List<Map<String, dynamic>>.from(response);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (_) {
+    return [];
+  }
 });
 
 /// State for submitting a review
@@ -66,7 +66,6 @@ class ReviewNotifier extends StateNotifier<ReviewFormState> {
 
   Future<bool> submitReview({
     required String targetId,
-    required String targetType,
     required int rating,
     required String comment,
   }) async {
@@ -85,12 +84,11 @@ class ReviewNotifier extends StateNotifier<ReviewFormState> {
       const uuid = Uuid();
       await SupabaseService.client.from('reviews').insert({
         'id': uuid.v4(),
-        'user_id': user.id,
-        'target_id': targetId,
-        'target_type': targetType,
+        'authorId': user.id,
+        'targetId': targetId,
         'rating': rating,
         'comment': comment,
-        'created_at': DateTime.now().toIso8601String(),
+        'createdAt': DateTime.now().toIso8601String(),
       });
 
       state = state.copyWith(isSubmitting: false, success: true);

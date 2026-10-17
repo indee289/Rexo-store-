@@ -16,13 +16,13 @@ import '../../../core/widgets/premium_card.dart';
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
-  static const String _supportEmail = AppConstants.adminEmail;
+  static const String _supportEmail = AppConstants.supportEmail;
 
   Future<void> _emailSupport(BuildContext context) async {
     final uri = Uri(
       scheme: 'mailto',
       path: _supportEmail,
-      query: 'subject=${Uri.encodeComponent('Rexo Support Request')}',
+      query: 'subject=${Uri.encodeComponent('Campster Support Request')}',
     );
     var launched = false;
     try {
@@ -63,7 +63,7 @@ class HelpSupportScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Reach out to the Rexo team and we\'ll get back to you as soon as we can.',
+            'Reach out to the Campster team and we\'ll get back to you as soon as we can.',
             style: AppTextStyles.bodySmall.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
@@ -106,12 +106,6 @@ class HelpSupportScreen extends StatelessWidget {
                 'Payouts are released to your wallet after the brand approves '
                 'your submission. You can withdraw available balance from the '
                 'Wallet screen.',
-          ),
-          const _FaqTile(
-            question: 'How do I verify my account (KYC)?',
-            answer:
-                'Go to Settings → KYC Verification and upload the requested '
-                'documents. Our team reviews submissions and updates your status.',
           ),
           const _FaqTile(
             question: 'How do I contact a brand or creator?',
