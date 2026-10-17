@@ -40,35 +40,34 @@ class SettingsScreen extends ConsumerWidget {
             platformSettings.when(
               data: (settings) {
                 if (settings.isEmpty) {
+                  // No editable platform settings configured — show a clean
+                  // note instead of non-functional placeholder toggles.
                   return PremiumCard(
-                    child: Column(
-                      children: [
-                        _SettingTile(
-                          icon: Iconsax.percentage_circle,
-                          title: 'Commission Rate',
-                          subtitle: 'Platform commission percentage',
-                          trailing: const Text('10%'),
-                          onTap: () =>
-                              _showEditSettingDialog(context, ref, 'commission_rate', '10'),
-                        ),
-                        const Divider(height: 1),
-                        _SettingTile(
-                          icon: Iconsax.warning_2,
-                          title: 'Maintenance Mode',
-                          subtitle: 'Toggle platform maintenance',
-                          trailing: Switch(
-                            value: false,
-                            onChanged: (value) {
-                              ref
-                                  .read(adminActionsProvider.notifier)
-                                  .updatePlatformSetting(
-                                      'maintenance_mode', value.toString());
-                            },
-                            activeColor: AppColors.primary,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(Iconsax.setting,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.35),
+                              size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'No editable platform settings.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.6),
+                              ),
+                            ),
                           ),
-                          onTap: () {},
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 }

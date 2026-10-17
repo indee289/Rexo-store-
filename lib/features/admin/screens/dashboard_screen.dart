@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -151,24 +150,25 @@ class DashboardScreen extends ConsumerWidget {
                                 _QuickAction(
                                   label: 'Users',
                                   icon: Iconsax.people,
-                                  onTap: () {
-                                    // Switch to Users tab (index 1) via shared provider
-                                    ref.read(adminTabIndexProvider.notifier).state = 1;
-                                  },
+                                  onTap: () => ref
+                                      .read(adminTabIndexProvider.notifier)
+                                      .state = 1,
                                 ),
                                 const SizedBox(width: 8),
                                 _QuickAction(
-                                  label: 'Wallets',
-                                  icon: Iconsax.wallet_1,
-                                  onTap: () =>
-                                      context.push('/wallet'),
+                                  label: 'Actions',
+                                  icon: Iconsax.task_square,
+                                  onTap: () => ref
+                                      .read(adminTabIndexProvider.notifier)
+                                      .state = 2,
                                 ),
                                 const SizedBox(width: 8),
                                 _QuickAction(
-                                  label: 'Campaigns',
-                                  icon: Iconsax.briefcase,
-                                  onTap: () =>
-                                      context.push('/campaigns'),
+                                  label: 'Settings',
+                                  icon: Iconsax.setting_2,
+                                  onTap: () => ref
+                                      .read(adminTabIndexProvider.notifier)
+                                      .state = 3,
                                 ),
                               ],
                             ),
