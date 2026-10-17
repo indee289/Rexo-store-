@@ -136,10 +136,68 @@ CREATE POLICY "Admins can write audit logs" ON public.audit_logs
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 5) CAMPAIGNS / JOBS — fix "something went wrong" when POSTING A JOB.
+--
+-- Jobs are stored in the `campaigns` table tagged payout_model='job'. The job
+-- insert failed because:
+--   (a) `payout_model` and some job columns may not exist on the live table
+--       -> missing-column error (PGRST204).
+--   (b) legacy NOT-NULL columns the minimal job insert doesn't populate
+--       (e.g. company_name/gender/brandName) rejected the row.
+-- This section makes every column the app writes exist and relaxes NOT NULL on
+-- every non-essential column so both the campaign form AND the job form insert
+-- succeed. (The app code also now writes brand_id, matching the INSERT policy.)
+-- ─────────────────────────────────────────────────────────────────────────────
+DO $$
+DECLARE col text;
+BEGIN
+  IF to_regclass('public.campaigns') IS NOT NULL THEN
+    -- Ensure every column the app writes exists (no-op if already present).
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS payout_model          text DEFAULT 'campaign';
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS payout_per_creator     numeric DEFAULT 0;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS slots                  integer DEFAULT 0;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS cover_image            text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS rules                  text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS demo_asset_type        text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS demo_asset_url         text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS platform               text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS company_name           text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS gender                 text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS page_profile_category  text;
+    ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS "brandId"              text;
+
+    -- Backfill payout_model for existing rows so the Home feed keeps showing
+    -- them as campaigns (jobs are only the rows explicitly set to 'job').
+    UPDATE public.campaigns SET payout_model = 'campaign'
+      WHERE payout_model IS NULL;
+
+    -- Relax NOT NULL on every column that has no default and is NOT one of the
+    -- essentials the inserts always provide. This lets the minimal job insert
+    -- (which omits company_name/gender/etc.) succeed.
+    FOR col IN
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'campaigns'
+        AND is_nullable = 'NO'
+        AND column_default IS NULL
+        AND column_name NOT IN ('id', 'title', 'brand_id', 'status')
+    LOOP
+      EXECUTE format('ALTER TABLE public.campaigns ALTER COLUMN %I DROP NOT NULL', col);
+    END LOOP;
+
+    -- Make sure admins (and brands creating their own) can INSERT campaigns/jobs.
+    ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Admins can insert campaigns" ON public.campaigns;
+    CREATE POLICY "Admins can insert campaigns" ON public.campaigns
+      FOR INSERT WITH CHECK (public.is_admin() OR auth.uid() = brand_id);
+  END IF;
+END $$;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- Reload the PostgREST schema cache so the API picks up any changes.
 -- ─────────────────────────────────────────────────────────────────────────────
 NOTIFY pgrst, 'reload schema';
 NOTIFY pgrst, 'reload config';
 
--- DONE. Admin withdrawal queue, session revoke, wallet admin views, and audit
--- logs will now work. (The app code fixes ship separately in the APK.)
+-- DONE. Admin withdrawal queue, session revoke, wallet admin views, audit logs,
+-- AND job posting will now work. (The app code fixes ship in the APK.)
