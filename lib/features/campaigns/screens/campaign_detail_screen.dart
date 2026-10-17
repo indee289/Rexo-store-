@@ -18,8 +18,6 @@ import '../../../core/widgets/premium_avatar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
-import '../../admin/providers/is_admin_provider.dart';
-import '../../subscriptions/providers/subscriptions_provider.dart';
 import '../providers/campaigns_provider.dart';
 
 /// Campaign detail screen — rewritten from scratch.
@@ -615,8 +613,6 @@ class CampaignDetailBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
-    final isAdmin = ref.watch(isAdminProvider);
-    final hasSubscription = ref.watch(hasApprovedSubscriptionProvider);
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -626,7 +622,7 @@ class CampaignDetailBottomBar extends ConsumerWidget {
         color: AppColors.background,
         border: const Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
-      child: _buildButton(context, ref, hasApplied, isAdmin, hasSubscription),
+      child: _buildButton(context, ref, hasApplied),
     );
   }
 
@@ -634,8 +630,6 @@ class CampaignDetailBottomBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AsyncValue<bool> hasApplied,
-    bool isAdmin,
-    AsyncValue<bool> hasSubscription,
   ) {
     if (isClosed) {
       return _StatusBtn(label: 'Closed', color: AppColors.neutral);
@@ -647,14 +641,6 @@ class CampaignDetailBottomBar extends ConsumerWidget {
       data: (applied) {
         if (applied) {
           return _StatusBtn(label: 'Already Applied', color: AppColors.success);
-        }
-        // Check subscription — admins bypass
-        final isPremium = isAdmin ||
-            (hasSubscription.valueOrNull ?? false);
-        if (!isPremium) {
-          return _SubscribeFirstBtn(
-            onTap: () => context.push(AppRoutes.subscriptions),
-          );
         }
         return _ApplyBtn(
           onPressed: () => context.push('/campaigns/$campaignId/apply'),
@@ -729,44 +715,6 @@ class _StatusBtn extends StatelessWidget {
       ),
       child: Text(label,
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
-    );
-  }
-}
-
-/// Button shown when user has no subscription — directs to subscription page.
-class _SubscribeFirstBtn extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _SubscribeFirstBtn({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 48,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: AppRadius.allMd,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Iconsax.crown_1, size: 18, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('Subscribe to Apply',
-                style: AppTextStyles.button
-                    .copyWith(color: Colors.white, fontSize: 15)),
-          ],
-        ),
-      ),
     );
   }
 }

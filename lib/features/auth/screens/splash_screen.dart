@@ -83,7 +83,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 }
 
-/// The Rexo logo — uses the asset image, falls back to text logo.
+/// The Campster logo — uses the asset image on a clean background.
+/// Falls back to a simple "Campster" wordmark (no colored box) so the
+/// brand always reads clearly against the sand-dune splash background.
 class _RexoLogo extends StatelessWidget {
   const _RexoLogo();
 
@@ -92,26 +94,20 @@ class _RexoLogo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Try to show the logo asset
+        // Logo asset — shown at its natural transparency on the splash
+        // background (no gradient/box behind it).
         Image.asset(
           'assets/logo.png',
-          width: 80,
-          height: 80,
-          errorBuilder: (_, __, ___) => Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: AppColors.storyGradient,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'R',
-              style: TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
+          width: 96,
+          height: 96,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, __, ___) => Text(
+            'Campster',
+            style: AppTextStyles.largeTitle.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 36,
             ),
           ),
         ),

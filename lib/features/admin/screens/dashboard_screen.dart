@@ -117,25 +117,11 @@ class DashboardScreen extends ConsumerWidget {
                                     color: AppColors.success,
                                   ),
                                   _StatCard(
-                                    label: 'Pending deposits',
-                                    value:
-                                        '${data['pending_deposits'] ?? 0}',
-                                    icon: Iconsax.money_recive,
-                                    color: AppColors.warning,
-                                  ),
-                                  _StatCard(
                                     label: 'Pending withdrawals',
                                     value:
                                         '${data['pending_withdrawals'] ?? 0}',
                                     icon: Iconsax.money_send,
                                     color: AppColors.accentPurple,
-                                  ),
-                                  _StatCard(
-                                    label: 'Revenue',
-                                    value:
-                                        '₹${data['total_earnings'] ?? 0}',
-                                    icon: Iconsax.chart_square,
-                                    color: AppColors.accentAmber,
                                   ),
                                 ];
                                 return Wrap(

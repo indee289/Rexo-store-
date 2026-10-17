@@ -45,9 +45,6 @@ import '../../features/settings/screens/help_support_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/jobs/screens/job_detail_screen.dart';
 import '../../features/jobs/screens/jobs_screen.dart';
-import '../../features/subscriptions/screens/subscriptions_screen.dart';
-import '../../features/subscriptions/screens/subscription_payment_screen.dart';
-import '../../features/wallet/screens/deposit_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/wallet/screens/withdraw_screen.dart';
 import '../../features/warnings/screens/warnings_screen.dart';
@@ -75,7 +72,6 @@ class AppRoutes {
   static const String jobDetail = '/jobs/:id';
   static const String profile = '/profile';
   static const String wallet = '/wallet';
-  static const String walletDeposit = '/wallet/deposit';
   static const String walletWithdraw = '/wallet/withdraw';
   static const String notifications = '/notifications';
   static const String messages = '/messages';
@@ -101,8 +97,6 @@ class AppRoutes {
   static const String services = '/services';
   static const String servicesRateCalculator = '/services/rate-calculator';
   static const String servicesMediaKit = '/services/media-kit';
-  static const String subscriptions = '/subscriptions';
-  static const String subscriptionPayment = '/subscriptions/payment';
   static const String sessions = '/sessions';
   static const String securityLogs = '/security-logs';
   static const String warnings = '/warnings';
@@ -341,12 +335,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const WalletScreen(),
       ),
 
-      /// Wallet deposit screen
-      GoRoute(
-        path: AppRoutes.walletDeposit,
-        builder: (context, state) => const DepositScreen(),
-      ),
-
       /// Wallet withdraw screen
       GoRoute(
         path: AppRoutes.walletWithdraw,
@@ -515,28 +503,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.servicesMediaKit,
         builder: (context, state) => const MediaKitScreen(),
-      ),
-
-      /// Subscriptions screen
-      GoRoute(
-        path: AppRoutes.subscriptions,
-        builder: (context, state) => const SubscriptionsScreen(),
-      ),
-
-      /// Subscription payment screen.
-      /// Extra must be a Map<String, dynamic> with keys:
-      ///   planId (String), planName (String), amount (double), durationDays (int)
-      GoRoute(
-        path: AppRoutes.subscriptionPayment,
-        builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
-          return SubscriptionPaymentScreen(
-            planId: extra['planId'] as String,
-            planName: extra['planName'] as String,
-            amount: (extra['amount'] as num).toDouble(),
-            durationDays: (extra['durationDays'] as num).toInt(),
-          );
-        },
       ),
 
       /// Sessions & Devices screen

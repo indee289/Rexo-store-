@@ -42,13 +42,13 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             _buildSection(
               context,
-              'Payments and Transactions',
-              '1. All campaign payments are processed through the Platform wallet system.\n\n2. Brands must deposit funds before a campaign is marked active. These funds are held in escrow until campaign completion.\n\n3. Creator payments are released upon campaign approval by the brand or after the dispute resolution period (7 days).\n\n4. Platform fees: A service fee is deducted from each transaction. Current fee structure is displayed on the Platform.\n\n5. Withdrawals are processed within 3-5 business days to the verified bank account or UPI ID on file.\n\n6. All transactions are subject to applicable taxes. Users are responsible for their own tax obligations.\n\n7. Chargebacks or payment reversals may result in account suspension pending investigation.',
+              'Earnings and Withdrawals',
+              '1. Creators earn by completing approved campaign and job deliverables. Earnings are credited to your in-app Campster wallet.\n\n2. The Platform does NOT sell any in-app products, coins, subscriptions, or digital goods, and does NOT accept deposits or in-app payments from users.\n\n3. Creator earnings are credited upon campaign/submission approval or after the dispute resolution period (7 days).\n\n4. Withdrawals are requested from your wallet and processed within 3-5 business days to the verified bank account or UPI ID on file.\n\n5. All earnings are subject to applicable taxes. Users are responsible for their own tax obligations.\n\n6. You must provide accurate payout details. The Platform is not responsible for failed transfers caused by incorrect bank or UPI information.',
             ),
             _buildSection(
               context,
               'Disputes and Resolution',
-              '1. If a brand is not satisfied with campaign deliverables, they may raise a dispute within 7 days of submission.\n\n2. Disputes will be reviewed by our moderation team within 5 business days.\n\n3. During dispute resolution, payment is held in escrow and not released to either party.\n\n4. Our dispute resolution decision is final. In cases of clear violation, partial or full refunds may be issued.\n\n5. Repeated disputes may affect your platform reputation score and account standing.',
+              '1. If a brand is not satisfied with campaign deliverables, they may raise a dispute within 7 days of submission.\n\n2. Disputes will be reviewed by our moderation team within 5 business days.\n\n3. During dispute resolution, the related payout is held and not released until the dispute is resolved.\n\n4. Our dispute resolution decision is final.\n\n5. Repeated disputes may affect your platform reputation score and account standing.',
             ),
             _buildSection(
               context,
@@ -73,7 +73,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Governing Law',
-              'These Terms are governed by and construed in accordance with the laws of India. Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the courts in Bangalore, India.',
+              'These Terms are governed by and construed in accordance with the laws of India. Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the courts in Jodhpur, Rajasthan, India.',
             ),
             _buildSection(
               context,
@@ -83,7 +83,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               context,
               'Contact Information',
-              'For questions about these Terms of Service, please contact us:\n\nEmail: infokixoads@gmail.com\nSupport: Available through the Help & Support section in the app.',
+              'For questions about these Terms of Service, please contact us:\n\nEmail: rexoagency.in@gmail.com\nSupport: Available through the Help & Support section in the app.',
             ),
             const SizedBox(height: 40),
           ],

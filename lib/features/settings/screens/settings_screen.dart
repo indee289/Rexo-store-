@@ -62,9 +62,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ) ??
                 const SizedBox(height: 16),
 
-            // ── Upgrade banner ──
-            _UpgradeBanner(onTap: () => context.push('/subscriptions')),
-
             const SizedBox(height: 20),
 
             // ── ACCOUNT section ──
@@ -456,81 +453,6 @@ class _UserHeaderCard extends StatelessWidget {
               ),
               const Icon(Iconsax.arrow_right_3,
                   size: 18, color: Colors.white54),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// UPGRADE BANNER (dark card with CTA)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _UpgradeBanner extends StatelessWidget {
-  final VoidCallback onTap;
-  const _UpgradeBanner({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0095F6), Color(0xFF5856D6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              const Icon(Iconsax.crown_1, size: 28, color: Colors.white),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Plan & Subscription',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Manage your subscription plan',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: AppRadius.pillAll,
-                ),
-                child: const Text(
-                  'View ›',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
             ],
           ),
         ),

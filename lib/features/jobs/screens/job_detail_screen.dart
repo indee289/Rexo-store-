@@ -15,8 +15,6 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/shimmer_loading.dart';
-import '../../admin/providers/is_admin_provider.dart';
-import '../../subscriptions/providers/subscriptions_provider.dart';
 import '../providers/jobs_provider.dart';
 
 class JobDetailScreen extends ConsumerWidget {
@@ -1003,41 +1001,7 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
         color: AppColors.neutral,
       );
     }
-    // Active — check subscription before showing Apply.
-    final isAdmin = ref.watch(isAdminProvider);
-    final hasSubscription = ref.watch(hasApprovedSubscriptionProvider);
-    final isPremium = isAdmin || (hasSubscription.valueOrNull ?? false);
-
-    if (!isPremium) {
-      return GestureDetector(
-        onTap: () => context.push(AppRoutes.subscriptions),
-        child: Container(
-          height: 48,
-          width: double.infinity,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: AppRadius.allMd,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Iconsax.crown_1, size: 18, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Subscribe to Apply',
-                  style: AppTextStyles.button
-                      .copyWith(color: Colors.white, fontSize: 15)),
-            ],
-          ),
-        ),
-      );
-    }
-
+    // Active — show Apply button directly.
     return _ApplyNowButton(loading: _applying, onPressed: _apply);
   }
 

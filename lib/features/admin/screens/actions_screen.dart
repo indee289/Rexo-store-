@@ -4,7 +4,6 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/premium_card.dart';
 import 'campaign_control_screen.dart';
-import 'deposit_queue_screen.dart';
 import 'fraud_review_screen.dart';
 import 'disputes_screen.dart';
 import 'push_broadcast_screen.dart';
@@ -13,7 +12,6 @@ import 'manage_banners_screen.dart';
 import 'manage_jobs_screen.dart';
 import 'review_job_submissions_screen.dart';
 import 'submission_review_screen.dart';
-import 'subscription_requests_screen.dart';
 import 'wallets_escrow_screen.dart';
 import 'withdrawal_queue_screen.dart';
 
@@ -82,28 +80,6 @@ class ActionsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                     builder: (context) => const SubmissionReviewScreen()),
-              ),
-            ),
-            _ActionTile(
-              icon: Iconsax.money_recive,
-              title: 'Deposit Queue',
-              subtitle: 'Process pending deposits',
-              color: AppColors.warning,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const DepositQueueScreen()),
-              ),
-            ),
-            _ActionTile(
-              icon: Iconsax.crown_1,
-              title: 'Subscription Requests',
-              subtitle: 'Approve or reject subscription payments',
-              color: Colors.deepOrange,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const SubscriptionRequestsScreen()),
               ),
             ),
             _ActionTile(

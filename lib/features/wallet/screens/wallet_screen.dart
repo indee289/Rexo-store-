@@ -65,7 +65,7 @@ class WalletScreen extends ConsumerWidget {
                       icon: Iconsax.receipt,
                       title: 'No transactions yet',
                       subtitle:
-                          'Your deposits, withdrawals and earnings will show up here.',
+                          'Your withdrawals and earnings will show up here.',
                     );
                   }
                   return Column(
@@ -178,27 +178,12 @@ class WalletScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 18),
 
-          // Deposit + Withdraw — ALWAYS horizontal, equal width
-          Row(
-            children: [
-              Expanded(
-                child: _WalletActionButton(
-                  label: 'Deposit',
-                  icon: Iconsax.money_add,
-                  filled: true,
-                  onTap: () => context.push('/wallet/deposit'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _WalletActionButton(
-                  label: 'Withdraw',
-                  icon: Iconsax.money_send,
-                  filled: false,
-                  onTap: () => context.push('/wallet/withdraw'),
-                ),
-              ),
-            ],
+          // Withdraw — full width (deposits removed)
+          _WalletActionButton(
+            label: 'Withdraw',
+            icon: Iconsax.money_send,
+            filled: true,
+            onTap: () => context.push('/wallet/withdraw'),
           ),
         ],
       ),

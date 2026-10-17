@@ -189,7 +189,7 @@ class MediaKitScreen extends ConsumerWidget {
                   onPressed: () {
                     final shareHandle = handle.isNotEmpty ? '@$handle' : name;
                     Share.share(
-                      'Check out my Campster Media Kit: $shareHandle\nhttps://kixo.app/creator/$handle',
+                      'Check out my Campster Media Kit: $shareHandle',
                     );
                   },
                 ),

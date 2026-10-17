@@ -37,7 +37,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               'How We Use Your Information',
-              'We use personal information collected via our platform for a variety of business purposes:\n\n1. Account Management: To create and manage your user account and maintain your profile.\n\n2. Campaign Matching: To match creators with relevant brand campaigns based on your audience demographics, content niche, and performance metrics.\n\n3. Payment Processing: To process deposits, withdrawals, campaign payments, and maintain transaction records.\n\n4. Communication: To send you platform notifications, campaign updates, payment confirmations, and important service announcements.\n\n5. Platform Improvement: To analyze usage patterns, improve features, optimize user experience, and develop new services.\n\n6. Security: To detect and prevent fraud, unauthorized access, and other security incidents. We employ AI-based moderation and device fingerprinting for security purposes.\n\n7. Legal Compliance: To comply with applicable laws, regulatory requirements, and respond to lawful requests from authorities.',
+              'We use personal information collected via our platform for a variety of business purposes:\n\n1. Account Management: To create and manage your user account and maintain your profile.\n\n2. Campaign Matching: To match creators with relevant brand campaigns based on your audience demographics, content niche, and performance metrics.\n\n3. Payout Processing: To credit creator earnings, process withdrawal requests to your bank/UPI, and maintain transaction records. The app does not accept deposits or in-app payments from users.\n\n4. Communication: To send you platform notifications, campaign updates, payment confirmations, and important service announcements.\n\n5. Platform Improvement: To analyze usage patterns, improve features, optimize user experience, and develop new services.\n\n6. Security: To detect and prevent fraud, unauthorized access, and other security incidents. We employ AI-based moderation and device fingerprinting for security purposes.\n\n7. Legal Compliance: To comply with applicable laws, regulatory requirements, and respond to lawful requests from authorities.',
             ),
             _buildSection(
               context,
@@ -52,7 +52,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               'Your Rights',
-              'Depending on your location, you may have the following rights regarding your personal data:\n\n- Right to Access: Request a copy of your personal data.\n- Right to Rectification: Request correction of inaccurate data.\n- Right to Erasure: Request deletion of your personal data (subject to legal retention requirements).\n- Right to Portability: Request transfer of your data in a machine-readable format.\n- Right to Object: Object to processing of your data for certain purposes.\n- Right to Withdraw Consent: Withdraw previously given consent at any time.\n\nTo exercise these rights, contact us at infokixoads@gmail.com. We will respond within 30 days.',
+              'Depending on your location, you may have the following rights regarding your personal data:\n\n- Right to Access: Request a copy of your personal data.\n- Right to Rectification: Request correction of inaccurate data.\n- Right to Erasure: Request deletion of your personal data (subject to legal retention requirements).\n- Right to Portability: Request transfer of your data in a machine-readable format.\n- Right to Object: Object to processing of your data for certain purposes.\n- Right to Withdraw Consent: Withdraw previously given consent at any time.\n\nTo exercise these rights, contact us at rexoagency.in@gmail.com. We will respond within 30 days.',
             ),
             _buildSection(
               context,
@@ -72,7 +72,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               'Contact Us',
-              'If you have questions or concerns about this privacy policy or our data practices, please contact us:\n\nEmail: infokixoads@gmail.com\nSupport: Available through the Help & Support section in the app.',
+              'If you have questions or concerns about this privacy policy or our data practices, please contact us:\n\nEmail: rexoagency.in@gmail.com\nSupport: Available through the Help & Support section in the app.',
             ),
             const SizedBox(height: 40),
           ],

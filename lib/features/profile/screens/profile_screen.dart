@@ -577,11 +577,6 @@ class _HighlightsRow extends StatelessWidget {
         onTap: () => context.push('/wallet'),
       ),
       _HighlightData(
-        icon: Iconsax.crown_1,
-        label: 'Plan',
-        onTap: () => context.push('/subscriptions'),
-      ),
-      _HighlightData(
         icon: Iconsax.send_2,
         label: 'Campaigns',
         onTap: () => context.push('/my-campaigns'),

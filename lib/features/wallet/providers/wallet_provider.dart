@@ -46,20 +46,12 @@ final walletProvider = StreamProvider<Map<String, dynamic>?>((ref) {
       });
 });
 
-/// Provider for combined transaction history (deposits + withdrawals).
-/// Kept as FutureProvider since transaction lists are less critical for
-/// real-time updates and can be refreshed via invalidation.
+/// Provider for withdrawal transaction history.
+/// Deposits were removed from the app; only withdrawals are shown.
 final transactionsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final user = SupabaseService.currentUser;
   if (user == null) return [];
-
-  final deposits = await SupabaseService.client
-      .from('deposits')
-      .select()
-      .eq('user_id', user.id)
-      .order('created_at', ascending: false)
-      .limit(50);
 
   final withdrawals = await SupabaseService.client
       .from('withdrawals')
@@ -69,10 +61,6 @@ final transactionsProvider =
       .limit(50);
 
   final List<Map<String, dynamic>> combined = [
-    ...List<Map<String, dynamic>>.from(deposits).map((d) => {
-          ...d,
-          'type': 'deposit',
-        }),
     ...List<Map<String, dynamic>>.from(withdrawals).map((w) => {
           ...w,
           'type': 'withdrawal',
@@ -90,49 +78,11 @@ final transactionsProvider =
   return combined;
 });
 
-/// Wallet actions notifier for deposits and withdrawals
+/// Wallet actions notifier for withdrawals.
 class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
 
   WalletActionsNotifier(this.ref) : super(const AsyncValue.data(null));
-
-  /// Submit a deposit request
-  Future<bool> submitDeposit({
-    required double amount,
-    required String paymentMethod,
-    required String transactionRef,
-    String? proofUrl,
-  }) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final user = SupabaseService.currentUser;
-      if (user == null) {
-        state = AsyncValue.error('User not authenticated', StackTrace.current);
-        return false;
-      }
-
-      await SupabaseService.client.from('deposits').insert({
-        'user_id': user.id,
-        'amount': amount,
-        'payment_method': paymentMethod,
-        'transaction_ref': transactionRef,
-        'proof_url': proofUrl,
-        'status': 'pending',
-        'created_at': DateTime.now().toIso8601String(),
-      });
-
-      state = const AsyncValue.data(null);
-
-      // Refresh transaction list (realtime handles wallet balance)
-      ref.invalidate(transactionsProvider);
-
-      return true;
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      return false;
-    }
-  }
 
   /// Submit a withdrawal request
   Future<bool> submitWithdrawal({
