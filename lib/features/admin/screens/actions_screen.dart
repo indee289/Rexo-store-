@@ -47,7 +47,7 @@ class ActionsScreen extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Iconsax.setting_4,
+                    child: const Icon(Iconsax.setting_2,
                         color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 12),
@@ -127,7 +127,7 @@ class ActionsScreen extends StatelessWidget {
                           screen: const SubmissionReviewScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.task,
+                          icon: Iconsax.document_text,
                           label: 'Job Submissions',
                           color: AppColors.accentOrange,
                           screen: const ReviewJobSubmissionsScreen(),
