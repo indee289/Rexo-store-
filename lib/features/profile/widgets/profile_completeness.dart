@@ -8,14 +8,14 @@ import '../../../core/theme/app_text_styles.dart';
 /// Computes how complete a user's profile is from the live `users` row.
 class ProfileCompleteness {
   /// The profile fields that count toward completeness, with a friendly label.
+  // Only the fields the Edit Profile screen actually lets a user fill, so
+  // 100% is reachable from the UI and the card hides once everything is set.
   static const Map<String, String> _fields = {
     'name': 'name',
     'username': 'username',
     'profileImage': 'profile photo',
     'bio': 'bio',
     'phone': 'phone',
-    'category': 'category',
-    'instagramLink': 'Instagram link',
   };
 
   /// Returns the completion percent (0–100).

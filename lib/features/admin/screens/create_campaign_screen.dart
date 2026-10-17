@@ -195,7 +195,12 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
             .update(data)
             .eq('id', widget.existingCampaign!['id'] as String);
       } else {
-        data['brand_id'] = SupabaseService.currentUser?.id;
+        // Write BOTH owner columns so every reader matches regardless of
+        // casing: `brandId` (camelCase — used by campaign detail + profile
+        // count + jobs flow) and `brand_id` (snake_case legacy).
+        final uid = SupabaseService.currentUser?.id;
+        data['brandId'] = uid;
+        data['brand_id'] = uid;
         data['status'] = 'active';
         await SupabaseService.client.from('campaigns').insert(data);
       }

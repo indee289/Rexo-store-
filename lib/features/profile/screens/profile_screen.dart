@@ -10,6 +10,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../admin/providers/is_admin_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/profile_completeness.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
@@ -288,17 +289,41 @@ class _Body extends ConsumerWidget {
 // Top bar (Instagram: back arrow / handle centered / menu right)
 // ─────────────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget {
   final String handle;
   const _TopBar({required this.handle});
 
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log out'),
+        content: const Text('Are you sure you want to log out of Campster?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Log out',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await ref.read(authProvider.notifier).signOut();
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
       child: Row(
         children: [
-          const SizedBox(width: 44), // symmetric spacer for centering
+          const SizedBox(width: 96), // symmetric spacer (2 right icons)
           Expanded(
             child: Center(
               child: Row(
@@ -323,6 +348,10 @@ class _TopBar extends StatelessWidget {
           _TopBarIcon(
             icon: Iconsax.setting_2,
             onTap: () => context.push('/settings'),
+          ),
+          _TopBarIcon(
+            icon: Iconsax.logout,
+            onTap: () => _confirmLogout(context, ref),
           ),
         ],
       ),

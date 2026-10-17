@@ -29,7 +29,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateAfterDelay() async {
-    await Future.delayed(const Duration(seconds: 2));
+    // Short delay only — the native launch screen already shows the same
+    // Campster logo, so this transitions seamlessly without a second splash.
+    await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
 
     if (SupabaseService.isAuthenticated) {

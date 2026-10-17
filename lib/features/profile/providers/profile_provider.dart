@@ -125,12 +125,32 @@ final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
     final role = (profile?['role'] ?? 'creator').toString().toLowerCase();
 
     if (role == 'brand' || role == 'admin') {
-      // Brand/Admin: count campaigns they CREATED
-      final response = await SupabaseService.client
-          .from('campaigns')
-          .select('id')
-          .eq('brandId', user.id); // live: camelCase
-      return (response as List).length;
+      // Brand/Admin: count campaigns they CREATED. The campaigns table has
+      // historically used BOTH `brandId` (camelCase, jobs flow) and
+      // `brand_id` (snake_case, create-campaign flow), so union both to be
+      // robust and dedupe by id.
+      final ids = <String>{};
+      try {
+        final r = await SupabaseService.client
+            .from('campaigns')
+            .select('id')
+            .eq('brandId', user.id);
+        for (final row in (r as List)) {
+          final id = (row['id'] ?? '').toString();
+          if (id.isNotEmpty) ids.add(id);
+        }
+      } catch (_) {}
+      try {
+        final r = await SupabaseService.client
+            .from('campaigns')
+            .select('id')
+            .eq('brand_id', user.id);
+        for (final row in (r as List)) {
+          final id = (row['id'] ?? '').toString();
+          if (id.isNotEmpty) ids.add(id);
+        }
+      } catch (_) {}
+      return ids.length;
     } else {
       // Creator: count campaigns they APPLIED TO
       final response = await SupabaseService.client
