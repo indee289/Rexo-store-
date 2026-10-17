@@ -154,16 +154,16 @@ jobs:
       - name: Rename APK
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk \
-             build/app/outputs/flutter-apk/Rexoumpire.apk
+             build/app/outputs/flutter-apk/Campster.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Rexoumpire
-          path: build/app/outputs/flutter-apk/Rexoumpire.apk
+          name: Campster
+          path: build/app/outputs/flutter-apk/Campster.apk
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Rexo-release-aab
+          name: Campster-release-aab
           path: build/app/outputs/bundle/release/app-release.aab

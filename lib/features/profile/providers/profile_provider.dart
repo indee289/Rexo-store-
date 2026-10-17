@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../services/r2_storage_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../home/providers/home_provider.dart';
 
 /// Profile state model
 class ProfileState {
@@ -161,6 +162,23 @@ final currentUserCampaignsCountProvider = FutureProvider<int>((ref) async {
     }
   } catch (_) {
     return 0;
+  }
+});
+
+/// Campaigns saved (bookmarked) by the current user — fetches the full
+/// campaign rows for the ids held in [savedCampaignsProvider].
+final savedCampaignsListProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final saved = ref.watch(savedCampaignsProvider).valueOrNull ?? <String>{};
+  if (saved.isEmpty) return [];
+  try {
+    final r = await SupabaseService.client
+        .from('campaigns')
+        .select()
+        .inFilter('id', saved.toList());
+    return List<Map<String, dynamic>>.from(r);
+  } catch (_) {
+    return [];
   }
 });
 

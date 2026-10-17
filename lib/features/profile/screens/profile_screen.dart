@@ -14,6 +14,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/profile_completeness.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
+import '../../campaigns/screens/my_campaigns_screen.dart';
 import 'edit_profile_screen.dart';
 
 /// Instagram-style Profile screen.
@@ -200,58 +201,8 @@ class _Body extends ConsumerWidget {
             ),
           ),
 
-          // Icon tab bar (grid / list / tagged style)
-          const SliverToBoxAdapter(child: _TabBar()),
-
-          const SliverToBoxAdapter(
-            child: Divider(
-              height: 0.5,
-              thickness: 0.5,
-              color: AppColors.border,
-            ),
-          ),
-
-          // Empty grid placeholder
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 60),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.textPrimary, width: 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Iconsax.camera,
-                      size: 30,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Share your first campaign',
-                    style: AppTextStyles.title2.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Your posts will appear on your profile.',
-                    style: AppTextStyles.subheadline.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Tabs (Grid = my campaigns, Saved = bookmarked) + content
+          const SliverToBoxAdapter(child: _ProfileTabsSection()),
         ],
       ),
     );
@@ -446,13 +397,11 @@ class _Avatar extends StatelessWidget {
 class _StatsRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final campaigns = ref.watch(currentUserCampaignsCountProvider);
     final followers = ref.watch(currentUserFollowersCountProvider);
     final following = ref.watch(currentUserFollowingCountProvider);
 
     return Row(
       children: [
-        Expanded(child: _Stat(value: _fmt(campaigns), label: 'Campaigns')),
         Expanded(child: _Stat(value: _fmt(followers), label: 'Followers')),
         Expanded(child: _Stat(value: _fmt(following), label: 'Following')),
       ],
@@ -704,45 +653,190 @@ class _HighlightCircleState extends State<_HighlightCircle> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Tab bar (grid / list style — visual only for now)
+// Profile tabs: Grid (my campaigns) + Saved (bookmarked campaigns)
 // ─────────────────────────────────────────────────────────────────────────
 
-class _TabBar extends StatelessWidget {
-  const _TabBar();
+class _ProfileTabsSection extends ConsumerStatefulWidget {
+  const _ProfileTabsSection();
+
+  @override
+  ConsumerState<_ProfileTabsSection> createState() =>
+      _ProfileTabsSectionState();
+}
+
+class _ProfileTabsSectionState extends ConsumerState<_ProfileTabsSection> {
+  int _tab = 0; // 0 = grid (my campaigns), 1 = saved
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      color: AppColors.background, // match sand dune background
-      child: Row(
-        children: [
-          _tabIcon(context, Iconsax.category, active: true),
-          _tabIcon(context, Iconsax.bookmark, active: false),
-          _tabIcon(context, Iconsax.tag, active: false),
-        ],
+    return Column(
+      children: [
+        const Divider(height: 0.5, thickness: 0.5, color: AppColors.border),
+        // Tab bar — Grid + Saved only (Tag removed)
+        SizedBox(
+          height: 44,
+          child: Row(
+            children: [
+              _tabIcon(Iconsax.category, 0),
+              _tabIcon(Iconsax.bookmark, 1),
+            ],
+          ),
+        ),
+        const Divider(height: 0.5, thickness: 0.5, color: AppColors.border),
+        // Content
+        if (_tab == 0) _buildGrid(ref.watch(myCampaignsListProvider), isSaved: false)
+        else _buildGrid(ref.watch(savedCampaignsListProvider), isSaved: true),
+      ],
+    );
+  }
+
+  Widget _tabIcon(IconData icon, int index) {
+    final active = _tab == index;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _tab = index),
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: active ? AppColors.textPrimary : Colors.transparent,
+                width: 1.5,
+              ),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon,
+              size: 22,
+              color: active ? AppColors.textPrimary : AppColors.textSecondary),
+        ),
       ),
     );
   }
 
-  Widget _tabIcon(BuildContext context, IconData icon,
-      {required bool active}) {
-    return Expanded(
-      child: Container(
-        height: 44,
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: active ? AppColors.textPrimary : Colors.transparent,
-              width: 1.5,
+  Widget _buildGrid(AsyncValue<List<Map<String, dynamic>>> async,
+      {required bool isSaved}) {
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 60),
+        child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
+      ),
+      error: (_, __) => _emptyState(
+        isSaved ? 'Could not load saved campaigns' : 'Could not load campaigns',
+        'Pull down to refresh and try again.',
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          return _emptyState(
+            isSaved ? 'No saved campaigns yet' : 'Share your first campaign',
+            isSaved
+                ? 'Campaigns you bookmark will appear here.'
+                : 'Your posted campaigns will appear on your profile.',
+          );
+        }
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(2),
+          gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, i) => _GridTile(campaign: items[i]),
+        );
+      },
+    );
+  }
+
+  Widget _emptyState(String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.textPrimary, width: 1.5),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Iconsax.camera,
+                size: 30, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.title2.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
             ),
           ),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 22,
-          color: active ? AppColors.textPrimary : AppColors.textSecondary,
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.subheadline
+                .copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single campaign thumbnail in the profile grid.
+class _GridTile extends StatelessWidget {
+  final Map<String, dynamic> campaign;
+  const _GridTile({required this.campaign});
+
+  @override
+  Widget build(BuildContext context) {
+    final id = (campaign['id'] ?? '').toString();
+    final cover = (campaign['cover_image'] ??
+            campaign['coverImage'] ??
+            campaign['cover_image_url'] ??
+            '')
+        .toString();
+    final title = (campaign['title'] ?? 'Campaign').toString();
+
+    return GestureDetector(
+      onTap: () {
+        if (id.isNotEmpty) context.push('/campaigns/$id');
+      },
+      child: Container(
+        color: AppColors.surfaceAlt,
+        child: cover.isNotEmpty
+            ? Image.network(
+                cover,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(title),
+              )
+            : _placeholder(title),
+      ),
+    );
+  }
+
+  Widget _placeholder(String title) {
+    return Container(
+      color: AppColors.surfaceAlt,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(8),
+      child: Text(
+        title,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: AppTextStyles.caption1.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
