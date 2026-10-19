@@ -18,17 +18,17 @@ void main() async {
     statusBarColor: Colors.transparent,
   ));
 
-  // Initialize Firebase for push notifications
-  // Wrapped in try-catch: app must work without Firebase
-  bool firebaseAvailable = false;
-  try {
-    await Firebase.initializeApp();
-    firebaseAvailable = true;
-  } catch (_) {
-    // Firebase may not be configured in all environments - skip silently
-  }
+  // Initialize Firebase (push notifications) and Supabase IN PARALLEL — they
+  // are independent, so awaiting them one after the other only slowed down
+  // the time to first screen. Firebase is wrapped so the app still works
+  // without it.
+  final firebaseFuture = Firebase.initializeApp().then((_) => true).catchError(
+        // Firebase may not be configured in all environments - skip silently
+        (_) => false,
+      );
 
   await SupabaseService.initialize();
+  final bool firebaseAvailable = await firebaseFuture;
 
   // SECURITY: Detect a fresh install and clear any auth session that survived
   // an uninstall (e.g. via Android cloud backup). Without this, a reinstalled

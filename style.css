@@ -472,3 +472,9 @@ a.ci-value:hover{color:var(--primary);}
 }
 
 [id]{scroll-margin-top:calc(var(--nav-h) + 16px);}
+
+
+/* Brand mark (Campster logo next to the wordmark) */
+.nav-logo, .footer-logo { display: inline-flex; align-items: center; gap: 8px; }
+.brand-mark { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; }
+.footer-logo .brand-mark { width: 28px; height: 28px; }

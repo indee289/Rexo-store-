@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -415,8 +413,9 @@ class _UserHeaderCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border, width: 0.8),
           ),
           child: Row(
             children: [
@@ -430,8 +429,8 @@ class _UserHeaderCard extends StatelessWidget {
                       name,
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -440,9 +439,9 @@ class _UserHeaderCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         email,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withOpacity(0.6),
+                          color: AppColors.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -452,7 +451,7 @@ class _UserHeaderCard extends StatelessWidget {
                 ),
               ),
               const Icon(Iconsax.arrow_right_3,
-                  size: 18, color: Colors.white54),
+                  size: 18, color: AppColors.textHint),
             ],
           ),
         ),
@@ -497,35 +496,29 @@ class _GroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 0.5,
-              ),
-            ),
-            child: Column(
-              children: [
-                for (int i = 0; i < children.length; i++) ...[
-                  if (i > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 52),
-                      child: Divider(
-                        height: 0.5,
-                        thickness: 0.5,
-                        color: AppColors.border,
-                      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border, width: 0.8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 52),
+                    child: Divider(
+                      height: 0.5,
+                      thickness: 0.5,
+                      color: AppColors.border,
                     ),
-                  children[i],
-                ],
+                  ),
+                children[i],
               ],
-            ),
+            ],
           ),
         ),
       ),

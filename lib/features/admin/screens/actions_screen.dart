@@ -41,7 +41,7 @@ class ActionsScreen extends StatelessWidget {
                     height: 42,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF515BD4)],
+                        colors: [AppColors.primary, AppColors.accentIndigo],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),

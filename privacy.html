@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Campster Privacy Policy — how Rexo Agency collects, uses, and protects your information on the Campster influencer marketplace platform."/>
-  <title>Privacy Policy — Campster | Rexo Agency</title>
+  <meta name="description" content="Campster Privacy Policy — how Campster collects, uses, and protects your information."/>
+  <title>Privacy Policy — Campster</title>
+  <link rel="icon" type="image/png" href="assets/logo.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -15,7 +16,7 @@
 <!-- ── NAV ──────────────────────────────────────────────────── -->
 <nav class="nav scrolled" id="nav">
   <div class="nav-inner container">
-    <a href="index.html" class="nav-logo">Rexo<span>.</span></a>
+    <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="" class="brand-mark" width="30" height="30">Campster<span>.</span></a>
     <ul class="nav-links">
       <li><a href="index.html#services" class="nav-link">Services</a></li>
       <li><a href="index.html#campster" class="nav-link">Campster</a></li>
@@ -46,7 +47,7 @@
     <div class="container">
       <div class="eyebrow">Legal</div>
       <h1 class="legal-title">Privacy Policy</h1>
-      <p class="legal-meta">Campster Platform &middot; Operated by Rexo Agency &middot; Last Updated: January 2025</p>
+      <p class="legal-meta">Campster &middot; Last Updated: October 2026</p>
     </div>
   </div>
 
@@ -62,15 +63,16 @@
         <div class="legal-toc-item"><a href="#sharing">5. Data Sharing and Disclosure</a></div>
         <div class="legal-toc-item"><a href="#rights">6. Your Rights</a></div>
         <div class="legal-toc-item"><a href="#retention">7. Data Retention</a></div>
-        <div class="legal-toc-item"><a href="#children">8. Children's Privacy</a></div>
-        <div class="legal-toc-item"><a href="#changes">9. Changes to This Policy</a></div>
-        <div class="legal-toc-item"><a href="#contact">10. Contact Us</a></div>
+        <div class="legal-toc-item"><a href="#deletion">8. Account and Data Deletion</a></div>
+        <div class="legal-toc-item"><a href="#children">9. Children's Privacy</a></div>
+        <div class="legal-toc-item"><a href="#changes">10. Changes to This Policy</a></div>
+        <div class="legal-toc-item"><a href="#contact">11. Contact Us</a></div>
       </div>
     </div>
 
     <div class="legal-section" id="intro">
       <h2 class="legal-section-title">1. Introduction</h2>
-      <p>Welcome to Campster ("we," "our," or "us"), operated by Rexo Agency. We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our influencer marketing platform and mobile application. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the application.</p>
+      <p>Welcome to Campster ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our influencer marketing platform and mobile application. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the application.</p>
     </div>
 
     <div class="legal-section" id="collect">
@@ -78,10 +80,11 @@
       <p>We collect information that you voluntarily provide to us when you register on the platform, express an interest in obtaining information about us or our products and services, participate in activities on the platform, or otherwise contact us.</p>
       <ul>
         <li><strong>Personal Information:</strong> Name, email address, phone number, date of birth, social media handles, and profile photos.</li>
-        <li><strong>Financial Information:</strong> Bank account details, UPI IDs, and payment transaction history necessary for processing payments and withdrawals.</li>
+        <li><strong>Payout Information:</strong> The bank account or UPI details you provide so we can send your withdrawals, plus your withdrawal history. The app does not take payments or deposits from users.</li>
         <li><strong>Social Media Data:</strong> We may collect information from your connected social media accounts including follower counts, engagement metrics, content performance data, and audience demographics when you link your accounts for campaign participation.</li>
         <li><strong>Device Information:</strong> Device type, operating system version, unique device identifiers, IP address, browser type, and mobile network information.</li>
         <li><strong>Usage Data:</strong> Information about how you use the platform including pages visited, features used, time spent on pages, search queries, and interaction patterns.</li>
+        <li><strong>Photos you choose to upload:</strong> Profile pictures and campaign proof are uploaded only when you pick them. Campster does not read your photo gallery in the background.</li>
       </ul>
     </div>
 
@@ -91,7 +94,7 @@
       <ul>
         <li><strong>Account Management:</strong> To create and manage your user account and maintain your profile.</li>
         <li><strong>Campaign Matching:</strong> To match creators with relevant brand campaigns based on your audience demographics, content niche, and performance metrics.</li>
-        <li><strong>Payment Processing:</strong> To process deposits, withdrawals, campaign payments, and maintain transaction records.</li>
+        <li><strong>Payout Processing:</strong> To credit creator earnings, process withdrawal requests to your bank or UPI, and maintain transaction records.</li>
         <li><strong>Communication:</strong> To send you platform notifications, campaign updates, payment confirmations, and important service announcements.</li>
         <li><strong>Platform Improvement:</strong> To analyze usage patterns, improve features, optimize user experience, and develop new services.</li>
         <li><strong>Security:</strong> To detect and prevent fraud, unauthorized access, and other security incidents. We employ AI-based moderation and device fingerprinting for security purposes.</li>
@@ -110,6 +113,7 @@
         <li>Secure session management with device tracking</li>
       </ul>
       <p>While we strive to use commercially acceptable means to protect your personal information, no method of transmission over the Internet or method of electronic storage is 100% secure.</p>
+      <p>Uploaded images are stored on Cloudflare R2. Push notifications are delivered through Firebase Cloud Messaging and OneSignal. These providers only receive the data needed to deliver their service.</p>
     </div>
 
     <div class="legal-section" id="sharing">
@@ -144,24 +148,30 @@
       <p>We retain your personal information for as long as your account is active or as needed to provide you services. Financial records are retained for a minimum of 7 years as required by applicable tax and financial regulations.</p>
     </div>
 
+    <div class="legal-section" id="deletion">
+      <h2 class="legal-section-title">8. Account and Data Deletion</h2>
+      <p>You can delete your account at any time from inside the app: <strong>Profile &rarr; Settings &rarr; Delete Account</strong>. Deleting your account removes your profile and personal data from our active systems.</p>
+      <p>If you cannot access the app, email <a href="mailto:rexoagency.in@gmail.com" style="color:var(--primary)">rexoagency.in@gmail.com</a> from your registered email address with the subject "Delete my account" and we will process the request within 30 days. Some records (for example financial and fraud-prevention records) may be kept for as long as the law requires.</p>
+    </div>
+
     <div class="legal-section" id="children">
-      <h2 class="legal-section-title">8. Children's Privacy</h2>
+      <h2 class="legal-section-title">9. Children's Privacy</h2>
       <p>Our platform is not intended for users under the age of 18. We do not knowingly collect personal information from anyone under 18 years of age. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately.</p>
     </div>
 
     <div class="legal-section" id="changes">
-      <h2 class="legal-section-title">9. Changes to This Policy</h2>
+      <h2 class="legal-section-title">10. Changes to This Policy</h2>
       <p>We may update this privacy policy from time to time. The updated version will be indicated by an updated "Last Updated" date. We will notify you of material changes through the app or via email. Your continued use of the platform after changes constitutes acceptance of the revised policy.</p>
     </div>
 
     <div class="legal-section" id="contact">
-      <h2 class="legal-section-title">10. Contact Us</h2>
+      <h2 class="legal-section-title">11. Contact Us</h2>
       <div class="legal-contact-box">
         <p>If you have questions or concerns about this privacy policy or our data practices, please contact us:</p>
         <p>
           <strong>Email:</strong> <a href="mailto:rexoagency.in@gmail.com">rexoagency.in@gmail.com</a><br>
           <strong>Phone:</strong> <a href="tel:+919116965626">+91 91169 65626</a><br>
-          <strong>Address:</strong> Rexo Agency, Jodhpur, Rajasthan, India<br>
+          <strong>Address:</strong> Campster, Jodhpur, Rajasthan, India<br>
           <strong>Support:</strong> Available through the Help &amp; Support section in the Campster app.
         </p>
       </div>
@@ -174,8 +184,8 @@
 <footer class="footer">
   <div class="footer-bottom">
     <div class="footer-bottom-inner container">
-      <span>&copy; 2025 Rexo Agency. All rights reserved.</span>
-      <span><a href="terms.html" class="footer-link" style="margin-right:16px">Terms of Service</a>Powered by <strong>Campster</strong></span>
+      <span>&copy; 2026 Campster. All rights reserved.</span>
+      <span><a href="terms.html" class="footer-link" style="margin-right:16px">Terms of Service</a>Made in Jodhpur, India</span>
     </div>
   </div>
 </footer>

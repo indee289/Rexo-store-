@@ -1,15 +1,16 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 
-/// Frosted-glass card — iOS liquid glass / glassmorphism style.
+/// Clean card used across the app.
 ///
-/// Translucent surface with BackdropFilter blur, matching the bottom
-/// navigation dock aesthetic. Cards blend seamlessly with the Sand Dune
-/// background instead of floating as opaque white boxes.
+/// Opaque white surface with a soft hairline border and a very light shadow on
+/// the Sand Dune background. (Previously every card ran its own
+/// `BackdropFilter` blur; with 10-20 cards in a list that made scrolling slow
+/// on mid-range phones, so the per-card blur was removed. Visually the card is
+/// nearly identical on the flat sand background, but it is far cheaper to
+/// paint.)
 class PremiumCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -42,25 +43,26 @@ class _PremiumCardState extends State<PremiumCard> {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(widget.borderRadius);
-    final bg = widget.backgroundColor ?? AppColors.card;
+    final bg = widget.backgroundColor ?? Colors.white;
 
-    Widget card = ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: radius,
-            border: Border.all(
-              color: Colors.white.withOpacity(0.35),
-              width: 0.5,
-            ),
+    final Widget card = Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: radius,
+        border: Border.all(color: AppColors.border, width: 0.8),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000), // 4% black
+            blurRadius: 10,
+            offset: Offset(0, 2),
           ),
-          child: Padding(
-            padding: widget.padding ?? EdgeInsets.zero,
-            child: widget.child,
-          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Padding(
+          padding: widget.padding ?? EdgeInsets.zero,
+          child: widget.child,
         ),
       ),
     );
@@ -73,10 +75,14 @@ class _PremiumCardState extends State<PremiumCard> {
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onTap,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.75 : 1.0,
-        child: card,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 90),
+        scale: _pressed ? 0.985 : 1.0,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 90),
+          opacity: _pressed ? 0.85 : 1.0,
+          child: card,
+        ),
       ),
     );
   }

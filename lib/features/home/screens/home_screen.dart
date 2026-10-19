@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../notifications/providers/notifications_provider.dart';
 import '../../messages/providers/messages_provider.dart';
@@ -284,11 +285,12 @@ class _DbBannerSlide extends StatelessWidget {
       child: ClipRRect(
         borderRadius: AppRadius.allLg,
         child: imageUrl.isNotEmpty
-            ? Image.network(
-                imageUrl,
+            ? CachedImage(
+                imageUrl: imageUrl,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _fallbackContainer(),
+                errorBuilder: (_) => _fallbackContainer(),
+                placeholderBuilder: (_) => _fallbackContainer(),
               )
             : _fallbackContainer(),
       ),

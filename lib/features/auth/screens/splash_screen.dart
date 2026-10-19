@@ -100,6 +100,7 @@ class _RexoLogo extends StatelessWidget {
         // background (no gradient/box behind it).
         Image.asset(
           'assets/logo.png',
+          cacheWidth: 288,
           width: 96,
           height: 96,
           fit: BoxFit.contain,

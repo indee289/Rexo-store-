@@ -137,6 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // Logo
                   Image.asset(
                     'assets/logo.png',
+          cacheWidth: 192,
                     width: 64,
                     height: 64,
                     errorBuilder: (_, __, ___) => Text(

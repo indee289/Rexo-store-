@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../admin/providers/is_admin_provider.dart';
@@ -218,16 +218,10 @@ class _Body extends ConsumerWidget {
       );
       return;
     }
-    final link = 'https://rexo.app/profile/$handle';
-    Clipboard.setData(ClipboardData(text: link));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Profile link copied: $link'),
-        backgroundColor: AppColors.textPrimary,
-        behavior: SnackBarBehavior.floating,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
-      ),
-    );
+    // The old link pointed at a domain that does not exist (rexo.app), so it
+    // opened nothing. Share a real, working message through the OS share sheet.
+    Share.share('Check out @$handle on Campster — influencer marketing, '
+        'made simple.');
   }
 
   String _formatRole(String r) {
@@ -363,10 +357,13 @@ class _Avatar extends StatelessWidget {
       ),
       child: ClipOval(
         child: (imageUrl != null && imageUrl!.isNotEmpty)
-            ? Image.network(
-                imageUrl!,
+            ? CachedImage(
+                imageUrl: imageUrl,
+                width: 86,
+                height: 86,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _initialFallback(),
+                errorBuilder: (_) => _initialFallback(),
+                placeholderBuilder: (_) => _initialFallback(),
               )
             : _initialFallback(),
       ),
@@ -814,10 +811,10 @@ class _GridTile extends StatelessWidget {
       child: Container(
         color: AppColors.surfaceAlt,
         child: cover.isNotEmpty
-            ? Image.network(
-                cover,
+            ? CachedImage(
+                imageUrl: cover,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(title),
+                errorBuilder: (_) => _placeholder(title),
               )
             : _placeholder(title),
       ),

@@ -43,7 +43,7 @@ class PremiumButton extends StatefulWidget {
 class _PremiumButtonState extends State<PremiumButton> {
   bool _pressed = false;
 
-  static const double _height = 44;
+  static const double _height = 48;
 
   bool get _enabled => widget.onPressed != null && !widget.loading;
 
@@ -96,8 +96,9 @@ class _PremiumButtonState extends State<PremiumButton> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: style.fill,
-        borderRadius: AppRadius.allMd,
+        borderRadius: AppRadius.allLg,
         border: style.border,
+        boxShadow: style.shadow,
       ),
       child: content,
     );
@@ -108,10 +109,14 @@ class _PremiumButtonState extends State<PremiumButton> {
       onTapUp: (_) => _setPressed(false),
       onTapCancel: () => _setPressed(false),
       onTap: _enabled ? widget.onPressed : null,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: !_enabled ? 0.4 : (_pressed ? 0.7 : 1.0),
-        child: surface,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 90),
+        scale: _pressed ? 0.98 : 1.0,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 90),
+          opacity: !_enabled ? 0.45 : (_pressed ? 0.85 : 1.0),
+          child: surface,
+        ),
       ),
     );
   }
@@ -123,13 +128,21 @@ class _PremiumButtonState extends State<PremiumButton> {
         return const _ButtonStyle(
           fill: AppColors.primary,
           foreground: Colors.white,
+          shadow: [
+            BoxShadow(
+              color: Color(0x330095F6), // primary @ 20%
+              blurRadius: 12,
+              offset: Offset(0, 4),
+              spreadRadius: -2,
+            ),
+          ],
         );
       case PremiumButtonVariant.outline:
       case PremiumButtonVariant.glass:
         return _ButtonStyle(
           fill: Colors.white,
           foreground: AppColors.textPrimary,
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: const Color(0xFFD9D5CB), width: 1),
         );
       case PremiumButtonVariant.ghost:
         return const _ButtonStyle(
@@ -144,10 +157,12 @@ class _ButtonStyle {
   final Color? fill;
   final Color foreground;
   final BoxBorder? border;
+  final List<BoxShadow>? shadow;
 
   const _ButtonStyle({
     this.fill,
     required this.foreground,
     this.border,
+    this.shadow,
   });
 }

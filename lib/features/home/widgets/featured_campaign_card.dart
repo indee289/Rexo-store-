@@ -62,8 +62,8 @@ class FeaturedCampaignCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: borderColor, width: 0.8),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(isDark ? 0.28 : 0.05),
@@ -171,26 +171,28 @@ class FeaturedCampaignCard extends StatelessWidget {
               right: 0,
               bottom: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                padding: const EdgeInsets.fromLTRB(5, 10, 5, 3),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withOpacity(0.55),
+                      Colors.black.withOpacity(0.72),
                       Colors.transparent,
                     ],
                   ),
                 ),
                 alignment: Alignment.bottomLeft,
+                // White text on a dark scrim: the old blue text was nearly
+                // unreadable over light/grey logo thumbnails.
                 child: Text(
                   data.category,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 9,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryLight,
+                    color: Colors.white,
                   ),
                 ),
               ),

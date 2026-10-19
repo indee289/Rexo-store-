@@ -13,6 +13,7 @@ import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_card.dart';
 import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/jobs_provider.dart';
 import 'job_detail_screen.dart';
@@ -347,12 +348,12 @@ class _JobCard extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(AppRadius.lg)),
-              child: Image.network(
-                coverUrl,
+              child: CachedImage(
+                imageUrl: coverUrl,
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                errorBuilder: (_) => const SizedBox.shrink(),
               ),
             ),
 

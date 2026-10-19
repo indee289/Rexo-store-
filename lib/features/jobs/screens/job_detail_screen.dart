@@ -14,6 +14,7 @@ import '../../../core/widgets/demo_asset_view.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_icon_button.dart';
+import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/jobs_provider.dart';
 
@@ -388,10 +389,10 @@ class _CoverHeader extends ConsumerWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: hasCover
-              ? Image.network(
-                  coverUrl!,
+              ? CachedImage(
+                  imageUrl: coverUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (_) => const SizedBox.shrink(),
                 )
               : const Center(
                   child: Icon(

@@ -39,7 +39,7 @@ class AppBottomNav extends StatelessWidget {
       child: ClipRRect(
         borderRadius: AppRadius.pillAll,
         child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             height: 60,
             decoration: BoxDecoration(

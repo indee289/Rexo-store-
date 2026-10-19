@@ -47,6 +47,17 @@ final conversationsProvider =
 
   final controller = StreamController<List<Map<String, dynamic>>>();
   RealtimeChannel? channel;
+  Timer? refetchDebounce;
+
+  // The Realtime channel is not row-filtered (jsonb "participants" cannot be
+  // used in a realtime filter), so ANY room change would trigger a full
+  // refetch. Coalesce bursts into a single refetch.
+  void scheduleRefetch(Future<void> Function() run) {
+    refetchDebounce?.cancel();
+    refetchDebounce = Timer(const Duration(milliseconds: 600), () {
+      if (!controller.isClosed) run();
+    });
+  }
 
   Future<void> fetchConversations() async {
     try {
@@ -115,7 +126,7 @@ final conversationsProvider =
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'chat_rooms',
-            callback: (_) => fetchConversations(),
+            callback: (_) => scheduleRefetch(fetchConversations),
           )
           .subscribe();
     } catch (_) {
@@ -126,6 +137,7 @@ final conversationsProvider =
   fetchConversations();
 
   ref.onDispose(() {
+    refetchDebounce?.cancel();
     controller.close();
     if (channel != null) {
       SupabaseService.client.removeChannel(channel!);
@@ -371,11 +383,31 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
           'unreadCount': {receiverId: 1},
         }, onConflict: 'id');
       } else {
+        // Existing room: bump the RECEIVER's unread counter. Previously this
+        // was only set when the room was first created, so the receiver never
+        // saw an unread badge for any later message.
+        Map<String, dynamic> unread = {};
+        try {
+          final row = await SupabaseService.client
+              .from('chat_rooms')
+              .select('unreadCount')
+              .eq('id', roomId)
+              .maybeSingle();
+          final raw = row?['unreadCount'];
+          if (raw is Map) unread = Map<String, dynamic>.from(raw);
+        } catch (_) {}
+        final current = unread[receiverId];
+        final currentCount = current is num
+            ? current.toInt()
+            : (current is String ? int.tryParse(current) ?? 0 : 0);
+        unread[receiverId] = currentCount + 1;
+
         await SupabaseService.client.from('chat_rooms').update({
           'lastMessage': trimmed,
           'lastMessageSenderId': user.id,
           'lastMessageAt': now,
           'lastUpdate': now,
+          'unreadCount': unread,
         }).eq('id', roomId);
       }
 
@@ -389,7 +421,10 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
         'readBy': [user.id],
       });
 
+      // Refresh the open chat immediately instead of relying on Realtime being
+      // enabled for chat_messages (the chat screen watches the stream provider).
       ref.invalidate(chatMessagesProvider(receiverId));
+      ref.invalidate(chatMessagesStreamProvider(receiverId));
       ref.invalidate(conversationsProvider);
 
       return true;
