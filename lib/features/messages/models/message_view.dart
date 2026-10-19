@@ -94,6 +94,10 @@ class MessageView {
 /// hiding without touching the widget layer.
 ///
 /// Pure function: does not mutate [all]; the returned list is a new list.
-List<MessageView> visibleMessages(List<MessageView> all, String currentUserId) {
-  return List<MessageView>.of(all);
+List<MessageView> visibleMessages(List<MessageView> all, String currentUserId,
+    {DateTime? hiddenBefore}) {
+  if (hiddenBefore == null) return List<MessageView>.of(all);
+  return all
+      .where((m) => m.createdAt.isAfter(hiddenBefore))
+      .toList(growable: true);
 }

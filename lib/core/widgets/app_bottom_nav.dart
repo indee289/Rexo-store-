@@ -24,7 +24,7 @@ class AppBottomNav extends StatelessWidget {
 
   static const _items = [
     _Item(inactive: Iconsax.home_2, active: Iconsax.home_2),
-    _Item(inactive: Iconsax.send_2, active: Iconsax.send_2),
+    _Item(inactive: Iconsax.volume_high, active: Iconsax.volume_high),
     _Item(inactive: Iconsax.briefcase, active: Iconsax.briefcase),
     _Item(inactive: Iconsax.user, active: Iconsax.user),
   ];

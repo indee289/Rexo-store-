@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase_service.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../blocks/providers/block_provider.dart';
 
 /// Messaging providers backed by the live `chat_rooms` + `chat_messages`
@@ -577,4 +580,67 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
 final messageActionsProvider =
     StateNotifierProvider<MessageActionsNotifier, AsyncValue<void>>((ref) {
   return MessageActionsNotifier(ref);
+});
+
+
+/// "Delete for me" for inbox conversations. Stored locally per user:
+/// peerId -> marker time (the conversation's last_message_at when deleted).
+/// The chat stays hidden until a newer message arrives, and only messages
+/// after the marker are shown.
+class HiddenChatsNotifier extends StateNotifier<Map<String, DateTime>> {
+  final String? _uid;
+  HiddenChatsNotifier(this._uid) : super(const {}) {
+    _load();
+  }
+
+  String get _key => 'hidden_chats_${_uid ?? ''}';
+
+  Future<void> _load() async {
+    if (_uid == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_key);
+      if (raw == null) return;
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final map = <String, DateTime>{};
+      decoded.forEach((k, v) {
+        final d = DateTime.tryParse(v.toString());
+        if (d != null) map[k] = d;
+      });
+      state = {...map, ...state};
+    } catch (_) {}
+  }
+
+  Future<void> hide(String peerId, DateTime marker) async {
+    state = {...state, peerId: marker};
+    if (_uid == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _key,
+        jsonEncode(state.map((k, v) => MapEntry(k, v.toIso8601String()))),
+      );
+    } catch (_) {}
+  }
+}
+
+final hiddenChatsProvider =
+    StateNotifierProvider<HiddenChatsNotifier, Map<String, DateTime>>((ref) {
+  final uid = ref.watch(authProvider.select((a) => a.user?.id));
+  return HiddenChatsNotifier(uid);
+});
+
+/// Conversations minus the ones the user deleted (until a newer message).
+final visibleConversationsProvider =
+    Provider<AsyncValue<List<Map<String, dynamic>>>>((ref) {
+  final hidden = ref.watch(hiddenChatsProvider);
+  return ref.watch(conversationsProvider).whenData((list) {
+    if (hidden.isEmpty) return list;
+    return list.where((c) {
+      final marker = hidden[c['other_user_id']?.toString()];
+      if (marker == null) return true;
+      final last = DateTime.tryParse((c['last_message_at'] ?? '').toString());
+      return last != null && last.isAfter(marker);
+    }).toList(growable: false);
+  });
 });

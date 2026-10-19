@@ -38,7 +38,7 @@ class AddressesScreen extends ConsumerWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 96),
             itemCount: addresses.length,
             itemBuilder: (context, index) =>
                 _buildAddressCard(context, ref, addresses[index]),

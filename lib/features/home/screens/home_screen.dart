@@ -77,7 +77,7 @@ class _IgHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadNotifs = ref.watch(unreadNotificationsCountProvider);
-    final unreadInbox = ref.watch(conversationsProvider).maybeWhen(
+    final unreadInbox = ref.watch(visibleConversationsProvider).maybeWhen(
           data: (list) => list.where((c) => c['is_read'] == false).length,
           orElse: () => 0,
         );
@@ -109,7 +109,7 @@ class _IgHeader extends ConsumerWidget {
           ),
           const SizedBox(width: 4),
           _HeaderIcon(
-            icon: Iconsax.send_2,
+            icon: Iconsax.message_text,
             badge: unreadInbox,
             onTap: () => context.push(AppRoutes.messages),
           ),
@@ -290,7 +290,8 @@ class _DbBannerSlide extends StatelessWidget {
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (_) => _fallbackContainer(),
-                placeholderBuilder: (_) => _fallbackContainer(),
+                placeholderBuilder: (_) =>
+                    Container(color: AppColors.surfaceAlt),
               )
             : _fallbackContainer(),
       ),

@@ -68,9 +68,16 @@ class CachedImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        // Decode at display size to reduce memory usage (Requirement 12.4).
+        // Decode at display size to reduce memory usage. Only ONE dimension is
+        // ever passed: giving the decoder both width AND height stretches the
+        // image to that exact box and ignores its aspect ratio (squashed
+        // logos / covers).
         memCacheWidth: cacheDims.$1,
         memCacheHeight: cacheDims.$2,
+        // The package defaults (500ms fade-in, 1000ms fade-out) made every
+        // image feel slow, with the placeholder lingering on screen.
+        fadeInDuration: const Duration(milliseconds: 120),
+        fadeOutDuration: Duration.zero,
         placeholder: (context, _) => _placeholder(context),
         errorWidget: (context, _, __) => _fallback(context),
       );
@@ -88,14 +95,28 @@ class CachedImage extends StatelessWidget {
   /// Returns `(null, null)` for any unbounded dimension so the full image is
   /// decoded rather than being clamped incorrectly.
   (int?, int?) _cacheDimensions(BuildContext context) {
-    final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ?? 1.0;
+    final mq = MediaQuery.maybeOf(context);
+    final dpr = mq?.devicePixelRatio ?? 1.0;
+    final screenW = mq?.size.width ?? 0.0;
 
-    int? toCache(double? logical) {
-      if (logical == null || !logical.isFinite || logical <= 0) return null;
-      return (logical * dpr).round();
+    bool bounded(double? v) => v != null && v.isFinite && v > 0;
+    int? screenWidthPx() => screenW > 0
+        ? (screenW * dpr).clamp(200, 1200).round()
+        : null;
+
+    // Box has a fixed width AND height (thumbnails, avatars, grid tiles).
+    // The image's own aspect ratio is unknown, so decode its WIDTH large
+    // enough that a landscape image still covers the box height (BoxFit.cover
+    // would otherwise upscale it and look blurry).
+    if (bounded(width) && bounded(height)) {
+      final side = (width! > height! ? width! : height!) * dpr;
+      return ((side * 1.8).clamp(64, 1200).round(), null);
     }
-
-    return (toCache(width), toCache(height));
+    // Fixed width only.
+    if (bounded(width)) return ((width! * dpr).clamp(64, 1600).round(), null);
+    // Width fills the parent (banners / full-width covers): decode at roughly
+    // the screen width, never the full original resolution.
+    return (screenWidthPx(), null);
   }
 
   Widget _placeholder(BuildContext context) {

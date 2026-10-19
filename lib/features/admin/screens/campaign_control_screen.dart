@@ -111,7 +111,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             itemCount: list.length,
             itemBuilder: (context, index) {
               final campaign = list[index];

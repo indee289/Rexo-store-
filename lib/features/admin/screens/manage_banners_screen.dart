@@ -642,7 +642,7 @@ class _LinkTypeSelector extends StatelessWidget {
 
   static const _options = [
     ('none', Iconsax.slash, 'No Link'),
-    ('campaign', Iconsax.send_2, 'Campaign'),
+    ('campaign', Iconsax.volume_high, 'Campaign'),
     ('page', Iconsax.link, 'Page'),
   ];
 

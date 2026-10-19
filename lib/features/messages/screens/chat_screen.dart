@@ -90,6 +90,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final messagesAsync =
         ref.watch(chatMessagesStreamProvider(widget.otherUserId));
     final conversationsAsync = ref.watch(conversationsProvider);
+    final hiddenAt = ref.watch(hiddenChatsProvider)[widget.otherUserId];
 
     // Resolve header name/avatar
     String otherUserName = '';
@@ -196,7 +197,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     .map((m) => MessageView.fromMap(m))
                     .toList(growable: false);
                 final visible =
-                    visibleMessages(views, currentUserId);
+                    visibleMessages(views, currentUserId, hiddenBefore: hiddenAt);
 
                 if (visible.isEmpty) return _buildEmptyState();
 

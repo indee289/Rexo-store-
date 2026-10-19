@@ -148,7 +148,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     .setEmailNotificationsEnabled(v),
               ),
               _ToggleItem(
-                icon: Iconsax.send_2,
+                icon: Iconsax.volume_high,
                 title: 'Campaign Updates',
                 value: settings.campaignUpdatesEnabled,
                 onChanged: (v) => ref

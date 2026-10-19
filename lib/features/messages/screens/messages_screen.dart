@@ -46,7 +46,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final conversationsAsync = ref.watch(conversationsProvider);
+    final conversationsAsync = ref.watch(visibleConversationsProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -56,7 +56,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: PremiumIconButton(
-              icon: Iconsax.message_text,
+              icon: Iconsax.edit_2,
               tooltip: 'New chat',
               background: true,
               tonal: true,
@@ -104,11 +104,48 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     ref.invalidate(conversationsProvider);
                   },
                   child: ListView.builder(
-                    itemCount: filtered.length,
+                    itemCount: filtered.length + 1,
                     itemBuilder: (context, index) {
+                      if (index == filtered.length) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Center(
+                            child: Text(
+                              'Swipe left or long-press a chat to delete it',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
                       final conversation = filtered[index];
-                      return _ConversationTile(conversation: conversation)
-                          .staggeredEntrance(index);
+                      final peerId =
+                          conversation['other_user_id'] as String;
+                      return Dismissible(
+                        key: ValueKey('conv_$peerId'),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (_) => _confirmDelete(context),
+                        onDismissed: (_) => _deleteConversation(conversation),
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          child: const Icon(Iconsax.trash,
+                              color: Colors.white),
+                        ),
+                        child: _ConversationTile(
+                          conversation: conversation,
+                          onLongPress: () async {
+                            if (await _confirmDelete(context)) {
+                              _deleteConversation(conversation);
+                            }
+                          },
+                        ),
+                      ).staggeredEntrance(index);
                     },
                   ),
                 );
@@ -132,6 +169,43 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete chat?'),
+        content: const Text(
+            'This removes the chat from your inbox only. The other person will still have it.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  void _deleteConversation(Map<String, dynamic> conversation) {
+    final peerId = conversation['other_user_id'] as String;
+    final marker =
+        DateTime.tryParse((conversation['last_message_at'] ?? '').toString()) ??
+            DateTime.now();
+    ref.read(hiddenChatsProvider.notifier).hide(peerId, marker);
+    ref.read(messageActionsProvider.notifier).markConversationRead(peerId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chat deleted')),
+      );
+    }
+  }
+
   void _openNewChatSearch(BuildContext context) {
     showPremiumSheet<void>(
       context: context,
@@ -144,7 +218,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 /// Single conversation row — Instagram-style.
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
-  const _ConversationTile({required this.conversation});
+  final VoidCallback? onLongPress;
+  const _ConversationTile({required this.conversation, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +239,7 @@ class _ConversationTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => context.push('/messages/$otherUserId'),
+        onLongPress: onLongPress,
         child: Container(
           height: 72,
           padding: const EdgeInsets.symmetric(horizontal: 16),

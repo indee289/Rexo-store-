@@ -552,7 +552,7 @@ class _HighlightsRow extends StatelessWidget {
         onTap: () => context.push('/wallet'),
       ),
       _HighlightData(
-        icon: Iconsax.send_2,
+        icon: Iconsax.volume_high,
         label: 'Campaigns',
         onTap: () => context.push('/my-campaigns'),
       ),
@@ -811,10 +811,14 @@ class _GridTile extends StatelessWidget {
       child: Container(
         color: AppColors.surfaceAlt,
         child: cover.isNotEmpty
-            ? CachedImage(
-                imageUrl: cover,
-                fit: BoxFit.cover,
-                errorBuilder: (_) => _placeholder(title),
+            ? LayoutBuilder(
+                builder: (context, c) => CachedImage(
+                  imageUrl: cover,
+                  width: c.maxWidth,
+                  height: c.maxHeight,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_) => _placeholder(title),
+                ),
               )
             : _placeholder(title),
       ),
