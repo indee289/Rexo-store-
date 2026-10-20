@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
@@ -69,6 +70,27 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="rexo_high_importance" />
+
+        <!-- ── Firebase: initialize from Dart, never natively at startup ──────
+             FirebaseInitProvider runs during Application start, BEFORE Flutter
+             renders. With older firebase_messaging on some devices/Play Services
+             versions that native init can crash the process while only the
+             native launch splash is visible. We remove the auto-init provider
+             and disable auto data collection; the app calls
+             Firebase.initializeApp() from Dart (guarded, after the first frame),
+             so a Firebase problem can degrade push silently but can never crash
+             the launch. -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_deactivated"
+            android:value="true" />
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            android:exported="false"
+            tools:node="remove" />
     </application>
     <queries>
         <intent>
