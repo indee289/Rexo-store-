@@ -15,12 +15,12 @@ if (localPropertiesFile.exists()) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '2'
+    flutterVersionCode = '3'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '1.0.1'
+    flutterVersionName = '1.0.2'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,9 +128,12 @@ android {
 
     packaging {
         jniLibs {
-            // Keep native libraries uncompressed and page-aligned. Together
-            // with AGP 8.9.1 this produces Play-compatible 16 KB packaging.
-            useLegacyPackaging = false
+            // Preserve the proven API-21-era loading behavior after raising
+            // minSdk to 24: package .so files compressed and let Android extract
+            // them before loading. This avoids OEM/native-loader launch crashes.
+            // Flutter's arm64 ELF files remain 16 KB compatible; CI verifies the
+            // final artifact before upload.
+            useLegacyPackaging = true
         }
     }
 

@@ -275,10 +275,35 @@ jobs:
             exit 1
           }
 
+          # Compressed/extracted JNI packaging avoids the affected-device loader
+          # regression. Independently verify every arm64 ELF LOAD segment still
+          # has at least 16 KB alignment, which is the actual runtime requirement.
+          command -v readelf >/dev/null || {
+            echo "::error::readelf not found."
+            exit 1
+          }
+          ELF_DIR=$(mktemp -d)
+          unzip -q "$APK" 'lib/arm64-v8a/*.so' -d "$ELF_DIR"
+          ELF_COUNT=0
+          while IFS= read -r -d '' SO_FILE; do
+            ((ELF_COUNT += 1))
+            while read -r ALIGN; do
+              if (( ALIGN < 0x4000 )); then
+                echo "::error::$(basename "$SO_FILE") has incompatible LOAD alignment $ALIGN."
+                exit 1
+              fi
+            done < <(readelf -lW "$SO_FILE" | awk '/ LOAD / {print $NF}')
+          done < <(find "$ELF_DIR/lib/arm64-v8a" -type f -name '*.so' -print0)
+          (( ELF_COUNT > 0 )) || {
+            echo "::error::No arm64 native libraries found for ELF verification."
+            exit 1
+          }
+          rm -rf "$ELF_DIR"
+
           cat > build/app/outputs/bundle/release/release-info.txt <<EOF
           app=Campster
           applicationId=com.rexo.marketplace
-          versionName=1.0.1
+          versionName=1.0.2
           versionCode=$CAMPSTER_BUILD_NUMBER
           minSdk=24
           targetSdk=36
@@ -286,8 +311,9 @@ jobs:
           signatureVerified=true
           arm64Verified=true
           zipAlignment16KbVerified=true
+          elfPageAlignment16KbVerified=true
           EOF
-          echo "AAB verified: signed with configured keystore, minSdk 24, targetSdk 36, arm64 and 16 KB aligned."
+          echo "AAB verified: signed with configured keystore, minSdk 24, targetSdk 36, arm64 and 16 KB ELF alignment."
 
       - name: Give release files clear names
         run: |

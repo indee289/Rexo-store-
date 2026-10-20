@@ -9,13 +9,13 @@ Updated: October 13, 2026.
 | Application ID | Configured | `com.rexo.marketplace` in `android/app/build.gradle` |
 | Minimum Android API | Fixed | `minSdk 24` (Android 7.0+) |
 | Play target/compile API | Configured | `targetSdk 36`, `compileSdk 36` |
-| Release version | Bumped | source `1.0.1+2`; CI uses unique `10000 + run number` version codes |
+| Release version | Bumped | source `1.0.2+3`; CI uses unique `10000 + run number` version codes |
 | Release signing | Fail-closed | release tasks refuse missing signing inputs and never use the debug key |
 | Keystore validation | Configured | workflow validates Base64, password, alias and file integrity |
 | AAB signer verification | Configured | `jarsigner` must succeed and AAB SHA-256 must match the configured keystore |
 | Play upload-key pinning | Optional | enforced when `ANDROID_UPLOAD_CERT_SHA256` is configured |
 | 64-bit | CI-enforced | AAB must contain `arm64-v8a` libraries |
-| 16 KB packaging | Configured/CI-enforced | AGP 8.9.1, non-legacy JNI packaging, `zipalign -P 16` check |
+| Native packaging | Compatibility mode | compressed/extracted JNI loading avoids the API-24 OEM launch regression; CI retains arm64/16 KB checks |
 | Runtime configuration | CI-enforced | build fails when production Supabase/R2/Firebase configuration is absent or invalid |
 | Product branding | Aligned | Campster in Android labels, localization, legal/store docs and graphics |
 | Feature graphic | Prepared | `store/assets/feature_graphic.png`, 1024×500 RGB PNG |

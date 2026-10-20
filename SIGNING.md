@@ -74,7 +74,7 @@ flutter build appbundle --release \
   --dart-define=R2_PUBLIC_URL=...
 ```
 
-The source version is `1.0.1+2`; GitHub Actions overrides only the version code
+The source version is `1.0.2+3`; GitHub Actions overrides only the version code
 with a unique increasing value (`10000 + workflow run number`) so successive
 Play artifacts cannot accidentally reuse code `1`.
 

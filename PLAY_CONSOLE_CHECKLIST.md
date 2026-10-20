@@ -10,8 +10,8 @@ them.
 - [x] `minSdk 24` (Android 7.0+; satisfies Play Automatic Protection shown in the upload error).
 - [x] `compileSdk 36` and `targetSdk 36` (required for new apps/updates from 31 August 2026).
 - [x] Java/Kotlin 17, AGP 8.9.1, Gradle 8.11.1.
-- [x] Native libraries use modern uncompressed/aligned packaging.
-- [x] Source version bumped to `1.0.1+2`; CI gives each artifact a unique increasing version code.
+- [x] JNI libraries use extracted/legacy loading for API-24 device compatibility; CI still verifies arm64 and 16 KB artifact alignment.
+- [x] Source version bumped to `1.0.2+3`; CI gives each artifact a unique increasing version code.
 - [x] Release Gradle tasks fail if real signing material is absent—no debug fallback.
 - [x] CI validates the keystore password/alias and proves the AAB certificate matches that keystore.
 - [x] CI rejects the wrong min/target SDK, absent arm64, unsigned/debug AABs, and failed 16 KB APK alignment.
