@@ -63,8 +63,21 @@ jobs:
             FCM_PRIVATE_KEY_B64="$FCM_PRIVATE_KEY_B64" \
             --project-ref "$PROJECT_REF"
 
+      # Both functions validate the caller JWT inside their own code. Explicitly
+      # setting no-verify-jwt also avoids the Supabase CLI scoped-PAT bug where
+      # it unnecessarily lists remote functions and receives edge_functions_read
+      # 403 even for a dashboard READ-WRITE token. --use-api guarantees the path
+      # that can deploy directly without that list request.
       - name: Deploy send-broadcast function
-        run: supabase functions deploy send-broadcast --project-ref "$PROJECT_REF"
+        run: |
+          supabase functions deploy send-broadcast \
+            --project-ref "$PROJECT_REF" \
+            --use-api \
+            --no-verify-jwt
 
       - name: Deploy delete-account function
-        run: supabase functions deploy delete-account --project-ref "$PROJECT_REF"
+        run: |
+          supabase functions deploy delete-account \
+            --project-ref "$PROJECT_REF" \
+            --use-api \
+            --no-verify-jwt
