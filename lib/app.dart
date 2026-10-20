@@ -47,7 +47,7 @@ class RexoApp extends ConsumerWidget {
         );
         return MediaQuery(
           data: mediaQuery.copyWith(textScaler: clampedTextScaler),
-          child: child!,
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );

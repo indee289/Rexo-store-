@@ -5,6 +5,11 @@ import '../core/constants/app_constants.dart';
 class SupabaseService {
   SupabaseService._();
 
+  static bool _initialized = false;
+
+  /// Whether [initialize] has fully completed.
+  static bool get isInitialized => _initialized;
+
   /// Get the Supabase client instance
   static SupabaseClient get client => Supabase.instance.client;
 
@@ -14,12 +19,26 @@ class SupabaseService {
   /// Check if a user is currently authenticated
   static bool get isAuthenticated => currentUser != null;
 
-  /// Initialize Supabase with URL and anon key from dart-define
+  /// Initialize Supabase with the compile-time URL and anon key.
+  ///
+  /// Validates the configuration first so a missing/invalid `--dart-define`
+  /// surfaces as a clear, catchable error instead of a confusing failure deep
+  /// inside the SDK. Idempotent: safe to call again (e.g. a startup retry).
   static Future<void> initialize() async {
-    await Supabase.initialize(
-      url: AppConstants.supabaseUrl,
-      anonKey: AppConstants.supabaseAnonKey,
-    );
+    if (_initialized) return;
+
+    final url = AppConstants.supabaseUrl.trim();
+    final anonKey = AppConstants.supabaseAnonKey.trim();
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      throw const FormatException('Invalid Supabase URL configuration.');
+    }
+    if (anonKey.isEmpty) {
+      throw const FormatException('Missing Supabase anon key configuration.');
+    }
+
+    await Supabase.initialize(url: url, anonKey: anonKey);
+    _initialized = true;
   }
 
   /// Sign in with email and password
