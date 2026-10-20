@@ -1,5 +1,5 @@
 -- ============================================================================
--- Rexo Collab — User Reports + User Blocking
+-- Campster — User Reports + User Blocking
 -- ============================================================================
 --
 -- REPORTS: reuse the existing public.moderation_queue table (do NOT create a

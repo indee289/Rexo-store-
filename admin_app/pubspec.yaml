@@ -1,7 +1,7 @@
 name: rexo_admin
-description: Rexo Admin - Premium Admin Panel for Rexo Marketplace
+description: Campster Admin - Premium Admin Panel
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

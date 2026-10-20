@@ -1,5 +1,5 @@
 -- ============================================================================
--- Rexo Collab — Account Deletion (server-side, RLS-safe, ownership-protected)
+-- Campster — Account Deletion (server-side, RLS-safe, ownership-protected)
 -- ============================================================================
 --
 -- Google Play requires an in-app path that deletes a user's account and data.

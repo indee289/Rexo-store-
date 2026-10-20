@@ -15,12 +15,12 @@ if (localPropertiesFile.exists()) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
+    flutterVersionCode = '2'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
+    flutterVersionName = '1.0.1'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
         // Required by flutter_local_notifications 17.x (and other plugins that
-        // use java.time APIs) so they work down to minSdk 21.
+        // use java.time APIs) so they work down to minSdk 24.
         coreLibraryDesugaringEnabled true
     }
 
@@ -101,7 +101,9 @@ android {
 
     defaultConfig {
         applicationId "com.rexo.marketplace"
-        minSdk 21
+        // Android 7.0+ is required by Google Play Automatic Protection.
+        minSdk 24
+        // Google Play requires API 36 for new apps/updates from August 2026.
         targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -122,6 +124,14 @@ android {
             appLinkHost   : appLinkHost,
             appLinkHostWww: "www.${appLinkHost}".toString(),
         ]
+    }
+
+    packaging {
+        jniLibs {
+            // Keep native libraries uncompressed and page-aligned. Together
+            // with AGP 8.9.1 this produces Play-compatible 16 KB packaging.
+            useLegacyPackaging = false
+        }
     }
 
     signingConfigs {

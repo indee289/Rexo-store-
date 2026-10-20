@@ -7,38 +7,38 @@ on:
     branches: [Rexo-Kotlin, main]
   workflow_dispatch:
 
+# The build only needs to read repository contents. Signing/runtime secrets are
+# referenced by name and are never printed or uploaded.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # JDK 17 is required by Android Gradle Plugin 8.9.1 (compileSdk 36).
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Flutter 3.29.x ships the Android embedding compatible with AGP 8.9.1
-      # and can compile against API 36.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
           channel: stable
+          cache: true
 
       - name: Get dependencies
         run: |
           flutter pub get
           cd admin_app && flutter pub get
 
-      # Generate the localization sources (AppLocalizations) from the ARB files
-      # before analyze/build. `flutter pub get` normally triggers this when
-      # `generate: true`, but we run it explicitly so the generated
-      # lib/l10n/app_localizations.dart always exists for the compile.
       - name: Generate localizations
         run: flutter gen-l10n
 
@@ -46,56 +46,76 @@ jobs:
         run: flutter analyze --no-pub lib/
         continue-on-error: true
 
-      - name: Decode keystore
+      - name: Validate and decode release keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 || secrets.REXO_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.REXO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.REXO_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.REXO_KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ runner.temp }}/campster-upload-keystore.jks
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release-keystore.jks
-            echo "storeFile=release-keystore.jks" > android/key.properties
-            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
-          else
-            echo "No keystore configured, skipping signing setup"
-          fi
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required Android signing secret $name is missing."
+              exit 1
+            fi
+          done
 
-      - name: Configure Firebase (real google-services.json)
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          test -s "$KEYSTORE_PATH" || {
+            echo "::error::Decoded keystore is empty."
+            exit 1
+          }
+
+          # Prove that the configured password and alias open this keystore.
+          keytool -list \
+            -keystore "$KEYSTORE_PATH" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" >/dev/null
+          echo "Release keystore and alias validated."
+
+      - name: Configure production Firebase
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          # The repo ships a PLACEHOLDER android/app/google-services.json (project
-          # "rexo-marketplace") only so the build compiles. FCM cannot mint a token
-          # for that fake project, so user_devices stays empty. When the real
-          # base64-encoded config is provided via the GOOGLE_SERVICES_JSON secret
-          # (from the actual Firebase project), decode it over the placeholder so
-          # the built APK talks to the correct project and FCM tokens are valid.
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            # Accept the secret as EITHER raw JSON or base64. Detect by the first
-            # non-whitespace char: real google-services.json starts with '{',
-            # base64 never does. This avoids the common "no matching client"
-            # failure caused by pasting raw JSON while the step base64-decodes it.
-            first_char=$(printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '[:space:]' | head -c1)
-            if [ "$first_char" = "{" ]; then
-              printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-              echo "Wrote google-services.json (raw JSON secret)."
-            else
-              echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
-              echo "Wrote google-services.json (base64 secret)."
-            fi
-            if grep -q '"package_name": "com.rexo.marketplace"' android/app/google-services.json; then
-              echo "Verified: google-services.json contains com.rexo.marketplace client."
-            else
-              echo "WARNING: google-services.json has NO com.rexo.marketplace client — build will fail."
-            fi
-          else
-            echo "GOOGLE_SERVICES_JSON secret not set — using placeholder; FCM/push will NOT work."
+          set -euo pipefail
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::GOOGLE_SERVICES_JSON is required for the production AAB."
+            exit 1
           fi
 
-      - name: Build APK
+          # Accept raw JSON or base64 without printing any configuration value.
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+
+          raw = os.environ['GOOGLE_SERVICES_JSON'].strip()
+          try:
+              text = raw if raw.startswith('{') else base64.b64decode(raw, validate=True).decode('utf-8')
+              data = json.loads(text)
+          except Exception as exc:
+              raise SystemExit(f'Invalid GOOGLE_SERVICES_JSON secret: {exc}')
+
+          clients = data.get('client') or []
+          packages = {
+              client.get('client_info', {}).get('android_client_info', {}).get('package_name')
+              for client in clients
+          }
+          project_number = str(data.get('project_info', {}).get('project_number', ''))
+          if 'com.rexo.marketplace' not in packages:
+              raise SystemExit('google-services.json has no com.rexo.marketplace client')
+          if not project_number or set(project_number) == {'0'}:
+              raise SystemExit('google-services.json still contains the placeholder Firebase project')
+
+          Path('android/app/google-services.json').write_text(text, encoding='utf-8')
+          print('Production Firebase configuration validated.')
+          PY
+
+      - name: Validate production runtime configuration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -104,19 +124,48 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
-          FCM_PRIVATE_KEY_BASE64: ${{ secrets.FCM_PRIVATE_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          for name in SUPABASE_URL SUPABASE_ANON_KEY R2_ACCESS_KEY_ID \
+                      R2_SECRET_ACCESS_KEY R2_ACCOUNT_ID R2_BUCKET_NAME \
+                      R2_PUBLIC_URL; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required production secret $name is missing."
+              exit 1
+            fi
+          done
+          [[ "$SUPABASE_URL" == https://* ]] || {
+            echo "::error::SUPABASE_URL must use HTTPS."
+            exit 1
+          }
+          [[ "$R2_PUBLIC_URL" == https://* ]] || {
+            echo "::error::R2_PUBLIC_URL must use HTTPS."
+            exit 1
+          }
+          echo "Production runtime configuration validated."
+
+      - name: Build signed release APK and AAB
+        env:
+          REXO_KEYSTORE_PATH: ${{ runner.temp }}/campster-upload-keystore.jks
+          REXO_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.REXO_KEYSTORE_PASSWORD }}
+          REXO_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.REXO_KEY_ALIAS }}
+          REXO_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.REXO_KEY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
         run: |
-          # Base64 encode FCM_PRIVATE_KEY to safely pass through dart-define
-          # (PEM keys contain newlines that break shell command lines)
-          if [ -n "$FCM_PRIVATE_KEY_BASE64" ]; then
-            FCM_KEY_ENCODED=$(echo "$FCM_PRIVATE_KEY_BASE64" | base64 -w 0)
-          else
-            FCM_KEY_ENCODED=""
-          fi
+          set -euo pipefail
+
+          # GitHub run numbers increase for every workflow run. The offset keeps
+          # this release above the old pubspec versionCode 1 and prevents future
+          # Play uploads from accidentally reusing a version code.
+          CAMPSTER_BUILD_NUMBER=$((10000 + GITHUB_RUN_NUMBER))
+          echo "CAMPSTER_BUILD_NUMBER=$CAMPSTER_BUILD_NUMBER" >> "$GITHUB_ENV"
 
           DEFINES=(
             --dart-define=SUPABASE_URL="$SUPABASE_URL"
@@ -126,44 +175,139 @@ jobs:
             --dart-define=R2_ACCOUNT_ID="$R2_ACCOUNT_ID"
             --dart-define=R2_BUCKET_NAME="$R2_BUCKET_NAME"
             --dart-define=R2_PUBLIC_URL="$R2_PUBLIC_URL"
-            --dart-define=FCM_PROJECT_ID="$FCM_PROJECT_ID"
-            --dart-define=FCM_CLIENT_EMAIL="$FCM_CLIENT_EMAIL"
-            --dart-define=FCM_PRIVATE_KEY="$FCM_KEY_ENCODED"
-            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
-            --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL_APP_ID"
           )
+          if [ -n "$ONESIGNAL_APP_ID" ]; then
+            DEFINES+=(--dart-define=ONESIGNAL_APP_ID="$ONESIGNAL_APP_ID")
+          fi
 
-          # APK (internal sideload testing) …
-          flutter build apk --release "${DEFINES[@]}"
-          # … and the AAB uploaded to the Play Store.
-          flutter build appbundle --release "${DEFINES[@]}"
+          flutter build apk --release \
+            --build-number="$CAMPSTER_BUILD_NUMBER" "${DEFINES[@]}"
+          flutter build appbundle --release \
+            --build-number="$CAMPSTER_BUILD_NUMBER" "${DEFINES[@]}"
 
-      - name: Verify release AAB is release-signed (not debug, not unsigned)
+      - name: Verify Play release artifact
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/campster-upload-keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.REXO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.REXO_KEY_ALIAS }}
+          EXPECTED_UPLOAD_CERT_SHA256: ${{ secrets.ANDROID_UPLOAD_CERT_SHA256 }}
         run: |
+          set -euo pipefail
           AAB=build/app/outputs/bundle/release/app-release.aab
-          test -f "$AAB" || { echo "AAB missing"; exit 1; }
-          OUT=$(jarsigner -verify -verbose -certs "$AAB" 2>/dev/null || true)
-          if echo "$OUT" | grep -qi "jar is unsigned"; then
-            echo "ERROR: release AAB is UNSIGNED — signing is not configured."; exit 1
-          fi
-          if echo "$OUT" | grep -qi "CN=Android Debug"; then
-            echo "ERROR: release AAB is signed with the DEBUG certificate."; exit 1
-          fi
-          echo "OK: release AAB is release-signed (not debug, not unsigned)."
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$AAB" || { echo "::error::Release AAB is missing."; exit 1; }
+          test -s "$APK" || { echo "::error::Release APK is missing."; exit 1; }
 
-      - name: Rename APK
+          # jarsigner must succeed; do not hide its exit code or stderr.
+          if ! VERIFY_OUT=$(jarsigner -verify -verbose -certs "$AAB" 2>&1); then
+            printf '%s\n' "$VERIFY_OUT"
+            echo "::error::AAB signature verification failed."
+            exit 1
+          fi
+          [[ "$VERIFY_OUT" == *"jar verified"* ]] || {
+            echo "::error::jarsigner did not confirm a verified AAB."
+            exit 1
+          }
+          if [[ "${VERIFY_OUT,,}" == *"cn=android debug"* ]]; then
+            echo "::error::AAB is signed with the Android debug certificate."
+            exit 1
+          fi
+
+          fingerprint_from_keytool() {
+            awk '/SHA256:/{sub(/.*SHA256:[[:space:]]*/, ""); print; exit}' \
+              | tr -d '[:space:]:' | tr '[:lower:]' '[:upper:]'
+          }
+          KEYSTORE_OUT=$(keytool -J-Duser.language=en -J-Duser.country=US \
+            -list -v -keystore "$KEYSTORE_PATH" \
+            -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS")
+          AAB_OUT=$(keytool -J-Duser.language=en -J-Duser.country=US \
+            -printcert -jarfile "$AAB")
+          KEYSTORE_SHA=$(printf '%s\n' "$KEYSTORE_OUT" | fingerprint_from_keytool)
+          AAB_SHA=$(printf '%s\n' "$AAB_OUT" | fingerprint_from_keytool)
+          test -n "$KEYSTORE_SHA" && test -n "$AAB_SHA" || {
+            echo "::error::Could not read signing certificate fingerprints."
+            exit 1
+          }
+          [ "$KEYSTORE_SHA" = "$AAB_SHA" ] || {
+            echo "::error::AAB signer does not match the configured upload keystore."
+            exit 1
+          }
+
+          # Optional: set ANDROID_UPLOAD_CERT_SHA256 to the fingerprint shown in
+          # Play Console > App integrity for a full upload-key identity check.
+          if [ -n "$EXPECTED_UPLOAD_CERT_SHA256" ]; then
+            EXPECTED=$(printf '%s' "$EXPECTED_UPLOAD_CERT_SHA256" \
+              | sed -E 's/^[[:space:]]*SHA-?256[[:space:]]*:[[:space:]]*//I' \
+              | tr -d '[:space:]:' | tr '[:lower:]' '[:upper:]')
+            [ "$KEYSTORE_SHA" = "$EXPECTED" ] || {
+              echo "::error::Keystore does not match ANDROID_UPLOAD_CERT_SHA256."
+              exit 1
+            }
+          fi
+
+          # Check the final merged APK, not merely source Gradle values.
+          AAPT=$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt \
+            | sort -V | tail -n 1)
+          test -x "$AAPT" || { echo "::error::aapt not found."; exit 1; }
+          BADGING=$("$AAPT" dump badging "$APK")
+          [[ "$BADGING" == *"sdkVersion:'24'"* ]] || {
+            echo "::error::Built APK minSdk is not 24."
+            exit 1
+          }
+          [[ "$BADGING" == *"targetSdkVersion:'36'"* ]] || {
+            echo "::error::Built APK targetSdk is not 36."
+            exit 1
+          }
+
+          # Google Play requires 64-bit support and 16 KB page-aligned native
+          # library packaging for apps targeting modern Android versions.
+          AAB_ENTRIES=$(unzip -Z1 "$AAB")
+          [[ "$AAB_ENTRIES" == *"base/lib/arm64-v8a/"* ]] || {
+            echo "::error::AAB has no arm64-v8a native libraries."
+            exit 1
+          }
+          ZIPALIGN=$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name zipalign \
+            | sort -V | tail -n 1)
+          test -x "$ZIPALIGN" || { echo "::error::zipalign not found."; exit 1; }
+          "$ZIPALIGN" -c -P 16 -v 4 "$APK" >/tmp/campster-zipalign.txt || {
+            cat /tmp/campster-zipalign.txt
+            echo "::error::APK failed 16 KB zip-alignment verification."
+            exit 1
+          }
+
+          cat > build/app/outputs/bundle/release/release-info.txt <<EOF
+          app=Campster
+          applicationId=com.rexo.marketplace
+          versionName=1.0.1
+          versionCode=$CAMPSTER_BUILD_NUMBER
+          minSdk=24
+          targetSdk=36
+          signerSha256=$KEYSTORE_SHA
+          signatureVerified=true
+          arm64Verified=true
+          zipAlignment16KbVerified=true
+          EOF
+          echo "AAB verified: signed with configured keystore, minSdk 24, targetSdk 36, arm64 and 16 KB aligned."
+
+      - name: Give release files clear names
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk \
              build/app/outputs/flutter-apk/Campster.apk
+          mv build/app/outputs/bundle/release/app-release.aab \
+             build/app/outputs/bundle/release/Campster.aab
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Campster
           path: build/app/outputs/flutter-apk/Campster.apk
+          retention-days: 30
 
-      - name: Upload AAB artifact
+      - name: Upload signed AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: Campster-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: |
+            build/app/outputs/bundle/release/Campster.aab
+            build/app/outputs/bundle/release/release-info.txt
+          retention-days: 30

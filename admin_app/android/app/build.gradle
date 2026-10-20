@@ -12,16 +12,10 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '2'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.1'
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
-
+// Use the same fail-closed release-signing contract as the main Campster app.
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -30,18 +24,39 @@ if (keystorePropertiesFile.exists()) {
     }
 }
 
+def resolveSigning = { String envKey, String propKey ->
+    def envValue = System.getenv(envKey)
+    if (envValue != null && !envValue.trim().isEmpty()) return envValue.trim()
+    def propValue = keystoreProperties[propKey]
+    if (propValue != null && !propValue.toString().trim().isEmpty()) {
+        return propValue.toString().trim()
+    }
+    return null
+}
+
+def releaseStorePath = resolveSigning('REXO_KEYSTORE_PATH', 'storeFile')
+def releaseStorePassword = resolveSigning('REXO_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = resolveSigning('REXO_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = resolveSigning('REXO_KEY_PASSWORD', 'keyPassword')
+def hasReleaseSigning =
+        releaseStorePath != null &&
+        releaseStorePassword != null &&
+        releaseKeyAlias != null &&
+        releaseKeyPassword != null &&
+        file(releaseStorePath).exists()
+
 android {
     namespace "com.rexo.admin"
-    compileSdk 34
-    ndkVersion flutter.ndkVersion
+    compileSdk 36
+    ndkVersion "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -50,27 +65,50 @@ android {
 
     defaultConfig {
         applicationId "com.rexo.admin"
-        minSdk 21
-        targetSdk 34
+        minSdk 24
+        targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
+            if (hasReleaseSigning) {
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // Never substitute the debug key for a release artifact.
+            signingConfig signingConfigs.release
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any { task ->
+        def name = task.name
+        name.contains('Release') &&
+                (name.startsWith('assemble') ||
+                 name.startsWith('bundle') ||
+                 name.startsWith('package'))
+    }
+    if (wantsRelease && !hasReleaseSigning) {
+        throw new GradleException(
+            'Campster Admin release signing is missing. Provide REXO_KEYSTORE_PATH, ' +
+            'REXO_KEYSTORE_PASSWORD, REXO_KEY_ALIAS and REXO_KEY_PASSWORD, or ' +
+            'admin_app/android/key.properties. Debug-signed release output is forbidden.')
     }
 }
 

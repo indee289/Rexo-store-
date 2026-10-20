@@ -1,4 +1,4 @@
-# Deep Link Test Matrix — Rexo Collab
+# Deep Link Test Matrix — Campster
 
 These tests require a **device/emulator with the release (or debug) build
 installed** and, for the HTTPS cases, a **deployed `assetlinks.json`** on the

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Google Play feature graphic (1024x500) for Rexo Collab.
+"""Generate the Google Play feature graphic (1024x500) for Campster.
 
 Deliberately restrained: flat brand colours, a clean wordmark, one accent, and a
 row of REAL feature labels. No neon, no gradients-on-gradients, no fake 3D, no
@@ -41,24 +41,24 @@ rounded(d, (600, -40, 1064, 540), 0, fill=NAVY_2)
 # Thin accent bar.
 d.rectangle((0, H - 8, W, H), fill=BLUE)
 
-# ── Brand monogram tile ("R") ──
+# ── Brand monogram tile ("C") ──
 rounded(d, (72, 70, 168, 166), 24, fill=BLUE)
 mono = black(64)
-tb = d.textbbox((0, 0), "R", font=mono)
+tb = d.textbbox((0, 0), "C", font=mono)
 d.text((72 + (96 - (tb[2] - tb[0])) / 2 - tb[0],
-        70 + (96 - (tb[3] - tb[1])) / 2 - tb[1]), "R", font=mono, fill=WHITE)
+        70 + (96 - (tb[3] - tb[1])) / 2 - tb[1]), "C", font=mono, fill=WHITE)
 
 # ── Wordmark + tagline ──
-d.text((188, 84), "Rexo Collab", font=black(58), fill=WHITE)
+d.text((188, 84), "Campster", font=black(58), fill=WHITE)
 d.text((190, 156), "Creator & brand marketplace", font=semi(30), fill=MUTED)
 
 # Value line (factual, no numbers/claims). Kept within the left column (x<590).
 d.text((74, 238),
-       "Discover campaigns.\nCollaborate & get\npaid securely.",
+       "Discover campaigns.\nCollaborate. Grow.",
        font=bold(36), fill=WHITE, spacing=8)
 
 # Feature pills — each maps to a real screen in the app.
-pills = ["Campaigns", "Creators", "Wallet", "Recovery"]
+pills = ["Campaigns", "Creators", "Messages"]
 x = 74
 for p in pills:
     tw = d.textbbox((0, 0), p, font=semi(24))[2]

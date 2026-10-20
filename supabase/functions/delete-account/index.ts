@@ -1,5 +1,5 @@
 // ============================================================================
-// Rexo Collab — delete-account Edge Function
+// Campster — delete-account Edge Function
 //
 // Completes account deletion by:
 //   1. Verifying the caller's JWT (identity = auth.uid(), never client input).

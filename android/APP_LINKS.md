@@ -1,4 +1,4 @@
-# Android App Links & Deep Linking — Rexo Collab
+# Android App Links & Deep Linking — Campster
 
 This app supports two kinds of deep links (see `AndroidManifest.xml`):
 

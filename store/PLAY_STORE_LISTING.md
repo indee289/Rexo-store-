@@ -1,4 +1,4 @@
-# Rexo Collab — Google Play Store Listing (Draft Copy + Asset Plan)
+# Campster — Google Play Store Listing (Draft Copy + Asset Plan)
 
 > All copy below is written to be **factual and verifiable against the shipped
 > app**. Do NOT add claims about user counts, brand counts, partnerships,
@@ -10,14 +10,14 @@
 ## A. Store listing copy
 
 ### App name (≤ 30 chars)
-`Rexo Collab` (11 chars)
+`Campster` (8 chars)
 
 ### Short description (≤ 80 chars)
 `Connect creators and brands for influencer marketing campaigns.` (63 chars)
 
 ### Full description (≤ 4000 chars)
 ```
-Rexo Collab is an influencer-marketing marketplace that connects content
+Campster is an influencer-marketing marketplace that connects content
 creators with brands running promotional campaigns.
 
 FOR CREATORS
@@ -39,13 +39,13 @@ SAFETY & CONTROL
 • Two-factor authentication (TOTP) and active-session management.
 • Delete your account and personal data at any time from Settings.
 
-Payments are processed through a secure in-app wallet. Amounts shown are in
-Indian Rupees (INR).
+Eligible campaign earnings can be credited to the in-app wallet and withdrawn.
+Amounts shown are in Indian Rupees (INR).
 
-Rexo Collab is intended for users aged 18 and over.
+Campster is intended for users aged 18 and over.
 
 Questions or support: rexoagency.in@gmail.com
-Privacy: privacy@rexoagency.in
+Privacy: rexoagency.in@gmail.com
 ```
 > Trim/adjust before publishing. Every bullet corresponds to a feature present
 > in the codebase (campaigns, jobs, applications, profiles, follow, messaging,
@@ -59,13 +59,13 @@ Privacy: privacy@rexoagency.in
 ### Contact details
 - **Email (required):** `rexoagency.in@gmail.com`  *(matches AppConstants.supportEmail)*
 - **Phone (optional):** `<<OPTIONAL SUPPORT PHONE>>`
-- **Website:** `<<https://YOUR-PRODUCTION-DOMAIN>>`
+- **Website:** `https://indee289.github.io/Rexo-store-/`
 
 ### Required URLs
-- **Privacy Policy URL:** `<<https://YOUR-DOMAIN/privacy-policy.html>>`
-  (see §D — must be public, HTTPS, no login)
-- **Account deletion URL:** `<<https://YOUR-DOMAIN/account-deletion.html>>`
-  (the page `docs/account-deletion.html` in this repo — host it publicly)
+- **Privacy Policy URL:** `https://indee289.github.io/Rexo-store-/privacy.html`
+  (public HTTPS page; no login)
+- **Account deletion URL:** `https://indee289.github.io/Rexo-store-/docs/account-deletion.html`
+  (public instructions for in-app and email deletion requests)
 
 ---
 
@@ -89,9 +89,7 @@ features that don't exist.
 | 7 | Wallet | `/wallet` → `wallet_screen.dart` | "Track earnings and withdrawals" |
 | 8 | Settings (safety) | `/settings` → `settings_screen.dart` | "Control privacy, blocking and account deletion" |
 
-> Optional (do NOT include if not enrolling those surfaces): Subscriptions
-> screen. Admin/Moderation screens are staff-only — do NOT put them
-> in the public listing.
+> Admin/Moderation screens are staff-only — do NOT put them in the public listing.
 
 **Feature-graphic-free tablet note:** tablet screenshots are optional; only add
 them if you support tablet layouts.
@@ -102,19 +100,18 @@ them if you support tablet layouts.
 
 - **Size:** exactly **1024 × 500 px**, PNG or JPEG, no transparency.
 - **Content guidance:**
-  - Left: "Rexo Collab" wordmark + tagline "Creators × Brands".
+  - Left: "Campster" wordmark + tagline "Creators × Brands".
   - Right: a clean device mock showing the campaigns screen.
   - Use the app's brand palette (see `lib/core/theme/app_colors.dart`,
     IG-style accent `#ED4956`, near-black text on white).
 - **Avoid:** fake/AI-looking UI, heavy gradients, neon glow, oversized text,
   fake 3D, and any claim (numbers, logos of platforms you're not affiliated
   with, "official", etc.).
-- **Asset source:** `assets/logo.png` is available in the repo for the wordmark.
+- **Verified asset:** `store/assets/feature_graphic.png` is a 1024×500,
+  opaque RGB PNG branded Campster. Editable source: `store/feature_graphic.html`
+  (the Python generator is retained as an alternate source).
 
-> This repo contains no binary image editor. The feature graphic and the
-> app-icon-derived marketing icon must be produced in a design tool from the
-> spec above and uploaded in the Play Console. This item therefore remains
-> **NOT VERIFIED** until the 1024×500 file exists.
+> Inspect the final graphic visually before uploading it in Play Console.
 
 ### App icon (marketing) — 512 × 512 px
 - 32-bit PNG, ≤ 1 MB. Derive from the existing launcher icon
@@ -128,22 +125,21 @@ The app already contains an in-app policy
 (`lib/features/legal/screens/privacy_policy_screen.dart`). For the Play Console
 you also need a **public web URL**:
 
-- [ ] Hosted at a public HTTPS URL (no `localhost`, no auth required).
-- [ ] Content matches the in-app policy AND this app's actual data practices.
-- [ ] Names the developer entity and a privacy contact (`privacy@rexoagency.in`).
-- [ ] States data retention (financial records retained per law; profile PII
+- [x] Hosted page source uses a public HTTPS GitHub Pages URL (confirm HTTP 200 after deployment).
+- [x] Content matches the app's current Campster policy and support address.
+- [x] Names the support/privacy contact (`rexoagency.in@gmail.com`).
+- [x] States data retention (financial records retained per law; profile PII
       deleted/anonymized on account deletion).
-- [ ] Links to the account-deletion page (`account-deletion.html`).
-- [ ] "Last updated" date refreshed (in-app copy currently says
-      "January 1, 2024" — update it before launch).
+- [x] Links to the account-deletion page.
+- [x] In-app policy date is September 21, 2026; public policy is October 2026.
 
 ---
 
 ## E. Data Safety form — factual mapping
 
 Base the Play Console Data Safety form on the ACTUAL implementation and SDKs
-(Supabase auth/DB, Cloudflare R2 storage, Firebase Cloud Messaging, OneSignal
-push, optional Gemini AI moderation). Draft mapping:
+(Supabase auth/DB, Cloudflare R2 storage, Firebase Cloud Messaging, and OneSignal
+push). Draft mapping:
 
 | Data type | Collected | Shared | Purpose | Required? | Notes |
 |---|---|---|---|---|---|

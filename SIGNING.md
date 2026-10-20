@@ -1,90 +1,87 @@
-# Rexo Collab — Android Release Signing
+# Campster — Android release signing
 
-This document describes how to produce a **production-signed** Android App
-Bundle (`.aab`) for Google Play. The build is configured to **refuse** to
-produce a release artifact unless real signing material is supplied — it will
-never silently fall back to the debug keystore.
+Campster release builds are configured to fail instead of creating an unsigned
+or debug-signed APK/AAB. The Play application ID is immutable:
+`com.rexo.marketplace`.
 
-## 1. Generate an upload keystore (one time)
+## GitHub Actions (recommended)
 
-```bash
-keytool -genkey -v \
-  -keystore rexo-release.jks \
-  -alias rexo \
-  -keyalg RSA -keysize 2048 -validity 10000
-```
+Add these Actions secrets in **Repository Settings → Secrets and variables →
+Actions**:
 
-Store `rexo-release.jks` **outside** the repository (or anywhere git-ignored)
-and back it up securely. If you lose it you cannot ship updates unless you are
-enrolled in Google Play App Signing (recommended — see §5).
-
-## 2. Provide signing material
-
-The Gradle config (`android/app/build.gradle`) resolves signing values from two
-sources, in this priority order:
-
-### Option A — Environment variables (recommended for CI)
-
-| Variable | Meaning |
+| Secret | Value |
 |---|---|
-| `REXO_KEYSTORE_PATH` | Absolute path to the `.jks`/`.keystore` file |
-| `REXO_KEYSTORE_PASSWORD` | Keystore (store) password |
-| `REXO_KEY_ALIAS` | Key alias (e.g. `rexo`) |
-| `REXO_KEY_PASSWORD` | Key password |
+| `ANDROID_KEYSTORE_BASE64` | Base64 of the complete upload `.jks`/`.keystore` file |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Upload-key alias |
+| `ANDROID_KEY_PASSWORD` | Alias/private-key password |
+| `GOOGLE_SERVICES_JSON` | Real Firebase JSON, either raw JSON or base64 |
+| `SUPABASE_URL` | Production Supabase HTTPS URL |
+| `SUPABASE_ANON_KEY` | Production Supabase anon/publishable key |
+| `R2_ACCESS_KEY_ID` | Current R2 access-key ID |
+| `R2_SECRET_ACCESS_KEY` | Current R2 secret key |
+| `R2_ACCOUNT_ID` | R2 account ID |
+| `R2_BUCKET_NAME` | R2 bucket name |
+| `R2_PUBLIC_URL` | Public HTTPS base URL for uploaded images |
+| `ONESIGNAL_APP_ID` | OneSignal app ID (optional; the app has a public default) |
+| `ANDROID_UPLOAD_CERT_SHA256` | Optional but recommended: Play Console upload-certificate SHA-256 |
 
-### Option B — `android/key.properties` (recommended for local machines)
+Legacy `REXO_KEYSTORE_BASE64`, `REXO_KEYSTORE_PASSWORD`, `REXO_KEY_ALIAS`, and
+`REXO_KEY_PASSWORD` names are accepted as signing fallbacks. The workflow:
 
-Copy `android/key.properties.example` → `android/key.properties` and fill in:
+1. verifies that every required value exists;
+2. decodes the keystore only into the ephemeral GitHub runner;
+3. proves that its password and alias are valid;
+4. builds release APK and AAB with that keystore;
+5. verifies the AAB signature and confirms its certificate matches the supplied
+   keystore (and `ANDROID_UPLOAD_CERT_SHA256` when configured);
+6. checks merged min/target SDK values, arm64 support, and 16 KB APK alignment;
+7. uploads `Campster.aab` and `release-info.txt` in the
+   `Campster-release-aab` workflow artifact.
 
-```properties
-storeFile=/absolute/path/to/rexo-release.jks
-storePassword=...
-keyAlias=rexo
-keyPassword=...
-```
+GitHub wraps workflow artifacts in a ZIP. Extract `Campster.aab` from that ZIP
+before uploading it to Play Console.
 
-Both `key.properties` and `*.jks`/`*.keystore` are already listed in
-`.gitignore`. **Never commit them.**
-
-## 3. Build the production AAB
+To encode a keystore locally without line wrapping:
 
 ```bash
-# from the repository root
+base64 -w 0 campster-upload.jks > campster-upload.jks.base64
+```
+
+Do not commit either file.
+
+## Local release build
+
+The Gradle config can also read these environment variables:
+
+- `REXO_KEYSTORE_PATH` (prefer an absolute path)
+- `REXO_KEYSTORE_PASSWORD`
+- `REXO_KEY_ALIAS`
+- `REXO_KEY_PASSWORD`
+
+Alternatively copy `android/key.properties.example` to
+`android/key.properties` and fill it in. Both the properties file and keystores
+are git-ignored.
+
+```bash
 flutter build appbundle --release \
   --dart-define=SUPABASE_URL=... \
   --dart-define=SUPABASE_ANON_KEY=... \
-  --dart-define=R2_PUBLIC_URL=... \
-  --dart-define=ONESIGNAL_APP_ID=...
+  --dart-define=R2_ACCESS_KEY_ID=... \
+  --dart-define=R2_SECRET_ACCESS_KEY=... \
+  --dart-define=R2_ACCOUNT_ID=... \
+  --dart-define=R2_BUCKET_NAME=... \
+  --dart-define=R2_PUBLIC_URL=...
 ```
 
-Output: `build/app/outputs/bundle/release/app-release.aab`
+The source version is `1.0.1+2`; GitHub Actions overrides only the version code
+with a unique increasing value (`10000 + workflow run number`) so successive
+Play artifacts cannot accidentally reuse code `1`.
 
-If signing material is missing, the build stops with a clear
-`RELEASE SIGNING NOT CONFIGURED` error rather than emitting a debug-signed file.
+## Play App Signing
 
-## 4. Verify the signature of the produced artifact
-
-```bash
-# Inspect the AAB's signing block (requires Android build-tools):
-jarsigner -verify -verbose -certs \
-  build/app/outputs/bundle/release/app-release.aab
-
-# Or, for an APK produced from the bundle:
-apksigner verify --print-certs app-release.apk
-```
-
-Confirm the certificate is the **release** cert (your alias), not
-`CN=Android Debug`.
-
-## 5. Google Play App Signing (recommended)
-
-Enroll the app in Play App Signing. You upload with your *upload key*
-(the keystore above); Google re-signs with the *app signing key* it manages.
-This protects you against upload-key loss.
-
-## Notes
-
-- `applicationId`: `com.rexo.marketplace`
-- `versionName` / `versionCode`: derived from `pubspec.yaml`
-  (`version: 1.0.0+1` → versionName `1.0.0`, versionCode `1`). Bump the `+N`
-  build number for every Play upload.
+Enroll in Play App Signing. Campster is uploaded with your **upload key** and
+Google distributes APKs signed with the separate **app-signing key**. Compare
+the upload certificate shown under **Play Console → App integrity** with
+`signerSha256` in `release-info.txt`. Adding that value as
+`ANDROID_UPLOAD_CERT_SHA256` makes CI enforce the match automatically.

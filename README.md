@@ -1,4 +1,4 @@
-# Rexo Marketplace - Flutter
+# Campster - Flutter
 
 Premium influencer marketing platform connecting brands with creators for impactful campaigns.
 
@@ -14,7 +14,7 @@ Premium influencer marketing platform connecting brands with creators for impact
 
 - User authentication (creators, brands, admins)
 - Campaign management and creator applications
-- Wallet system with deposits and withdrawals
+- Wallet for campaign earnings and withdrawal requests
 - In-app messaging between users
 - Product marketplace with orders
 - KYC document verification
@@ -67,47 +67,31 @@ lib/
    flutter run --dart-define=SUPABASE_URL=your_url --dart-define=SUPABASE_ANON_KEY=your_key
    ```
 
-## Build
+## Android release
 
-Build a release APK:
-```bash
-flutter build apk --release \
-  --dart-define=SUPABASE_URL=your_url \
-  --dart-define=SUPABASE_ANON_KEY=your_key
-```
+The Play release uses `minSdk 24`, `compileSdk 36`, and `targetSdk 36`.
+Production release tasks fail if the upload keystore is missing; they never fall
+back to debug signing. See [SIGNING.md](./SIGNING.md) for local setup and the
+complete GitHub Actions secret list.
+
+The `Flutter Build` workflow produces:
+- `Campster.apk` for direct device testing;
+- signed `Campster.aab` for Play Console;
+- `release-info.txt` containing version, SDK, certificate and compatibility checks.
+
+CI verifies the AAB signature against the configured keystore, API 24/36,
+arm64 support, and 16 KB native-library ZIP alignment before uploading the
+artifact.
 
 ## Database
 
-The Supabase schema is located at `supabase/schema.sql`. It includes:
-- 17 tables with proper relationships and constraints
-- Row Level Security (RLS) policies for all tables
-- Performance indexes on frequently queried columns
-- Storage buckets for file uploads
-- Auto-wallet creation trigger
-
-### Phase 1 Critical Fixes (✅ Implemented)
-
-Recent critical database fixes have been implemented to resolve schema mismatches:
-
-1. **Subscription Plans Schema Alignment**: Added `interval` column for seed script compatibility
-2. **Wallet Function Aliases**: Added `credit_wallet` and `debit_wallet` functions for admin operations
-3. **Subscription Payments Integration**: Integrated subscription_payments table into main schema
-
-For complete documentation, see:
-- [Phase 1 Implementation Guide](./PHASE_1_CRITICAL_FIXES_GUIDE.md)
-- [Database Schema Changes](./DATABASE_SCHEMA_CHANGES.md)
-- [API Function Updates](./API_FUNCTION_UPDATES.md)
-- [Deployment Procedures](./DEPLOYMENT_PROCEDURES.md)
-- [Operational Procedures](./OPERATIONAL_PROCEDURES.md)
+The Supabase schema and migrations are under `supabase/`. Before production,
+apply the current migrations/functions and test account deletion, reporting,
+blocking, messaging, campaign applications, earnings, and withdrawals against
+the live project.
 
 ## CI/CD
 
-GitHub Actions workflow (`.github/workflows/flutter-build.yml`) handles:
-- Flutter setup and dependency installation
-- Code analysis
-- Release APK build
-- Artifact upload
-
-Required GitHub Secrets:
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+GitHub Actions workflow (`.github/workflows/flutter-build.yml`) handles the
+signed Android release and rejects incomplete production configuration. See
+[SIGNING.md](./SIGNING.md) for its required and optional secret names.
