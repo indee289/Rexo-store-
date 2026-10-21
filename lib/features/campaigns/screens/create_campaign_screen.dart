@@ -110,7 +110,12 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       final platformForDb = _selectedPlatform.toLowerCase();
 
       await SupabaseService.client.from('campaigns').insert({
-        'brandId': user.id,           // live: brandId (camelCase)
+        // Write BOTH owner columns: the live table has historically used
+        // `brandId` (camelCase) OR `brand_id` (snake_case). Populating both
+        // satisfies whichever one exists / is NOT NULL and matches the RLS
+        // INSERT policy regardless of which column it checks.
+        'brandId': user.id,
+        'brand_id': user.id,
         'title': _campaignNameController.text.trim(),
         'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
