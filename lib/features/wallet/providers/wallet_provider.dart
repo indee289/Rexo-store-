@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/admin_notify.dart';
 import '../../../services/supabase_service.dart';
 
 /// Realtime stream provider for the user's wallet data.
@@ -109,6 +110,13 @@ class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
       });
 
       state = const AsyncValue.data(null);
+
+      await AdminNotify.admins(
+        title: 'New withdrawal request',
+        message: 'A user requested a withdrawal of ₹${amount.toStringAsFixed(2)} '
+            'via $method. Open Admin → Actions → Withdrawal Queue.',
+        type: 'withdrawal',
+      );
 
       // Refresh transaction list (realtime handles wallet balance)
       ref.invalidate(transactionsProvider);

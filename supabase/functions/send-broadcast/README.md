@@ -39,8 +39,12 @@ Notes:
 
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically for
   deployed functions — do not set them manually.
-- `FCM_PRIVATE_KEY` must keep the literal `\n` escapes; the function restores real
-  newlines before importing the key.
+- The function accepts the private key in any of these shapes (it normalizes to PKCS8):
+  a normal PEM, a PEM with literal `\n` escapes, the whole Firebase service-account
+  JSON (project id / client email are read from it too), base64 of any of those, or
+  just the base64 key body with the `BEGIN/END PRIVATE KEY` lines missing.
+  A `BEGIN RSA PRIVATE KEY` (PKCS1) key is still rejected — convert it with
+  `openssl pkcs8 -topk8 -nocrypt`.
 
 ## Response
 

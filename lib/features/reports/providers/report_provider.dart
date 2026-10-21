@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/admin_notify.dart';
 import '../../../services/supabase_service.dart';
 
 /// The kind of entity being reported. Maps to moderation_queue.content_type.
@@ -77,6 +78,12 @@ class ReportNotifier extends StateNotifier<AsyncValue<String?>> {
           .single();
 
       final reportId = (inserted['id'] ?? '').toString();
+      await AdminNotify.admins(
+        title: 'New content report',
+        message: 'A ${targetType.value} was reported: $reason. '
+            'Open Admin → Actions → Reports.',
+        type: 'report',
+      );
       state = AsyncValue.data(reportId);
       return reportId;
     } catch (e, st) {

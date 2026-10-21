@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/utils/admin_notify.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../services/supabase_service.dart';
 
@@ -87,6 +88,14 @@ class DisputeNotifier extends StateNotifier<DisputeFormState> {
       }
 
       await SupabaseService.client.from('disputes').insert(data);
+
+      // Tell the admins there is a new dispute waiting (best-effort).
+      await AdminNotify.admins(
+        title: 'New dispute: $subject',
+        message: 'A user raised a dispute ($relatedType $relatedId). '
+            'Open Admin → Actions → Disputes to review.',
+        type: 'dispute',
+      );
 
       state = state.copyWith(isSubmitting: false, success: true);
       return true;

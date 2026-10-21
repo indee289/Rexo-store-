@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import 'manage_banners_screen.dart';
 import 'manage_jobs_screen.dart';
 import 'review_job_submissions_screen.dart';
 import 'submission_review_screen.dart';
+import '../../moderation/screens/moderation_screen.dart';
 import 'wallets_escrow_screen.dart';
 import 'withdrawal_queue_screen.dart';
 
@@ -156,6 +158,18 @@ class ActionsScreen extends StatelessWidget {
                           screen: const FraudReviewScreen(),
                         ),
                         _Tile(
+                          icon: Iconsax.flag,
+                          label: 'Reports',
+                          color: AppColors.accentOrange,
+                          screen: const ModerationScreen(),
+                        ),
+                        _Tile(
+                          icon: Iconsax.message_text,
+                          label: 'Support Inbox',
+                          color: AppColors.primary,
+                          route: '/messages',
+                        ),
+                        _Tile(
                           icon: Iconsax.notification,
                           label: 'Push Broadcast',
                           color: AppColors.accentPink,
@@ -219,13 +233,15 @@ class _Tile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  final Widget screen;
+  final Widget? screen;
+  final String? route;
 
   const _Tile({
     required this.icon,
     required this.label,
     required this.color,
-    required this.screen,
+    this.screen,
+    this.route,
   });
 
   @override
@@ -236,10 +252,16 @@ class _Tile extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => screen),
-        ),
+        onTap: () {
+          if (route != null) {
+            context.push(route!);
+          } else if (screen != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => screen!),
+            );
+          }
+        },
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/utils/admin_notify.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../blocks/providers/block_provider.dart';
@@ -429,6 +430,9 @@ class MessageActionsNotifier extends StateNotifier<AsyncValue<void>> {
       ref.invalidate(chatMessagesProvider(receiverId));
       ref.invalidate(chatMessagesStreamProvider(receiverId));
       ref.invalidate(conversationsProvider);
+
+      // If the receiver is an admin (support chat), ping them. No-op otherwise.
+      AdminNotify.adminOfMessage(receiverId: receiverId, preview: trimmed);
 
       return true;
     } catch (e, st) {

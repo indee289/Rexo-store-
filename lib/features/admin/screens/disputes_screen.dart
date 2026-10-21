@@ -29,7 +29,7 @@ class DisputesScreen extends ConsumerWidget {
                 children: [
                   const Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
                   const SizedBox(height: 12),
-                  Text('No open disputes',
+                  Text('No disputes yet',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
@@ -63,14 +63,14 @@ class DisputesScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  dispute['title'] ?? 'Dispute #${dispute['id']?.toString().substring(0, 8)}',
+                                  _titleOf(dispute),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 Text(
-                                  'Status: ${dispute['status'] ?? 'open'}',
+                                  _statusLine(dispute),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -93,12 +93,34 @@ class DisputesScreen extends ConsumerWidget {
                           ),
                         ),
                       ],
+                      if (_metaOf(dispute).isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _metaOf(dispute),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                      if ((dispute['resolution'] ?? '').toString().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Resolution: ${dispute['resolution']}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
+                      if ((dispute['status'] ?? 'open').toString().toLowerCase() != 'resolved')
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () =>
-                              _showResolveDialog(context, ref, dispute['id']),
+                          onPressed: () => _showResolveDialog(
+                              context, ref, dispute['id'].toString()),
                           icon: const Icon(Iconsax.tick_circle, size: 16),
                           label: const Text('Resolve'),
                           style: ElevatedButton.styleFrom(
@@ -118,6 +140,39 @@ class DisputesScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text(ErrorUtils.sanitize(error))),
       ),
     );
+  }
+
+  /// The table column is `subject` (the old code read a non-existent `title`).
+  static String _titleOf(Map<String, dynamic> d) {
+    final subject = (d['subject'] ?? d['title'] ?? '').toString().trim();
+    if (subject.isNotEmpty) return subject;
+    final id = (d['id'] ?? '').toString();
+    return 'Dispute #${id.length > 8 ? id.substring(0, 8) : id}';
+  }
+
+  static String _statusLine(Map<String, dynamic> d) {
+    final status = (d['status'] ?? 'open').toString();
+    final date = _dateOf(d);
+    return date.isEmpty ? 'Status: $status' : 'Status: $status  •  $date';
+  }
+
+  static String _dateOf(Map<String, dynamic> d) {
+    final raw = (d['created_at'] ?? d['createdAt'] ?? '').toString();
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return '';
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+
+  static String _metaOf(Map<String, dynamic> d) {
+    final parts = <String>[];
+    final user = (d['user_id'] ?? '').toString();
+    if (user.isNotEmpty) parts.add('User: $user');
+    final order = (d['order_id'] ?? '').toString();
+    if (order.isNotEmpty) parts.add('Order: $order');
+    final campaign = (d['campaign_id'] ?? '').toString();
+    if (campaign.isNotEmpty) parts.add('Campaign: $campaign');
+    return parts.join('\n');
   }
 
   void _showResolveDialog(
@@ -141,13 +196,22 @@ class DisputesScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                ref
-                    .read(adminActionsProvider.notifier)
-                    .resolveDispute(disputeId, controller.text);
-                Navigator.pop(context);
-              }
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(context);
+              final ok = await ref
+                  .read(adminActionsProvider.notifier)
+                  .resolveDispute(disputeId, controller.text.trim());
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(ok
+                      ? 'Dispute resolved. The user has been notified.'
+                      : 'Could not resolve the dispute. Please try again.'),
+                  backgroundColor: ok ? AppColors.success : AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
             child: const Text('Resolve'),
           ),

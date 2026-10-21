@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/admin_notify.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../admin/providers/is_admin_provider.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../../core/widgets/premium_app_bar.dart';
@@ -32,6 +34,23 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Opens a chat straight with the Campster admin (support).
+  Future<void> _openSupportChat() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final adminId = await AdminNotify.supportAdminId();
+    if (adminId == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Support chat is unavailable right now.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    router.push('/messages/$adminId');
   }
 
   List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> items) {
@@ -76,6 +95,55 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               onChanged: (value) => setState(() => _query = value),
             ),
           ),
+
+          // ── Pinned "Campster Support" shortcut (hidden for admins) ─────
+          if (!ref.watch(isAdminProvider))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Material(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: _openSupportChat,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Iconsax.message_text,
+                              color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Campster Support',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                              SizedBox(height: 2),
+                              Text('Need help? Chat directly with the admin',
+                                  style: TextStyle(fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        const Icon(Iconsax.arrow_right_3,
+                            size: 18, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // ── Conversation list ───────────────────────────────────────────
           Expanded(

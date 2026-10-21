@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/admin_notify.dart';
+import '../../../services/supabase_service.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -39,6 +41,38 @@ class HelpSupportScreen extends StatelessWidget {
         ),
       );
     }
+  }
+
+  /// Opens a direct chat with the Campster admin so the user can talk to the
+  /// team straight from Help (previously this only opened the user's own
+  /// inbox with nobody selected).
+  Future<void> _messageAdmin(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+
+    if (SupabaseService.currentUser == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to message support.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final adminId = await AdminNotify.supportAdminId();
+    if (adminId == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+              'Support chat is unavailable right now. Email us at $_supportEmail'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    router.push('/messages/$adminId');
   }
 
   @override
@@ -81,8 +115,8 @@ class HelpSupportScreen extends StatelessWidget {
           _ContactCard(
             icon: Iconsax.message,
             title: 'Message us',
-            subtitle: 'Chat with us from your inbox',
-            onTap: () => context.push('/messages'),
+            subtitle: 'Chat directly with the Campster admin',
+            onTap: () => _messageAdmin(context),
           ),
 
           const SizedBox(height: AppSpacing.xxl - 4),

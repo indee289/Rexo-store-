@@ -96,6 +96,93 @@ class PrivateKeyError extends Error {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Tolerant secret parsing.
+//
+// The FCM key secret reaches this function in many shapes depending on how it
+// was pasted into GitHub / Supabase:
+//   * a proper PEM ("-----BEGIN PRIVATE KEY-----\n...")
+//   * a PEM with literal "\n" escapes, or wrapped in quotes
+//   * the whole Firebase service-account JSON (private_key inside it)
+//   * base64 of any of the above
+//   * ONLY the base64 key body, with the BEGIN/END header lines missing
+// normalizeServiceAccount() accepts all of them and returns a canonical PKCS8
+// PEM (plus client_email / project_id when the JSON form was supplied).
+// ---------------------------------------------------------------------------
+interface ServiceAccountParts {
+  pem: string;
+  clientEmail?: string;
+  projectId?: string;
+}
+
+function tryAtob(s: string): string | null {
+  const cleaned = s.replace(/[\s"']/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  if (cleaned.length < 16 || !/^[A-Za-z0-9+/]+=*$/.test(cleaned)) return null;
+  try {
+    return atob(cleaned);
+  } catch (_) {
+    return null;
+  }
+}
+
+function wrapPem(bodyB64: string): string {
+  const body = bodyB64.replace(/[^A-Za-z0-9+/=]/g, "");
+  const lines = body.match(/.{1,64}/g) ?? [];
+  return `-----BEGIN PRIVATE KEY-----\n${lines.join("\n")}\n-----END PRIVATE KEY-----\n`;
+}
+
+function normalizeServiceAccount(raw: string, depth = 0): ServiceAccountParts {
+  let s = (raw ?? "").trim();
+  // Strip wrapping quotes added by some shells / secret UIs.
+  while (
+    s.length > 1 &&
+    ((s.startsWith('"') && s.endsWith('"')) ||
+      (s.startsWith("'") && s.endsWith("'")))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  if (!s) return { pem: "" };
+
+  // Whole service-account JSON.
+  if (s.startsWith("{")) {
+    try {
+      const j = JSON.parse(s);
+      const inner = normalizeServiceAccount(String(j.private_key ?? ""), depth + 1);
+      return {
+        pem: inner.pem,
+        clientEmail: j.client_email ? String(j.client_email) : undefined,
+        projectId: j.project_id ? String(j.project_id) : undefined,
+      };
+    } catch (_) {
+      // fall through — maybe it is an escaped-JSON fragment
+    }
+  }
+
+  // Restore escaped newlines ("\n" / "\\n") into real ones.
+  s = s.replace(/\\\\n/g, "\n").replace(/\\n/g, "\n").replace(/\\r/g, "");
+
+  // Already has a PEM header (PKCS8 or PKCS1) — keep as-is.
+  if (/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(s)) return { pem: s };
+
+  // No header: it is either base64 of text (PEM/JSON) or the raw DER body.
+  if (depth < 3) {
+    const decoded = tryAtob(s);
+    if (decoded !== null) {
+      if (decoded.startsWith("-----") || decoded.trimStart().startsWith("{")) {
+        return normalizeServiceAccount(decoded, depth + 1);
+      }
+      // DER always starts with an ASN.1 SEQUENCE tag (0x30).
+      if (decoded.charCodeAt(0) === 0x30) return { pem: wrapPem(s) };
+      // base64 of a header-less base64 key body (the deploy workflow base64s
+      // the GitHub secret, so a header-less secret arrives double-encoded).
+      if (/^[A-Za-z0-9+/=\s]+$/.test(decoded)) {
+        return normalizeServiceAccount(decoded, depth + 1);
+      }
+    }
+  }
+  return { pem: s };
+}
+
 // Convert a PEM PKCS8 private key into an ArrayBuffer of DER bytes.
 //
 // ROBUST: after removing the BEGIN/END markers we strip EVERY character that is
@@ -236,27 +323,25 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const fcmProjectId = Deno.env.get("FCM_PROJECT_ID") ?? "";
-  const fcmClientEmail = Deno.env.get("FCM_CLIENT_EMAIL") ?? "";
-  // Prefer FCM_PRIVATE_KEY_B64: a single-line base64 of the raw PEM set by the
-  // deploy workflow. This is immune to the newline/escaping/truncation issues
-  // that corrupt a multi-line PEM secret passed through the CLI (which caused
-  // the "incorrect length for APPLICATION [15]" DER error). Fall back to the
-  // raw FCM_PRIVATE_KEY secret (with literal "\n" restored) if B64 is absent.
-  const fcmPrivateKey = (() => {
-    const b64 = (Deno.env.get("FCM_PRIVATE_KEY_B64") ?? "").replace(
-      /[^A-Za-z0-9+/=]/g,
-      "",
-    );
-    if (b64) {
-      try {
-        return atob(b64);
-      } catch (_) {
-        // fall through to the raw secret
-      }
+  // Prefer FCM_PRIVATE_KEY_B64 (single-line base64 set by the deploy workflow),
+  // else the raw FCM_PRIVATE_KEY. Whatever shape was pasted (PEM, escaped PEM,
+  // service-account JSON, base64 of those, or a header-less key body) is
+  // normalized to a canonical PKCS8 PEM by normalizeServiceAccount().
+  const sa = (() => {
+    const b64 = Deno.env.get("FCM_PRIVATE_KEY_B64") ?? "";
+    const rawKey = Deno.env.get("FCM_PRIVATE_KEY") ?? "";
+    const candidates = [b64, rawKey].filter((v) => v.trim().length > 0);
+    let first: ServiceAccountParts = { pem: "" };
+    for (const c of candidates) {
+      const parts = normalizeServiceAccount(c);
+      if (!first.pem) first = parts;
+      if (/-----BEGIN PRIVATE KEY-----/.test(parts.pem)) return parts;
     }
-    return (Deno.env.get("FCM_PRIVATE_KEY") ?? "").replace(/\\n/g, "\n");
+    return first;
   })();
+  const fcmProjectId = Deno.env.get("FCM_PROJECT_ID") || sa.projectId || "";
+  const fcmClientEmail = Deno.env.get("FCM_CLIENT_EMAIL") || sa.clientEmail || "";
+  const fcmPrivateKey = sa.pem;
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: "Server misconfigured" }, 500);
@@ -279,13 +364,19 @@ Deno.serve(async (req: Request) => {
   }
   const callerId = userData.user.id;
 
-  const { data: callerRow, error: roleErr } = await admin
-    .from("users")
-    .select("role")
-    .eq("id", callerId)
-    .single();
-
-  if (roleErr || !callerRow || callerRow.role !== "admin") {
+  // Live `users` may key on `id` and/or `uid`, and role casing varies.
+  let callerRole = "";
+  {
+    const byId = await admin.from("users").select("role").eq("id", callerId)
+      .maybeSingle();
+    callerRole = String(byId.data?.role ?? "");
+    if (!callerRole) {
+      const byUid = await admin.from("users").select("role").eq("uid", callerId)
+        .maybeSingle();
+      callerRole = String(byUid.data?.role ?? "");
+    }
+  }
+  if (callerRole.toLowerCase() !== "admin") {
     return json({ error: "Forbidden: admin only" }, 403);
   }
 
@@ -310,11 +401,13 @@ Deno.serve(async (req: Request) => {
   } else {
     const { data: users, error: usersErr } = await admin
       .from("users")
-      .select("id");
+      .select("*");
     if (usersErr) {
       return json({ error: "Failed to load users" }, 500);
     }
-    targetUserIds = (users ?? []).map((u: { id: string }) => u.id);
+    targetUserIds = (users ?? [])
+      .map((u: { id?: string; uid?: string }) => String(u.uid ?? u.id ?? ""))
+      .filter((v: string) => v.length > 0);
   }
 
   if (targetUserIds.length === 0) {

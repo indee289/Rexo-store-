@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/admin_notify.dart';
 import '../../../services/supabase_service.dart';
 
 // ─── Filter / Search State ────────────────────────────────────────────────────
@@ -351,6 +352,12 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       state = const AsyncValue.data(null);
       ref.invalidate(myJobApplicationsProvider);
+      await AdminNotify.admins(
+        title: 'New job submission',
+        message: 'A creator submitted proof for a job. '
+            'Open Admin → Actions → Job Submissions to review.',
+        type: 'job_submission',
+      );
       return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);

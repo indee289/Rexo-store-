@@ -77,6 +77,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           ),
         );
         context.pop();
+      } else if (!success && mounted) {
+        // submitWithdrawal returns false (instead of throwing) on failure —
+        // previously the user saw nothing at all.
+        final err = ref.read(walletActionsProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorUtils.sanitize(err)),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

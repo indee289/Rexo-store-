@@ -111,19 +111,41 @@ final adminWithdrawalsProvider =
   }
 });
 
+/// Admin dispute inbox.
+///
+/// The `disputes` table uses snake_case `created_at`. The old query ordered by
+/// camelCase `createdAt` (a column that does not exist), which made PostgREST
+/// error — and the blanket `catch → []` turned that error into an empty list,
+/// so the admin NEVER saw any dispute. Now we try the real column first, fall
+/// back to the other spelling, and finally fetch unordered and sort here.
+/// Genuine failures (missing table / RLS) are rethrown so the screen shows them
+/// instead of pretending there is nothing to review.
 final adminDisputesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  try {
-    final client = SupabaseService.client;
-    final response = await client
-        .from('disputes')
-        .select()
-        .order('createdAt', ascending: false)
-        .limit(100);
-    return List<Map<String, dynamic>>.from(response);
-  } catch (_) {
-    return [];
+  final client = SupabaseService.client;
+  Object? lastError;
+  for (final orderCol in const ['created_at', 'createdAt', null]) {
+    try {
+      final query = client.from('disputes').select();
+      final response = orderCol == null
+          ? await query.limit(200)
+          : await query.order(orderCol, ascending: false).limit(200);
+      final list = List<Map<String, dynamic>>.from(response);
+      list.sort((a, b) {
+        final ad = DateTime.tryParse(
+                (a['created_at'] ?? a['createdAt'] ?? '').toString()) ??
+            DateTime(1970);
+        final bd = DateTime.tryParse(
+                (b['created_at'] ?? b['createdAt'] ?? '').toString()) ??
+            DateTime(1970);
+        return bd.compareTo(ad);
+      });
+      return list;
+    } catch (e) {
+      lastError = e;
+    }
   }
+  throw lastError ?? Exception('Could not load disputes');
 });
 
 final adminWalletsProvider =
@@ -350,18 +372,27 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
       final userId = withdrawal['user_id'] as String;
       final amount = (withdrawal['amount'] as num).toDouble();
 
-      // Update withdrawal status to completed
+      // Debit FIRST. If the wallet cannot be debited (e.g. insufficient
+      // balance) this throws and the request correctly stays 'pending'.
+      // Previously the status was set to 'completed' before the debit, so a
+      // failed debit left a "paid" withdrawal that never left the wallet.
+      await SupabaseService.client.rpc('debit_wallet', params: {
+        'p_user_id': userId,
+        'p_amount': amount,
+      });
+
       // NOTE: schema CHECK allows: pending | processing | completed | rejected
       // 'approved' is NOT a valid status and would be rejected by Postgres.
       await SupabaseService.client
           .from('withdrawals')
           .update({'status': 'completed'}).eq('id', withdrawalId);
 
-      // Debit the user's wallet using atomic RPC function
-      await SupabaseService.client.rpc('debit_wallet', params: {
-        'p_user_id': userId,
-        'p_amount': amount,
-      });
+      await _notifyUser(
+        userId,
+        'Withdrawal approved',
+        'Your withdrawal of ₹${amount.toStringAsFixed(2)} has been approved.',
+        'withdrawal',
+      );
 
       ref.invalidate(adminWithdrawalsProvider);
       ref.invalidate(adminWalletsProvider);
@@ -375,9 +406,22 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> rejectWithdrawal(String withdrawalId) async {
     state = const AsyncValue.loading();
     try {
+      final w = await SupabaseService.client
+          .from('withdrawals')
+          .select('user_id, amount')
+          .eq('id', withdrawalId)
+          .maybeSingle();
       await SupabaseService.client
           .from('withdrawals')
           .update({'status': 'rejected'}).eq('id', withdrawalId);
+      if (w != null) {
+        await _notifyUser(
+          (w['user_id'] ?? '').toString(),
+          'Withdrawal rejected',
+          'Your withdrawal request was rejected. Contact support for help.',
+          'withdrawal',
+        );
+      }
       ref.invalidate(adminWithdrawalsProvider);
       ref.invalidate(adminStatsProvider);
       state = const AsyncValue.data(null);
@@ -537,17 +581,70 @@ class AdminActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> resolveDispute(String disputeId, String resolution) async {
+  /// Resolve a dispute. Returns true on success so the UI can show the real
+  /// outcome (the old version swallowed errors and the dialog always looked
+  /// successful).
+  Future<bool> resolveDispute(String disputeId, String resolution) async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.from('disputes').update({
-        'status': 'resolved',
-        'resolution': resolution,
-      }).eq('id', disputeId);
+      final client = SupabaseService.client;
+      final row = await client
+          .from('disputes')
+          .select('user_id, subject')
+          .eq('id', disputeId)
+          .maybeSingle();
+
+      try {
+        await client.from('disputes').update({
+          'status': 'resolved',
+          'resolution': resolution,
+          'admin_id': SupabaseService.currentUser?.id,
+          'resolved_at': DateTime.now().toIso8601String(),
+        }).eq('id', disputeId);
+      } catch (_) {
+        // Older live tables may lack admin_id / resolved_at — retry with the
+        // columns that always exist.
+        await client.from('disputes').update({
+          'status': 'resolved',
+          'resolution': resolution,
+        }).eq('id', disputeId);
+      }
+
+      final userId = (row?['user_id'] ?? '').toString();
+      if (userId.isNotEmpty) {
+        await _notifyUser(
+          userId,
+          'Your dispute was resolved',
+          '${row?['subject'] ?? 'Dispute'}: $resolution',
+          'dispute',
+        );
+      }
+
       ref.invalidate(adminDisputesProvider);
       state = const AsyncValue.data(null);
+      return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Best-effort in-app notification for a user (admin RLS allows this).
+  /// Live notifications columns: "userId", title, message, type, read, "createdAt".
+  Future<void> _notifyUser(
+      String userId, String title, String message, String type) async {
+    if (userId.isEmpty) return;
+    try {
+      await SupabaseService.client.from('notifications').insert({
+        'userId': userId,
+        'title': title,
+        'message': message,
+        'type': type,
+        'read': false,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      // Non-critical.
     }
   }
 
