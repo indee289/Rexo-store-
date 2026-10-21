@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
@@ -56,7 +57,9 @@ final userRoleProvider = FutureProvider<String?>((ref) async {
   if (user == null) return null;
 
   final profile = await SupabaseService.getUserProfile(user.id);
-  return profile?['role'] as String?;
+  // Lowercase so the brand/creator branch is case-insensitive (the DB may
+  // hold 'CREATOR'/'Brand' etc.).
+  return (profile?['role'] as String?)?.trim().toLowerCase();
 });
 
 class MyCampaignsScreen extends ConsumerWidget {
@@ -80,6 +83,17 @@ class MyCampaignsScreen extends ConsumerWidget {
           body: isBrand
               ? const _BrandCampaignsList()
               : const _CreatorApplicationsList(),
+          // Brand-only entry point to create a campaign (there was no way to
+          // reach campaign creation from the main app before).
+          floatingActionButton: isBrand
+              ? FloatingActionButton.extended(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  onPressed: () => context.push('/create-campaign'),
+                  icon: const Icon(Iconsax.add),
+                  label: const Text('New campaign'),
+                )
+              : null,
         );
       },
       loading: () => Scaffold(
@@ -326,7 +340,8 @@ class _ApplicationCard extends StatelessWidget {
     final campaignTitle = (campaign['title'] ?? 'Unknown Campaign').toString();
     final status = (application['status'] ?? 'pending').toString();
     final pitch = (application['pitch'] ?? '').toString();
-    final createdAt = DateTime.tryParse(application['created_at'] ?? '');
+    final createdAt = DateTime.tryParse(
+        (application['created_at'] ?? application['createdAt'] ?? '').toString());
     final dateStr =
         createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
 

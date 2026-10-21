@@ -207,8 +207,11 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       this.state = const AsyncValue.data(null);
 
-      // Invalidate applications provider to refresh
+      // Refresh every list that should now reflect the new application so the
+      // user sees it immediately (no manual pull-to-refresh needed).
       ref.invalidate(myApplicationsProvider);
+      ref.invalidate(appliedCampaignsProvider);
+      ref.invalidate(hasAppliedProvider(campaignId));
 
       return true;
     } catch (e, st) {

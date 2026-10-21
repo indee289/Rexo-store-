@@ -92,14 +92,18 @@ class _ApplicantTile extends StatelessWidget {
     final theme = Theme.of(context);
     final creator = application['creator'] as Map<String, dynamic>?;
     final displayName =
-        (application['applicant_name'] ?? creator?['name'] ?? 'Applicant')
+        (application['applicant_name'] ??
+                application['creatorName'] ??
+                creator?['name'] ??
+                'Applicant')
             .toString();
     final handle = (creator?['username'] ?? '').toString(); // live: username
     final avatarUrl = creator?['profileImage'] as String?;  // live: profileImage
     final isVerified = creator?['isVerified'] == true;
     final status = (application['status'] ?? 'pending').toString();
     final category = (application['category'] ?? '').toString();
-    final followers = application['followers_count'];
+    final followers =
+        application['followers_count'] ?? application['followers'];
 
     return InkWell(
       borderRadius: AppRadius.allLg,
@@ -258,15 +262,21 @@ class _ApplicantDetailSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final creator = application['creator'] as Map<String, dynamic>?;
     final displayName =
-        (application['applicant_name'] ?? creator?['name'] ?? 'Applicant')
+        (application['applicant_name'] ??
+                application['creatorName'] ??
+                creator?['name'] ??
+                'Applicant')
             .toString();
     final handle = (creator?['username'] ?? '').toString(); // live: username
     final avatarUrl = creator?['profileImage'] as String?;  // live: profileImage
     final isVerified = creator?['isVerified'] == true;
-    final instagram =
-        _normalizeInstagram((application['instagram_url'] ?? '').toString());
+    final instagram = _normalizeInstagram(
+        (application['instagram_url'] ?? application['instagram'] ?? '')
+            .toString());
     final pitch = (application['pitch'] ?? '').toString();
-    final portfolio = (application['portfolio_url'] ?? '').toString();
+    final portfolio =
+        (application['portfolio_url'] ?? application['contentLink'] ?? '')
+            .toString();
 
     return SingleChildScrollView(
       child: Column(
@@ -322,13 +332,14 @@ class _ApplicantDetailSheet extends StatelessWidget {
           _DetailRow(
               icon: Iconsax.call,
               label: 'Contact',
-              value: application['contact_number']),
+              value: application['contact_number'] ?? application['contact']),
           _DetailRow(
             icon: Iconsax.people,
             label: 'Followers',
-            value: application['followers_count'] != null
-                ? NumberFormat.decimalPattern()
-                    .format(application['followers_count'])
+            value: (application['followers_count'] ?? application['followers']) !=
+                    null
+                ? NumberFormat.decimalPattern().format(
+                    application['followers_count'] ?? application['followers'])
                 : null,
           ),
           const SizedBox(height: AppSpacing.sm),

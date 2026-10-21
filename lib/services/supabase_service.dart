@@ -52,14 +52,32 @@ class SupabaseService {
     );
   }
 
-  /// Sign up with email and password
+  /// Sign up with email and password.
+  ///
+  /// [role] and [fullName] are attached as auth user metadata so the
+  /// `handle_new_auth_user` DB trigger can set the correct role AT INSERT time.
+  /// This matters because a BEFORE-UPDATE guard (`prevent_user_self_escalation`)
+  /// reverts any later role change by a non-admin — so the role MUST be correct
+  /// on the initial insert, not patched afterwards. Role is lowercased to match
+  /// the `users.role` CHECK constraint ('creator','brand','admin').
   static Future<AuthResponse> signUp({
     required String email,
     required String password,
+    String? role,
+    String? fullName,
   }) async {
+    final metadata = <String, dynamic>{};
+    if (role != null && role.trim().isNotEmpty) {
+      metadata['role'] = role.trim().toLowerCase();
+    }
+    if (fullName != null && fullName.trim().isNotEmpty) {
+      metadata['name'] = fullName.trim();
+      metadata['full_name'] = fullName.trim();
+    }
     return await client.auth.signUp(
       email: email,
       password: password,
+      data: metadata.isEmpty ? null : metadata,
     );
   }
 
@@ -129,7 +147,7 @@ class SupabaseService {
         'email': email,
         'name': fullName,
         'username': handle,         // live column name; trigger never sets this
-        'role': role,
+        'role': role.trim().toLowerCase(), // match CHECK ('creator','brand','admin')
         'createdAt': DateTime.now().toIso8601String(),
       },
       onConflict: 'id',             // if trigger already created the row, update it

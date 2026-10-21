@@ -303,7 +303,7 @@ jobs:
           cat > build/app/outputs/bundle/release/release-info.txt <<EOF
           app=Campster
           applicationId=com.rexo.marketplace
-          versionName=1.0.3
+          versionName=1.0.4
           versionCode=$CAMPSTER_BUILD_NUMBER
           minSdk=24
           targetSdk=36

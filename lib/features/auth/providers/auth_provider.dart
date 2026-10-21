@@ -265,6 +265,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await SupabaseService.signUp(
         email: email,
         password: password,
+        role: role,
+        fullName: fullName,
       );
 
       if (response.user != null) {

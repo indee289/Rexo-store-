@@ -323,13 +323,17 @@ Deno.serve(async (req: Request) => {
 
   // --- 1) Insert one in-app notification row per user (service role) ---------
   const nowIso = new Date().toISOString();
+  // Live `notifications` table uses camelCase columns (userId, message, read,
+  // createdAt) — matching the Flutter read path. The old snake_case keys
+  // (user_id/body/is_read/created_at) do not exist and made this insert fail
+  // with a 500, which the admin UI showed as "Something went wrong".
   const rows = targetUserIds.map((uid) => ({
-    user_id: uid,
+    userId: uid,
     title,
-    body: message,
+    message,
     type: "broadcast",
-    is_read: false,
-    created_at: nowIso,
+    read: false,
+    createdAt: nowIso,
   }));
 
   const { error: insertErr } = await admin.from("notifications").insert(rows);

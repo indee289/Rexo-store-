@@ -59,13 +59,21 @@ class CampaignCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     final title = (campaign['title'] ?? 'Untitled Campaign').toString();
-    final budget = campaign['budget'];
+    final budget = campaign['budget'] ?? campaign['payout_per_creator'];
     final platform = (campaign['platform'] ?? '').toString();
-    final coverImageUrl = (campaign['cover_image_url'] ?? '').toString();
+    // The live DB stores the cover under different keys depending on how the
+    // row was created; try all of them so the image never silently disappears.
+    final coverImageUrl = (campaign['cover_image_url'] ??
+            campaign['cover_image'] ??
+            campaign['coverImage'] ??
+            campaign['bannerUrl'] ??
+            '')
+        .toString();
     final brandName = _resolveBrandName();
 
-    final filled = _asInt(campaign['filled_slots']);
-    final total = _asInt(campaign['total_slots']);
+    final filled = _asInt(campaign['filled_slots'] ?? campaign['filledSlots']);
+    final total =
+        _asInt(campaign['total_slots'] ?? campaign['slots'] ?? campaign['totalSlots']);
 
     final card = PremiumCard(
       onTap: onTap,
@@ -158,9 +166,9 @@ class CampaignCard extends StatelessWidget {
     if (brandInfo is Map && brandInfo['name'] != null) {
       return brandInfo['name'].toString();
     }
-    final brandName = campaign['brand_name'];
-    if (brandName != null && brandName.toString().isNotEmpty) {
-      return brandName.toString();
+    for (final key in ['brand_name', 'brandName', 'company_name', 'companyName']) {
+      final v = campaign[key];
+      if (v != null && v.toString().isNotEmpty) return v.toString();
     }
     return '';
   }

@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/image_upload_field.dart';
 import '../../../core/widgets/premium_app_bar.dart';
 import '../../../core/widgets/premium_button.dart';
@@ -114,7 +115,8 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
         'platform': platformForDb,
-        'slots': int.tryParse(_slotsController.text.trim()) ?? 1,        'filled_slots': 0,
+        'slots': int.tryParse(_slotsController.text.trim()) ?? 1,
+        'filled_slots': 0,
         'budget': double.tryParse(_budgetController.text.trim()) ?? 0,
         'payout_per_creator':
             double.tryParse(_perCreatorController.text.trim()) ?? 0,
@@ -152,7 +154,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to create campaign. Please try again.'),
+          content: Text(ErrorUtils.sanitize(e)),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: const RoundedRectangleBorder(
