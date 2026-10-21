@@ -134,8 +134,10 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
             ? null
             : _rulesController.text.trim(),
         'status': 'active',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        // created_at / updated_at are intentionally NOT sent: the live
+        // `campaigns` table has no `updated_at` column (sending it caused a
+        // PGRST204 "column not found" -> "something went wrong"). Both
+        // timestamps have DEFAULT now() in the DB, so they populate themselves.
       });
 
       if (!mounted) return;

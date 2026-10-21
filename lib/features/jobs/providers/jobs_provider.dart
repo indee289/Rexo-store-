@@ -448,9 +448,10 @@ class JobsActionsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       // Translate the job-shaped keys into campaigns columns. Only pass through
       // keys that are actually present in the incoming data map.
-      final update = <String, dynamic>{
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+      // The live `campaigns` table has no `updated_at` column — sending it
+      // caused a PGRST204 "column not found". Start empty; only real fields
+      // below are sent.
+      final update = <String, dynamic>{};
       if (data.containsKey('title')) update['title'] = data['title'];
       if (data.containsKey('description')) {
         update['description'] = data['description'];
