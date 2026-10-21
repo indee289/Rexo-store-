@@ -42,7 +42,7 @@ BEGIN
 
     DROP POLICY IF EXISTS "Users can read own withdrawals" ON public.withdrawals;
     CREATE POLICY "Users can read own withdrawals" ON public.withdrawals
-      FOR SELECT USING (auth.uid() = user_id);
+      FOR SELECT USING (auth.uid()::text = user_id::text);
 
     DROP POLICY IF EXISTS "Admins can read all withdrawals" ON public.withdrawals;
     CREATE POLICY "Admins can read all withdrawals" ON public.withdrawals
@@ -50,7 +50,7 @@ BEGIN
 
     DROP POLICY IF EXISTS "Users can create withdrawals" ON public.withdrawals;
     CREATE POLICY "Users can create withdrawals" ON public.withdrawals
-      FOR INSERT WITH CHECK (auth.uid() = user_id);
+      FOR INSERT WITH CHECK (auth.uid()::text = user_id::text);
 
     DROP POLICY IF EXISTS "Admins can update withdrawals" ON public.withdrawals;
     CREATE POLICY "Admins can update withdrawals" ON public.withdrawals
@@ -71,16 +71,16 @@ BEGIN
 
     DROP POLICY IF EXISTS "Users can delete own sessions" ON public.user_sessions;
     CREATE POLICY "Users can delete own sessions" ON public.user_sessions
-      FOR DELETE USING (auth.uid() = user_id);
+      FOR DELETE USING (auth.uid()::text = user_id::text);
 
     -- (Re-assert the existing ones so the set is complete.)
     DROP POLICY IF EXISTS "Users can read own sessions" ON public.user_sessions;
     CREATE POLICY "Users can read own sessions" ON public.user_sessions
-      FOR SELECT USING (auth.uid() = user_id);
+      FOR SELECT USING (auth.uid()::text = user_id::text);
 
     DROP POLICY IF EXISTS "Users can update own sessions" ON public.user_sessions;
     CREATE POLICY "Users can update own sessions" ON public.user_sessions
-      FOR UPDATE USING (auth.uid() = user_id);
+      FOR UPDATE USING (auth.uid()::text = user_id::text);
   END IF;
 END $$;
 
@@ -95,7 +95,7 @@ BEGIN
 
     DROP POLICY IF EXISTS "Users can read own wallet" ON public.wallets;
     CREATE POLICY "Users can read own wallet" ON public.wallets
-      FOR SELECT USING (auth.uid() = user_id);
+      FOR SELECT USING (auth.uid()::text = user_id::text);
 
     DROP POLICY IF EXISTS "Admins can read all wallets" ON public.wallets;
     CREATE POLICY "Admins can read all wallets" ON public.wallets
@@ -188,7 +188,7 @@ BEGIN
     ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
     DROP POLICY IF EXISTS "Admins can insert campaigns" ON public.campaigns;
     CREATE POLICY "Admins can insert campaigns" ON public.campaigns
-      FOR INSERT WITH CHECK (public.is_admin() OR auth.uid() = brand_id);
+      FOR INSERT WITH CHECK (public.is_admin() OR auth.uid()::text = brand_id::text);
   END IF;
 END $$;
 
