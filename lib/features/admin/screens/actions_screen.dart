@@ -3,183 +3,189 @@ import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
+import '../../moderation/screens/moderation_screen.dart';
 import 'campaign_control_screen.dart';
-import 'fraud_review_screen.dart';
 import 'disputes_screen.dart';
-import 'push_broadcast_screen.dart';
-import 'rexo_program_screen.dart';
+import 'fraud_review_screen.dart';
 import 'manage_banners_screen.dart';
 import 'manage_jobs_screen.dart';
+import 'push_broadcast_screen.dart';
 import 'review_job_submissions_screen.dart';
+import 'rexo_program_screen.dart';
 import 'submission_review_screen.dart';
-import '../../moderation/screens/moderation_screen.dart';
 import 'wallets_escrow_screen.dart';
 import 'withdrawal_queue_screen.dart';
 
 /// Admin Center → Actions hub.
 ///
-/// Redesigned into clean, grouped sections (Finance / Content / Reviews /
-/// Safety & Comms) with a compact two-column tile grid. Navigation targets and
-/// all backend/logic are unchanged — this is a UI-only redesign.
+/// Old layout: a hand-built header (a gradient rounded square beside two
+/// stacked `Text`s), then four sections whose tiles were `Material` + `InkWell`
+/// + `Container` stacks that each redeclared their own 16px radius, hairline
+/// border, tinted icon square and label style — and which hardcoded
+/// `Colors.white`, so they would not follow the canvas.
+///
+/// New layout: the standard collapsing large title, and every tile now comes
+/// from the shared [GlassTileGrid] / [GlassTile] pair. The grouping (Finance /
+/// Content / Reviews / Safety & Comms) and all navigation targets are
+/// unchanged.
 class ActionsScreen extends StatelessWidget {
   const ActionsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(
+            title: 'Admin actions',
+            subtitle: 'Manage platform operations',
+          ),
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.accentIndigo],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(AppIcons.setting_2,
-                        color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Admin Actions',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: cs.onSurface,
-                          )),
-                      Text('Manage platform operations',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: cs.onSurface.withOpacity(0.55),
-                          )),
-                    ],
-                  ),
-                ],
-              ),
+          _section(context, 'Finance', [
+            _ActionItem(
+              icon: AppIcons.money_send,
+              label: 'Withdrawal queue',
+              color: AppColors.accentPurple,
+              screen: () => const WithdrawalQueueScreen(),
             ),
+            _ActionItem(
+              icon: AppIcons.wallet,
+              label: 'Wallets & escrow',
+              color: AppColors.accentBrown,
+              screen: () => const WalletsEscrowScreen(),
+            ),
+          ]),
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                child: Column(
-                  children: [
-                    _Section(
-                      title: 'Finance',
-                      tiles: [
-                        _Tile(
-                          icon: AppIcons.money_send,
-                          label: 'Withdrawal Queue',
-                          color: AppColors.accentPurple,
-                          screen: const WithdrawalQueueScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.wallet,
-                          label: 'Wallets & Escrow',
-                          color: AppColors.accentBrown,
-                          screen: const WalletsEscrowScreen(),
-                        ),
-                      ],
-                    ),
-                    _Section(
-                      title: 'Content',
-                      tiles: [
-                        _Tile(
-                          icon: AppIcons.image,
-                          label: 'Manage Banners',
-                          color: AppColors.accentIndigo,
-                          screen: const ManageBannersScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.briefcase,
-                          label: 'Campaign Control',
-                          color: AppColors.primary,
-                          screen: const CampaignControlScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.task_square,
-                          label: 'Manage Jobs',
-                          color: AppColors.accentTeal,
-                          screen: const ManageJobsScreen(),
-                        ),
-                      ],
-                    ),
-                    _Section(
-                      title: 'Reviews',
-                      tiles: [
-                        _Tile(
-                          icon: AppIcons.document_upload,
-                          label: 'Submissions',
-                          color: AppColors.success,
-                          screen: const SubmissionReviewScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.document_text,
-                          label: 'Job Submissions',
-                          color: AppColors.accentOrange,
-                          screen: const ReviewJobSubmissionsScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.message_question,
-                          label: 'Disputes',
-                          color: AppColors.error,
-                          screen: const DisputesScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.award,
-                          label: 'Program Review',
-                          color: AppColors.accentAmber,
-                          screen: const RexoProgramScreen(),
-                        ),
-                      ],
-                    ),
-                    _Section(
-                      title: 'Safety & Comms',
-                      tiles: [
-                        _Tile(
-                          icon: AppIcons.shield_cross,
-                          label: 'Risk & Fraud',
-                          color: AppColors.error,
-                          screen: const FraudReviewScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.flag,
-                          label: 'Reports',
-                          color: AppColors.accentOrange,
-                          screen: const ModerationScreen(),
-                        ),
-                        _Tile(
-                          icon: AppIcons.message_text,
-                          label: 'Support Inbox',
-                          color: AppColors.primary,
-                          route: '/messages',
-                        ),
-                        _Tile(
-                          icon: AppIcons.notification,
-                          label: 'Push Broadcast',
-                          color: AppColors.accentPink,
-                          screen: const PushBroadcastScreen(),
-                        ),
-                      ],
-                    ),
-                  ],
+          _section(context, 'Content', [
+            _ActionItem(
+              icon: AppIcons.image,
+              label: 'Manage banners',
+              color: AppColors.accentIndigo,
+              screen: () => const ManageBannersScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.briefcase,
+              label: 'Campaign control',
+              color: AppColors.primary,
+              screen: () => const CampaignControlScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.task_square,
+              label: 'Manage jobs',
+              color: AppColors.accentTeal,
+              screen: () => const ManageJobsScreen(),
+            ),
+          ]),
+
+          _section(context, 'Reviews', [
+            _ActionItem(
+              icon: AppIcons.document_upload,
+              label: 'Submissions',
+              color: AppColors.success,
+              screen: () => const SubmissionReviewScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.document_text,
+              label: 'Job submissions',
+              color: AppColors.accentOrange,
+              screen: () => const ReviewJobSubmissionsScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.message_question,
+              label: 'Disputes',
+              color: AppColors.error,
+              screen: () => const DisputesScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.award,
+              label: 'Program review',
+              color: AppColors.accentAmber,
+              screen: () => const RexoProgramScreen(),
+            ),
+          ]),
+
+          _section(context, 'Safety & comms', [
+            _ActionItem(
+              icon: AppIcons.shield_cross,
+              label: 'Risk & fraud',
+              color: AppColors.error,
+              screen: () => const FraudReviewScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.flag,
+              label: 'Reports',
+              color: AppColors.accentOrange,
+              screen: () => const ModerationScreen(),
+            ),
+            _ActionItem(
+              icon: AppIcons.message_text,
+              label: 'Support inbox',
+              color: AppColors.primary,
+              route: '/messages',
+            ),
+            _ActionItem(
+              icon: AppIcons.notification,
+              label: 'Push broadcast',
+              color: AppColors.accentPink,
+              screen: () => const PushBroadcastScreen(),
+            ),
+          ]),
+
+          // Clearance for the floating admin dock.
+          const SliverToBoxAdapter(child: SizedBox(height: 110)),
+        ],
+      ),
+    );
+  }
+
+  /// One labelled group of destination tiles.
+  Widget _section(
+    BuildContext context,
+    String title,
+    List<_ActionItem> items,
+  ) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xs,
+                0,
+                AppSpacing.xs,
+                AppSpacing.md,
+              ),
+              child: Text(
+                title.toUpperCase(),
+                style: AppTextStyles.caption1.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                 ),
               ),
+            ),
+            GlassTileGrid(
+              columns: 2,
+              tiles: [
+                for (final item in items)
+                  GlassTile(
+                    icon: item.icon,
+                    label: item.label,
+                    color: item.color,
+                    onTap: () => item.open(context),
+                  ),
+              ],
             ),
           ],
         ),
@@ -188,55 +194,17 @@ class ActionsScreen extends StatelessWidget {
   }
 }
 
-class _Section extends StatelessWidget {
-  final String title;
-  final List<_Tile> tiles;
-  const _Section({required this.title, required this.tiles});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 16, 4, 10),
-          child: Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: cs.onSurface.withOpacity(0.45),
-            ),
-          ),
-        ),
-        LayoutBuilder(
-          builder: (context, c) {
-            const spacing = 10.0;
-            final w = (c.maxWidth - spacing) / 2;
-            return Wrap(
-              spacing: spacing,
-              runSpacing: spacing,
-              children: tiles
-                  .map((t) => SizedBox(width: w, child: t))
-                  .toList(),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _Tile extends StatelessWidget {
+/// A destination in the actions hub: either a pushed screen or a named route.
+class _ActionItem {
   final IconData icon;
   final String label;
   final Color color;
-  final Widget? screen;
+
+  /// Built lazily so the screen is only constructed when actually opened.
+  final Widget Function()? screen;
   final String? route;
 
-  const _Tile({
+  const _ActionItem({
     required this.icon,
     required this.label,
     required this.color,
@@ -244,57 +212,14 @@ class _Tile extends StatelessWidget {
     this.route,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          if (route != null) {
-            context.push(route!);
-          } else if (screen != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => screen!),
-            );
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 0.5),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void open(BuildContext context) {
+    if (route != null) {
+      context.push(route!);
+    } else if (screen != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => screen!()),
+      );
+    }
   }
 }

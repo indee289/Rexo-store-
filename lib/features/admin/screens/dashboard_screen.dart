@@ -3,234 +3,199 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/admin_provider.dart';
 import 'admin_shell.dart';
 
+/// Admin dashboard — rebuilt layout.
+///
+/// Old layout: a hand-assembled fake app bar (a `Container` holding a centred
+/// `Text` and a `GestureDetector` refresh square), stat cells built as bespoke
+/// `Container`s, a row of three hand-drawn `_QuickAction` tiles, and an error
+/// state assembled from a circle-bordered icon plus a tappable `Text` acting
+/// as a button.
+///
+/// New layout: the standard collapsing large title with refresh as a proper
+/// icon button; the stats as cards on the shared surface; the quick actions as
+/// a [GlassTileGrid], which gives real tap targets and readable labels; and
+/// the error state from the shared set. The content-driven `Wrap` is kept
+/// deliberately — a fixed-aspect grid clips the stat cells at large display
+/// scales.
+///
+/// `adminStatsProvider`, `adminTabIndexProvider` and the three stat keys are
+/// unchanged.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(adminStatsProvider);
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final pageBg = isDark ? AppColors.darkBackground : AppColors.background;
-    final surfaceAlt =
-        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
-    return Scaffold(
-      backgroundColor: pageBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── AppBar ────────────────────────────────────────────────────
-            Container(
-              constraints: const BoxConstraints(minHeight: 56),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: pageBg,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Admin Centre',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => ref.invalidate(adminStatsProvider),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: surfaceAlt,
-                        borderRadius: AppRadius.allSm,
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Icon(AppIcons.refresh,
-                          size: 18, color: cs.onSurfaceVariant),
-                    ),
-                  ),
-                ],
-              ),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(adminStatsProvider),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            GlassLargeTitleHeader(
+              title: 'Admin centre',
+              subtitle: 'Platform overview',
+              actions: [
+                GlassIconButton(
+                  icon: AppIcons.refresh,
+                  tooltip: 'Refresh',
+                  size: 36,
+                  iconSize: 19,
+                  onTap: () => ref.invalidate(adminStatsProvider),
+                ),
+              ],
             ),
 
-            // ── Body ──────────────────────────────────────────────────────
-            Expanded(
-              child: RefreshIndicator(
-                color: AppColors.primary,
-                onRefresh: () async =>
-                    ref.invalidate(adminStatsProvider),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Stats grid
-                      stats.when(
-                        data: (data) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Overview',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            // Content-driven Wrap so large font/display scale
-                            // never clips a stat cell (a fixed-aspect grid does).
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                const spacing = 12.0;
-                                final columns =
-                                    constraints.maxWidth >= 560 ? 3 : 2;
-                                final itemWidth = (constraints.maxWidth -
-                                        spacing * (columns - 1)) /
-                                    columns;
-                                final cards = <Widget>[
-                                  _StatCard(
-                                    label: 'Total users',
-                                    value: '${data['total_users'] ?? 0}',
-                                    icon: AppIcons.people,
-                                    color: AppColors.primary,
-                                  ),
-                                  _StatCard(
-                                    label: 'Active campaigns',
-                                    value:
-                                        '${data['active_campaigns'] ?? 0}',
-                                    icon: AppIcons.briefcase,
-                                    color: AppColors.success,
-                                  ),
-                                  _StatCard(
-                                    label: 'Pending withdrawals',
-                                    value:
-                                        '${data['pending_withdrawals'] ?? 0}',
-                                    icon: AppIcons.money_send,
-                                    color: AppColors.accentPurple,
-                                  ),
-                                ];
-                                return Wrap(
-                                  spacing: spacing,
-                                  runSpacing: spacing,
-                                  children: [
-                                    for (final card in cards)
-                                      SizedBox(
-                                          width: itemWidth, child: card),
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            // Quick actions row
-                            Text(
-                              'Quick actions',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Row(
-                              children: [
-                                _QuickAction(
-                                  label: 'Users',
+            stats.when(
+              data: (data) => SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                        AppSpacing.lg,
+                        AppSpacing.xl,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _sectionLabel('Overview'),
+                          // Content-driven Wrap so large font/display scale
+                          // never clips a stat cell (a fixed-aspect grid does).
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              const spacing = AppSpacing.md;
+                              final columns =
+                                  constraints.maxWidth >= 560 ? 3 : 2;
+                              final itemWidth = (constraints.maxWidth -
+                                      spacing * (columns - 1)) /
+                                  columns;
+                              final cards = <Widget>[
+                                _StatCard(
+                                  label: 'Total users',
+                                  value: '${data['total_users'] ?? 0}',
                                   icon: AppIcons.people,
-                                  onTap: () => ref
-                                      .read(adminTabIndexProvider.notifier)
-                                      .state = 1,
+                                  color: AppColors.primary,
                                 ),
-                                const SizedBox(width: 8),
-                                _QuickAction(
-                                  label: 'Actions',
-                                  icon: AppIcons.task_square,
-                                  onTap: () => ref
-                                      .read(adminTabIndexProvider.notifier)
-                                      .state = 2,
+                                _StatCard(
+                                  label: 'Active campaigns',
+                                  value: '${data['active_campaigns'] ?? 0}',
+                                  icon: AppIcons.briefcase,
+                                  color: AppColors.success,
                                 ),
-                                const SizedBox(width: 8),
-                                _QuickAction(
-                                  label: 'Settings',
-                                  icon: AppIcons.setting_2,
-                                  onTap: () => ref
-                                      .read(adminTabIndexProvider.notifier)
-                                      .state = 3,
+                                _StatCard(
+                                  label: 'Pending withdrawals',
+                                  value:
+                                      '${data['pending_withdrawals'] ?? 0}',
+                                  icon: AppIcons.money_send,
+                                  color: AppColors.accentPurple,
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        loading: () =>
-                            const ShimmerLoading(height: 320),
-                        error: (error, _) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.textPrimary, width: 1.5),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(AppIcons.chart_2, size: 28, color: AppColors.textPrimary),
+                              ];
+                              return Wrap(
+                                spacing: spacing,
+                                runSpacing: spacing,
+                                children: [
+                                  for (final card in cards)
+                                    SizedBox(width: itemWidth, child: card),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _sectionLabel('Quick actions'),
+                          GlassTileGrid(
+                            columns: 3,
+                            tiles: [
+                              GlassTile(
+                                icon: AppIcons.people,
+                                label: 'Users',
+                                onTap: () => ref
+                                    .read(adminTabIndexProvider.notifier)
+                                    .state = 1,
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Could not load stats',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
+                              GlassTile(
+                                icon: AppIcons.task_square,
+                                label: 'Actions',
+                                onTap: () => ref
+                                    .read(adminTabIndexProvider.notifier)
+                                    .state = 2,
                               ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Check your connection and try again.',
-                                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                              ),
-                              const SizedBox(height: 14),
-                              GestureDetector(
-                                onTap: () => ref.invalidate(adminStatsProvider),
-                                child: const Text(
-                                  'Try again',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
+                              GlassTile(
+                                icon: AppIcons.setting_2,
+                                label: 'Settings',
+                                onTap: () => ref
+                                    .read(adminTabIndexProvider.notifier)
+                                    .state = 3,
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 80),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+              ),
+              loading: () => const SliverToBoxAdapter(child: _StatsSkeleton()),
+              error: (error, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: GlassErrorState(
+                  title: 'Could not load stats',
+                  message: 'Check your connection and try again.',
+                  onRetry: () => ref.invalidate(adminStatsProvider),
                 ),
               ),
             ),
+
+            // Clearance for the floating admin dock.
+            const SliverToBoxAdapter(child: SizedBox(height: 110)),
           ],
         ),
       ),
     );
   }
+}
+
+/// Group heading matching the tracked-caps header used by `GlassSection`.
+Widget _sectionLabel(String text) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      0,
+      AppSpacing.xs,
+      AppSpacing.md,
+    ),
+    child: Text(
+      text.toUpperCase(),
+      style: AppTextStyles.caption1.copyWith(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+      ),
+    ),
+  );
 }
 
 class _StatCard extends StatelessWidget {
@@ -248,35 +213,18 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.card,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 8),
+          GlassIconBubble(icon: icon, color: color, size: 40, iconSize: 20),
+          AppSpacing.gapSm,
           Text(
             value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
+            style: AppTextStyles.title2.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -284,10 +232,8 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: cs.onSurfaceVariant,
-            ),
+            style: AppTextStyles.caption1
+                .copyWith(color: AppColors.textSecondary),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -297,51 +243,49 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _QuickAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
+class _StatsSkeleton extends StatelessWidget {
+  const _StatsSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 52),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
-                Theme.of(context).brightness == Brightness.dark ? 0.14 : 0.08),
-            borderRadius: AppRadius.allMd,
-            border: Border.all(color: AppColors.primary.withOpacity(0.4)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Icon(icon, size: 16, color: AppColors.primary),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+              for (int i = 0; i < 2; i++) ...[
+                if (i > 0) AppSpacing.gapMd,
+                const Expanded(
+                  child: GlassCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GlassSkeleton(width: 40, height: 40),
+                        SizedBox(height: 10),
+                        GlassSkeleton(width: 60, height: 22),
+                        SizedBox(height: 6),
+                        GlassSkeleton(height: 12),
+                      ],
+                    ),
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
+              ],
             ],
           ),
-        ),
+          AppSpacing.gapMd,
+          const GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GlassSkeleton(width: 40, height: 40),
+                SizedBox(height: 10),
+                GlassSkeleton(width: 60, height: 22),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

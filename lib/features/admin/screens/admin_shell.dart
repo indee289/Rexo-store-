@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/icons/app_icons.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/is_admin_provider.dart';
 import '../widgets/admin_bottom_nav.dart';
@@ -25,6 +26,10 @@ final adminTabIndexProvider = StateProvider<int>((ref) => 0);
 ///
 /// ADMIN GUARD: this screen is only reachable from the gated "Admin Center"
 /// entry in the Profile screen, but it also guards itself.
+///
+/// Rebuilt: the three bare `Scaffold`s (loading, access-denied and the shell
+/// itself) are now `GlassScaffold`s, and the loading spinner and the
+/// access-denied `Text` are the shared glass states.
 class AdminShell extends ConsumerWidget {
   const AdminShell({super.key});
 
@@ -45,10 +50,8 @@ class AdminShell extends ConsumerWidget {
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     if (profileAsync.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+      return const GlassScaffold(
+        body: GlassLoader(message: 'Checking access…'),
       );
     }
 
@@ -56,15 +59,19 @@ class AdminShell extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go('/home');
       });
-      return const Scaffold(
-        body: Center(child: Text('Access denied')),
+      return const GlassScaffold(
+        body: GlassEmptyState(
+          icon: AppIcons.shield_cross,
+          title: 'Access denied',
+          message: 'This area is limited to administrators.',
+        ),
       );
     }
 
     // Watch the shared tab index provider
     final currentIndex = ref.watch(adminTabIndexProvider);
 
-    return Scaffold(
+    return GlassScaffold(
       body: IndexedStack(
         index: currentIndex,
         children: _screens,

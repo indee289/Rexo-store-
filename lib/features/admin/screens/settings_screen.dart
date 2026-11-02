@@ -4,12 +4,28 @@ import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../widgets/premium_card.dart';
-import '../providers/admin_provider.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/admin_provider.dart';
 import 'audit_logs_screen.dart';
 
+/// Admin settings — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over a scroll column of admin-local
+/// `PremiumCard`s, where the settings rows were a local `_SettingTile` built
+/// from a bare `InkWell`, the audit-logs entry was a hand-assembled row with
+/// its own chevron, and editing a setting opened an `AlertDialog` with a raw
+/// `TextField` plus `TextButton`/`ElevatedButton` actions.
+///
+/// New layout: the standard collapsing large title and two grouped sections,
+/// so the settings rows and the audit-logs entry share one row treatment with
+/// chevrons and separators coming from the group. The edit flow is a glass
+/// dialog with the shared text field, and sign-out is a destructive button.
+///
+/// `adminPlatformSettingsProvider`, `adminActionsProvider.updatePlatformSetting`,
+/// `authProvider.signOut` and the `/login` redirect are unchanged.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -17,239 +33,199 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final platformSettings = ref.watch(adminPlatformSettingsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Settings',
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Platform Settings section
-            Text(
-              'Platform Settings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            platformSettings.when(
-              data: (settings) {
-                if (settings.isEmpty) {
-                  // No editable platform settings configured — show a clean
-                  // note instead of non-functional placeholder toggles.
-                  return PremiumCard(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Icon(AppIcons.setting,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.35),
-                              size: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'No editable platform settings.',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.6),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                return PremiumCard(
-                  child: Column(
-                    children: settings.map((setting) {
-                      return _SettingTile(
-                        icon: AppIcons.setting,
-                        title: setting['key'] ?? '',
-                        subtitle: 'Value: ${setting['value'] ?? 'N/A'}',
-                        trailing: Icon(AppIcons.edit_2,
-                            size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-                        onTap: () => _showEditSettingDialog(
-                          context,
-                          ref,
-                          setting['key'] ?? '',
-                          setting['value']?.toString() ?? '',
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
-              error: (_, __) => const Text('Failed to load settings'),
-            ),
-            const SizedBox(height: 24),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(
+            title: 'Settings',
+            subtitle: 'Platform configuration',
+          ),
 
-            // Navigation section
-            Text(
-              'Administration',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            PremiumCard(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AuditLogsScreen()),
-              ),
-              child: Row(
-                children: [
-                  const Icon(AppIcons.document_text, color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
+          platformSettings.when(
+            data: (settings) {
+              if (settings.isEmpty) {
+                // No editable platform settings configured — show a clean
+                // note instead of non-functional placeholder toggles.
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Audit Logs',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          'View all admin actions',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        _sectionLabel('Platform settings'),
+                        GlassCard(
+                          level: GlassLevel.subtle,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                AppIcons.setting,
+                                size: 20,
+                                color: AppColors.textHint,
+                              ),
+                              AppSpacing.gapMd,
+                              Expanded(
+                                child: Text(
+                                  'No editable platform settings.',
+                                  style: AppTextStyles.footnote.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(AppIcons.arrow_right_3, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), size: 18),
-                ],
+                );
+              }
+              return SliverToBoxAdapter(
+                child: GlassSection(
+                  title: 'Platform settings',
+                  children: [
+                    for (final setting in settings)
+                      GlassRow(
+                        icon: AppIcons.setting,
+                        title: (setting['key'] ?? '').toString(),
+                        subtitle: 'Value: ${setting['value'] ?? 'N/A'}',
+                        trailing: const Icon(
+                          AppIcons.edit_2,
+                          size: 18,
+                          color: AppColors.textHint,
+                        ),
+                        onTap: () => _editSetting(
+                          context,
+                          ref,
+                          (setting['key'] ?? '').toString(),
+                          setting['value']?.toString() ?? '',
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+            loading: () => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: GlassLoader(),
               ),
             ),
-            const SizedBox(height: 32),
+            error: (_, __) => SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: GlassErrorState(
+                  title: 'Failed to load settings',
+                  compact: true,
+                  onRetry: () => ref.invalidate(adminPlatformSettingsProvider),
+                ),
+              ),
+            ),
+          ),
 
-            // Sign out
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Administration',
+              children: [
+                GlassRow(
+                  icon: AppIcons.document_text,
+                  title: 'Audit logs',
+                  subtitle: 'View all admin actions',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AuditLogsScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                0,
+              ),
+              child: GlassButton.destructive(
+                label: 'Sign out',
+                icon: AppIcons.logout,
                 onPressed: () {
                   ref.read(authProvider.notifier).signOut();
                   context.go('/login');
                 },
-                icon: const Icon(AppIcons.logout),
-                label: const Text('Sign Out'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
-                ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  void _showEditSettingDialog(
-      BuildContext context, WidgetRef ref, String key, String currentValue) {
-    final controller = TextEditingController(text: currentValue);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit $key'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: key,
-            hintText: 'Enter value...',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              ref
-                  .read(adminActionsProvider.notifier)
-                  .updatePlatformSetting(key, controller.text);
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
+          // Clearance for the floating admin dock.
+          const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
       ),
     );
   }
+
+  /// Edits one platform setting.
+  ///
+  /// The controller is created here and disposed once the dialog closes — the
+  /// old `AlertDialog` version never disposed it.
+  Future<void> _editSetting(
+    BuildContext context,
+    WidgetRef ref,
+    String key,
+    String currentValue,
+  ) async {
+    final controller = TextEditingController(text: currentValue);
+    try {
+      final saved = await showGlassDialog(
+        context: context,
+        title: 'Edit $key',
+        icon: AppIcons.setting,
+        confirmLabel: 'Save',
+        cancelLabel: 'Cancel',
+        content: GlassTextField(
+          controller: controller,
+          label: key,
+          hint: 'Enter value…',
+        ),
+      );
+
+      if (saved == true) {
+        ref
+            .read(adminActionsProvider.notifier)
+            .updatePlatformSetting(key, controller.text);
+      }
+    } finally {
+      controller.dispose();
+    }
+  }
 }
 
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _SettingTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.primary, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (trailing != null) trailing!,
-          ],
-        ),
+/// Group heading matching the tracked-caps header used by `GlassSection`.
+Widget _sectionLabel(String text) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      0,
+      AppSpacing.xs,
+      AppSpacing.md,
+    ),
+    child: Text(
+      text.toUpperCase(),
+      style: AppTextStyles.caption1.copyWith(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
       ),
-    );
-  }
+    ),
+  );
 }

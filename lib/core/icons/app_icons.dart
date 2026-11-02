@@ -170,4 +170,11 @@ class _FilledIcons {
   IconData get wallet => PhosphorIconsFill.wallet;
   IconData get shield_tick => PhosphorIconsFill.shieldCheck;
   IconData get tick_circle => PhosphorIconsFill.checkCircle;
+
+  // Admin Center dock destinations.
+  IconData get chart_square => PhosphorIconsFill.chartBar;
+  IconData get people => PhosphorIconsFill.users;
+  IconData get task_square => PhosphorIconsFill.checkSquare;
+  IconData get setting_2 => PhosphorIconsFill.gearSix;
+  IconData get profile_circle => PhosphorIconsFill.userCircle;
 }
