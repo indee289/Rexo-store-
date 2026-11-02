@@ -310,7 +310,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
               GlassButton.destructive(
                 label: 'Reject submission',
                 icon: AppIcons.close_circle,
-                size: GlassButtonSize.large,
+                size: GlassButtonSize.medium,
                 onPressed: () => Navigator.pop(sheetContext, true),
               ),
             ],

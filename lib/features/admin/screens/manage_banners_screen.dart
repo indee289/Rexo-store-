@@ -168,118 +168,103 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: GlassCard(
         padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Row(
+        // Two rows rather than one.
+        //
+        // Everything used to sit on a single line: drag handle, 64px
+        // thumbnail, title, two status chips and three actions. Once the
+        // actions became real 44pt tap targets that left roughly 76px for the
+        // title and chips on a 360px screen, so the title truncated to nothing
+        // and the chips could not sit side by side. The actions now get their
+        // own row, which also lets them carry labels.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(AppIcons.drag, size: 20, color: AppColors.textHint),
-            AppSpacing.gapSm,
-
-            ClipRRect(
-              borderRadius: AppRadius.allSm,
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      width: 64,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const _Placeholder(),
-                    )
-                  : const _Placeholder(),
-            ),
-
-            AppSpacing.gapMd,
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title?.isNotEmpty == true ? title! : 'Banner',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.callout.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
+            Row(
+              children: [
+                const Icon(AppIcons.drag, size: 20, color: AppColors.textHint),
+                AppSpacing.gapSm,
+                ClipRRect(
+                  borderRadius: AppRadius.allSm,
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          width: 64,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const _Placeholder(),
+                        )
+                      : const _Placeholder(),
+                ),
+                AppSpacing.gapMd,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      GlassChip.status(
-                        label: _linkLabel(linkType),
-                        color: AppColors.primary,
+                      Text(
+                        title?.isNotEmpty == true ? title! : 'Banner',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.callout.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      GlassChip.status(
-                        label: isVisible ? 'Visible' : 'Hidden',
-                        color: isVisible
-                            ? AppColors.success
-                            : AppColors.textHint,
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          GlassChip.status(
+                            label: _linkLabel(linkType),
+                            color: AppColors.primary,
+                          ),
+                          GlassChip.status(
+                            label: isVisible ? 'Visible' : 'Hidden',
+                            color: isVisible
+                                ? AppColors.success
+                                : AppColors.textHint,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // Actions. These were 6px-padded GestureDetectors; GlassIconButton
-            // guarantees the 44pt minimum tap target.
-            GlassIconButton.bare(
-              icon: AppIcons.edit,
-              tooltip: 'Edit banner',
-              size: 34,
-              iconSize: 18,
-              onTap: widget.onEdit,
-            ),
-            if (_toggling)
-              const SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.warning,
-                    ),
+            AppSpacing.gapSm,
+            Row(
+              children: [
+                Expanded(
+                  child: GlassButton.outline(
+                    label: 'Edit',
+                    icon: AppIcons.edit,
+                    size: GlassButtonSize.small,
+                    onPressed: widget.onEdit,
                   ),
                 ),
-              )
-            else
-              GlassIconButton.bare(
-                icon: isVisible ? AppIcons.eye_slash : AppIcons.eye,
-                tooltip: isVisible ? 'Hide banner' : 'Show banner',
-                color: AppColors.warning,
-                size: 34,
-                iconSize: 18,
-                onTap: () => _toggle(isVisible),
-              ),
-            if (_deleting)
-              const SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.error,
-                    ),
+                AppSpacing.gapSm,
+                Expanded(
+                  child: GlassButton.glass(
+                    label: isVisible ? 'Hide' : 'Show',
+                    icon: isVisible ? AppIcons.eye_slash : AppIcons.eye,
+                    size: GlassButtonSize.small,
+                    loading: _toggling,
+                    onPressed: _toggling ? null : () => _toggle(isVisible),
                   ),
                 ),
-              )
-            else
-              GlassIconButton.bare(
-                icon: AppIcons.trash,
-                tooltip: 'Delete banner',
-                color: AppColors.error,
-                size: 34,
-                iconSize: 18,
-                onTap: _delete,
-              ),
+                AppSpacing.gapSm,
+                Expanded(
+                  child: GlassButton.outline(
+                    label: 'Delete',
+                    icon: AppIcons.trash,
+                    size: GlassButtonSize.small,
+                    loading: _deleting,
+                    onPressed: _deleting ? null : _delete,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

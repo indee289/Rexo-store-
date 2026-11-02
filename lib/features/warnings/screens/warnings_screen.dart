@@ -248,7 +248,7 @@ class _SuspensionCard extends ConsumerWidget {
               return GlassButton(
                 label: 'Submit appeal',
                 loading: appealState.isLoading,
-                size: GlassButtonSize.large,
+                size: GlassButtonSize.medium,
                 onPressed: appealState.isLoading
                     ? null
                     : () {

@@ -136,7 +136,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
               GlassButton(
                 label: isCredit ? 'Credit' : 'Debit',
                 icon: isCredit ? AppIcons.add : AppIcons.minus,
-                size: GlassButtonSize.large,
+                size: GlassButtonSize.medium,
                 variant: isCredit
                     ? GlassButtonVariant.filled
                     : GlassButtonVariant.destructive,

@@ -205,7 +205,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
               GlassButton(
                 label: 'Disburse',
                 icon: AppIcons.money_send,
-                size: GlassButtonSize.large,
+                size: GlassButtonSize.medium,
                 onPressed: () {
                   final amount = double.tryParse(controller.text);
                   if (amount != null && amount > 0) {

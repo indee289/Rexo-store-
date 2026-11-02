@@ -541,16 +541,19 @@ class _Tile extends StatelessWidget {
       borderRadius: AppRadius.allSm,
       onTap: tile.onTap,
       semanticLabel: tile.label,
+      // Deliberately compact. These tiles previously ran ~96px tall (16px
+      // padding top and bottom around a 40px bubble), which made a two-column
+      // grid read as two oversized buttons rather than as navigation.
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
-        vertical: AppSpacing.lg,
+        vertical: AppSpacing.md,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: accent.withOpacity(0.14),
               borderRadius: AppRadius.allXs,
@@ -559,9 +562,9 @@ class _Tile extends StatelessWidget {
                 width: AppGlass.borderWidth,
               ),
             ),
-            child: Center(child: Icon(tile.icon, size: 20, color: accent)),
+            child: Center(child: Icon(tile.icon, size: 17, color: accent)),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 6),
           // FittedBox so a long label shrinks inside its tile rather than
           // wrapping and changing the tile's height.
           FittedBox(

@@ -157,7 +157,7 @@ class DisputesScreen extends ConsumerWidget {
               GlassButton(
                 label: 'Resolve',
                 icon: AppIcons.tick_circle,
-                size: GlassButtonSize.large,
+                size: GlassButtonSize.medium,
                 onPressed: () {
                   final value = controller.text.trim();
                   if (value.isEmpty) {

@@ -127,14 +127,21 @@ class _GlassButtonState extends State<GlassButton>
     super.dispose();
   }
 
+  /// Height per step.
+  ///
+  /// `medium` and `large` were originally 50 and 58. At those heights a primary
+  /// action read as oversized — a pinned 58px pill dominated the screen it sat
+  /// on. They are now 46 and 52, which still clears the 44pt minimum target
+  /// while looking like a button rather than a banner. `small` stays at 38: it
+  /// is only ever used inline inside a card, where it sits next to text.
   double get _height {
     switch (widget.size) {
       case GlassButtonSize.small:
         return 38;
       case GlassButtonSize.medium:
-        return 50;
+        return 46;
       case GlassButtonSize.large:
-        return 58;
+        return 52;
     }
   }
 

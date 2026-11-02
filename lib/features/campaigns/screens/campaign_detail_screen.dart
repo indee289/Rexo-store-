@@ -598,7 +598,7 @@ class _StatusBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
+      height: 52,
       width: double.infinity,
       alignment: Alignment.center,
       decoration: BoxDecoration(

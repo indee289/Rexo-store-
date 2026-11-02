@@ -168,7 +168,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               AppSpacing.gapXl,
               GlassButton(
                 label: 'Submit review',
-                size: GlassButtonSize.large,
+                size: GlassButtonSize.medium,
                 onPressed: selectedRating > 0
                     ? () => _submitReview(
                           sheetContext,

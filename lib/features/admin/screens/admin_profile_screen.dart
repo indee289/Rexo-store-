@@ -117,11 +117,15 @@ class AdminProfileScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: GlassSection(
               title: 'Session',
-              padding: EdgeInsets.fromLTRB(
+              // 110 clears the floating admin dock, which overlays content
+              // because AdminShell's GlassScaffold extends its body behind the
+              // bottom bar. The previous `padding.bottom + xxl` left the last
+              // row partly underneath the dock.
+              padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
                 0,
                 AppSpacing.lg,
-                MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+                110,
               ),
               children: [
                 GlassRow(
