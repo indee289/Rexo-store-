@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/sessions_provider.dart';
 
+/// Sessions & devices — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over two bare `Text` headings, each above a
+/// column of hand-built `Container` cards; an `ElevatedButton.icon` styled red
+/// at the bottom; and three more local helpers (`_buildEmptyState`,
+/// `_buildErrorState`) each drawing their own bordered box. The terminate-all
+/// confirmation was an `AlertDialog`.
+///
+/// New layout: collapsing large title; sessions and devices as two titled
+/// sections of rows, each session's terminate action as an icon button on its
+/// own row; and the destructive action in its own danger section with a glass
+/// confirm.
+///
+/// `userSessionsProvider`, `userDevicesProvider`,
+/// `sessionsNotifierProvider.terminateSession` and `terminateAllOtherSessions`
+/// are unchanged.
 class SessionsScreen extends ConsumerWidget {
   const SessionsScreen({super.key});
 
@@ -20,336 +34,241 @@ class SessionsScreen extends ConsumerWidget {
     final devicesAsync = ref.watch(userDevicesProvider);
     final sessionsState = ref.watch(sessionsNotifierProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Sessions & Devices', showBack: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Active Sessions Section
-            Text('Active Sessions', style: AppTextStyles.h6),
-            const SizedBox(height: AppSpacing.md),
-            sessionsAsync.when(
-              data: (sessions) {
-                if (sessions.isEmpty) {
-                  return _buildEmptyState(context, 'No active sessions');
-                }
-                return Column(
-                  children: sessions
-                      .map(
-                          (session) => _buildSessionCard(context, ref, session))
-                      .toList(),
-                );
-              },
-              loading: () => const ShimmerLoading(height: 240),
-              error: (error, _) => _buildErrorState('Failed to load sessions'),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            // My Devices Section
-            Text('My Devices', style: AppTextStyles.h6),
-            const SizedBox(height: AppSpacing.md),
-            devicesAsync.when(
-              data: (devices) {
-                if (devices.isEmpty) {
-                  return _buildEmptyState(context, 'No registered devices');
-                }
-                return Column(
-                  children: devices
-                      .map((device) => _buildDeviceCard(context, device))
-                      .toList(),
-                );
-              },
-              loading: () => const ShimmerLoading(height: 160),
-              error: (error, _) => _buildErrorState('Failed to load devices'),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            // Logout All Other Sessions Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: sessionsState.isLoading
-                    ? null
-                    : () => _showTerminateAllDialog(context, ref),
-                icon: const Icon(AppIcons.logout, size: 20),
-                label: Text(
-                  'Logout All Other Sessions',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.allMd,
-                  ),
-                ),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(
+            title: 'Sessions & devices',
+            showBack: true,
+          ),
+
+          // ── Active sessions ─────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: sessionsAsync.when(
+              data: (sessions) => sessions.isEmpty
+                  ? const _InfoSection(
+                      title: 'Active sessions',
+                      message: 'No active sessions',
+                    )
+                  : GlassSection(
+                      title: 'Active sessions',
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                        AppSpacing.lg,
+                        AppSpacing.xl,
+                      ),
+                      children: [
+                        for (final s in sessions)
+                          _SessionRow(session: s),
+                      ],
+                    ),
+              loading: () => const Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: GlassLoader(),
+              ),
+              error: (error, _) => _InfoSection(
+                title: 'Active sessions',
+                message: 'Failed to load sessions',
+                isError: true,
+                onRetry: () => ref.invalidate(userSessionsProvider),
               ),
             ),
-            if (sessionsState.error != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                sessionsState.error!,
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+          ),
+
+          // ── Registered devices ──────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: devicesAsync.when(
+              data: (devices) => devices.isEmpty
+                  ? const _InfoSection(
+                      title: 'My devices',
+                      message: 'No registered devices',
+                    )
+                  : GlassSection(
+                      title: 'My devices',
+                      children: [
+                        for (final d in devices) _DeviceRow(device: d),
+                      ],
+                    ),
+              loading: () => const SizedBox.shrink(),
+              error: (error, _) => _InfoSection(
+                title: 'My devices',
+                message: 'Failed to load devices',
+                isError: true,
+                onRetry: () => ref.invalidate(userDevicesProvider),
               ),
-            ],
-          ],
-        ),
+            ),
+          ),
+
+          // ── Destructive ─────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Danger zone',
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+              ),
+              children: [
+                GlassRow(
+                  icon: AppIcons.logout,
+                  title: 'Log out all other sessions',
+                  subtitle: 'Keeps only this device signed in',
+                  destructive: true,
+                  onTap: sessionsState.isLoading
+                      ? null
+                      : () => _confirmTerminateAll(context, ref),
+                ),
+                if (sessionsState.error != null)
+                  GlassRow(
+                    icon: AppIcons.warning_2,
+                    title: sessionsState.error!,
+                    destructive: true,
+                    showChevron: false,
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSessionCard(
+  Future<void> _confirmTerminateAll(
     BuildContext context,
     WidgetRef ref,
-    Map<String, dynamic> session,
-  ) {
-    final deviceId = session['device_id'] ?? 'Unknown Device';
-    final ipAddress = session['ip_address'] ?? 'Unknown IP';
+  ) async {
+    final ok = await showGlassConfirm(
+      context: context,
+      title: 'Log out all sessions',
+      message: 'This will terminate all sessions except your current one. '
+          'Continue?',
+      icon: AppIcons.logout,
+      confirmLabel: 'Log out all',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    );
+    if (ok) {
+      ref.read(sessionsNotifierProvider.notifier).terminateAllOtherSessions();
+    }
+  }
+}
+
+class _SessionRow extends ConsumerWidget {
+  const _SessionRow({required this.session});
+
+  final Map<String, dynamic> session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final deviceId = (session['device_id'] ?? 'Unknown Device').toString();
+    final ipAddress = (session['ip_address'] ?? 'Unknown IP').toString();
     final lastActive = session['last_active_at'] != null
         ? DateFormat('MMM dd, yyyy HH:mm')
             .format(DateTime.parse(session['last_active_at']))
         : 'Unknown';
     final sessionId = session['id'] as String;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: const Icon(
-              AppIcons.monitor,
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  deviceId,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'IP: $ipAddress',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.6),
-                  ),
-                ),
-                Text(
-                  'Last active: $lastActive',
-                  style: AppTextStyles.caption.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              ref
-                  .read(sessionsNotifierProvider.notifier)
-                  .terminateSession(sessionId);
-            },
-            icon: const Icon(
-              AppIcons.close_circle,
-              color: AppColors.error,
-              size: 22,
-            ),
-            tooltip: 'Terminate session',
-          ),
-        ],
+    return GlassRow(
+      icon: AppIcons.monitor,
+      title: deviceId,
+      subtitle: 'IP: $ipAddress  ·  Last active $lastActive',
+      showChevron: false,
+      trailing: GlassIconButton.bare(
+        icon: AppIcons.close_circle,
+        color: AppColors.error,
+        size: 36,
+        iconSize: 20,
+        tooltip: 'Terminate session',
+        onTap: () => ref
+            .read(sessionsNotifierProvider.notifier)
+            .terminateSession(sessionId),
       ),
     );
   }
+}
 
-  Widget _buildDeviceCard(BuildContext context, Map<String, dynamic> device) {
-    final deviceName = device['device_name'] ?? 'Unknown Device';
-    final deviceType = device['device_type'] ?? 'unknown';
-    final osVersion = device['os_version'] ?? '';
-    final appVersion = device['app_version'] ?? '';
+class _DeviceRow extends StatelessWidget {
+  const _DeviceRow({required this.device});
 
-    IconData deviceIcon;
-    switch (deviceType) {
-      case 'mobile':
-        deviceIcon = AppIcons.mobile;
-        break;
-      case 'tablet':
-        deviceIcon = AppIcons.mobile;
-        break;
-      case 'desktop':
-        deviceIcon = AppIcons.monitor;
-        break;
-      default:
-        deviceIcon = AppIcons.mobile;
-    }
+  final Map<String, dynamic> device;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: Icon(
-              deviceIcon,
-              color: AppColors.success,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  deviceName,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+  @override
+  Widget build(BuildContext context) {
+    final deviceName = (device['device_name'] ?? 'Unknown Device').toString();
+    final deviceType = (device['device_type'] ?? 'unknown').toString();
+    final osVersion = (device['os_version'] ?? '').toString();
+    final appVersion = (device['app_version'] ?? '').toString();
+
+    final icon = deviceType == 'desktop' ? AppIcons.monitor : AppIcons.mobile;
+
+    final meta = [
+      'Type: $deviceType',
+      if (osVersion.isNotEmpty) 'OS: $osVersion',
+      if (appVersion.isNotEmpty) 'App: $appVersion',
+    ].join('  ·  ');
+
+    return GlassRow(
+      icon: icon,
+      iconColor: AppColors.success,
+      title: deviceName,
+      subtitle: meta,
+      showChevron: false,
+    );
+  }
+}
+
+/// Titled section showing a single informational or error message.
+///
+/// Replaces the two local helpers that each drew their own bordered box.
+class _InfoSection extends StatelessWidget {
+  const _InfoSection({
+    required this.title,
+    required this.message,
+    this.isError = false,
+    this.onRetry,
+  });
+
+  final String title;
+  final String message;
+  final bool isError;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isError ? AppColors.error : AppColors.textSecondary;
+
+    return GlassSection(
+      title: title,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Icon(
+                isError ? AppIcons.warning_2 : AppIcons.info_circle,
+                size: 18,
+                color: color,
+              ),
+              AppSpacing.gapSm,
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTextStyles.subheadline.copyWith(color: color),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Type: $deviceType | OS: $osVersion',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.6),
-                  ),
+              ),
+              if (onRetry != null)
+                GlassButton.ghost(
+                  label: 'Retry',
+                  size: GlassButtonSize.small,
+                  onPressed: onRetry,
                 ),
-                if (appVersion.isNotEmpty)
-                  Text(
-                    'App Version: $appVersion',
-                    style: AppTextStyles.caption.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.4),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, String message) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            AppIcons.info_circle,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            size: 32,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            message,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String message) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.05),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: AppColors.error.withOpacity(0.2)),
-      ),
-      child: Text(
-        message,
-        style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  void _showTerminateAllDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Logout all sessions', style: AppTextStyles.h6),
-        content: Text(
-          'This will terminate all sessions except your current one. Continue?',
-          style: AppTextStyles.bodyMedium,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.labelLarge.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref
-                  .read(sessionsNotifierProvider.notifier)
-                  .terminateAllOtherSessions();
-            },
-            child: Text(
-              'Logout All',
-              style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

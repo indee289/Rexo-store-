@@ -1,51 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_card.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/coupons_provider.dart';
 
-class CouponsScreen extends ConsumerWidget {
+/// Coupons & rewards — rebuilt layout.
+///
+/// Old layout: `DefaultTabController` + a Material `TabBar` in the app bar's
+/// bottom slot driving a `TabBarView`, with each tab rendering its own
+/// `ListView` of hand-built `Container` cards.
+///
+/// New layout: collapsing large title with a segmented control in its pinned
+/// slot, and the two tabs swapped through an `IndexedStack` — the underline
+/// `TabBar` is replaced because an underline indicator is the weakest possible
+/// selection cue, and a segmented control shows both options as equals.
+///
+/// `availableCouponsProvider` and `userRewardPointsProvider` are unchanged, as
+/// is the fact that the Redeem button is not yet wired to an action.
+class CouponsScreen extends StatefulWidget {
   const CouponsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: PremiumAppBar(
-          title: 'Coupons & rewards',
-          showBack: true,
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor:
-                Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            labelStyle: AppTextStyles.labelLarge.copyWith(
-              fontWeight: FontWeight.w600,
+  State<CouponsScreen> createState() => _CouponsScreenState();
+}
+
+class _CouponsScreenState extends State<CouponsScreen> {
+  int _tab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          GlassLargeTitleHeader(
+            title: 'Coupons & rewards',
+            showBack: true,
+            bottomHeight: 62,
+            bottom: GlassTabBar(
+              labels: const ['Coupons', 'Rewards'],
+              selectedIndex: _tab,
+              onSelected: (i) => setState(() => _tab = i),
             ),
-            indicatorColor: AppColors.primary,
-            tabs: const [
-              Tab(text: 'Coupons'),
-              Tab(text: 'Rewards'),
-            ],
           ),
-        ),
-        body: const TabBarView(
-          children: [
-            _CouponsTab(),
-            _RewardsTab(),
-          ],
-        ),
+          SliverToBoxAdapter(
+            child: IndexedStack(
+              index: _tab,
+              // Both tabs stay alive, so switching back does not refetch.
+              sizing: StackFit.loose,
+              children: const [_CouponsTab(), _RewardsTab()],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -61,116 +73,140 @@ class _CouponsTab extends ConsumerWidget {
     return couponsAsync.when(
       data: (coupons) {
         if (coupons.isEmpty) {
-          return _buildEmpty();
+          return const Padding(
+            padding: EdgeInsets.only(top: AppSpacing.xxl),
+            child: GlassEmptyState(
+              icon: AppIcons.ticket_discount,
+              title: 'No coupons available',
+              message: 'Check back later for new offers.',
+              compact: true,
+            ),
+          );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: coupons.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, index) =>
-              _buildCouponCard(context, coupons[index]),
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+          ),
+          child: Column(
+            children: [
+              for (final c in coupons)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: RepaintBoundary(child: _CouponCard(coupon: c)),
+                ),
+            ],
+          ),
         );
       },
-      loading: () => const ShimmerLoading(),
-      error: (error, _) => EmptyState(
-        icon: AppIcons.warning_2,
-        title: 'Failed to load coupons',
-        ctaLabel: 'Retry',
-        ctaIcon: AppIcons.refresh,
-        onCta: () => ref.invalidate(availableCouponsProvider),
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xxl),
+        child: GlassLoader(),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xxl),
+        child: GlassErrorState(
+          compact: true,
+          title: 'Failed to load coupons',
+          onRetry: () => ref.invalidate(availableCouponsProvider),
+        ),
       ),
     );
   }
+}
 
-  Widget _buildCouponCard(BuildContext context, Map<String, dynamic> coupon) {
+/// A coupon, laid out like a real voucher: the discount is the headline and the
+/// code is a copy-ready recessed well, rather than both being body text.
+class _CouponCard extends StatelessWidget {
+  const _CouponCard({required this.coupon});
+
+  final Map<String, dynamic> coupon;
+
+  @override
+  Widget build(BuildContext context) {
     final code = coupon['code'] as String? ?? '';
     final discountType = coupon['discount_type'] as String? ?? 'fixed';
     final discountValue = (coupon['discount_value'] as num?)?.toDouble() ?? 0;
     final minOrder = (coupon['min_order'] as num?)?.toDouble() ?? 0;
     final expiresAt = coupon['expires_at'] as String?;
 
-    String discountLabel;
-    if (discountType == 'percentage') {
-      discountLabel = '${discountValue.toInt()}% off';
-    } else {
-      discountLabel = '\u20B9${discountValue.toStringAsFixed(0)} OFF';
-    }
+    final discountLabel = discountType == 'percentage'
+        ? '${discountValue.toInt()}% off'
+        : '\u20B9${discountValue.toStringAsFixed(0)} OFF';
 
     String expiryLabel = '';
     if (expiresAt != null) {
       final date = DateTime.tryParse(expiresAt);
       if (date != null) {
-        expiryLabel = 'Expires: ${DateFormat('dd MMM yyyy').format(date)}';
+        expiryLabel = 'Expires ${DateFormat('dd MMM yyyy').format(date)}';
       }
     }
 
-    return Container(
+    return GlassCard(
+      borderRadius: AppRadius.allLg,
+      rim: AppColors.primaryRim,
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Discount badge
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: const Icon(
-              AppIcons.ticket_discount,
-              color: AppColors.primary,
-              size: 24,
-            ),
+          Row(
+            children: [
+              const GlassIconBubble(
+                icon: AppIcons.ticket_discount,
+                size: 40,
+                iconSize: 20,
+              ),
+              AppSpacing.gapMd,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      discountLabel,
+                      style: AppTextStyles.title2.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Min. order \u20B9${minOrder.toStringAsFixed(0)}'
+                      '${expiryLabel.isEmpty ? '' : '  ·  $expiryLabel'}',
+                      style: AppTextStyles.footnote
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.md + 2),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  discountLabel,
-                  style: AppTextStyles.h6.copyWith(
-                    color: AppColors.primary,
-                  ),
+          if (code.isNotEmpty) ...[
+            AppSpacing.gapMd,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceAlt,
+                borderRadius: AppRadius.allMd,
+              ),
+              child: Text(
+                code,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headline.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Code: $code',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Min. order: \u20B9${minOrder.toStringAsFixed(0)}',
-                  style: AppTextStyles.caption,
-                ),
-                if (expiryLabel.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    expiryLabel,
-                    style: AppTextStyles.caption,
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return const EmptyState(
-      icon: AppIcons.ticket_discount,
-      title: 'No coupons available',
-      subtitle: 'Check back later for new offers',
     );
   }
 }
@@ -185,83 +221,82 @@ class _RewardsTab extends ConsumerWidget {
     return rewardsAsync.when(
       data: (rewards) {
         final points = (rewards?['points'] as int?) ?? 0;
+        final canRedeem = points >= 100;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+          ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Points balance card
-              Container(
-                width: double.infinity,
+              GlassSurface(
+                level: GlassLevel.card,
+                borderRadius: AppRadius.allXl,
+                gradient: AppColors.primaryGradient,
+                bordered: false,
+                shadow: AppElevation.brand(false),
                 padding: const EdgeInsets.all(AppSpacing.xl),
-                decoration: const BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: AppRadius.allLg,
-                ),
                 child: Column(
                   children: [
                     const Icon(
                       AppIcons.medal_star,
-                      size: 48,
+                      size: 34,
                       color: Colors.white,
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    AppSpacing.gapMd,
                     Text(
                       '$points',
-                      style: AppTextStyles.h2.copyWith(
-                        fontWeight: FontWeight.w700,
+                      style: AppTextStyles.largeTitle.copyWith(
                         color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 44,
+                        letterSpacing: -1,
                       ),
                     ),
                     Text(
-                      'Reward Points',
-                      style: AppTextStyles.bodyMedium
-                          .copyWith(color: Colors.white.withOpacity(0.8)),
+                      'REWARD POINTS',
+                      style: AppTextStyles.caption1.copyWith(
+                        color: Colors.white.withOpacity(0.78),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Redeem section
-              PremiumCard(
+              AppSpacing.gapXl,
+              GlassCard(
+                borderRadius: AppRadius.allLg,
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Redeem points', style: AppTextStyles.h6),
-                    const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Use your reward points for discounts on your next purchase. 100 points = \u20B910 off.',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: points >= 100 ? () {} : null,
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: points >= 100
-                                ? AppColors.primary
-                                : Theme.of(context).dividerColor,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadius.allSm,
-                          ),
-                        ),
-                        child: Text(
-                          points >= 100 ? 'Redeem now' : 'Need 100+ points',
-                          style: AppTextStyles.labelLarge.copyWith(
-                            color: points >= 100
-                                ? AppColors.primary
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.4),
-                          ),
-                        ),
+                      'Redeem points',
+                      style: AppTextStyles.headline.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                    AppSpacing.gapSm,
+                    Text(
+                      'Use your reward points for discounts on your next '
+                      'purchase. 100 points = \u20B910 off.',
+                      style: AppTextStyles.footnote.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                    AppSpacing.gapLg,
+                    GlassButton.outline(
+                      label: canRedeem ? 'Redeem now' : 'Need 100+ points',
+                      // Unchanged from before: redemption is not wired to an
+                      // action yet, so this stays a no-op when enabled.
+                      onPressed: canRedeem ? () {} : null,
                     ),
                   ],
                 ),
@@ -270,13 +305,17 @@ class _RewardsTab extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const ShimmerLoading(),
-      error: (error, _) => EmptyState(
-        icon: AppIcons.warning_2,
-        title: 'Failed to load rewards',
-        ctaLabel: 'Retry',
-        ctaIcon: AppIcons.refresh,
-        onCta: () => ref.invalidate(userRewardPointsProvider),
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xxl),
+        child: GlassLoader(),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xxl),
+        child: GlassErrorState(
+          compact: true,
+          title: 'Failed to load rewards',
+          onRetry: () => ref.invalidate(userRewardPointsProvider),
+        ),
       ),
     );
   }

@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_sheet.dart';
-import '../../../core/widgets/premium_text_field.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/warnings_provider.dart';
 
+/// Warnings & suspensions — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over bare `Text` headings above columns of
+/// hand-built `Container` cards; the empty state was another bordered box; the
+/// appeal form opened in a `showPremiumSheet`.
+///
+/// New layout: collapsing large title; an active suspension gets its own
+/// red-edged card at the top (it is the most consequential thing on the
+/// screen) with the appeal action on it; warnings become rows carrying a
+/// severity chip; and a clear account shows the shared empty state instead of
+/// a custom box.
+///
+/// `userWarningsProvider`, `userSuspensionsProvider` and
+/// `appealNotifierProvider.submitAppeal` are unchanged.
 class WarningsScreen extends ConsumerWidget {
   const WarningsScreen({super.key});
 
@@ -22,227 +32,96 @@ class WarningsScreen extends ConsumerWidget {
     final warningsAsync = ref.watch(userWarningsProvider);
     final suspensionsAsync = ref.watch(userSuspensionsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Warnings & Suspensions', showBack: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Active Suspensions Section
-            suspensionsAsync.when(
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(
+            title: 'Warnings & suspensions',
+            showBack: true,
+          ),
+
+          // Active suspensions first — highest consequence.
+          SliverToBoxAdapter(
+            child: suspensionsAsync.when(
               data: (suspensions) {
                 if (suspensions.isEmpty) return const SizedBox.shrink();
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final s in suspensions)
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: _SuspensionCard(suspension: s),
+                        ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.all(AppSpacing.xl),
+                child: GlassLoader(size: 24),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ),
+
+          // Warnings.
+          SliverToBoxAdapter(
+            child: warningsAsync.when(
+              data: (warnings) {
+                if (warnings.isEmpty) {
+                  return const GlassEmptyState(
+                    icon: AppIcons.shield_tick,
+                    title: 'No warnings',
+                    message: 'Your account is in good standing.',
+                    compact: true,
+                  );
+                }
+                return GlassSection(
+                  title: 'Warnings',
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+                  ),
                   children: [
-                    Text(
-                      'Active Suspensions',
-                      style: AppTextStyles.h6.copyWith(color: AppColors.error),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    ...suspensions.map(
-                      (s) => _buildSuspensionCard(context, ref, s),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
+                    for (final w in warnings) _WarningRow(warning: w),
                   ],
                 );
               },
-              loading: () => const ShimmerLoading(height: 100),
-              error: (_, __) => _buildErrorText('Failed to load suspensions'),
-            ),
-            // Warnings Section
-            Text('Warnings', style: AppTextStyles.h6),
-            const SizedBox(height: AppSpacing.md),
-            warningsAsync.when(
-              data: (warnings) {
-                if (warnings.isEmpty) {
-                  return _buildEmptyState(context);
-                }
-                return Column(
-                  children: warnings
-                      .map((w) => _buildWarningCard(context, w))
-                      .toList(),
-                );
-              },
-              loading: () => const ShimmerLoading(height: 216),
-              error: (_, __) => _buildErrorText('Failed to load warnings'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSuspensionCard(
-    BuildContext context,
-    WidgetRef ref,
-    Map<String, dynamic> suspension,
-  ) {
-    final reason = suspension['reason'] ?? 'No reason provided';
-    final startsAt = suspension['starts_at'] != null
-        ? DateFormat('MMM dd, yyyy')
-            .format(DateTime.parse(suspension['starts_at']))
-        : 'Unknown';
-    final endsAt = suspension['ends_at'] != null
-        ? DateFormat('MMM dd, yyyy').format(DateTime.parse(suspension['ends_at']))
-        : 'Indefinite';
-    final appealStatus = suspension['appeal_status'] ?? 'none';
-    final suspensionId = suspension['id'] as String;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.05),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: AppColors.error.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(AppIcons.warning_2, color: AppColors.error, size: 20),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  'Account Suspended',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                  ),
-                ),
+              loading: () => const Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: GlassLoader(),
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            reason,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Duration: $startsAt - $endsAt',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (appealStatus == 'none')
-            PremiumButton(
-              label: 'Submit appeal',
-              variant: PremiumButtonVariant.outline,
-              icon: AppIcons.message_text,
-              onPressed: () =>
-                  _showAppealBottomSheet(context, ref, suspensionId),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm + 2, vertical: AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: _getAppealStatusColor(appealStatus).withOpacity(0.1),
-                borderRadius: AppRadius.allSm,
+              error: (_, __) => GlassErrorState(
+                compact: true,
+                title: 'Failed to load warnings',
+                onRetry: () => ref.invalidate(userWarningsProvider),
               ),
-              child: Text(
-                'Appeal: ${appealStatus[0].toUpperCase()}${appealStatus.substring(1).toLowerCase()}',
-                style: AppTextStyles.labelSmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: _getAppealStatusColor(appealStatus),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWarningCard(BuildContext context, Map<String, dynamic> warning) {
-    final reason = warning['reason'] ?? 'No reason provided';
-    final severity = warning['severity'] ?? 'low';
-    final createdAt = warning['created_at'] != null
-        ? DateFormat('MMM dd, yyyy')
-            .format(DateTime.parse(warning['created_at']))
-        : 'Unknown';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSeverityBadge(severity),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reason,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  createdAt,
-                  style: AppTextStyles.caption.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.4),
-                  ),
-                ),
-              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSeverityBadge(String severity) {
-    Color color;
-    switch (severity) {
-      case 'high':
-        color = AppColors.error;
-        break;
-      case 'medium':
-        color = AppColors.primary;
-        break;
-      default:
-        color = AppColors.warning;
-    }
+class _SuspensionCard extends ConsumerWidget {
+  const _SuspensionCard({required this.suspension});
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: AppRadius.allSm,
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        severity[0].toUpperCase() + severity.substring(1).toLowerCase(),
-        style: AppTextStyles.labelSmall.copyWith(
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
-    );
-  }
+  final Map<String, dynamic> suspension;
 
-  Color _getAppealStatusColor(String status) {
+  static Color _appealColor(String status) {
     switch (status) {
       case 'pending':
         return AppColors.warning;
@@ -255,103 +134,178 @@ class WarningsScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xxl),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reason = (suspension['reason'] ?? 'No reason provided').toString();
+    final startsAt = suspension['starts_at'] != null
+        ? DateFormat('MMM dd, yyyy')
+            .format(DateTime.parse(suspension['starts_at']))
+        : 'Unknown';
+    final endsAt = suspension['ends_at'] != null
+        ? DateFormat('MMM dd, yyyy')
+            .format(DateTime.parse(suspension['ends_at']))
+        : 'Indefinite';
+    final appealStatus = (suspension['appeal_status'] ?? 'none').toString();
+    final suspensionId = suspension['id'] as String;
+
+    return GlassCard(
+      borderRadius: AppRadius.allLg,
+      rim: AppColors.error.withOpacity(0.32),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(
-            AppIcons.shield_tick,
-            size: 48,
-            color: AppColors.success,
+          Row(
+            children: [
+              const GlassIconBubble(
+                icon: AppIcons.warning_2,
+                color: AppColors.error,
+                size: 36,
+                iconSize: 18,
+              ),
+              AppSpacing.gapMd,
+              Expanded(
+                child: Text(
+                  'Account suspended',
+                  style: AppTextStyles.headline.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          AppSpacing.gapMd,
           Text(
-            'No warnings',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+            reason,
+            style: AppTextStyles.subheadline.copyWith(
+              color: AppColors.textPrimary,
+              height: 1.45,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          AppSpacing.gapSm,
           Text(
-            'Your account is in good standing',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
+            'Duration: $startsAt — $endsAt',
+            style: AppTextStyles.footnote
+                .copyWith(color: AppColors.textSecondary),
           ),
+          AppSpacing.gapLg,
+          if (appealStatus == 'none')
+            GlassButton.outline(
+              label: 'Submit appeal',
+              icon: AppIcons.message_text,
+              onPressed: () =>
+                  _showAppealSheet(context, ref, suspensionId),
+            )
+          else
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GlassChip.status(
+                label: 'Appeal: '
+                    '${appealStatus[0].toUpperCase()}'
+                    '${appealStatus.substring(1).toLowerCase()}',
+                color: _appealColor(appealStatus),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorText(String message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Text(
-        message,
-        style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
-      ),
-    );
-  }
-
-  void _showAppealBottomSheet(
+  void _showAppealSheet(
     BuildContext context,
     WidgetRef ref,
     String suspensionId,
   ) {
     final controller = TextEditingController();
 
-    showPremiumSheet<void>(
+    showGlassSheet<void>(
       context: context,
       title: 'Submit appeal',
+      subtitle: 'Reviewed by the moderation team',
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Explain why you believe this suspension should be lifted.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            style: AppTextStyles.subheadline.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.45,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          PremiumTextField.multiline(
+          AppSpacing.gapLg,
+          GlassTextField.multiline(
             controller: controller,
             hint: 'Write your appeal...',
             minLines: 4,
             maxLines: 6,
           ),
-          const SizedBox(height: AppSpacing.lg),
+          AppSpacing.gapLg,
           Consumer(
-            builder: (context, ref, _) {
-              final appealState = ref.watch(appealNotifierProvider);
-              return PremiumButton(
-                label: appealState.isLoading ? 'Submitting...' : 'Submit appeal',
-                gradient: true,
+            builder: (sheetContext, innerRef, _) {
+              final appealState = innerRef.watch(appealNotifierProvider);
+              return GlassButton(
+                label: 'Submit appeal',
                 loading: appealState.isLoading,
+                size: GlassButtonSize.large,
                 onPressed: appealState.isLoading
                     ? null
                     : () {
                         if (controller.text.trim().isNotEmpty) {
-                          ref
+                          innerRef
                               .read(appealNotifierProvider.notifier)
                               .submitAppeal(
                                 suspensionId: suspensionId,
                                 appealText: controller.text.trim(),
                               );
-                          Navigator.pop(context);
+                          Navigator.pop(sheetContext);
                         }
                       },
               );
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _WarningRow extends StatelessWidget {
+  const _WarningRow({required this.warning});
+
+  final Map<String, dynamic> warning;
+
+  static Color _severityColor(String severity) {
+    switch (severity) {
+      case 'high':
+        return AppColors.error;
+      case 'medium':
+        return AppColors.primary;
+      default:
+        return AppColors.warning;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reason = (warning['reason'] ?? 'No reason provided').toString();
+    final severity = (warning['severity'] ?? 'low').toString();
+    final createdAt = warning['created_at'] != null
+        ? DateFormat('MMM dd, yyyy')
+            .format(DateTime.parse(warning['created_at']))
+        : 'Unknown';
+    final color = _severityColor(severity);
+
+    return GlassRow(
+      icon: AppIcons.flag,
+      iconColor: color,
+      title: reason,
+      subtitle: createdAt,
+      showChevron: false,
+      trailing: GlassChip.status(
+        label: severity[0].toUpperCase() + severity.substring(1).toLowerCase(),
+        color: color,
       ),
     );
   }

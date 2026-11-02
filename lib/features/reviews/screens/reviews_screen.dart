@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -8,17 +7,24 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_card.dart';
-import '../../../core/widgets/premium_sheet.dart';
-import '../../../core/widgets/premium_text_field.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/reviews_provider.dart';
 import '../widgets/review_card.dart';
 import '../widgets/star_rating_widget.dart';
 
+/// Reviews — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a `ListView` whose first child was a
+/// `PremiumCard` showing a bare average number, with a
+/// `FloatingActionButton.extended` overlapping the list.
+///
+/// New layout: collapsing large title carrying the review count; the average
+/// promoted into a summary card that pairs the number with its star row and
+/// total; and the add action as a pill pinned above the safe area rather than a
+/// floating button that covers the last review.
+///
+/// `reviewsProvider`, `reviewNotifierProvider.submitReview` and the
+/// `ReviewsParam` keys are unchanged.
 class ReviewsScreen extends ConsumerStatefulWidget {
   final String targetId;
   final String targetType;
@@ -34,89 +40,98 @@ class ReviewsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
+  ReviewsParam get _param => ReviewsParam(targetId: widget.targetId);
+
   @override
   Widget build(BuildContext context) {
-    final param = ReviewsParam(
-      targetId: widget.targetId,
-    );
-    final reviewsAsync = ref.watch(reviewsProvider(param));
+    final reviewsAsync = ref.watch(reviewsProvider(_param));
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Reviews', showBack: true),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddReviewSheet(context),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(AppIcons.edit, color: Colors.white, size: 20),
-        label: Text(
-          'Add review',
-          style: AppTextStyles.labelLarge.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      body: reviewsAsync.when(
-        data: (reviews) {
-          if (reviews.isEmpty) {
-            return _buildEmptyState();
-          }
-          return _buildContent(reviews);
-        },
-        loading: () => const ShimmerLoading(),
-        error: (error, _) => _buildErrorState(ErrorUtils.sanitize(error)),
-      ),
-    );
-  }
-
-  Widget _buildContent(List<Map<String, dynamic>> reviews) {
-    // Calculate average rating
-    double averageRating = 0.0;
-    if (reviews.isNotEmpty) {
-      final totalRating = reviews.fold<int>(
-        0,
-        (sum, r) => sum + ((r['rating'] as int?) ?? 0),
-      );
-      averageRating = totalRating / reviews.length;
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        // Average rating card
-        _buildAverageRatingCard(averageRating, reviews.length),
-        const SizedBox(height: AppSpacing.xl),
-        // Review list
-        ...reviews.map(
-          (review) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: ReviewCard(review: review),
-          ),
-        ),
-        const SizedBox(height: 60),
-      ],
-    );
-  }
-
-  Widget _buildAverageRatingCard(double average, int count) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
         children: [
-          Text(
-            average.toStringAsFixed(1),
-            style: AppTextStyles.h1.copyWith(
-              color: AppColors.primary,
+          CustomScrollView(
+            slivers: [
+              GlassLargeTitleHeader(
+                title: 'Reviews',
+                showBack: true,
+                subtitle: reviewsAsync.maybeWhen(
+                  data: (r) => r.isEmpty
+                      ? null
+                      : '${r.length} ${r.length == 1 ? 'review' : 'reviews'}',
+                  orElse: () => null,
+                ),
+              ),
+              reviewsAsync.when(
+                data: (reviews) {
+                  if (reviews.isEmpty) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: GlassEmptyState(
+                        icon: AppIcons.star_1,
+                        title: 'No reviews yet',
+                        message: 'Be the first to leave a review.',
+                        actionLabel: 'Write a review',
+                        onAction: () => _showAddReviewSheet(context),
+                      ),
+                    );
+                  }
+                  return _reviewsSliver(reviews);
+                },
+                loading: () => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassLoader(),
+                ),
+                error: (error, _) => SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassErrorState(
+                    title: 'Failed to load reviews',
+                    message: ErrorUtils.sanitize(error),
+                    onRetry: () => ref.invalidate(reviewsProvider(_param)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: 'Write a review',
+              icon: AppIcons.edit,
+              onPressed: () => _showAddReviewSheet(context),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          StarRatingCompact(rating: average, size: 24),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            '$count ${count == 1 ? 'review' : 'reviews'}',
-            style: AppTextStyles.bodySmall,
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _reviewsSliver(List<Map<String, dynamic>> reviews) {
+    final total = reviews.fold<int>(
+      0,
+      (sum, r) => sum + ((r['rating'] as int?) ?? 0),
+    );
+    final average = reviews.isEmpty ? 0.0 : total / reviews.length;
+
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        96,
+      ),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          _AverageCard(average: average, count: reviews.length),
+          AppSpacing.gapLg,
+          for (final review in reviews)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: RepaintBoundary(child: ReviewCard(review: review)),
+            ),
+        ]),
       ),
     );
   }
@@ -125,38 +140,38 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     int selectedRating = 0;
     final commentController = TextEditingController();
 
-    showPremiumSheet<void>(
+    showGlassSheet<void>(
       context: context,
       title: 'Write a review',
+      subtitle: 'Your rating helps others decide',
       child: StatefulBuilder(
-        builder: (context, setModalState) {
+        builder: (sheetContext, setModalState) {
           return Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(
                 child: StarRatingWidget(
                   rating: selectedRating,
-                  size: 36,
-                  onChanged: (rating) {
-                    setModalState(() => selectedRating = rating);
-                  },
+                  size: 38,
+                  onChanged: (rating) =>
+                      setModalState(() => selectedRating = rating),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              PremiumTextField.multiline(
+              AppSpacing.gapLg,
+              GlassTextField.multiline(
                 controller: commentController,
                 hint: 'Share your experience...',
                 minLines: 4,
                 maxLines: 6,
               ),
-              const SizedBox(height: AppSpacing.xl),
-              PremiumButton(
+              AppSpacing.gapXl,
+              GlassButton(
                 label: 'Submit review',
-                gradient: true,
+                size: GlassButtonSize.large,
                 onPressed: selectedRating > 0
                     ? () => _submitReview(
-                          context,
+                          sheetContext,
                           selectedRating,
                           commentController.text,
                         )
@@ -177,7 +192,6 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     final success =
         await ref.read(reviewNotifierProvider.notifier).submitReview(
               targetId: widget.targetId,
-              
               rating: rating,
               comment: comment.trim(),
             );
@@ -187,55 +201,55 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     Navigator.of(sheetContext).pop();
 
     if (success) {
-      ref.invalidate(reviewsProvider(ReviewsParam(
-        targetId: widget.targetId,
-        
-      )));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Review submitted!'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.allSm,
-          ),
-        ),
+      ref.invalidate(reviewsProvider(_param));
+      showGlassSnackBar(
+        context,
+        message: 'Review submitted!',
+        tone: GlassToastTone.success,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to submit review'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.allSm,
-          ),
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Failed to submit review',
+        tone: GlassToastTone.error,
       );
     }
   }
+}
 
-  Widget _buildEmptyState() {
-    return const EmptyState(
-      icon: AppIcons.star_1,
-      title: 'No reviews yet',
-      subtitle: 'Be the first to leave a review',
-    );
-  }
+/// Average rating summary.
+class _AverageCard extends StatelessWidget {
+  const _AverageCard({required this.average, required this.count});
 
-  Widget _buildErrorState(String error) {
-    return EmptyState(
-      icon: AppIcons.warning_2,
-      title: 'Failed to load reviews',
-      subtitle: error,
-      ctaLabel: 'Retry',
-      ctaIcon: AppIcons.refresh,
-      onCta: () {
-        ref.invalidate(reviewsProvider(ReviewsParam(
-          targetId: widget.targetId,
-          
-        )));
-      },
+  final double average;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      borderRadius: AppRadius.allXl,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        children: [
+          Text(
+            average.toStringAsFixed(1),
+            style: AppTextStyles.largeTitle.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+              fontSize: 44,
+              letterSpacing: -1,
+            ),
+          ),
+          AppSpacing.gapSm,
+          StarRatingCompact(rating: average, size: 22),
+          AppSpacing.gapSm,
+          Text(
+            '$count ${count == 1 ? 'review' : 'reviews'}',
+            style: AppTextStyles.footnote
+                .copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -5,16 +5,25 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/admin_notify.dart';
-import '../../../services/supabase_service.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_card.dart';
+import '../../../core/utils/admin_notify.dart';
+import '../../../core/widgets/glass/glass.dart';
+import '../../../services/supabase_service.dart';
 
-/// Help & Support screen with real contact options: email support, a short
-/// FAQ, and a shortcut to the in-app inbox to message the team.
+/// Help & Support — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a `ListView` of two `PremiumCard` contact
+/// tiles followed by Material `ExpansionTile`s for the FAQ, each with its own
+/// `Theme` override to hide the divider it would otherwise draw.
+///
+/// New layout: collapsing large title; contact options as a grouped section so
+/// the two routes to support read as one choice; and the FAQ as expandable
+/// rows inside their own section, without the per-tile Theme hack.
+///
+/// Email launch, the support-admin lookup, the `/messages/{adminId}` route and
+/// all copy are unchanged.
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
@@ -33,12 +42,10 @@ class HelpSupportScreen extends StatelessWidget {
       launched = false;
     }
     if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not open email app. Write to $_supportEmail'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Could not open email app. Write to $_supportEmail',
+        tone: GlassToastTone.error,
       );
     }
   }
@@ -47,28 +54,25 @@ class HelpSupportScreen extends StatelessWidget {
   /// team straight from Help (previously this only opened the user's own
   /// inbox with nobody selected).
   Future<void> _messageAdmin(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     if (SupabaseService.currentUser == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to message support.'),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Please sign in to message support.',
+        tone: GlassToastTone.warning,
       );
       return;
     }
 
     final adminId = await AdminNotify.supportAdminId();
     if (adminId == null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-              'Support chat is unavailable right now. Email us at $_supportEmail'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      if (!context.mounted) return;
+      showGlassSnackBar(
+        context,
+        message: 'Support chat is unavailable right now. '
+            'Email us at $_supportEmail',
+        tone: GlassToastTone.error,
       );
       return;
     }
@@ -77,138 +81,88 @@ class HelpSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Help & Support',
-        showBack: true,
-        onBack: () => context.pop(),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        children: [
-          Text(
-            'We\'re here to help',
-            style: AppTextStyles.h5.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Reach out to the Campster team and we\'ll get back to you as soon as we can.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl - 4),
-
-          // Contact options
-          _ContactCard(
-            icon: AppIcons.sms,
-            title: 'Email Support',
-            subtitle: _supportEmail,
-            onTap: () => _emailSupport(context),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _ContactCard(
-            icon: AppIcons.message,
-            title: 'Message us',
-            subtitle: 'Chat directly with the Campster admin',
-            onTap: () => _messageAdmin(context),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          GlassLargeTitleHeader(
+            title: 'Help & support',
+            subtitle: "We're here to help",
+            showBack: true,
+            onBack: () => context.pop(),
           ),
 
-          const SizedBox(height: AppSpacing.xxl - 4),
-          Text(
-            'Frequently Asked Questions',
-            style: AppTextStyles.h6.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          const _FaqTile(
-            question: 'How do I apply to a campaign?',
-            answer:
-                'Open a campaign from the Campaigns tab and tap "Apply". Fill in '
-                'your details and pitch, then submit. The brand will review your '
-                'application and respond.',
-          ),
-          const _FaqTile(
-            question: 'When do I get paid for a campaign?',
-            answer:
-                'Payouts are released to your wallet after the brand approves '
-                'your submission. You can withdraw available balance from the '
-                'Wallet screen.',
-          ),
-          const _FaqTile(
-            question: 'How do I contact a brand or creator?',
-            answer:
-                'Use the Inbox tab. Tap the new-chat button to search for a user '
-                'by name or handle and start a conversation.',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ContactCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ContactCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return PremiumCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: AppRadius.allMd,
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 22),
-          ),
-          const SizedBox(width: AppSpacing.md + 2),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
+              child: Text(
+                "Reach out to the Campster team and we'll get back to you as "
+                'soon as we can.',
+                style: AppTextStyles.subheadline.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
+              ),
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Contact us',
+              children: [
+                GlassRow(
+                  icon: AppIcons.sms,
+                  title: 'Email support',
+                  subtitle: _supportEmail,
+                  onTap: () => _emailSupport(context),
+                ),
+                GlassRow(
+                  icon: AppIcons.message,
+                  title: 'Message us',
+                  subtitle: 'Chat directly with the Campster admin',
+                  onTap: () => _messageAdmin(context),
                 ),
               ],
             ),
           ),
-          Icon(
-            AppIcons.arrow_right_3,
-            size: 18,
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Frequently asked questions',
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+              ),
+              children: const [
+                _FaqRow(
+                  question: 'How do I apply to a campaign?',
+                  answer:
+                      'Open a campaign from the Campaigns tab and tap "Apply". '
+                      'Fill in your details and pitch, then submit. The brand '
+                      'will review your application and respond.',
+                ),
+                _FaqRow(
+                  question: 'When do I get paid for a campaign?',
+                  answer:
+                      'Payouts are released to your wallet after the brand '
+                      'approves your submission. You can withdraw available '
+                      'balance from the Wallet screen.',
+                ),
+                _FaqRow(
+                  question: 'How do I contact a brand or creator?',
+                  answer:
+                      'Use the Inbox tab. Tap the new-chat button to search '
+                      'for a user by name or handle and start a conversation.',
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -216,40 +170,90 @@ class _ContactCard extends StatelessWidget {
   }
 }
 
-class _FaqTile extends StatelessWidget {
+/// Expandable FAQ row.
+///
+/// Hand-rolled rather than an `ExpansionTile`: the Material tile draws its own
+/// divider and arrow chrome that had to be suppressed with a `Theme` override
+/// at every call-site.
+class _FaqRow extends StatefulWidget {
+  const _FaqRow({required this.question, required this.answer});
+
   final String question;
   final String answer;
 
-  const _FaqTile({required this.question, required this.answer});
+  @override
+  State<_FaqRow> createState() => _FaqRowState();
+}
+
+class _FaqRowState extends State<_FaqRow> {
+  bool _open = false;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Theme(
-      data: theme.copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: AppSpacing.md),
-        title: Text(
-          question,
-          style: AppTextStyles.labelLarge.copyWith(
-            color: theme.colorScheme.onSurface,
-          ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _open = !_open),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
         ),
-        iconColor: AppColors.primary,
-        collapsedIconColor: theme.colorScheme.onSurface.withOpacity(0.5),
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              answer,
-              style: AppTextStyles.bodySmall.copyWith(
-                height: 1.4,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.question,
+                    style: AppTextStyles.callout.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                AppSpacing.gapSm,
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  child: const Icon(
+                    AppIcons.arrow_down_1,
+                    size: 18,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: _open
+                  ? Padding(
+                      padding: const EdgeInsets.only(
+                        top: AppSpacing.sm,
+                        right: AppSpacing.lg,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceAlt,
+                          borderRadius: AppRadius.allMd,
+                        ),
+                        child: Text(
+                          widget.answer,
+                          style: AppTextStyles.footnote.copyWith(
+                            color: AppColors.textSecondary,
+                            height: 1.55,
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+          ],
+        ),
       ),
     );
   }

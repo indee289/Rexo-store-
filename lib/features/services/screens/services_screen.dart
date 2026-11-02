@@ -7,12 +7,22 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_card.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/services_provider.dart';
 
+/// Creator services — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a `GridView.count` of two tall
+/// `PremiumCard` tiles, then a bare `Text` heading above a column of listing
+/// cards, each with a hand-built type badge. Tapping a listing opened a raw
+/// `showModalBottomSheet` that drew its own grab handle.
+///
+/// New layout: collapsing large title; the two tools as a labelled tile grid;
+/// the marketplace as a proper titled section of rows carrying the price as
+/// trailing detail; and the detail as a glass sheet.
+///
+/// `activeServicesProvider`, the `take(10)` cap and both tool routes are
+/// unchanged.
 class ServicesScreen extends ConsumerWidget {
   const ServicesScreen({super.key});
 
@@ -20,261 +30,175 @@ class ServicesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final servicesAsync = ref.watch(activeServicesProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Creator services', showBack: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Service tools grid
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppSpacing.md,
-              crossAxisSpacing: AppSpacing.md,
-              childAspectRatio: 1.15,
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(
+            title: 'Creator services',
+            showBack: true,
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Tools',
+              separated: false,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
               children: [
-                _buildServiceCard(
-                  context,
-                  icon: AppIcons.document_text,
-                  title: 'Media kit',
-                  subtitle: 'Generate your media kit',
-                  color: AppColors.roleBrand,
-                  onTap: () => context.push('/services/media-kit'),
-                ),
-                _buildServiceCard(
-                  context,
-                  icon: AppIcons.calculator,
-                  title: 'Rate calculator',
-                  subtitle: 'Find your ideal rate',
-                  color: AppColors.success,
-                  onTap: () => context.push('/services/rate-calculator'),
+                GlassTileGrid(
+                  columns: 2,
+                  tiles: [
+                    GlassTile(
+                      icon: AppIcons.document_text,
+                      label: 'Media kit',
+                      badge: 'Generate your kit',
+                      color: AppColors.accentPurple,
+                      onTap: () => context.push('/services/media-kit'),
+                    ),
+                    GlassTile(
+                      icon: AppIcons.calculator,
+                      label: 'Rate calculator',
+                      badge: 'Find your rate',
+                      color: AppColors.success,
+                      onTap: () => context.push('/services/rate-calculator'),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xl),
+          ),
 
-            // UGC Marketplace listings
-            Text('UGC marketplace', style: AppTextStyles.h6),
-            const SizedBox(height: AppSpacing.md),
-            servicesAsync.when(
-              data: (services) {
-                if (services.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(AppSpacing.xl),
-                    child: EmptyState(
-                      icon: AppIcons.shop,
-                      title: 'No services listed yet',
-                    ),
-                  );
-                }
-                return Column(
-                  children: services.take(10).map((service) {
-                    return _buildServiceListingCard(context, service);
-                  }).toList(),
+          servicesAsync.when(
+            data: (services) {
+              if (services.isEmpty) {
+                return const SliverToBoxAdapter(
+                  child: GlassEmptyState(
+                    icon: AppIcons.shop,
+                    title: 'No services listed yet',
+                    message: 'Creator listings will appear here.',
+                    compact: true,
+                  ),
                 );
-              },
-              loading: () => const ShimmerCard(height: 120),
-              error: (error, _) => EmptyState(
-                icon: AppIcons.warning_2,
-                title: 'Failed to load services',
-                ctaLabel: 'Retry',
-                ctaIcon: AppIcons.refresh,
-                onCta: () => ref.invalidate(activeServicesProvider),
+              }
+              return SliverToBoxAdapter(
+                child: GlassSection(
+                  title: 'UGC marketplace',
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+                  ),
+                  children: [
+                    for (final s in services.take(10))
+                      _ServiceRow(service: s),
+                  ],
+                ),
+              );
+            },
+            loading: () => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: GlassLoader(),
               ),
             ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServiceCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return PremiumCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: AppRadius.allMd,
+            error: (error, _) => SliverToBoxAdapter(
+              child: GlassErrorState(
+                compact: true,
+                title: 'Failed to load services',
+                onRetry: () => ref.invalidate(activeServicesProvider),
+              ),
             ),
-            child: Icon(icon, size: 28, color: color),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            title,
-            style: AppTextStyles.labelLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            subtitle,
-            style: AppTextStyles.caption,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildServiceListingCard(
-      BuildContext context, Map<String, dynamic> service) {
+class _ServiceRow extends StatelessWidget {
+  const _ServiceRow({required this.service});
+
+  final Map<String, dynamic> service;
+
+  @override
+  Widget build(BuildContext context) {
     final title = service['title'] as String? ?? 'Service';
     final description = service['description'] as String? ?? '';
     final price = (service['price'] as num?)?.toDouble() ?? 0.0;
     final serviceType = service['service_type'] as String? ?? '';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: PremiumCard(
-        onTap: () => _showServiceDetail(context, service),
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm + 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: AppRadius.allSm,
-              ),
-              child: const Icon(
-                AppIcons.briefcase,
-                size: 22,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md + 2),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (description.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      description,
-                      style: AppTextStyles.caption,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (serviceType.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.08),
-                        borderRadius: AppRadius.allSm,
-                      ),
-                      child: Text(
-                        serviceType,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.7),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Text(
-              '\u20B9${price.toStringAsFixed(0)}',
-              style: AppTextStyles.h6.copyWith(
-                color: AppColors.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
+    final subtitle = [
+      if (serviceType.isNotEmpty) serviceType,
+      if (description.isNotEmpty) description,
+    ].join('  ·  ');
+
+    return GlassRow(
+      icon: AppIcons.briefcase,
+      title: title,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      trailingText: '\u20B9${price.toStringAsFixed(0)}',
+      onTap: () => _showDetail(context),
     );
   }
 
-  void _showServiceDetail(BuildContext context, Map<String, dynamic> service) {
+  void _showDetail(BuildContext context) {
     final title = service['title'] as String? ?? 'Service';
     final description = service['description'] as String? ?? '';
     final price = (service['price'] as num?)?.toDouble() ?? 0.0;
     final serviceType = service['service_type'] as String? ?? '';
 
-    showModalBottomSheet<void>(
+    showGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      title: title,
+      subtitle: serviceType.isEmpty ? null : serviceType,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (description.isNotEmpty) ...[
+            Text(
+              description,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(title, style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.w700)),
-            if (serviceType.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(serviceType, style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
-            ],
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(description, style: AppTextStyles.bodyMedium),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            Row(
+            AppSpacing.gapLg,
+          ],
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt,
+              borderRadius: AppRadius.allMd,
+            ),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Price', style: AppTextStyles.labelLarge),
-                Text('₹${price.toStringAsFixed(0)}',
-                    style: AppTextStyles.h5.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
+                Text(
+                  'Price',
+                  style: AppTextStyles.callout
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                Text(
+                  '\u20B9${price.toStringAsFixed(0)}',
+                  style: AppTextStyles.title2.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

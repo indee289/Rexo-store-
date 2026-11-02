@@ -3,15 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/addresses_provider.dart';
 
+/// Add / edit address — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a flat column where every field was
+/// wrapped in a local `_buildTextField` helper that printed a bare `Text`
+/// label above a `PremiumTextField`, with the default-address toggle as a
+/// hand-built `Container` holding a `Switch.adaptive`.
+///
+/// New layout: collapsing large title; the form split into two titled
+/// sections (contact, then address) so a seven-field form reads as two short
+/// ones; the field labels come from the shared text field; the toggle is a
+/// standard switch row; and the save action is pinned so it is reachable
+/// without scrolling to the bottom of the form.
+///
+/// `addressesActionsProvider.addAddress` / `updateAddress`, every payload key
+/// and all validation rules are unchanged.
 class AddAddressScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingAddress;
 
@@ -65,171 +75,153 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: _isEditing ? 'Edit Address' : 'Add Address',
-        showBack: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField(
-                controller: _nameController,
-                label: 'Full Name',
-                hint: 'Enter full name',
-                icon: AppIcons.user,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Name is required' : null,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildTextField(
-                controller: _phoneController,
-                label: 'Phone Number',
-                hint: 'Enter phone number',
-                icon: AppIcons.call,
-                keyboardType: TextInputType.phone,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Phone is required' : null,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildTextField(
-                controller: _line1Controller,
-                label: 'Address Line 1',
-                hint: 'House no., Street, Area',
-                icon: AppIcons.location,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Address is required' : null,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildTextField(
-                controller: _line2Controller,
-                label: 'Address Line 2 (Optional)',
-                hint: 'Landmark, Building name',
-                icon: AppIcons.building,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _cityController,
-                      label: 'City',
-                      hint: 'City',
-                      icon: AppIcons.buildings,
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _stateController,
-                      label: 'State',
-                      hint: 'State',
-                      icon: AppIcons.map,
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildTextField(
-                controller: _pincodeController,
-                label: 'Pincode',
-                hint: '6-digit pincode',
-                icon: AppIcons.hashtag,
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Pincode is required';
-                  if (v.length != 6) return 'Enter valid 6-digit pincode';
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              // Default toggle
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: AppRadius.allMd,
-                  border: Border.all(color: Theme.of(context).dividerColor),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: CustomScrollView(
+              slivers: [
+                GlassLargeTitleHeader(
+                  title: _isEditing ? 'Edit address' : 'Add address',
+                  showBack: true,
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      AppIcons.star_1,
-                      size: 20,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.6),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        'Set as default address',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    Switch.adaptive(
-                      value: _isDefault,
-                      onChanged: (v) => setState(() => _isDefault = v),
-                      activeColor: AppColors.primary,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              // Save button
-              PremiumButton(
-                label: _isEditing ? 'Update address' : 'Save address',
-                gradient: true,
-                loading: _isSaving,
-                onPressed: _isSaving ? null : _saveAddress,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.labelLarge.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        GlassTextField(
+                          controller: _nameController,
+                          label: 'Full name',
+                          hint: 'Enter full name',
+                          prefixIcon: AppIcons.user,
+                          textCapitalization: TextCapitalization.words,
+                          validator: (v) => v == null || v.isEmpty
+                              ? 'Name is required'
+                              : null,
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _phoneController,
+                          label: 'Phone number',
+                          hint: 'Enter phone number',
+                          prefixIcon: AppIcons.call,
+                          keyboardType: TextInputType.phone,
+                          validator: (v) => v == null || v.isEmpty
+                              ? 'Phone is required'
+                              : null,
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _line1Controller,
+                          label: 'Address line 1',
+                          hint: 'House no., street, area',
+                          prefixIcon: AppIcons.location,
+                          validator: (v) => v == null || v.isEmpty
+                              ? 'Address is required'
+                              : null,
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _line2Controller,
+                          label: 'Address line 2 (optional)',
+                          hint: 'Landmark, building name',
+                          prefixIcon: AppIcons.building,
+                        ),
+                        AppSpacing.gapLg,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: GlassTextField(
+                                controller: _cityController,
+                                label: 'City',
+                                hint: 'City',
+                                prefixIcon: AppIcons.buildings,
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                            ),
+                            AppSpacing.gapMd,
+                            Expanded(
+                              child: GlassTextField(
+                                controller: _stateController,
+                                label: 'State',
+                                hint: 'State',
+                                prefixIcon: AppIcons.map,
+                                validator: (v) =>
+                                    v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _pincodeController,
+                          label: 'Pincode',
+                          hint: '6-digit pincode',
+                          prefixIcon: AppIcons.hashtag,
+                          keyboardType: TextInputType.number,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Pincode is required';
+                            }
+                            if (v.length != 6) {
+                              return 'Enter valid 6-digit pincode';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                SliverToBoxAdapter(
+                  child: GlassSection(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      120,
+                    ),
+                    children: [
+                      GlassSwitchRow(
+                        icon: AppIcons.star_1,
+                        title: 'Set as default address',
+                        subtitle: 'Used first at checkout',
+                        value: _isDefault,
+                        onChanged: (v) => setState(() => _isDefault = v),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        PremiumTextField(
-          controller: controller,
-          hint: hint,
-          prefixIcon: icon,
-          keyboardType: keyboardType,
-          validator: validator,
-        ),
-      ],
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: _isEditing ? 'Update address' : 'Save address',
+              loading: _isSaving,
+              size: GlassButtonSize.large,
+              onPressed: _isSaving ? null : _saveAddress,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -270,31 +262,22 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
       );
     }
 
+    if (!mounted) return;
     setState(() => _isSaving = false);
 
-    if (mounted) {
-      if (success) {
-        context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditing ? 'Address updated' : 'Address saved',
-              style: AppTextStyles.bodyMedium,
-            ),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to save address. Try again.',
-              style: AppTextStyles.bodyMedium,
-            ),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+    if (success) {
+      context.pop();
+      showGlassSnackBar(
+        context,
+        message: _isEditing ? 'Address updated' : 'Address saved',
+        tone: GlassToastTone.success,
+      );
+    } else {
+      showGlassSnackBar(
+        context,
+        message: 'Failed to save address. Try again.',
+        tone: GlassToastTone.error,
+      );
     }
   }
 }

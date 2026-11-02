@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_chip.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/security_provider.dart';
 
+/// Security logs — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar`, then a filter strip in an opaque `Container`
+/// separated by a `Divider`, then a `ListView` of hand-built `Container` rows.
+/// The filter strip scrolled away with nothing, and the divider was the only
+/// thing separating it from the list.
+///
+/// New layout: the filter chips live in the header's pinned slot, so they stay
+/// reachable while the log scrolls under them, and the divider is gone — the
+/// header's own fill separates it. Entries are rows in one grouped section,
+/// with suspicious events carrying a red chip.
+///
+/// `securityLogsProvider`, `securityLogFilterProvider` and the event mapping
+/// are unchanged.
 class SecurityLogsScreen extends ConsumerWidget {
   const SecurityLogsScreen({super.key});
 
@@ -21,51 +30,68 @@ class SecurityLogsScreen extends ConsumerWidget {
     final logsAsync = ref.watch(securityLogsProvider);
     final activeFilter = ref.watch(securityLogFilterProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Security Logs', showBack: true),
-      body: Column(
-        children: [
-          // Filter chips
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-            color: Theme.of(context).colorScheme.surface,
-            child: Row(
-              children: [
-                _buildFilterChip(
-                    ref, 'All', SecurityLogFilter.all, activeFilter),
-                const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip(
-                    ref, 'Logins', SecurityLogFilter.logins, activeFilter),
-                const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip(ref, 'Suspicious',
-                    SecurityLogFilter.suspicious, activeFilter),
-              ],
+    const filters = [
+      SecurityLogFilter.all,
+      SecurityLogFilter.logins,
+      SecurityLogFilter.suspicious,
+    ];
+    const labels = ['All', 'Logins', 'Suspicious'];
+
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          GlassLargeTitleHeader(
+            title: 'Security logs',
+            showBack: true,
+            bottomHeight: 56,
+            bottom: GlassChipRow(
+              labels: labels,
+              selectedIndex: filters.indexOf(activeFilter),
+              onSelected: (i) => ref
+                  .read(securityLogFilterProvider.notifier)
+                  .state = filters[i],
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
             ),
           ),
-          Divider(height: 1, color: Theme.of(context).dividerColor),
-          // Logs list
-          Expanded(
-            child: logsAsync.when(
-              data: (logs) {
-                if (logs.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  itemCount: logs.length,
-                  itemBuilder: (context, index) =>
-                      _buildLogItem(context, logs[index]),
+          logsAsync.when(
+            data: (logs) {
+              if (logs.isEmpty) {
+                return const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassEmptyState(
+                    icon: AppIcons.shield_tick,
+                    title: 'No security events',
+                    message: 'Your security log is clear.',
+                  ),
                 );
-              },
-              loading: () => const Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: ShimmerLoading(height: 360),
-              ),
-              error: (error, _) => const EmptyState(
-                icon: AppIcons.warning_2,
+              }
+              return SliverToBoxAdapter(
+                child: GlassSection(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xxl,
+                  ),
+                  children: [
+                    for (final log in logs) _LogRow(log: log),
+                  ],
+                ),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassLoader(),
+            ),
+            error: (error, _) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassErrorState(
                 title: 'Failed to load security logs',
+                onRetry: () => ref.invalidate(securityLogsProvider),
               ),
             ),
           ),
@@ -73,164 +99,64 @@ class SecurityLogsScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildFilterChip(
-    WidgetRef ref,
-    String label,
-    SecurityLogFilter filter,
-    SecurityLogFilter activeFilter,
-  ) {
-    return PremiumChip(
-      label: label,
-      selected: filter == activeFilter,
-      onTap: () {
-        ref.read(securityLogFilterProvider.notifier).state = filter;
-      },
-    );
-  }
+class _LogRow extends StatelessWidget {
+  const _LogRow({required this.log});
 
-  Widget _buildLogItem(BuildContext context, Map<String, dynamic> log) {
-    final eventType = log['event_type'] ?? 'unknown';
-    final ipAddress = log['ip_address'] ?? 'Unknown IP';
-    final deviceInfo = log['device_info'] ?? '';
+  final Map<String, dynamic> log;
+
+  @override
+  Widget build(BuildContext context) {
+    final eventType = (log['event_type'] ?? 'unknown').toString();
+    final ipAddress = (log['ip_address'] ?? 'Unknown IP').toString();
+    final deviceInfo = (log['device_info'] ?? '').toString();
     final isSuspicious = log['is_suspicious'] == true;
     final createdAt = log['created_at'] != null
         ? DateFormat('MMM dd, yyyy HH:mm')
             .format(DateTime.parse(log['created_at']))
         : 'Unknown';
 
-    final eventConfig = _getEventConfig(context, eventType);
+    final config = _eventConfig(eventType);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(
-          color: isSuspicious
-              ? AppColors.error.withOpacity(0.3)
-              : Theme.of(context).dividerColor,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: eventConfig.color.withOpacity(0.1),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: Icon(
-              eventConfig.icon,
-              color: eventConfig.color,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        eventConfig.label,
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    if (isSuspicious)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xs + 2,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.1),
-                          borderRadius: AppRadius.allSm,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              AppIcons.warning_2,
-                              color: AppColors.error,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              'Suspicious',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'IP: $ipAddress',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.6),
-                  ),
-                ),
-                if (deviceInfo.toString().isNotEmpty)
-                  Text(
-                    deviceInfo.toString(),
-                    style: AppTextStyles.caption.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.4),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                const SizedBox(height: 2),
-                Text(
-                  createdAt,
-                  style: AppTextStyles.caption.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    final meta = [
+      'IP: $ipAddress',
+      if (deviceInfo.isNotEmpty) deviceInfo,
+      createdAt,
+    ].join('  ·  ');
+
+    return GlassRow(
+      icon: config.icon,
+      iconColor: isSuspicious ? AppColors.error : config.color,
+      title: config.label,
+      subtitle: meta,
+      showChevron: false,
+      trailing: isSuspicious
+          ? GlassChip.status(
+              label: 'Suspicious',
+              icon: AppIcons.warning_2,
+              color: AppColors.error,
+            )
+          : null,
     );
   }
 
-  _EventConfig _getEventConfig(BuildContext context, String eventType) {
+  static _EventConfig _eventConfig(String eventType) {
     switch (eventType) {
       case 'login':
-        return _EventConfig(
+        return const _EventConfig(
           icon: AppIcons.key,
           color: AppColors.success,
           label: 'Login',
         );
       case 'logout':
-        return _EventConfig(
+        return const _EventConfig(
           icon: AppIcons.logout,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          color: AppColors.textHint,
           label: 'Logout',
         );
       case 'failed_login':
-        return _EventConfig(
+        return const _EventConfig(
           icon: AppIcons.close_circle,
           color: AppColors.error,
           label: 'Failed login',
@@ -244,31 +170,27 @@ class SecurityLogsScreen extends ConsumerWidget {
       default:
         return _EventConfig(
           icon: AppIcons.shield_tick,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          label: eventType.replaceAll('_', ' ').split(' ').map(
-              (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}' : w
-            ).join(' '),
+          color: AppColors.textSecondary,
+          label: eventType
+              .replaceAll('_', ' ')
+              .split(' ')
+              .map((w) => w.isNotEmpty
+                  ? '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}'
+                  : w)
+              .join(' '),
         );
     }
-  }
-
-  Widget _buildEmptyState() {
-    return const EmptyState(
-      icon: AppIcons.shield_tick,
-      title: 'No security events',
-      subtitle: 'Your security log is clear',
-    );
   }
 }
 
 class _EventConfig {
-  final IconData icon;
-  final Color color;
-  final String label;
-
   const _EventConfig({
     required this.icon,
     required this.color,
     required this.label,
   });
+
+  final IconData icon;
+  final Color color;
+  final String label;
 }
