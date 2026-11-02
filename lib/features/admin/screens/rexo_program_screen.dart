@@ -114,6 +114,9 @@ class RexoProgramScreen extends ConsumerWidget {
     String status,
   ) async {
     try {
+      // `.eq` takes a non-nullable Object, so the id is checked before use
+      // rather than force-unwrapped.
+      if (id == null) return;
       await SupabaseService.client
           .from('rexo_program_applications')
           .update({'status': status}).eq('id', id);

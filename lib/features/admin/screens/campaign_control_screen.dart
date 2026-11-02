@@ -56,13 +56,18 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
     ref.invalidate(adminCampaignsProvider);
   }
 
-  void _setStatus(Object? id, String status) {
+  // `updateCampaignStatus` takes a String. The old code reached it with an
+  // untyped `campaign['id']`, which compiled only because `dynamic` bypasses
+  // the check; typing this parameter properly is what surfaced that.
+  void _setStatus(String id, String status) {
     ref.read(adminActionsProvider.notifier).updateCampaignStatus(id, status);
   }
 
   /// The four lifecycle transitions plus delete, as a sheet of real rows.
   void _showStatusSheet(Map<String, dynamic> campaign) {
-    final id = campaign['id'];
+    // Converted explicitly rather than passed as `dynamic`, so the types are
+    // checked here instead of failing at runtime.
+    final id = (campaign['id'] ?? '').toString();
     final title = campaign['title']?.toString() ?? 'this campaign';
 
     showGlassSheet<void>(
