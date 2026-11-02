@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -9,10 +8,26 @@ import 'package:uuid/uuid.dart';
 import '../../services/r2_storage_service.dart';
 import '../../services/supabase_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 import '../utils/error_utils.dart';
+import 'glass/glass.dart';
 
 /// A reusable image upload widget that picks an image from camera/gallery,
 /// uploads it to Cloudflare R2 Storage, and returns the public URL.
+///
+/// Rebuilt: the drop zone was a `Container` with its own radius and border, the
+/// label and every caption came from `GoogleFonts.poppins` at hardcoded sizes
+/// rather than the type scale, the source picker was a bare
+/// `showModalBottomSheet` of two `ListTile`s, and the failure path used a raw
+/// `ScaffoldMessenger`. It is now a `GlassCard` drop zone whose rim carries the
+/// upload state, type from `AppTextStyles`, a tile grid for the source picker
+/// and the shared toast.
+///
+/// The public API ([currentImageUrl], [storageFolder], [label],
+/// [onImageUploaded]), the picker options, the R2 path construction and the
+/// content-type table are all unchanged.
 class ImageUploadField extends StatefulWidget {
   final String? currentImageUrl;
   final String storageFolder;
@@ -42,32 +57,31 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     _uploadedUrl = widget.currentImageUrl;
   }
 
+  bool get _hasImage =>
+      _selectedFile != null ||
+      (_uploadedUrl != null && _uploadedUrl!.isNotEmpty);
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: colorScheme.onSurface,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
+          child: Text(
+            widget.label,
+            style: AppTextStyles.labelMedium
+                .copyWith(color: AppColors.textSecondary),
           ),
         ),
-        const SizedBox(height: 8),
-        GestureDetector(
+        GlassCard.bare(
           onTap: _isUploading ? null : _showImagePicker,
-          child: Container(
+          rim: _isUploading
+              ? AppColors.primaryRim
+              : (_hasImage ? AppColors.success.withOpacity(0.40) : null),
+          child: SizedBox(
             width: double.infinity,
             height: 160,
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
             child: _buildContent(),
           ),
         ),
@@ -77,90 +91,19 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
 
   Widget _buildContent() {
     if (_isUploading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.primary,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text('Uploading...'),
-          ],
-        ),
-      );
+      return const Center(child: GlassLoader(message: 'Uploading…', size: 26));
     }
 
     if (_selectedFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.file(
-              _selectedFile!,
-              fit: BoxFit.cover,
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: _showImagePicker,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    AppIcons.edit_2,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _preview(Image.file(_selectedFile!, fit: BoxFit.cover));
     }
 
     if (_uploadedUrl != null && _uploadedUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              _uploadedUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildPlaceholder(),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: _showImagePicker,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    AppIcons.edit_2,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-            ),
-          ],
+      return _preview(
+        Image.network(
+          _uploadedUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(),
         ),
       );
     }
@@ -168,81 +111,82 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     return _buildPlaceholder();
   }
 
-  Widget _buildPlaceholder() {
-    final colorScheme = Theme.of(context).colorScheme;
+  /// Image preview with a replace affordance in the corner.
+  Widget _preview(Widget image) {
+    return ClipRRect(
+      borderRadius: AppRadius.allLg,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          image,
+          Positioned(
+            top: AppSpacing.sm,
+            right: AppSpacing.sm,
+            child: GlassIconButton.filled(
+              icon: AppIcons.edit_2,
+              tooltip: 'Replace image',
+              size: 34,
+              iconSize: 17,
+              onTap: _showImagePicker,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildPlaceholder() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          AppIcons.gallery_add,
-          size: 40,
-          color: colorScheme.onSurface.withOpacity(0.4),
+        const GlassIconBubble(
+          icon: AppIcons.gallery_add,
+          size: 48,
+          iconSize: 24,
         ),
-        const SizedBox(height: 8),
+        AppSpacing.gapMd,
         Text(
           'Tap to upload image',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: colorScheme.onSurface.withOpacity(0.6),
+          style: AppTextStyles.subheadline.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
-          'Camera or Gallery',
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: colorScheme.onSurface.withOpacity(0.4),
-          ),
+          'Camera or gallery',
+          style: AppTextStyles.caption1.copyWith(color: AppColors.textHint),
         ),
       ],
     );
   }
 
   void _showImagePicker() {
-    showModalBottomSheet(
+    showGlassSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Select Image Source',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(AppIcons.camera, color: AppColors.primary),
-                title: Text(
-                  'Camera',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(AppIcons.gallery, color: AppColors.primary),
-                title: Text(
-                  'Gallery',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
+      title: 'Select image source',
+      child: Builder(
+        builder: (sheetContext) => GlassTileGrid(
+          columns: 2,
+          tiles: [
+            GlassTile(
+              icon: AppIcons.camera,
+              label: 'Camera',
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            GlassTile(
+              icon: AppIcons.gallery,
+              label: 'Gallery',
+              color: AppColors.accentPurple,
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -296,11 +240,10 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorUtils.sanitize(e)),
-            backgroundColor: AppColors.error,
-          ),
+        showGlassSnackBar(
+          context,
+          message: ErrorUtils.sanitize(e),
+          tone: GlassToastTone.error,
         );
       }
     }

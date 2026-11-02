@@ -11,8 +11,8 @@ import '../theme/app_spacing.dart';
 import '../utils/error_utils.dart';
 import '../../services/r2_storage_service.dart';
 import '../../services/supabase_service.dart';
+import 'glass/glass.dart';
 import 'image_upload_field.dart';
-import 'premium_text_field.dart';
 
 /// The kind of optional demo asset an admin can attach to a campaign or job.
 ///
@@ -220,11 +220,10 @@ class _DemoAssetFieldState extends State<DemoAssetField> {
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorUtils.sanitize(e)),
-            backgroundColor: AppColors.error,
-          ),
+        showGlassSnackBar(
+          context,
+          message: ErrorUtils.sanitize(e),
+          tone: GlassToastTone.error,
         );
       }
     }
@@ -295,7 +294,7 @@ class _DemoAssetFieldState extends State<DemoAssetField> {
         );
       case DemoAssetType.pdf:
       case DemoAssetType.link:
-        return PremiumTextField(
+        return GlassTextField(
           controller: _urlController,
           hint: 'Paste a public link / PDF URL',
           prefixIcon: AppIcons.link,
@@ -304,7 +303,7 @@ class _DemoAssetFieldState extends State<DemoAssetField> {
           onChanged: (_) => _emit(),
         );
       case DemoAssetType.text:
-        return PremiumTextField.multiline(
+        return GlassTextField.multiline(
           controller: _textController,
           hint: 'Write the demo details / example text…',
           minLines: 3,
