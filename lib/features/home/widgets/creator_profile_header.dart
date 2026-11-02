@@ -5,27 +5,25 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/role_badge.dart';
 import '../models/creator_view.dart';
 
-/// Instagram-style public creator profile header (Layer-3 composite).
+/// Public creator profile header — liquid glass.
 ///
-/// Composes only Component_Library primitives ([PremiumAvatar],
-/// [PremiumButton], [PremiumIconButton], [StatPill]) and Theme_System tokens —
-/// no raw color literals or inline font construction. See design
-/// "Components and Interfaces > CreatorProfileHeader".
-///
-/// Layout (top → bottom):
+/// Layout (top to bottom):
 ///   * large ringed [PremiumAvatar] with an optional verified overlay,
-///   * name + verification indicator + `@handle` (+ tonal category pill),
+///   * name + verification indicator + `@handle` (+ a brand-tinted category
+///     chip),
 ///   * bio (when present),
-///   * a horizontal stats row (Followers · Campaigns · Rating) via [StatPill],
-///   * an action row: Follow/Following ([PremiumButton], gradient when not yet
-///     following), Message ([PremiumButton] glass), and a Copy-link
-///     [PremiumIconButton].
+///   * a stats row (Followers / Campaigns / Rating) on a glass pane,
+///   * actions: Follow/Following, Message, and a copy-link icon button.
+///
+/// Was composed from the old `Premium*` primitives with an opaque stats
+/// container and `colorScheme` opacities for text. Now uses [GlassCard],
+/// [GlassChip], [GlassButton] and [GlassIconButton] with the colour tokens, so
+/// the greys are consistent and the stats pane refracts the page behind it.
 class CreatorProfileHeader extends StatelessWidget {
   /// Normalized creator to render.
   final CreatorView creator;
@@ -57,13 +55,11 @@ class CreatorProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final name = creator.name.isEmpty ? 'Creator' : creator.name;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Avatar with story-style ring + verified overlay.
         PremiumAvatar(
           imageUrl: creator.avatarUrl,
           name: name,
@@ -71,9 +67,8 @@ class CreatorProfileHeader extends StatelessWidget {
           showRing: true,
           isVerified: creator.isVerified,
         ),
-        const SizedBox(height: AppSpacing.lg),
+        AppSpacing.gapLg,
 
-        // Name + verification indicator.
         Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -84,79 +79,53 @@ class CreatorProfileHeader extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.h4.copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: AppTextStyles.title2
+                    .copyWith(color: AppColors.textPrimary),
               ),
             ),
             if (creator.isVerified) ...[
               const SizedBox(width: AppSpacing.xs),
-              const Icon(
-                Iconsax.verify,
-                size: 20,
-                color: AppColors.verified,
-              ),
+              const Icon(Iconsax.verify, size: 20, color: AppColors.verified),
             ],
           ],
         ),
 
-        // Handle.
         if (creator.handle.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
             '@${creator.handle}',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.subheadline
+                .copyWith(color: AppColors.textSecondary),
           ),
         ],
 
-        // Category pill (tonal, brand-tinted).
         if (creator.category.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
-              borderRadius: AppRadius.pillAll,
-            ),
-            child: Text(
-              creator.category,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          AppSpacing.gapSm,
+          GlassChip.status(
+            label: creator.category,
+            color: AppColors.primary,
           ),
         ],
 
-        // Bio.
         if (creator.bio.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
+          AppSpacing.gapLg,
           Text(
             creator.bio,
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.7),
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.45,
             ),
           ),
         ],
 
-        const SizedBox(height: AppSpacing.xl),
+        AppSpacing.gapXl,
 
-        // Horizontal stats row: Followers · Campaigns · Rating.
-        Container(
+        GlassCard(
+          borderRadius: AppRadius.allLg,
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.lg,
-            horizontal: AppSpacing.xl,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: AppRadius.allLg,
-            border: Border.all(color: Theme.of(context).dividerColor),
+            horizontal: AppSpacing.md,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -166,13 +135,13 @@ class CreatorProfileHeader extends StatelessWidget {
                 value: _formatCount(followerCount),
                 label: 'Followers',
               ),
-              _statDivider(context),
+              const _StatDivider(),
               StatPill(
                 icon: Iconsax.medal_star,
                 value: creator.campaignsCompleted.toString(),
                 label: 'Campaigns',
               ),
-              _statDivider(context),
+              const _StatDivider(),
               StatPill(
                 icon: Iconsax.star_1,
                 value: creator.rating.toStringAsFixed(1),
@@ -182,49 +151,40 @@ class CreatorProfileHeader extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: AppSpacing.xl),
+        AppSpacing.gapXl,
 
-        // Action row: Follow/Following · Message · Copy link.
         Row(
           children: [
             Expanded(
-              child: PremiumButton(
+              child: GlassButton(
                 label: isFollowing ? 'Following' : 'Follow',
                 icon: isFollowing ? Iconsax.user_tick : Iconsax.user_add,
                 onPressed: onToggleFollow,
                 variant: isFollowing
-                    ? PremiumButtonVariant.outline
-                    : PremiumButtonVariant.filled,
-                gradient: !isFollowing,
+                    ? GlassButtonVariant.outline
+                    : GlassButtonVariant.filled,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            AppSpacing.gapMd,
             Expanded(
-              child: PremiumButton(
+              child: GlassButton.glass(
                 label: 'Message',
                 icon: Iconsax.message,
                 onPressed: onMessage,
-                variant: PremiumButtonVariant.glass,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
-            PremiumIconButton(
+            AppSpacing.gapMd,
+            GlassIconButton(
               icon: Iconsax.link,
-              onPressed: onCopyLink,
-              background: true,
+              onTap: onCopyLink,
               tooltip: 'Copy profile link',
+              size: 50,
             ),
           ],
         ),
       ],
     );
   }
-
-  Widget _statDivider(BuildContext context) => Container(
-        width: 1,
-        height: 32,
-        color: Theme.of(context).dividerColor,
-      );
 
   /// Formats a follower count into a compact form (1.2K / 3.4M).
   String _formatCount(int count) {
@@ -234,5 +194,15 @@ class CreatorProfileHeader extends StatelessWidget {
       return '${(count / 1000).toStringAsFixed(1)}K';
     }
     return count.toString();
+  }
+}
+
+/// Hairline rule between stats.
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 32, color: AppColors.border);
   }
 }

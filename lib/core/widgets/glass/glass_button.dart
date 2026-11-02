@@ -231,13 +231,7 @@ class _GlassButtonState extends State<GlassButton>
                 fit: StackFit.passthrough,
                 children: [
                   // Specular shine across the top of the solid pill.
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(gradient: AppGlass.sheen),
-                      ),
-                    ),
-                  ),
+                  const Positioned.fill(child: GlassSheen()),
                   _Body(
                     height: _height,
                     padding: _padding,

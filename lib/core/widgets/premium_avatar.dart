@@ -171,7 +171,9 @@ class _PremiumAvatarState extends State<PremiumAvatar> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary,
+              // AppColors.verified, not primary: a red badge beside red
+              // everything else stops reading as a verification mark.
+              color: AppColors.verified,
               border: Border.all(color: Colors.white, width: 2),
             ),
             child: Icon(

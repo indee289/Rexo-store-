@@ -4,15 +4,15 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_card.dart';
 
 /// A compact card for displaying a trending creator.
 ///
-/// Token-driven and built from the shared [PremiumCard] + [PremiumAvatar]
-/// primitives so it matches the premium look in both light and dark themes
-/// (no inline `GoogleFonts` or raw color literals). Fills the width of its
-/// parent so the Home grid controls sizing.
+/// Now a [GlassCard] with tokenised colours. Previously it read every colour
+/// off `theme.colorScheme.onSurface` with ad-hoc opacities, which produced a
+/// different grey in each place; the stats row now uses the single
+/// `textSecondary` token.
 class CreatorCard extends StatelessWidget {
   final Map<String, dynamic> creator;
   final VoidCallback? onTap;
@@ -25,16 +25,16 @@ class CreatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final userData = creator['users'] as Map<String, dynamic>?;
     final name = (userData?['name'] ?? 'Creator').toString();
-    final avatarUrl = (userData?['profileImage'] ?? '').toString(); // live: profileImage
+    final avatarUrl =
+        (userData?['profileImage'] ?? '').toString(); // live: profileImage
     final isVerified = (userData?['isVerified'] == true);
     final category = (creator['category'] ?? '').toString();
     final followers = creator['followers'] ?? 0;
     final rating = creator['rating'] ?? 0.0;
 
-    return PremiumCard(
+    return GlassCard(
       onTap: onTap,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -47,12 +47,12 @@ class CreatorCard extends StatelessWidget {
             size: PremiumAvatar.sizeLg,
             isVerified: isVerified,
           ),
-          const SizedBox(height: AppSpacing.sm),
+          AppSpacing.gapSm,
           Text(
             name,
             style: AppTextStyles.labelLarge.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -62,42 +62,37 @@ class CreatorCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               category,
-              style: AppTextStyles.caption.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
+              style: AppTextStyles.caption1
+                  .copyWith(color: AppColors.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          const SizedBox(height: AppSpacing.sm),
+          AppSpacing.gapSm,
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Iconsax.people,
-                size: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                size: 13,
+                color: AppColors.textSecondary,
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 _formatFollowers(followers),
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                style: AppTextStyles.caption1.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              const Icon(
-                Iconsax.star_1,
-                size: 12,
-                color: AppColors.warning,
-              ),
+              const Icon(Iconsax.star_1, size: 13, color: AppColors.warning),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 double.tryParse(rating.toString())?.toStringAsFixed(1) ?? '0.0',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                style: AppTextStyles.caption1.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],

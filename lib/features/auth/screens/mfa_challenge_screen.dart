@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
@@ -9,17 +10,21 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
 
-/// Login-time MFA (TOTP) challenge.
+/// Login-time MFA (TOTP) challenge — liquid glass.
 ///
 /// Reached when [AuthStatus.mfaRequired] — i.e. the password step succeeded but
 /// the session is still at AAL1 while a verified TOTP factor exists. The user
 /// must enter a 6-digit code from their authenticator app to elevate the
 /// session to AAL2 before they can access the app.
+///
+/// The challenge logic (factor lookup, challenge creation, verify, re-arm on
+/// failure, cancel-signs-out) is unchanged. Only the presentation moved to
+/// glass: the code entry is a wide recessed glass well with tracked-out
+/// digits, and the inline error is a red-rimmed glass banner.
 class MfaChallengeScreen extends ConsumerStatefulWidget {
   const MfaChallengeScreen({super.key});
 
@@ -87,8 +92,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
       if (!mounted) return;
       setState(() {
         _isPreparing = false;
-        _errorMessage =
-            'Could not start verification. Please try again.';
+        _errorMessage = 'Could not start verification. Please try again.';
       });
     }
   }
@@ -152,156 +156,202 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
+    return GlassScaffold(
+      appBar: GlassAppBar(
         title: 'Two-Factor Verification',
         showBack: false,
+        automaticallyImplyLeading: false,
         actions: [
-          PremiumButton(
+          GlassButton.ghost(
             label: 'Cancel',
-            variant: PremiumButtonVariant.ghost,
-            expand: false,
             onPressed: _isCancelling ? null : _cancel,
+            size: GlassButtonSize.small,
           ),
-          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Center(
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Iconsax.shield_tick,
-                      size: 40,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Enter Verification Code',
-                    style: AppTextStyles.h3.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Open your authenticator app and enter the 6-digit code to '
-                    'finish signing in.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // Error message
-            if (_errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
-                  borderRadius: AppRadius.allSm,
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Iconsax.warning_2,
-                        color: AppColors.error, size: 18),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.error,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-
-            if (_isPreparing) ...[
-              const SizedBox(height: AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: GlassCard(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          borderRadius: AppRadius.allXl,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+                child: GlassIconBubble(
+                  icon: Iconsax.shield_tick,
+                  size: 72,
+                  iconSize: 34,
+                ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-            ] else ...[
-              // OTP field (token-driven, spaced digits for a code look).
-              TextField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
+              AppSpacing.gapLg,
+              Text(
+                'Enter verification code',
                 textAlign: TextAlign.center,
-                autofocus: true,
-                onSubmitted: (_) {
-                  if (!_isVerifying) _verify();
-                },
-                style: AppTextStyles.h3.copyWith(
-                  letterSpacing: 8,
-                  color: theme.colorScheme.onSurface,
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: '000000',
-                  hintStyle: AppTextStyles.h3.copyWith(
-                    letterSpacing: 8,
-                    color: theme.colorScheme.onSurface.withOpacity(0.2),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: AppRadius.allMd,
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.allMd,
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: AppRadius.allMd,
-                    borderSide:
-                        BorderSide(color: AppColors.primary, width: 1.5),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.lg,
-                  ),
+                style: AppTextStyles.title2
+                    .copyWith(color: AppColors.textPrimary),
+              ),
+              AppSpacing.gapSm,
+              Text(
+                'Open your authenticator app and enter the 6-digit code to '
+                'finish signing in.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.subheadline.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.45,
                 ),
               ),
+              AppSpacing.gapXl,
 
-              const SizedBox(height: AppSpacing.lg),
+              if (_errorMessage != null) ...[
+                _ErrorBanner(message: _errorMessage!),
+                AppSpacing.gapLg,
+              ],
 
-              // Verify button
-              PremiumButton(
-                label: 'Verify',
-                gradient: true,
-                loading: _isVerifying,
-                onPressed: _isVerifying ? null : _verify,
-              ),
+              if (_isPreparing) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                  child: GlassLoader(message: 'Starting verification'),
+                ),
+              ] else ...[
+                _CodeField(
+                  controller: _otpController,
+                  onSubmitted: () {
+                    if (!_isVerifying) _verify();
+                  },
+                ),
+                AppSpacing.gapLg,
+                GlassButton(
+                  label: 'Verify',
+                  loading: _isVerifying,
+                  onPressed: _isVerifying ? null : _verify,
+                  size: GlassButtonSize.large,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Wide recessed glass well for the 6-digit code, with heavy letter tracking
+/// so the digits read as a code rather than ordinary text.
+class _CodeField extends StatefulWidget {
+  const _CodeField({required this.controller, required this.onSubmitted});
+
+  final TextEditingController controller;
+  final VoidCallback onSubmitted;
+
+  @override
+  State<_CodeField> createState() => _CodeFieldState();
+}
+
+class _CodeFieldState extends State<_CodeField> {
+  final _focusNode = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (_focused != _focusNode.hasFocus) {
+        setState(() => _focused = _focusNode.hasFocus);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final digitStyle = AppTextStyles.title1.copyWith(
+      letterSpacing: 10,
+      fontWeight: FontWeight.w700,
+      color: AppColors.textPrimary,
+    );
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: AppRadius.allMd,
+        border: Border.all(
+          color: _focused ? AppColors.primaryRim : AppColors.border,
+          width: _focused ? 1.4 : 1,
+        ),
+        boxShadow: _focused
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.16),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                  spreadRadius: -4,
+                ),
+              ]
+            : const [],
+      ),
+      child: TextField(
+        controller: widget.controller,
+        focusNode: _focusNode,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        maxLength: 6,
+        textAlign: TextAlign.center,
+        autofocus: true,
+        onSubmitted: (_) => widget.onSubmitted(),
+        style: digitStyle,
+        cursorColor: AppColors.primary,
+        decoration: InputDecoration(
+          counterText: '',
+          hintText: '000000',
+          hintStyle: digitStyle.copyWith(color: AppColors.textHint),
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Red-rimmed glass banner for the inline challenge error.
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.10),
+        borderRadius: AppRadius.allSm,
+        border: Border.all(color: AppColors.error.withOpacity(0.32), width: 1),
+      ),
+      child: Row(
+        children: [
+          const Icon(Iconsax.warning_2, color: AppColors.error, size: 18),
+          AppSpacing.gapSm,
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.footnote.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
       ),
     );
   }

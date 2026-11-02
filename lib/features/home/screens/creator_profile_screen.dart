@@ -4,24 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/user_actions_menu.dart';
 import '../../../services/supabase_service.dart';
 import '../models/creator_view.dart';
 import '../providers/creators_provider.dart';
 import '../widgets/creator_profile_header.dart';
 
-/// Instagram-style public creator profile screen.
+/// Public creator profile screen — liquid glass.
 ///
 /// Navigated to from the Top Creators section on the home screen via
 /// `/creators/{userId}`. It watches the resilient [creatorViewProvider] (which
 /// falls back to the `users` row) so tapping a creator that only exists as a
 /// `users` row no longer shows "creator not found" — the previous bug. A
-/// "creator unavailable" [EmptyState] now only appears when the user id is
+/// "creator unavailable" empty state now only appears when the user id is
 /// genuinely unknown (Requirement 7.4).
 ///
 /// This is a [ConsumerStatefulWidget] so it can hold **optimistic** follow
@@ -29,6 +26,11 @@ import '../widgets/creator_profile_header.dart';
 /// and [followerCountProvider] remain the source of truth; the optimistic
 /// overrides only provide immediate visual feedback until the providers
 /// reconcile after a successful toggle (Requirements 9.1–9.4).
+///
+/// Presentation only: the scaffold, app bar, loading, error and empty states
+/// moved to the glass components, and the two bare `SnackBar`s became glass
+/// toasts. The follow logic, deep-link building and reconciliation are
+/// untouched.
 class CreatorProfileScreen extends ConsumerStatefulWidget {
   final String creatorUserId;
 
@@ -50,7 +52,6 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final creatorAsync = ref.watch(creatorViewProvider(_creatorUserId));
     final isFollowingAsync = ref.watch(isFollowingProvider(_creatorUserId));
     final followerCountAsync = ref.watch(followerCountProvider(_creatorUserId));
@@ -75,9 +76,8 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       orElse: () => 'this creator',
     );
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
+    return GlassScaffold(
+      appBar: GlassAppBar(
         title: 'Creator Profile',
         showBack: true,
         actions: isSelf
@@ -93,18 +93,17 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         data: (creator) {
           // Genuinely unknown user id → creator unavailable (Req 7.4).
           if (creator == null) {
-            return const EmptyState(
+            return const GlassEmptyState(
               icon: Iconsax.user_remove,
               title: 'Creator unavailable',
-              subtitle:
-                  "We couldn't find this creator's profile. They may no "
+              message: "We couldn't find this creator's profile. They may no "
                   'longer be available.',
             );
           }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xl,
+              horizontal: AppSpacing.lg,
               vertical: AppSpacing.xl,
             ),
             child: CreatorProfileHeader(
@@ -120,16 +119,10 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: Text(
-              'Failed to load creator profile',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
-            ),
-          ),
+        loading: () => const GlassLoader(),
+        error: (error, _) => GlassErrorState(
+          title: 'Failed to load creator profile',
+          onRetry: () => ref.invalidate(creatorViewProvider(_creatorUserId)),
         ),
       ),
     );
@@ -168,7 +161,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   /// performs the follow/unfollow request. On success the providers are already
   /// invalidated by [FollowActionsNotifier] and reconciliation clears the
   /// overrides. On failure both values are reverted to their pre-toggle state
-  /// and a retry SnackBar is shown.
+  /// and a retry toast is shown.
   ///
   /// The unique follower-following pair (Req 9.5) is guaranteed by the DB
   /// unique constraint plus the notifier's re-entry guard — this method never
@@ -200,11 +193,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         _optimisticFollowing = currentlyFollowing;
         _optimisticCount = currentCount;
       });
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text("Couldn't update follow. Try again.")),
-        );
+      showGlassSnackBar(
+        context,
+        message: "Couldn't update follow. Try again.",
+        tone: GlassToastTone.error,
+      );
     }
     // 3b) On success the notifier has invalidated the follow providers; the
     // optimistic overrides remain until _maybeReconcile clears them once the
@@ -222,11 +215,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   void _copyProfileLink(CreatorView creator) {
     final link = _buildProfileLink(creator);
     Clipboard.setData(ClipboardData(text: link));
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Profile link copied')),
-      );
+    showGlassSnackBar(
+      context,
+      message: 'Profile link copied',
+      tone: GlassToastTone.success,
+    );
   }
 
   /// Builds the shareable deep link. Guarantees the internal [CreatorView.userId]

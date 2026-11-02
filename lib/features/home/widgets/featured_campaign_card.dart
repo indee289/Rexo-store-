@@ -3,7 +3,10 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/cached_image.dart';
+import '../../../core/widgets/glass/glass.dart';
 
 /// View model for a discover-style campaign card.
 class FeaturedCampaignData {
@@ -30,9 +33,13 @@ class FeaturedCampaignData {
   });
 }
 
-/// Discover-style campaign card (new reference): a square thumbnail with a
-/// category label, the title + platform icons, a "Paid out" vs "Rate" row and
-/// a paid-out progress bar, plus a bookmark toggle. Compact + theme-aware.
+/// Campaign card — liquid glass.
+///
+/// Was an opaque white `Container` with a 0.8px grey border, a flat drop
+/// shadow and hardcoded `TextStyle`s. Now a [GlassCard] with the shared spring
+/// press, tokenised type, a glass progress track filled with the brand
+/// gradient, and the bookmark as a real 44pt tap target instead of a bare
+/// 20px icon.
 class FeaturedCampaignCard extends StatelessWidget {
   final FeaturedCampaignData data;
   final bool saved;
@@ -49,123 +56,106 @@ class FeaturedCampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
-    final cardBg = isDark ? AppColors.darkCard : Colors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-    final track = isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-
-    return GestureDetector(
+    return GlassCard(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: borderColor, width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.28 : 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-              spreadRadius: -3,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _thumbnail(),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface,
-                            letterSpacing: -0.2,
-                            height: 1.2,
-                          ),
+      borderRadius: AppRadius.allLg,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Thumbnail(imageUrl: data.imageUrl, category: data.category),
+              AppSpacing.gapMd,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.headline.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          height: 1.25,
                         ),
-                        const SizedBox(height: 6),
-                        _platformRow(cs),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 6),
+                      _PlatformRow(
+                        platforms: data.platforms,
+                        private: data.private,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: onToggleSave,
-                  behavior: HitTestBehavior.opaque,
-                  child: Icon(
-                    Iconsax.bookmark,
-                    size: 20,
-                    color: saved ? AppColors.primary : cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Flexible(
-                  child: _metric(cs, 'Paid out',
-                      value: '${data.paidOutPercent}%',
-                      suffix: ' / ${data.budgetText}'),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: _metric(cs, 'Rate',
-                      value: data.rateText, alignEnd: true),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: AppRadius.pillAll,
-              child: LinearProgressIndicator(
-                value: (data.paidOutPercent.clamp(0, 100)) / 100.0,
-                minHeight: 6,
-                backgroundColor: track,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppColors.success),
               ),
-            ),
-          ],
-        ),
+              GlassIconButton.bare(
+                icon: Iconsax.bookmark,
+                onTap: onToggleSave,
+                size: 36,
+                iconSize: 20,
+                color: saved ? AppColors.primary : AppColors.textSecondary,
+                tooltip: saved ? 'Remove from saved' : 'Save campaign',
+              ),
+            ],
+          ),
+          AppSpacing.gapMd,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: _Metric(
+                  label: 'Paid out',
+                  value: '${data.paidOutPercent}%',
+                  suffix: ' / ${data.budgetText}',
+                ),
+              ),
+              AppSpacing.gapMd,
+              Flexible(
+                child: _Metric(
+                  label: 'Rate',
+                  value: data.rateText,
+                  alignEnd: true,
+                ),
+              ),
+            ],
+          ),
+          AppSpacing.gapSm,
+          _ProgressTrack(percent: data.paidOutPercent),
+        ],
       ),
     );
   }
+}
 
-  Widget _thumbnail() {
+/// Square thumbnail with the category on a bottom scrim.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.imageUrl, required this.category});
+
+  final String imageUrl;
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadius.allSm,
       child: SizedBox(
-        width: 62,
-        height: 62,
+        width: 64,
+        height: 64,
         child: Stack(
           fit: StackFit.expand,
           children: [
             CachedImage(
-              imageUrl: data.imageUrl.isEmpty ? null : data.imageUrl,
+              imageUrl: imageUrl.isEmpty ? null : imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (_) => _thumbPlaceholder(),
-              placeholderBuilder: (_) => _thumbPlaceholder(),
+              errorBuilder: (_) => const _ThumbPlaceholder(),
+              placeholderBuilder: (_) => const _ThumbPlaceholder(),
             ),
-            // Category label at the bottom
             Positioned(
               left: 0,
               right: 0,
@@ -177,22 +167,20 @@ class FeaturedCampaignCard extends StatelessWidget {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withOpacity(0.72),
+                      Colors.black.withOpacity(0.74),
                       Colors.transparent,
                     ],
                   ),
                 ),
                 alignment: Alignment.bottomLeft,
-                // White text on a dark scrim: the old blue text was nearly
-                // unreadable over light/grey logo thumbnails.
+                // White on a dark scrim stays readable over any artwork.
                 child: Text(
-                  data.category,
+                  category,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
+                  style: AppTextStyles.caption2.copyWith(
                     color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -202,35 +190,32 @@ class FeaturedCampaignCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _thumbPlaceholder() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primaryBg, AppColors.surface],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: const Center(
-          child: Icon(Iconsax.gallery, size: 20, color: AppColors.primaryLight),
-        ),
-      );
+class _ThumbPlaceholder extends StatelessWidget {
+  const _ThumbPlaceholder();
 
-  Widget _platformRow(ColorScheme cs) {
-    final icons = <Widget>[];
-    if (data.private) {
-      icons.add(const Icon(Iconsax.lock_1, size: 15, color: AppColors.error));
-      icons.add(const SizedBox(width: 6));
-    }
-    for (final p in data.platforms) {
-      icons.add(Icon(_platformIcon(p), size: 15, color: cs.onSurfaceVariant));
-      icons.add(const SizedBox(width: 6));
-    }
-    if (icons.isEmpty) return const SizedBox.shrink();
-    return Row(mainAxisSize: MainAxisSize.min, children: icons);
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.10),
+      ),
+      child: const Center(
+        child: Icon(Iconsax.gallery, size: 20, color: AppColors.primaryLight),
+      ),
+    );
   }
+}
 
-  IconData _platformIcon(String p) {
+/// Lock badge plus one icon per platform.
+class _PlatformRow extends StatelessWidget {
+  const _PlatformRow({required this.platforms, required this.private});
+
+  final List<String> platforms;
+  final bool private;
+
+  static IconData _platformIcon(String p) {
     switch (p.toLowerCase()) {
       case 'instagram':
         return Iconsax.instagram;
@@ -240,7 +225,6 @@ class FeaturedCampaignCard extends StatelessWidget {
         return Iconsax.video_play;
       case 'x':
       case 'twitter':
-        return Iconsax.global;
       case 'facebook':
         return Iconsax.global;
       default:
@@ -248,8 +232,75 @@ class FeaturedCampaignCard extends StatelessWidget {
     }
   }
 
-  Widget _metric(ColorScheme cs, String label,
-      {required String value, String? suffix, bool alignEnd = false}) {
+  @override
+  Widget build(BuildContext context) {
+    final icons = <Widget>[];
+    if (private) {
+      icons.add(const Icon(Iconsax.lock_1, size: 15, color: AppColors.error));
+      icons.add(const SizedBox(width: 6));
+    }
+    for (final p in platforms) {
+      icons.add(
+        Icon(_platformIcon(p), size: 15, color: AppColors.textSecondary),
+      );
+      icons.add(const SizedBox(width: 6));
+    }
+    if (icons.isEmpty) return const SizedBox.shrink();
+    return Row(mainAxisSize: MainAxisSize.min, children: icons);
+  }
+}
+
+/// Recessed glass track filled with the brand gradient.
+class _ProgressTrack extends StatelessWidget {
+  const _ProgressTrack({required this.percent});
+
+  final int percent;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = percent.clamp(0, 100) / 100.0;
+
+    return ClipRRect(
+      borderRadius: AppRadius.pillAll,
+      child: Container(
+        height: 7,
+        decoration: BoxDecoration(
+          color: AppColors.textPrimary.withOpacity(0.08),
+          borderRadius: AppRadius.pillAll,
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: value == 0 ? 0.0 : value,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: AppRadius.pillAll,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Label above a value, with an optional muted suffix.
+class _Metric extends StatelessWidget {
+  const _Metric({
+    required this.label,
+    required this.value,
+    this.suffix,
+    this.alignEnd = false,
+  });
+
+  final String label;
+  final String value;
+  final String? suffix;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment:
           alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -258,10 +309,9 @@ class FeaturedCampaignCard extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 11,
+          style: AppTextStyles.caption1.copyWith(
+            color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
-            color: cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 3),
@@ -273,20 +323,17 @@ class FeaturedCampaignCard extends StatelessWidget {
             children: [
               TextSpan(
                 text: value,
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.headline.copyWith(
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
-                  color: cs.onSurface,
-                  letterSpacing: -0.2,
                 ),
               ),
               if (suffix != null)
                 TextSpan(
                   text: suffix,
-                  style: TextStyle(
-                    fontSize: 12.5,
+                  style: AppTextStyles.footnote.copyWith(
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
-                    color: cs.onSurfaceVariant,
                   ),
                 ),
             ],

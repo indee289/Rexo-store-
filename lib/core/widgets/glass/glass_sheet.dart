@@ -97,15 +97,8 @@ class GlassSheet extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: AppRadius.topXxl,
-                          gradient: AppGlass.sheen,
-                        ),
-                      ),
-                    ),
+                  const Positioned.fill(
+                    child: GlassSheen(radius: AppRadius.topXxl),
                   ),
                   // Top rim light.
                   Positioned(
@@ -113,13 +106,7 @@ class GlassSheet extends StatelessWidget {
                     left: AppRadius.xxl,
                     right: AppRadius.xxl,
                     height: AppGlass.borderWidth,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(
-                          gradient: AppGlass.rimHighlight,
-                        ),
-                      ),
-                    ),
+                    child: const GlassRimLight(),
                   ),
                   ConstrainedBox(
                     constraints:

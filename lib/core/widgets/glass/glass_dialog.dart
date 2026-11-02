@@ -79,15 +79,8 @@ class GlassDialog extends StatelessWidget {
                   ),
                   child: Stack(
                     children: [
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: AppRadius.allXl,
-                              gradient: AppGlass.sheen,
-                            ),
-                          ),
-                        ),
+                      const Positioned.fill(
+                        child: GlassSheen(radius: AppRadius.allXl),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(AppSpacing.xl),

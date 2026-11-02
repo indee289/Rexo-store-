@@ -110,7 +110,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: AppGlass.surface(false),
-              border: Border(
+              border: const Border(
                 bottom: BorderSide(
                   color: AppColors.border,
                   width: AppGlass.borderWidth,
@@ -120,13 +120,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Stack(
               children: [
                 // Specular sheen across the bar.
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(gradient: AppGlass.sheen),
-                    ),
-                  ),
-                ),
+                const Positioned.fill(child: GlassSheen()),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -235,7 +229,7 @@ class _GlassBarBackground extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: AppGlass.surface(false),
-              border: Border(
+              border: const Border(
                 bottom: BorderSide(
                   color: AppColors.border,
                   width: AppGlass.borderWidth,

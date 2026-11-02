@@ -26,6 +26,48 @@ class GlassBlurScope extends InheritedWidget {
   bool updateShouldNotify(GlassBlurScope oldWidget) => false;
 }
 
+/// The specular highlight laid over a glass pane.
+///
+/// This is the layer that makes a pane read as *curved* glass rather than flat
+/// translucent plastic, so it sits on top of every glass surface in the app.
+/// Because it is `const` and takes no arguments, Flutter can skip rebuilding it
+/// entirely — which matters precisely because it appears on every pane.
+///
+/// Wrap in a [Positioned.fill] (or give it a size) and keep it below the
+/// content in the stack. [radius] is only needed when the sheen must be
+/// clipped by the pane's own corners rather than an ancestor [ClipRRect].
+class GlassSheen extends StatelessWidget {
+  const GlassSheen({super.key, this.radius});
+
+  final BorderRadius? radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AppGlass.sheen,
+          borderRadius: radius,
+        ),
+      ),
+    );
+  }
+}
+
+/// The bright rim light running along the top edge of a glass pane.
+class GlassRimLight extends StatelessWidget {
+  const GlassRimLight({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(gradient: AppGlass.rimHighlight),
+      ),
+    );
+  }
+}
+
 /// How heavy a glass pane's blur and tint should be.
 enum GlassLevel {
   /// Chips, icon buttons, inline pills — light blur.
@@ -203,16 +245,7 @@ class _GlassSurfaceState extends State<GlassSurface>
         children: [
           // Specular sheen — curved-glass cue.
           if (widget.showSheen)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    gradient: AppGlass.sheen,
-                  ),
-                ),
-              ),
-            ),
+            Positioned.fill(child: GlassSheen(radius: radius)),
           // Top-edge rim light.
           if (widget.showRimHighlight)
             Positioned(
@@ -220,13 +253,7 @@ class _GlassSurfaceState extends State<GlassSurface>
               left: radius.topLeft.x,
               right: radius.topRight.x,
               height: AppGlass.borderWidth,
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    gradient: AppGlass.rimHighlight,
-                  ),
-                ),
-              ),
+              child: const GlassRimLight(),
             ),
           // Content.
           Padding(
