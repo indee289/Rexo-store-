@@ -1,23 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/icons/app_icons.dart';
-import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/demo_asset_view.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_icon_button.dart';
 import '../../../core/widgets/cached_image.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/demo_asset_view.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/jobs_provider.dart';
 
+/// Job detail — rebuilt layout.
+///
+/// Old layout: a `Scaffold` nested inside another `Scaffold` purely so the
+/// Apply bar could see the loaded job; a fixed 200px cover carrying a
+/// hand-built overlay row (back chevron, centred title, bookmark) plus a
+/// second absolutely-positioned status pill; and then payment, details,
+/// "what to submit" and rules each rendered as its own `Container` +
+/// `BoxDecoration`, with the details rows separated by `Divider`s. The Apply
+/// bar's three states and its CTA were three more hand-drawn pills. Every
+/// piece threaded `isDark`, `cardColor`, `borderColor`, `textPrimary` and
+/// `textSecondary` down through its constructor.
+///
+/// New layout: one scaffold, with the Apply bar resolved from the same async
+/// value at the top level; the cover promoted to a collapsing
+/// [GlassSliverAppBar], so the title and the save action survive into a
+/// compact bar instead of scrolling away; the status, category and platforms
+/// unified into one chip row rather than a pill on the image plus pills in the
+/// body; the details rows moved into a grouped section, which removes the last
+/// `Divider`s on this screen; and the Apply bar rebuilt on `GlassButton`. All
+/// the colour-threading constructor parameters are gone — the components read
+/// the tokens directly, and the app is light mode only.
+///
+/// `jobDetailProvider`, `hasAppliedToJobProvider`, `jobSlotCountProvider`,
+/// `savedJobsProvider`, `jobsActionsProvider.applyToJob`, the row keys and the
+/// full/closed/applied rules are unchanged.
 class JobDetailScreen extends ConsumerWidget {
   final String jobId;
 
@@ -29,51 +49,42 @@ class JobDetailScreen extends ConsumerWidget {
     final hasApplied = ref.watch(hasAppliedToJobProvider(jobId));
     final slotData = ref.watch(jobSlotCountProvider(jobId));
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    final slotFilled = (slotData.value?['filled'] as int?) ?? 0;
+    final hasAppliedVal = hasApplied.value ?? false;
+
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      // The cover is full-bleed media; ambient blobs would fight it.
+      showBlobs: false,
       body: jobAsync.when(
         data: (job) {
-          if (job == null) {
-            return const Center(child: Text('Job not found'));
-          }
-          final slotFilled = (slotData.value?['filled'] as int?) ?? 0;
-          final hasAppliedVal = hasApplied.value ?? false;
+          if (job == null) return const _NotFound();
+          return _JobDetailScrollView(
+            job: job,
+            jobId: jobId,
+            slotFilled: slotFilled,
+          );
+        },
+        loading: () => const _Loading(),
+        error: (e, _) => _Error(
+          message: ErrorUtils.sanitize(e),
+          onRetry: () => ref.invalidate(jobDetailProvider(jobId)),
+        ),
+      ),
+      // Resolved here rather than from a second nested Scaffold.
+      bottomNavigationBar: jobAsync.whenOrNull(
+        data: (job) {
+          if (job == null) return null;
           final maxSlots = job['max_slots'] as int?;
           final isFull = maxSlots != null && slotFilled >= maxSlots;
           final isClosed = (job['status'] as String? ?? '') == 'closed';
-
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            bottomNavigationBar: _ApplyBar(
-              jobId: jobId,
-              job: job,
-              hasApplied: hasAppliedVal,
-              isFull: isFull,
-              isClosed: isClosed,
-            ),
-            body: _JobDetailScrollView(
-              job: job,
-              jobId: jobId,
-              hasApplied: hasAppliedVal,
-              slotFilled: slotFilled,
-            ),
+          return _ApplyBar(
+            jobId: jobId,
+            hasApplied: hasAppliedVal,
+            isFull: isFull,
+            isClosed: isClosed,
           );
         },
-        loading: () => const ShimmerLoading(),
-        error: (e, _) => Center(
-          child: EmptyState(
-            icon: AppIcons.warning_2,
-            title: 'Failed to load job',
-            subtitle: ErrorUtils.sanitize(e),
-            cta: PremiumButton(
-              label: 'Retry',
-              icon: AppIcons.refresh,
-              variant: PremiumButtonVariant.tonal,
-              expand: false,
-              onPressed: () => ref.invalidate(jobDetailProvider(jobId)),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -84,20 +95,16 @@ class JobDetailScreen extends ConsumerWidget {
 class _JobDetailScrollView extends StatelessWidget {
   final Map<String, dynamic> job;
   final String jobId;
-  final bool hasApplied;
   final int slotFilled;
 
   const _JobDetailScrollView({
     required this.job,
     required this.jobId,
-    required this.hasApplied,
     required this.slotFilled,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final title = job['title'] as String? ?? 'Untitled Job';
     final description = job['description'] as String? ?? '';
     final category = job['category'] as String?;
@@ -127,208 +134,187 @@ class _JobDetailScrollView extends StatelessWidget {
     final isActive = jobStatus == 'active';
     final isFull = maxSlots != null && slotFilled >= maxSlots;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final cardColor = isDark ? AppColors.darkCard : AppColors.card;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-
     // Slots value string.
     late final String slotsValue;
     Color? slotsColor;
     if (maxSlots == null) {
       slotsValue = 'Unlimited';
     } else if (isFull) {
-      slotsValue = 'Slots Full';
+      slotsValue = 'Slots full';
       slotsColor = AppColors.error;
     } else {
-      slotsValue = '${maxSlots - slotFilled} of $maxSlots slots left';
+      slotsValue = '${maxSlots - slotFilled} of $maxSlots left';
     }
 
-    return SafeArea(
-      top: false,
-      bottom: false,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
+    return CustomScrollView(
+      slivers: [
+        GlassSliverAppBar(
+          title: 'Job details',
+          showBack: true,
+          expandedHeight: 240,
+          actions: [_SaveButton(jobId: jobId)],
+          flexibleSpace: FlexibleSpaceBar(
+            background: _CoverBackground(coverUrl: coverUrl),
+          ),
+        ),
+
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cover header with overlaid app bar + status pill.
-                _CoverHeader(
-                  coverUrl: coverUrl,
-                  isActive: isActive,
-                  jobId: jobId,
+                Text(
+                  title,
+                  style: AppTextStyles.title1.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      Text(
-                        title,
-                        style: AppTextStyles.h4.copyWith(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 23,
-                        ),
+                // Status, category and platforms in one row, instead of a pill
+                // on the cover plus a separate strip in the body.
+                AppSpacing.gapMd,
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    GlassChip.status(
+                      label: isActive ? 'Active' : 'Closed',
+                      color: isActive ? AppColors.success : AppColors.neutral,
+                    ),
+                    if (category != null && category.isNotEmpty)
+                      GlassChip(
+                        label: category,
+                        icon: AppIcons.category,
+                        dense: true,
                       ),
-
-                      // Category + platform pills
-                      if ((category != null && category.isNotEmpty) ||
-                          platforms.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: [
-                            if (category != null && category.isNotEmpty)
-                              _CategoryPill(
-                                category: category,
-                                isDark: isDark,
-                                textSecondary: textSecondary,
-                              ),
-                            for (final p in platforms)
-                              _PlatformPill(
-                                platform: p,
-                                isDark: isDark,
-                                textSecondary: textSecondary,
-                              ),
-                          ],
-                        ),
-                      ],
-
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // Payment card
-                      _PaymentCard(
-                        amount: paymentAmount,
-                        cardColor: cardColor,
-                        borderColor: borderColor,
-                        textSecondary: textSecondary,
+                    for (final p in platforms)
+                      GlassChip(
+                        label: p,
+                        icon: _platformIcon(p),
+                        dense: true,
                       ),
+                  ],
+                ),
 
-                      const SizedBox(height: AppSpacing.md),
+                AppSpacing.gapLg,
+                _PaymentCard(amount: paymentAmount),
+              ],
+            ),
+          ),
+        ),
 
-                      // Details card
-                      _DetailsCard(
-                        cardColor: cardColor,
-                        borderColor: borderColor,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        rows: [
-                          if (deadline != null)
-                            _DetailRowData(
-                              icon: AppIcons.calendar,
-                              label: 'Deadline',
-                              value: DateFormat('d MMM y').format(deadline),
-                            ),
-                          _DetailRowData(
-                            icon: AppIcons.people,
-                            label: 'Slots',
-                            value: slotsValue,
-                            valueColor: slotsColor,
-                          ),
-                          if (createdAt != null)
-                            _DetailRowData(
-                              icon: AppIcons.clock,
-                              label: 'Posted',
-                              value: _relativeTime(createdAt),
-                            ),
-                        ],
-                      ),
+        // Details, grouped — this is what removed the Dividers.
+        SliverToBoxAdapter(
+          child: GlassSection(
+            title: 'Details',
+            children: [
+              if (deadline != null)
+                GlassRow(
+                  icon: AppIcons.calendar,
+                  title: 'Deadline',
+                  trailingText: DateFormat('d MMM y').format(deadline),
+                  showChevron: false,
+                ),
+              GlassRow(
+                icon: AppIcons.people,
+                title: 'Slots',
+                iconColor: slotsColor,
+                trailingText: slotsValue,
+                showChevron: false,
+              ),
+              if (createdAt != null)
+                GlassRow(
+                  icon: AppIcons.clock,
+                  title: 'Posted',
+                  trailingText: _relativeTime(createdAt),
+                  showChevron: false,
+                ),
+            ],
+          ),
+        ),
 
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // Description & Instructions
-                      Text(
-                        'Description & Instructions',
-                        style: AppTextStyles.h6.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _ExpandableText(
-                        text: description.isEmpty
-                            ? 'No description provided.'
-                            : description,
-                        textSecondary: textSecondary,
-                      ),
-
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // What to submit
-                      _WhatToSubmitCard(
-                        cardColor: cardColor,
-                        borderColor: borderColor,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        isDark: isDark,
-                      ),
-
-                      // Rules — new optional field. Render only when present.
-                      if (rules.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'Rules',
-                          style: AppTextStyles.h6.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: AppRadius.allLg,
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Text(
-                            rules,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: textSecondary,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      // Demo Asset — new optional field. Render only when both
-                      // the type and the value are present.
-                      if (demoType.isNotEmpty && demoUrl.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'Demo Asset',
-                          style: AppTextStyles.h6.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        DemoAssetView(type: demoType, value: demoUrl),
-                      ],
-
-                      // Bottom padding so content clears the sticky Apply bar.
-                      const SizedBox(height: AppSpacing.xxl),
-                    ],
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _sectionLabel('Description & instructions'),
+                GlassCard(
+                  child: _ExpandableText(
+                    text: description.isEmpty
+                        ? 'No description provided.'
+                        : description,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SliverToBoxAdapter(child: _WhatToSubmitCard()),
+
+        if (rules.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _sectionLabel('Rules'),
+                  GlassCard(
+                    child: Text(
+                      rules,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.55,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        if (demoType.isNotEmpty && demoUrl.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _sectionLabel('Demo asset'),
+                  DemoAssetView(type: demoType, value: demoUrl),
+                ],
+              ),
+            ),
+          ),
+
+        // Clearance so content never hides under the sticky Apply bar.
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+      ],
     );
   }
 
@@ -357,222 +343,112 @@ class _JobDetailScrollView extends StatelessWidget {
   }
 }
 
-// ─── Cover Header ─────────────────────────────────────────────────────────────
+IconData _platformIcon(String platform) {
+  final p = platform.toLowerCase();
+  if (p.contains('insta')) return AppIcons.instagram;
+  if (p.contains('face')) return AppIcons.facebook;
+  if (p.contains('you')) return AppIcons.youtube;
+  return AppIcons.global;
+}
 
-class _CoverHeader extends ConsumerWidget {
+/// Group heading matching the tracked-caps header used by `GlassSection`.
+Widget _sectionLabel(String text) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      0,
+      AppSpacing.xs,
+      AppSpacing.md,
+    ),
+    child: Text(
+      text.toUpperCase(),
+      style: AppTextStyles.caption1.copyWith(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+      ),
+    ),
+  );
+}
+
+// ─── Cover ────────────────────────────────────────────────────────────────────
+
+/// Cover artwork behind the collapsing bar, or a branded placeholder.
+class _CoverBackground extends StatelessWidget {
   final String? coverUrl;
-  final bool isActive;
+
+  const _CoverBackground({required this.coverUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCover = coverUrl != null && coverUrl!.isNotEmpty;
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (hasCover)
+            CachedImage(
+              imageUrl: coverUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_) => const SizedBox.shrink(),
+            )
+          else
+            const Center(
+              child: Icon(
+                AppIcons.briefcase,
+                size: 56,
+                color: Colors.white70,
+              ),
+            ),
+          // Scrim so the bar's controls stay legible over any artwork.
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.35),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bookmark toggle for the collapsing bar.
+class _SaveButton extends ConsumerWidget {
   final String jobId;
 
-  const _CoverHeader({
-    required this.coverUrl,
-    required this.isActive,
-    required this.jobId,
-  });
+  const _SaveButton({required this.jobId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final topPad = MediaQuery.of(context).padding.top;
-    final hasCover = coverUrl != null && coverUrl!.isNotEmpty;
+    final saved = ref.watch(savedJobsProvider);
+    final isSaved = saved.contains(jobId);
 
-    return Stack(
-      children: [
-        // Cover image / gradient placeholder.
-        Container(
-          height: 200 + topPad,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(AppRadius.lg),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: hasCover
-              ? CachedImage(
-                  imageUrl: coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_) => const SizedBox.shrink(),
-                )
-              : const Center(
-                  child: Icon(
-                    AppIcons.briefcase,
-                    size: 56,
-                    color: Colors.white70,
-                  ),
-                ),
-        ),
-
-        // Top overlay row: back, title, bookmark.
-        Positioned(
-          top: topPad + AppSpacing.sm,
-          left: AppSpacing.sm,
-          right: AppSpacing.sm,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              PremiumIconButton(
-                icon: AppIcons.arrow_left,
-                background: true,
-                color: Colors.white,
-                tooltip: 'Back',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              Text(
-                'Job Details',
-                style: AppTextStyles.h6.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Consumer(
-                builder: (context, ref, _) {
-                  final saved = ref.watch(savedJobsProvider);
-                  final isSaved = saved.contains(jobId);
-                  return PremiumIconButton(
-                    icon: isSaved ? AppIcons.bookmark : AppIcons.save_2,
-                    background: true,
-                    color: isSaved ? AppColors.primary : Colors.white,
-                    tooltip: isSaved ? 'Saved' : 'Save',
-                    onPressed: () {
-                      ref.read(savedJobsProvider.notifier).update((s) {
-                        final next = Set<String>.from(s);
-                        if (isSaved) { next.remove(jobId); } else { next.add(jobId); }
-                        return next;
-                      });
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-
-        // Status pill (top-right, below the app bar row).
-        Positioned(
-          top: topPad + 64,
-          right: AppSpacing.lg,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.primary : AppColors.neutral,
-              borderRadius: AppRadius.pillAll,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Text(
-              isActive ? 'Active' : 'Closed',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Category Pill ────────────────────────────────────────────────────────────
-
-class _CategoryPill extends StatelessWidget {
-  final String category;
-  final bool isDark;
-  final Color textSecondary;
-
-  const _CategoryPill({
-    required this.category,
-    required this.isDark,
-    required this.textSecondary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-        borderRadius: AppRadius.pillAll,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.category, size: 14, color: textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            category,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Platform Pill ────────────────────────────────────────────────────────────
-
-class _PlatformPill extends StatelessWidget {
-  final String platform;
-  final bool isDark;
-  final Color textSecondary;
-
-  const _PlatformPill({
-    required this.platform,
-    required this.isDark,
-    required this.textSecondary,
-  });
-
-  IconData get _icon {
-    final p = platform.toLowerCase();
-    if (p.contains('insta')) return AppIcons.instagram;
-    if (p.contains('face')) return AppIcons.facebook;
-    if (p.contains('you')) return AppIcons.youtube;
-    return AppIcons.global;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-        borderRadius: AppRadius.pillAll,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(_icon, size: 14, color: textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            platform,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: textSecondary,
-            ),
-          ),
-        ],
-      ),
+    return GlassIconButton(
+      icon: isSaved ? AppIcons.bookmark : AppIcons.save_2,
+      tooltip: isSaved ? 'Saved' : 'Save',
+      color: isSaved ? AppColors.primary : null,
+      size: 36,
+      iconSize: 19,
+      onTap: () {
+        ref.read(savedJobsProvider.notifier).update((s) {
+          final next = Set<String>.from(s);
+          if (isSaved) {
+            next.remove(jobId);
+          } else {
+            next.add(jobId);
+          }
+          return next;
+        });
+      },
     );
   }
 }
@@ -581,71 +457,42 @@ class _PlatformPill extends StatelessWidget {
 
 class _PaymentCard extends StatelessWidget {
   final double amount;
-  final Color cardColor;
-  final Color borderColor;
-  final Color textSecondary;
 
-  const _PaymentCard({
-    required this.amount,
-    required this.cardColor,
-    required this.borderColor,
-    required this.textSecondary,
-  });
+  const _PaymentCard({required this.amount});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: borderColor),
-      ),
+    return GlassCard.brand(
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
-              borderRadius: AppRadius.allMd,
-            ),
-            child: const Icon(
-              AppIcons.wallet,
-              size: 24,
-              color: AppColors.primary,
-            ),
+          const GlassIconBubble(
+            icon: AppIcons.wallet,
+            size: 48,
+            iconSize: 24,
           ),
-          const SizedBox(width: AppSpacing.md),
+          AppSpacing.gapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Payment',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: textSecondary,
-                  ),
+                  style: AppTextStyles.caption1
+                      .copyWith(color: AppColors.textSecondary),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  '₹${_formatAmount(amount)}',
-                  style: AppTextStyles.h3.copyWith(
+                  '\u20B9${_formatAmount(amount)}',
+                  style: AppTextStyles.title1.copyWith(
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
                   'Per approved submission',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: textSecondary,
-                  ),
+                  style: AppTextStyles.caption1
+                      .copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -657,98 +504,7 @@ class _PaymentCard extends StatelessWidget {
 
   String _formatAmount(double amount) {
     if (amount >= 1000) return NumberFormat('#,##0').format(amount);
-    return amount.toStringAsFixed(
-        amount.truncateToDouble() == amount ? 0 : 2);
-  }
-}
-
-// ─── Details Card ─────────────────────────────────────────────────────────────
-
-class _DetailRowData {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _DetailRowData({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-}
-
-class _DetailsCard extends StatelessWidget {
-  final Color cardColor;
-  final Color borderColor;
-  final Color textPrimary;
-  final Color textSecondary;
-  final List<_DetailRowData> rows;
-
-  const _DetailsCard({
-    required this.cardColor,
-    required this.borderColor,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.rows,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < rows.length; i++) ...[
-            if (i > 0)
-              Divider(height: 1, color: borderColor),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Row(
-                children: [
-                  Icon(rows[i].icon, size: 18, color: textSecondary),
-                  const SizedBox(width: AppSpacing.md),
-                  Flexible(
-                    child: Text(
-                      rows[i].label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      rows[i].value,
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: rows[i].valueColor ?? textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
+    return amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
   }
 }
 
@@ -756,9 +512,8 @@ class _DetailsCard extends StatelessWidget {
 
 class _ExpandableText extends StatefulWidget {
   final String text;
-  final Color textSecondary;
 
-  const _ExpandableText({required this.text, required this.textSecondary});
+  const _ExpandableText({required this.text});
 
   @override
   State<_ExpandableText> createState() => _ExpandableTextState();
@@ -771,54 +526,41 @@ class _ExpandableTextState extends State<_ExpandableText> {
 
   @override
   Widget build(BuildContext context) {
-    final style = AppTextStyles.bodyMedium.copyWith(
-      color: widget.textSecondary,
+    final style = AppTextStyles.body.copyWith(
+      color: AppColors.textSecondary,
       height: 1.6,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final tp = TextPainter(
-              text: TextSpan(text: widget.text, style: style),
-              maxLines: _collapsedLines,
-              textDirection: Directionality.of(context),
-            )..layout(maxWidth: constraints.maxWidth);
-            final overflows = tp.didExceedMaxLines;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tp = TextPainter(
+          text: TextSpan(text: widget.text, style: style),
+          maxLines: _collapsedLines,
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflows = tp.didExceedMaxLines;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.text,
-                  style: style,
-                  maxLines: _expanded ? null : _collapsedLines,
-                  overflow: _expanded
-                      ? TextOverflow.visible
-                      : TextOverflow.ellipsis,
-                ),
-                if (overflows) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => setState(() => _expanded = !_expanded),
-                    child: Text(
-                      _expanded ? 'Read less' : 'Read more',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            );
-          },
-        ),
-      ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.text,
+              style: style,
+              maxLines: _expanded ? null : _collapsedLines,
+              overflow:
+                  _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+            ),
+            if (overflows) ...[
+              AppSpacing.gapSm,
+              GlassButton.ghost(
+                label: _expanded ? 'Read less' : 'Read more',
+                size: GlassButtonSize.small,
+                onPressed: () => setState(() => _expanded = !_expanded),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -826,95 +568,58 @@ class _ExpandableTextState extends State<_ExpandableText> {
 // ─── What To Submit Card ──────────────────────────────────────────────────────
 
 class _WhatToSubmitCard extends StatelessWidget {
-  final Color cardColor;
-  final Color borderColor;
-  final Color textPrimary;
-  final Color textSecondary;
-  final bool isDark;
-
-  const _WhatToSubmitCard({
-    required this.cardColor,
-    required this.borderColor,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.isDark,
-  });
+  const _WhatToSubmitCard();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: borderColor),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.xl,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'What to submit',
-            style: AppTextStyles.h6.copyWith(
-              fontWeight: FontWeight.w700,
-              color: textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Submit your work in any of the following formats:',
-            style: TextStyle(fontSize: 13, color: textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: const [
-              _SubmitChip(icon: AppIcons.link, label: 'Link'),
-              _SubmitChip(icon: AppIcons.gallery, label: 'Photo'),
-              _SubmitChip(icon: AppIcons.document, label: 'PDF'),
-              _SubmitChip(icon: AppIcons.video, label: 'Video'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SubmitChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _SubmitChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fg = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: fg,
+          _sectionLabel('What to submit'),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Submit your work in any of these formats:',
+                  style: AppTextStyles.footnote
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                AppSpacing.gapMd,
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: const [
+                    GlassChip(
+                      label: 'Link',
+                      icon: AppIcons.link,
+                      dense: true,
+                    ),
+                    GlassChip(
+                      label: 'Photo',
+                      icon: AppIcons.gallery,
+                      dense: true,
+                    ),
+                    GlassChip(
+                      label: 'PDF',
+                      icon: AppIcons.document,
+                      dense: true,
+                    ),
+                    GlassChip(
+                      label: 'Video',
+                      icon: AppIcons.video,
+                      dense: true,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -927,14 +632,12 @@ class _SubmitChip extends StatelessWidget {
 
 class _ApplyBar extends ConsumerStatefulWidget {
   final String jobId;
-  final Map<String, dynamic> job;
   final bool hasApplied;
   final bool isFull;
   final bool isClosed;
 
   const _ApplyBar({
     required this.jobId,
-    required this.job,
     required this.hasApplied,
     required this.isFull,
     required this.isClosed,
@@ -949,162 +652,88 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md + MediaQuery.of(context).padding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
         border: Border(
-          top: BorderSide(
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-          ),
+          top: BorderSide(color: AppColors.border, width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
       ),
-      child: _buildButton(),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.lg,
+          AppSpacing.md + MediaQuery.of(context).padding.bottom,
+        ),
+        child: _buildButton(),
+      ),
     );
   }
 
   Widget _buildButton() {
-    // Already applied — disabled green state.
+    // Already applied — settled green state.
     if (widget.hasApplied) {
-      return _StatusButton(
-        label: 'Already Applied',
+      return const _StatusButton(
+        label: 'Already applied',
         icon: AppIcons.tick_circle,
         color: AppColors.success,
       );
     }
-    // Slots full — disabled red state.
+    // Slots full — blocked red state.
     if (widget.isFull) {
-      return _StatusButton(
-        label: 'Slots Full',
+      return const _StatusButton(
+        label: 'Slots full',
         icon: AppIcons.slash,
         color: AppColors.error,
       );
     }
-    // Closed — disabled neutral state.
+    // Closed — blocked neutral state.
     if (widget.isClosed) {
-      return _StatusButton(
+      return const _StatusButton(
         label: 'Closed',
         icon: AppIcons.slash,
         color: AppColors.neutral,
       );
     }
-    // Active — show Apply button directly.
-    return _ApplyNowButton(loading: _applying, onPressed: _apply);
+    // Active — show the Apply action.
+    return GlassButton(
+      label: 'Apply now',
+      icon: AppIcons.send_1,
+      size: GlassButtonSize.large,
+      loading: _applying,
+      onPressed: _applying ? null : _apply,
+    );
   }
 
   Future<void> _apply() async {
     setState(() => _applying = true);
-    final ok = await ref
-        .read(jobsActionsProvider.notifier)
-        .applyToJob(widget.jobId);
+    final ok =
+        await ref.read(jobsActionsProvider.notifier).applyToJob(widget.jobId);
     if (!mounted) return;
     setState(() => _applying = false);
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Application submitted successfully!'),
-          backgroundColor: AppColors.success,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Application submitted successfully!',
+        tone: GlassToastTone.success,
       );
       Navigator.of(context).pop();
     } else {
       final error = ref.read(jobsActionsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.hasError
-              ? ErrorUtils.sanitize(error.error)
-              : 'Could not apply. Please try again.'),
-          backgroundColor: AppColors.error,
-        ),
+      showGlassSnackBar(
+        context,
+        message: error.hasError
+            ? ErrorUtils.sanitize(error.error)
+            : 'Could not apply. Please try again.',
+        tone: GlassToastTone.error,
       );
     }
   }
 }
 
-/// Instagram-blue "Apply Now" CTA — flat, tight, 48px tall (bounded so it
-/// cannot expand to fill the full sticky bar area).
-class _ApplyNowButton extends StatefulWidget {
-  final bool loading;
-  final VoidCallback onPressed;
-
-  const _ApplyNowButton({required this.loading, required this.onPressed});
-
-  @override
-  State<_ApplyNowButton> createState() => _ApplyNowButtonState();
-}
-
-class _ApplyNowButtonState extends State<_ApplyNowButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.loading ? null : widget.onPressed,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.7 : 1.0,
-        child: Container(
-          // Fixed height (was minHeight — that could expand in Column with
-          // unbounded height, causing the button to fill the screen).
-          height: 48,
-          width: double.infinity,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: AppRadius.allMd,
-          ),
-          child: widget.loading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(AppIcons.send_1, size: 18, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Apply Now',
-                      style: AppTextStyles.button.copyWith(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A disabled, tinted status button (Already Applied / Slots Full / Closed).
+/// Non-actionable state in the Apply slot — applied, full or closed.
 class _StatusButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -1119,30 +748,126 @@ class _StatusButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 52),
+      height: 58,
       width: double.infinity,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: color.withOpacity(0.30)),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: color.withOpacity(0.32)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 20, color: color),
-          const SizedBox(width: AppSpacing.sm),
+          AppSpacing.gapSm,
           Text(
             label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.labelLarge.copyWith(
               color: color,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─── Loading / Error / Not found ──────────────────────────────────────────────
+
+class _Loading extends StatelessWidget {
+  const _Loading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SafeArea(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GlassSkeleton(height: 200, borderRadius: AppRadius.allLg),
+            SizedBox(height: AppSpacing.lg),
+            GlassSkeleton(width: 220, height: 24),
+            SizedBox(height: AppSpacing.md),
+            GlassSkeleton(height: 15),
+            SizedBox(height: AppSpacing.sm),
+            GlassSkeleton(width: 160, height: 15),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Error extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _Error({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Stack(
+        children: [
+          Center(
+            child: GlassErrorState(
+              title: 'Failed to load job',
+              message: message,
+              onRetry: onRetry,
+            ),
+          ),
+          const Positioned(
+            top: AppSpacing.sm,
+            left: AppSpacing.sm,
+            child: _BackButton(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotFound extends StatelessWidget {
+  const _NotFound();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SafeArea(
+      child: Stack(
+        children: [
+          Center(
+            child: GlassEmptyState(
+              icon: AppIcons.briefcase,
+              title: 'Job not found',
+              message: 'This job may have been removed.',
+            ),
+          ),
+          Positioned(
+            top: AppSpacing.sm,
+            left: AppSpacing.sm,
+            child: _BackButton(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Back affordance for the states that render without the sliver app bar.
+class _BackButton extends StatelessWidget {
+  const _BackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassIconButton(
+      icon: AppIcons.arrow_left,
+      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      size: 36,
+      iconSize: 19,
+      onTap: () => Navigator.of(context).maybePop(),
     );
   }
 }

@@ -4,30 +4,37 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/icons/app_icons.dart';
-import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../reports/providers/report_provider.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/campaign_cover_header.dart';
 import '../../../core/widgets/demo_asset_view.dart';
-import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_icon_button.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../reports/providers/report_provider.dart';
 import '../providers/campaigns_provider.dart';
 
-/// Campaign detail screen — rewritten from scratch.
+/// Campaign detail — rebuilt layout.
 ///
-/// Shows ALL campaign information that a creator needs to understand the
-/// campaign. Layout: cover image → title + status → brand row → stat cards →
-/// info sections (description, requirements, deliverables, rules, demo asset,
-/// deadline, targeting). Sticky Apply Now button at bottom.
+/// Old layout: a flat `ListView` under a fixed 200px cover, in which the stat
+/// tiles, tag chips, info banners and every prose section were each a bespoke
+/// `Container` + `BoxDecoration`, the four prose blocks repeated the same
+/// heading-plus-boxed-text shape by hand, and the sticky Apply bar was built
+/// from a `GestureDetector` wrapping a manually drawn pill.
 ///
-/// No save/share buttons. No unnecessary scrolling.
+/// New layout: the cover becomes a collapsing [GlassSliverAppBar], so the
+/// title and status travel into a compact bar as you scroll instead of the
+/// image simply sliding away; the three numbers become a row of stat pills;
+/// the loose targeting facts (deadline, audience, page category, minimum
+/// followers) collect into one grouped "Details" section instead of being
+/// scattered between banners and inline rows; the prose sections share one
+/// card treatment; and the Apply bar is rebuilt on `GlassButton`.
+///
+/// `campaignDetailProvider`, `hasAppliedProvider`, every camelCase/snake_case
+/// field fallback, the apply and report routes and the closed/full rules are
+/// unchanged.
 class CampaignDetailScreen extends ConsumerWidget {
   final String campaignId;
   const CampaignDetailScreen({super.key, required this.campaignId});
@@ -37,21 +44,22 @@ class CampaignDetailScreen extends ConsumerWidget {
     final campaignAsync = ref.watch(campaignDetailProvider(campaignId));
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      // The cover is full-bleed media; ambient blobs would fight it.
+      showBlobs: false,
       body: campaignAsync.when(
         data: (campaign) {
           if (campaign == null) return _NotFound(onBack: () => context.pop());
           return _DetailBody(campaign: campaign, hasApplied: hasApplied);
         },
-        loading: () => _Loading(),
+        loading: () => const _Loading(),
         error: (e, _) => _Error(
           message: ErrorUtils.sanitize(e),
           onRetry: () => ref.invalidate(campaignDetailProvider(campaignId)),
-          onBack: () => context.pop(),
         ),
       ),
-      // Sticky Apply Now bar at the very bottom — never scrolls.
+      // Sticky Apply bar at the very bottom — never scrolls.
       bottomNavigationBar: campaignAsync.whenOrNull(
         data: (campaign) {
           if (campaign == null) return null;
@@ -86,7 +94,8 @@ class _DetailBody extends StatelessWidget {
     // ── Extract ALL fields with camelCase + snake_case fallbacks ──
     final title = _str(campaign, 'title', fallback: 'Untitled Campaign');
     final coverImage = _str(campaign, 'cover_image',
-        fallback: _str(campaign, 'coverImage', fallback: _str(campaign, 'bannerUrl')));
+        fallback: _str(campaign, 'coverImage',
+            fallback: _str(campaign, 'bannerUrl')));
     final description = _str(campaign, 'description');
     final status = _str(campaign, 'status');
     final category = _str(campaign, 'category');
@@ -94,10 +103,13 @@ class _DetailBody extends StatelessWidget {
     final brandName = _str(campaign, 'brandName',
         fallback: _str(campaign, 'companyName',
             fallback: _str(campaign, 'company_name',
-                fallback: (campaign['users'] as Map?)?['name']?.toString() ?? '')));
+                fallback:
+                    (campaign['users'] as Map?)?['name']?.toString() ?? '')));
     final brandAvatar = (campaign['users'] as Map?)?['profileImage'] as String?;
-    final budget = campaign['budget'] ?? campaign['totalBudget'] ?? campaign['total_budget'];
-    final perCreator = campaign['payout_per_creator'] ?? campaign['payoutPerCreator'];
+    final budget =
+        campaign['budget'] ?? campaign['totalBudget'] ?? campaign['total_budget'];
+    final perCreator =
+        campaign['payout_per_creator'] ?? campaign['payoutPerCreator'];
     final slots = _int(campaign, 'slots');
     final filledSlots = _int(campaign, 'filled_slots') ?? 0;
     final deadline = _str(campaign, 'deadline');
@@ -107,195 +119,352 @@ class _DetailBody extends StatelessWidget {
     final demoType = _str(campaign, 'demo_asset_type');
     final demoUrl = _str(campaign, 'demo_asset_url');
     final gender = _str(campaign, 'gender',
-        fallback: _str(campaign, 'targetGender', fallback: _str(campaign, 'target_gender')));
+        fallback: _str(campaign, 'targetGender',
+            fallback: _str(campaign, 'target_gender')));
     final minFollowers = _int(campaign, 'min_followers');
     final pageCategory = _str(campaign, 'pageProfileCategory',
         fallback: _str(campaign, 'page_profile_category'));
-    final createdAt = DateTime.tryParse(_str(campaign, 'createdAt',
-        fallback: _str(campaign, 'created_at')));
-    final deadlineDate = deadline.isNotEmpty ? DateTime.tryParse(deadline) : null;
+    final createdAt = DateTime.tryParse(
+        _str(campaign, 'createdAt', fallback: _str(campaign, 'created_at')));
+    final deadlineDate =
+        deadline.isNotEmpty ? DateTime.tryParse(deadline) : null;
 
     // Platforms split
     final platforms = platform.isNotEmpty
-        ? platform.split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList()
+        ? platform
+            .split(',')
+            .map((p) => p.trim())
+            .where((p) => p.isNotEmpty)
+            .toList()
         : <String>[];
 
-    return SafeArea(
-      top: false,
-      bottom: false,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        physics: const ClampingScrollPhysics(),
-        children: [
-          // ── Cover image + back button + status badge ──
-          _CoverSection(
-            coverImage: coverImage,
-            status: status,
-            onBack: () => context.pop(),
+    // The loose targeting facts, gathered into one grouped section.
+    final detailRows = <Widget>[
+      if (deadlineDate != null)
+        GlassRow(
+          icon: AppIcons.calendar,
+          title: 'Deadline',
+          trailingText: DateFormat('d MMM yyyy').format(deadlineDate),
+          showChevron: false,
+        ),
+      if (deadlineDate == null && createdAt != null)
+        GlassRow(
+          icon: AppIcons.calendar,
+          title: 'Started',
+          trailingText: DateFormat('d MMM').format(createdAt),
+          showChevron: false,
+        ),
+      if (gender.isNotEmpty)
+        GlassRow(
+          icon: AppIcons.user,
+          title: 'Audience',
+          trailingText: gender,
+          showChevron: false,
+        ),
+      if (pageCategory.isNotEmpty)
+        GlassRow(
+          icon: AppIcons.tag,
+          title: 'Page category',
+          trailingText: pageCategory,
+          showChevron: false,
+        ),
+      if (minFollowers != null && minFollowers > 0)
+        GlassRow(
+          icon: AppIcons.people,
+          title: 'Minimum followers',
+          iconColor: AppColors.warning,
+          trailingText: NumberFormat.compact().format(minFollowers),
+          showChevron: false,
+        ),
+    ];
+
+    return CustomScrollView(
+      slivers: [
+        GlassSliverAppBar(
+          title: title,
+          showBack: true,
+          onBack: () => context.pop(),
+          expandedHeight: 240,
+          actions: [
+            if (status.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.xs),
+                child: GlassChip.status(
+                  label: _statusLabel(status),
+                  color: _statusColor(status),
+                ),
+              ),
+          ],
+          flexibleSpace: FlexibleSpaceBar(
+            background: CampaignCoverHeader(
+              coverImageUrl: coverImage,
+              height: 240,
+              overlay: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.45),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Already-applied notice, first because it changes what you can do.
+        if (hasApplied.valueOrNull == true)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                0,
+              ),
+              child: _Banner(
+                icon: AppIcons.tick_circle,
+                text: 'You have already applied to this campaign',
+                color: AppColors.success,
+              ),
+            ),
           ),
 
-          // ── Main content ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+        // Title, brand, numbers and tags.
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Applied banner
-                if (hasApplied.valueOrNull == true) ...[
-                  _InfoBanner(
-                    icon: AppIcons.tick_circle,
-                    text: 'You have already applied to this campaign',
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Title
                 Text(
                   title,
                   style: AppTextStyles.title1.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // Brand row
-                if (brandName.isNotEmpty)
-                  _BrandRow(name: brandName, avatarUrl: brandAvatar),
-
-                const SizedBox(height: 20),
-
-                // ── Stat cards row ──
-                Row(
-                  children: [
-                    if (perCreator != null)
-                      Expanded(
-                        child: _StatTile(
-                          label: 'Per Creator',
-                          value: '₹${_fmtNum(perCreator)}',
-                          icon: AppIcons.wallet,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    if (perCreator != null && slots != null)
-                      const SizedBox(width: 10),
-                    if (slots != null)
-                      Expanded(
-                        child: _StatTile(
-                          label: 'Slots',
-                          value: '$filledSlots / $slots',
-                          icon: AppIcons.people,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                  ],
-                ),
-
-                // Total budget
-                if (budget != null) ...[
-                  const SizedBox(height: 10),
-                  _StatTile(
-                    label: 'Total Budget',
-                    value: '₹${_fmtNum(budget)}',
-                    icon: AppIcons.chart_2,
-                    color: AppColors.primary,
-                  ),
-                ],
-
-                // ── Tags row ──
-                if (platforms.isNotEmpty || category.isNotEmpty || gender.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                if (brandName.isNotEmpty) ...[
+                  AppSpacing.gapMd,
+                  Row(
                     children: [
-                      for (final p in platforms) _Tag(p),
-                      if (category.isNotEmpty) _Tag(category),
-                      if (gender.isNotEmpty) _Tag(gender),
-                      if (pageCategory.isNotEmpty) _Tag(pageCategory),
+                      PremiumAvatar(
+                        imageUrl: brandAvatar,
+                        name: brandName,
+                        size: 36,
+                      ),
+                      AppSpacing.gapSm,
+                      Expanded(
+                        child: Text(
+                          brandName,
+                          style: AppTextStyles.headline
+                              .copyWith(color: AppColors.textPrimary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ],
 
-                // ── Dates ──
-                if (deadlineDate != null || createdAt != null) ...[
-                  const SizedBox(height: 16),
-                  _InfoRow(
-                    icon: AppIcons.calendar,
-                    label: 'Deadline',
-                    value: deadlineDate != null
-                        ? DateFormat('d MMM yyyy').format(deadlineDate)
-                        : (createdAt != null
-                            ? 'Started ${DateFormat('d MMM').format(createdAt)}'
-                            : ''),
+                // The money and the slots, as pills.
+                if (perCreator != null || slots != null || budget != null) ...[
+                  AppSpacing.gapLg,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (perCreator != null)
+                        Expanded(
+                          child: GlassStatPill(
+                            value: '\u20B9${_fmtNum(perCreator)}',
+                            label: 'Per creator',
+                            icon: AppIcons.wallet,
+                            accent: AppColors.primary,
+                          ),
+                        ),
+                      if (perCreator != null && slots != null)
+                        AppSpacing.gapSm,
+                      if (slots != null)
+                        Expanded(
+                          child: GlassStatPill(
+                            value: '$filledSlots / $slots',
+                            label: 'Slots',
+                            icon: AppIcons.people,
+                          ),
+                        ),
+                      if (budget != null &&
+                          (perCreator != null || slots != null))
+                        AppSpacing.gapSm,
+                      if (budget != null)
+                        Expanded(
+                          child: GlassStatPill(
+                            value: '\u20B9${_fmtNum(budget)}',
+                            label: 'Total budget',
+                            icon: AppIcons.chart_2,
+                            accent: AppColors.primary,
+                          ),
+                        ),
+                    ],
                   ),
                 ],
 
-                // Min followers
-                if (minFollowers != null && minFollowers > 0) ...[
-                  const SizedBox(height: 10),
-                  _InfoBanner(
-                    icon: AppIcons.people,
-                    text: 'Minimum ${NumberFormat.compact().format(minFollowers)} followers required',
-                    color: AppColors.warning,
+                if (platforms.isNotEmpty || category.isNotEmpty) ...[
+                  AppSpacing.gapLg,
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      for (final p in platforms)
+                        GlassChip(label: p, dense: true),
+                      if (category.isNotEmpty)
+                        GlassChip(label: category, dense: true),
+                    ],
                   ),
                 ],
+              ],
+            ),
+          ),
+        ),
 
-                // ── Description ──
-                if (description.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  _Section(title: 'About This Campaign', body: description),
-                ],
+        // Grouped targeting facts.
+        if (detailRows.isNotEmpty)
+          SliverToBoxAdapter(
+            child: GlassSection(title: 'Details', children: detailRows),
+          ),
 
-                // ── Requirements ──
-                if (requirements.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  _Section(title: 'Requirements', body: requirements),
-                ],
+        // Prose sections, all sharing one treatment.
+        if (description.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _ProseSection(
+              title: 'About this campaign',
+              body: description,
+            ),
+          ),
+        if (requirements.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _ProseSection(title: 'Requirements', body: requirements),
+          ),
+        if (deliverables.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _ProseSection(title: 'Deliverables', body: deliverables),
+          ),
+        if (rules.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _ProseSection(title: 'Rules', body: rules),
+          ),
 
-                // ── Deliverables ──
-                if (deliverables.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  _Section(title: 'Deliverables', body: deliverables),
-                ],
-
-                // ── Rules ──
-                if (rules.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  _Section(title: 'Rules', body: rules),
-                ],
-
-                // ── Demo Asset ──
-                if (demoType.isNotEmpty && demoUrl.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Text('Demo Asset',
-                      style: AppTextStyles.headline
-                          .copyWith(color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
+        if (demoType.isNotEmpty && demoUrl.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _sectionLabel('Demo asset'),
                   DemoAssetView(type: demoType, value: demoUrl),
                 ],
+              ),
+            ),
+          ),
 
-                // ── Report this campaign ──
-                const SizedBox(height: 24),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () => context.push('/report', extra: {
-                      'targetType': ReportTargetType.campaign,
-                      'targetId': (campaign['id'] ?? '').toString(),
-                      'targetLabel': title,
-                    }),
-                    icon: const Icon(AppIcons.flag, size: 18),
-                    label: const Text('Report this campaign'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
+        SliverToBoxAdapter(
+          child: Center(
+            child: GlassButton.ghost(
+              label: 'Report this campaign',
+              icon: AppIcons.flag,
+              size: GlassButtonSize.small,
+              onPressed: () => context.push('/report', extra: {
+                'targetType': ReportTargetType.campaign,
+                'targetId': (campaign['id'] ?? '').toString(),
+                'targetLabel': title,
+              }),
+            ),
+          ),
+        ),
 
-                // Bottom padding for the sticky Apply bar
-                const SizedBox(height: 32),
-              ],
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+      ],
+    );
+  }
+}
+
+/// Group heading matching the tracked-caps header used by `GlassSection`.
+Widget _sectionLabel(String text) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      0,
+      AppSpacing.xs,
+      AppSpacing.md,
+    ),
+    child: Text(
+      text.toUpperCase(),
+      style: AppTextStyles.caption1.copyWith(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+      ),
+    ),
+  );
+}
+
+Color _statusColor(String s) {
+  final lower = s.toLowerCase();
+  if (lower == 'active' || lower == 'open') return AppColors.success;
+  if (lower == 'closed' || lower == 'inactive') return AppColors.neutral;
+  return AppColors.primary;
+}
+
+String _statusLabel(String s) {
+  if (s.isEmpty) return '';
+  return s[0].toUpperCase() + s.substring(1);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROSE SECTION — heading over a body card
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _ProseSection extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _ProseSection({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _sectionLabel(title),
+          GlassCard(
+            child: Text(
+              body,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.55,
+              ),
             ),
           ),
         ],
@@ -305,291 +474,40 @@ class _DetailBody extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// COVER IMAGE SECTION
+// BANNER — tinted notice with an icon
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _CoverSection extends StatelessWidget {
-  final String coverImage;
-  final String status;
-  final VoidCallback onBack;
-
-  const _CoverSection({
-    required this.coverImage,
-    required this.status,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
-
-    return Stack(
-      children: [
-        CampaignCoverHeader(
-          coverImageUrl: coverImage,
-          height: 200 + topPad,
-          overlay: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.4), Colors.transparent],
-                ),
-              ),
-            ),
-          ],
-        ),
-        // Back button only — NO save/share
-        Positioned(
-          top: topPad + 8,
-          left: 8,
-          child: PremiumIconButton(
-            icon: AppIcons.arrow_left,
-            background: true,
-            color: Colors.white,
-            onPressed: onBack,
-          ),
-        ),
-        // Status badge
-        if (status.isNotEmpty)
-          Positioned(
-            top: topPad + 12,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: _statusColor(status),
-                borderRadius: AppRadius.allSm,
-              ),
-              child: Text(
-                _statusLabel(status),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Color _statusColor(String s) {
-    final lower = s.toLowerCase();
-    if (lower == 'active' || lower == 'open') return AppColors.success;
-    if (lower == 'closed' || lower == 'inactive') return AppColors.neutral;
-    return AppColors.primary;
-  }
-
-  String _statusLabel(String s) {
-    if (s.isEmpty) return '';
-    return s[0].toUpperCase() + s.substring(1);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// BRAND ROW
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _BrandRow extends StatelessWidget {
-  final String name;
-  final String? avatarUrl;
-
-  const _BrandRow({required this.name, this.avatarUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        PremiumAvatar(imageUrl: avatarUrl, name: name, size: 36),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            name,
-            style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// STAT TILE
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _StatTile extends StatelessWidget {
-  final String label;
-  final String value;
+class _Banner extends StatelessWidget {
   final IconData icon;
+  final String text;
   final Color color;
 
-  const _StatTile({
-    required this.label,
-    required this.value,
+  const _Banner({
     required this.icon,
+    required this.text,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
+    return GlassCard(
+      rim: color.withOpacity(0.30),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 10),
+          Icon(icon, size: 19, color: color),
+          AppSpacing.gapMd,
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: AppTextStyles.headline.copyWith(color: color)),
-                const SizedBox(height: 2),
-                Text(label,
-                    style: AppTextStyles.footnote
-                        .copyWith(color: AppColors.textSecondary)),
-              ],
+            child: Text(
+              text,
+              style: AppTextStyles.subheadline.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// TAG CHIP
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _Tag extends StatelessWidget {
-  final String label;
-  const _Tag(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: AppRadius.pillAll,
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.footnote.copyWith(color: AppColors.textPrimary),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// INFO ROW (icon + label + value)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 8),
-        Text('$label: ',
-            style: AppTextStyles.subheadline
-                .copyWith(color: AppColors.textSecondary)),
-        Expanded(
-          child: Text(value,
-              style: AppTextStyles.subheadline
-                  .copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// INFO BANNER (colored bar with icon + text)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _InfoBanner extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-
-  const _InfoBanner({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(text,
-                style: AppTextStyles.subheadline.copyWith(color: color)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SECTION (title + body text)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _Section extends StatelessWidget {
-  final String title;
-  final String body;
-
-  const _Section({required this.title, required this.body});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: AppTextStyles.headline.copyWith(color: AppColors.textPrimary)),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: AppRadius.allMd,
-            border: Border.all(color: AppColors.border, width: 0.5),
-          ),
-          child: Text(
-            body,
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -614,88 +532,63 @@ class CampaignDetailBottomBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasApplied = ref.watch(hasAppliedProvider(campaignId));
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        16, 12, 16, 12 + MediaQuery.of(context).padding.bottom,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border, width: 1),
+        ),
       ),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        border: const Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.lg,
+          AppSpacing.md + MediaQuery.of(context).padding.bottom,
+        ),
+        child: _buildButton(context, hasApplied),
       ),
-      child: _buildButton(context, ref, hasApplied),
     );
   }
 
-  Widget _buildButton(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<bool> hasApplied,
-  ) {
+  Widget _buildButton(BuildContext context, AsyncValue<bool> hasApplied) {
     if (isClosed) {
-      return _StatusBtn(label: 'Closed', color: AppColors.neutral);
+      return const _StatusBtn(label: 'Closed', color: AppColors.neutral);
     }
     if (isFull) {
-      return _StatusBtn(label: 'Slots Full', color: AppColors.error);
+      return const _StatusBtn(label: 'Slots full', color: AppColors.error);
     }
     return hasApplied.when(
       data: (applied) {
         if (applied) {
-          return _StatusBtn(label: 'Already Applied', color: AppColors.success);
+          return const _StatusBtn(
+            label: 'Already applied',
+            color: AppColors.success,
+          );
         }
-        return _ApplyBtn(
-          onPressed: () => context.push('/campaigns/$campaignId/apply'),
-        );
+        return _applyButton(context);
       },
-      loading: () => _ApplyBtn(loading: true),
-      error: (_, __) => _ApplyBtn(
-        onPressed: () => context.push('/campaigns/$campaignId/apply'),
+      loading: () => const GlassButton(
+        label: 'Apply now',
+        loading: true,
+        size: GlassButtonSize.large,
+        onPressed: null,
       ),
+      error: (_, __) => _applyButton(context),
+    );
+  }
+
+  Widget _applyButton(BuildContext context) {
+    return GlassButton(
+      label: 'Apply now',
+      trailingIcon: AppIcons.arrow_right_3,
+      size: GlassButtonSize.large,
+      onPressed: () => context.push('/campaigns/$campaignId/apply'),
     );
   }
 }
 
-class _ApplyBtn extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final bool loading;
-
-  const _ApplyBtn({this.onPressed, this.loading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: loading ? null : onPressed,
-      child: Container(
-        height: 48,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: AppRadius.allMd,
-        ),
-        child: loading
-            ? const SizedBox(
-                height: 20, width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Apply Now',
-                      style: AppTextStyles.button
-                          .copyWith(color: Colors.white, fontSize: 15)),
-                  const SizedBox(width: 6),
-                  const Icon(AppIcons.arrow_right_3,
-                      size: 18, color: Colors.white),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
+/// Non-actionable state in the Apply slot — closed, full, already applied.
 class _StatusBtn extends StatelessWidget {
   final String label;
   final Color color;
@@ -705,16 +598,21 @@ class _StatusBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 58,
       width: double.infinity,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: color.withOpacity(0.32)),
       ),
-      child: Text(label,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        label,
+        style: AppTextStyles.labelLarge.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
@@ -724,21 +622,23 @@ class _StatusBtn extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _Loading extends StatelessWidget {
+  const _Loading();
+
   @override
   Widget build(BuildContext context) {
     return const SafeArea(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ShimmerCard(height: 200),
-            SizedBox(height: 16),
-            ShimmerLine(width: 200, height: 20),
-            SizedBox(height: 12),
-            ShimmerLine(height: 14),
-            SizedBox(height: 8),
-            ShimmerLine(width: 150, height: 14),
+            GlassSkeleton(height: 200, borderRadius: AppRadius.allLg),
+            SizedBox(height: AppSpacing.lg),
+            GlassSkeleton(width: 220, height: 24),
+            SizedBox(height: AppSpacing.md),
+            GlassSkeleton(height: 15),
+            SizedBox(height: AppSpacing.sm),
+            GlassSkeleton(width: 160, height: 15),
           ],
         ),
       ),
@@ -749,34 +649,25 @@ class _Loading extends StatelessWidget {
 class _Error extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  final VoidCallback onBack;
 
-  const _Error({
-    required this.message,
-    required this.onRetry,
-    required this.onBack,
-  });
+  const _Error({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Stack(
         children: [
-          Positioned(
-            top: 8, left: 8,
-            child: PremiumIconButton(
-              icon: AppIcons.arrow_left,
-              onPressed: onBack,
+          Center(
+            child: GlassErrorState(
+              title: 'Failed to load campaign',
+              message: message,
+              onRetry: onRetry,
             ),
           ),
-          Center(
-            child: EmptyState(
-              icon: AppIcons.warning_2,
-              title: 'Failed to load campaign',
-              subtitle: message,
-              ctaLabel: 'Retry',
-              onCta: onRetry,
-            ),
+          const Positioned(
+            top: AppSpacing.sm,
+            left: AppSpacing.sm,
+            child: _BackButton(),
           ),
         ],
       ),
@@ -793,22 +684,37 @@ class _NotFound extends StatelessWidget {
     return SafeArea(
       child: Stack(
         children: [
-          Positioned(
-            top: 8, left: 8,
-            child: PremiumIconButton(
-              icon: AppIcons.arrow_left,
-              onPressed: onBack,
-            ),
-          ),
           const Center(
-            child: EmptyState(
+            child: GlassEmptyState(
               icon: AppIcons.document,
               title: 'Campaign not found',
-              subtitle: 'This campaign may have been removed.',
+              message: 'This campaign may have been removed.',
             ),
+          ),
+          Positioned(
+            top: AppSpacing.sm,
+            left: AppSpacing.sm,
+            child: _BackButton(onBack: onBack),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Back affordance for the states that render without the sliver app bar.
+class _BackButton extends StatelessWidget {
+  final VoidCallback? onBack;
+  const _BackButton({this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassIconButton(
+      icon: AppIcons.arrow_left,
+      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      size: 36,
+      iconSize: 19,
+      onTap: onBack ?? () => Navigator.of(context).maybePop(),
     );
   }
 }

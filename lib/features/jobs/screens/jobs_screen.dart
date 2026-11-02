@@ -8,17 +8,38 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_card.dart';
-import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/cached_image.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/jobs_provider.dart';
 import 'job_detail_screen.dart';
 import 'submit_task_screen.dart';
 
+/// Jobs — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` whose `bottom` held a hand-built Material
+/// `TabBar` with its own gradient indicator; two tabs of `PremiumCard`s; two
+/// separate hand-rolled horizontal chip strips (one for categories, one for
+/// statuses), each with its own selected/unselected gradient and shadow
+/// logic; a bespoke `_StatusBadge` with a `_BadgeConfig` lookup table; and the
+/// old `EmptyState` / `ShimmerCard` widgets. Every piece carried an `isDark`
+/// branch.
+///
+/// New layout: both chip strips replaced by the shared `GlassChipRow`, the tab
+/// bar by the shared segmented control, the status badge by
+/// `GlassChip.status`, and the cards rebuilt so the payout — the number people
+/// actually scan for — leads each row instead of being buried mid-card. The
+/// `isDark` branches are gone: the app is light mode only.
+///
+/// One deliberate departure from the usual screen pattern: this screen keeps a
+/// fixed [GlassAppBar] rather than the collapsing large title. The two tabs
+/// own independently scrolling, lazily built lists with their own
+/// pull-to-refresh, which a single shared [CustomScrollView] cannot host. The
+/// alternative — an `IndexedStack` of non-scrolling tabs, as on the coupons
+/// screen — would build every job card eagerly, and these lists are unbounded.
+///
+/// `availableJobsProvider`, `jobCategoriesProvider`, `jobCategoryFilterProvider`,
+/// `jobSearchProvider`, `myJobsStatusFilterProvider`, `myJobApplicationsProvider`,
+/// the row keys and both navigation targets are unchanged.
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
 
@@ -46,18 +67,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
+    return GlassScaffold(
+      appBar: GlassAppBar(
         title: 'Jobs',
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: _SegmentedTabBar(
-            controller: _tabController,
-            isDark: isDark,
-          ),
+        bottom: GlassTabBar(
+          controller: _tabController,
+          labels: const ['Available', 'My jobs'],
         ),
       ),
       body: TabBarView(
@@ -65,55 +80,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         children: [
           _AvailableJobsTab(searchController: _searchController),
           const _MyJobsTab(),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Segmented Tab Bar ────────────────────────────────────────────────────────
-
-class _SegmentedTabBar extends StatelessWidget {
-  final TabController controller;
-  final bool isDark;
-
-  const _SegmentedTabBar({
-    required this.controller,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-      height: 40,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-        borderRadius: AppRadius.allMd,
-      ),
-      child: TabBar(
-        controller: controller,
-        indicator: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: AppRadius.allSm,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        labelColor: Colors.white,
-        unselectedLabelColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        dividerColor: Colors.transparent,
-        padding: const EdgeInsets.all(3),
-        tabs: const [
-          Tab(text: 'Available Jobs'),
-          Tab(text: 'My Jobs'),
         ],
       ),
     );
@@ -148,12 +114,15 @@ class _AvailableJobsTabState extends ConsumerState<_AvailableJobsTab> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // Search bar
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
-              child: PremiumTextField.search(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: GlassTextField.search(
                 controller: widget.searchController,
                 hint: 'Search jobs…',
                 onChanged: (val) =>
@@ -162,151 +131,76 @@ class _AvailableJobsTabState extends ConsumerState<_AvailableJobsTab> {
             ),
           ),
 
-          // Category filter chips
+          // Category filter.
           SliverToBoxAdapter(
             child: categories.when(
-              data: (cats) => _CategoryChips(
-                categories: cats,
-                selected: selectedCategory,
-                onSelect: (cat) =>
-                    ref.read(jobCategoryFilterProvider.notifier).state = cat,
-              ),
+              data: (cats) {
+                if (cats.isEmpty) return const SizedBox.shrink();
+                final index = cats.indexOf(selectedCategory);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: GlassChipRow(
+                    labels: cats,
+                    selectedIndex: index < 0 ? 0 : index,
+                    onSelected: (i) => ref
+                        .read(jobCategoryFilterProvider.notifier)
+                        .state = cats[i],
+                  ),
+                );
+              },
               loading: () => const SizedBox(height: 36),
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),
 
-          // Jobs list
           jobs.when(
             data: (list) => list.isEmpty
-                ? SliverFillRemaining(
+                ? const SliverFillRemaining(
                     hasScrollBody: false,
-                    child: EmptyState(
+                    child: GlassEmptyState(
                       icon: AppIcons.briefcase,
                       title: 'No jobs available',
-                      subtitle: 'Check back soon — new jobs get posted regularly.',
+                      message:
+                          'Check back soon — new jobs get posted regularly.',
                     ),
                   )
                 : SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: _JobCard(
-                            job: list[index],
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => JobDetailScreen(
-                                    jobId: list[index]['id'] as String),
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xxl,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: list.length,
+                      separatorBuilder: (_, __) => AppSpacing.gapMd,
+                      itemBuilder: (context, index) => RepaintBoundary(
+                        child: _JobCard(
+                          job: list[index],
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => JobDetailScreen(
+                                jobId: list[index]['id'] as String,
                               ),
                             ),
                           ),
                         ),
-                        childCount: list.length,
                       ),
                     ),
                   ),
-            loading: () => SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (_, __) => const Padding(
-                    padding: EdgeInsets.only(bottom: AppSpacing.md),
-                    child: ShimmerCard(height: 140),
-                  ),
-                  childCount: 5,
-                ),
-              ),
+            loading: () => const SliverToBoxAdapter(
+              child: _JobSkeletonList(count: 5),
             ),
             error: (e, _) => SliverFillRemaining(
               hasScrollBody: false,
-              child: EmptyState(
-                icon: AppIcons.warning_2,
-                title: 'Something went wrong',
-                subtitle: ErrorUtils.sanitize(e),
-                cta: PremiumButton(
-                  label: 'Retry',
-                  icon: AppIcons.refresh,
-                  variant: PremiumButtonVariant.tonal,
-                  expand: false,
-                  onPressed: () => ref.invalidate(availableJobsProvider),
-                ),
+              child: GlassErrorState(
+                message: ErrorUtils.sanitize(e),
+                onRetry: () => ref.invalidate(availableJobsProvider),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── Category Filter Chips ────────────────────────────────────────────────────
-
-class _CategoryChips extends StatelessWidget {
-  final List<String> categories;
-  final String selected;
-  final ValueChanged<String> onSelect;
-
-  const _CategoryChips({
-    required this.categories,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          final isSelected = cat == selected;
-          return GestureDetector(
-            onTap: () => onSelect(cat),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.xs + 2),
-              decoration: BoxDecoration(
-                gradient: isSelected ? AppColors.primaryGradient : null,
-                color: isSelected
-                    ? null
-                    : (isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt),
-                borderRadius: AppRadius.allMd,
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ]
-                    : null,
-              ),
-              child: Text(
-                cat,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary),
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -322,7 +216,6 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = job['title'] as String? ?? 'Untitled Job';
     final category = job['category'] as String?;
     final description = job['description'] as String? ?? '';
@@ -337,17 +230,16 @@ class _JobCard extends StatelessWidget {
     // Exact slot count is loaded on the detail screen.
     final bool hasSlotCap = maxSlots != null;
 
-    return PremiumCard(
+    return GlassCard.bare(
       onTap: onTap,
-      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cover image (optional)
           if (coverUrl != null && coverUrl.isNotEmpty)
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.lg)),
+                top: Radius.circular(AppRadius.lg),
+              ),
               child: CachedImage(
                 imageUrl: coverUrl,
                 height: 120,
@@ -356,90 +248,68 @@ class _JobCard extends StatelessWidget {
                 errorBuilder: (_) => const SizedBox.shrink(),
               ),
             ),
-
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title + category badge row
+                // The payout leads: it is what people scan a job list for.
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.textPrimary,
+                        '\u20B9${_formatAmount(paymentAmount)}',
+                        style: AppTextStyles.title1.copyWith(
+                          color: AppColors.accentOrange,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
-                    if (category != null && category.isNotEmpty) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      _CategoryBadge(category: category),
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.sm),
-
-                // Payment — most prominent number
-                Row(
-                  children: [
-                    Icon(AppIcons.money,
-                        size: 16, color: AppColors.accentOrange),
-                    const SizedBox(width: 4),
-                    Text(
-                      '₹${_formatAmount(paymentAmount)}',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.accentOrange,
-                        letterSpacing: -0.5,
+                    if (category != null && category.isNotEmpty)
+                      GlassChip.status(
+                        label: category,
+                        color: AppColors.primary,
                       ),
-                    ),
                   ],
                 ),
-
-                const SizedBox(height: AppSpacing.sm),
-
-                // Description preview
+                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  description,
+                  title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
-                    height: 1.5,
-                  ),
+                  style: AppTextStyles.headline
+                      .copyWith(color: AppColors.textPrimary),
                 ),
-
-                // Deadline + slots row
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.footnote.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
                 if (deadline != null || hasSlotCap) ...[
-                  const SizedBox(height: AppSpacing.sm),
+                  AppSpacing.gapMd,
                   Wrap(
-                    spacing: AppSpacing.sm,
+                    spacing: AppSpacing.lg,
                     runSpacing: AppSpacing.xs,
                     children: [
                       if (deadline != null)
-                        _MetaChip(
+                        _MetaItem(
                           icon: AppIcons.calendar,
                           label:
                               'Due ${DateFormat('d MMM y').format(deadline)}',
-                          isDark: isDark,
                         ),
                       if (hasSlotCap)
-                        _MetaChip(
+                        _MetaItem(
                           icon: AppIcons.people,
                           label: '$maxSlots slots',
-                          isDark: isDark,
                         ),
                     ],
                   ),
@@ -460,50 +330,27 @@ class _JobCard extends StatelessWidget {
   }
 }
 
-class _CategoryBadge extends StatelessWidget {
-  final String category;
-  const _CategoryBadge({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.10),
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(
-        category,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primary,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
+/// Small icon-plus-label metadata pair used on the job cards.
+class _MetaItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool isDark;
 
-  const _MetaChip(
-      {required this.icon, required this.label, required this.isDark});
+  const _MetaItem({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final fg =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: fg),
-        const SizedBox(width: 3),
-        Text(label,
-            style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w500)),
+        Icon(icon, size: 13, color: AppColors.textHint),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: AppTextStyles.caption1.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -526,7 +373,8 @@ class _MyJobsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(myJobsStatusFilterProvider);
     final apps = ref.watch(myJobApplicationsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final selectedIndex = _statuses.indexWhere((s) => s.$1 == selected);
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -537,117 +385,59 @@ class _MyJobsTab extends ConsumerWidget {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // Status filter bar
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
-                children: _statuses.map((s) {
-                  final isActive = s.$1 == selected;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
-                    child: GestureDetector(
-                      onTap: () => ref
-                          .read(myJobsStatusFilterProvider.notifier)
-                          .state = s.$1,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                        decoration: BoxDecoration(
-                          gradient: isActive ? AppColors.primaryGradient : null,
-                          color: isActive
-                              ? null
-                              : (isDark
-                                  ? AppColors.darkSurfaceAlt
-                                  : AppColors.surfaceAlt),
-                          borderRadius: AppRadius.allSm,
-                          boxShadow: isActive
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.25),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          s.$2,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isActive
-                                ? Colors.white
-                                : (isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.textSecondary),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                0,
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+              ),
+              child: GlassChipRow(
+                labels: _statuses.map((s) => s.$2).toList(growable: false),
+                selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+                onSelected: (i) => ref
+                    .read(myJobsStatusFilterProvider.notifier)
+                    .state = _statuses[i].$1,
               ),
             ),
           ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
 
           apps.when(
             data: (list) => list.isEmpty
                 ? SliverFillRemaining(
                     hasScrollBody: false,
-                    child: EmptyState(
+                    child: GlassEmptyState(
                       icon: AppIcons.briefcase,
                       title: 'No jobs here yet',
-                      subtitle: selected == 'all'
-                          ? 'Apply to a job from Available Jobs to get started.'
-                          : 'You have no ${selected} jobs yet.',
+                      message: selected == 'all'
+                          ? 'Apply to a job from Available to get started.'
+                          : 'You have no $selected jobs yet.',
                     ),
                   )
                 : SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxl),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: _MyJobCard(application: list[index]),
-                        ),
-                        childCount: list.length,
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xxl,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: list.length,
+                      separatorBuilder: (_, __) => AppSpacing.gapMd,
+                      itemBuilder: (context, index) => RepaintBoundary(
+                        child: _MyJobCard(application: list[index]),
                       ),
                     ),
                   ),
-            loading: () => SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (_, __) => const Padding(
-                    padding: EdgeInsets.only(bottom: AppSpacing.md),
-                    child: ShimmerCard(height: 120),
-                  ),
-                  childCount: 4,
-                ),
-              ),
+            loading: () => const SliverToBoxAdapter(
+              child: _JobSkeletonList(count: 4),
             ),
             error: (e, _) => SliverFillRemaining(
               hasScrollBody: false,
-              child: EmptyState(
-                icon: AppIcons.warning_2,
-                title: 'Something went wrong',
-                subtitle: ErrorUtils.sanitize(e),
-                cta: PremiumButton(
-                  label: 'Retry',
-                  icon: AppIcons.refresh,
-                  variant: PremiumButtonVariant.tonal,
-                  expand: false,
-                  onPressed: () => ref.invalidate(myJobApplicationsProvider),
-                ),
+              child: GlassErrorState(
+                message: ErrorUtils.sanitize(e),
+                onRetry: () => ref.invalidate(myJobApplicationsProvider),
               ),
             ),
           ),
@@ -666,7 +456,6 @@ class _MyJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final job = application['jobs'] as Map<String, dynamic>? ?? {};
     final title = job['title'] as String? ?? 'Untitled Job';
     final category = job['category'] as String?;
@@ -675,99 +464,73 @@ class _MyJobCard extends StatelessWidget {
     final rejectionReason = application['rejection_reason'] as String?;
     final applicationId = application['id'] as String? ?? '';
 
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    final showReason = status == 'rejected' &&
+        rejectionReason != null &&
+        rejectionReason.trim().isNotEmpty;
+
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: title + status badge
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.10),
-                  borderRadius: AppRadius.allSm,
-                ),
-                child: const Icon(AppIcons.briefcase,
-                    size: 20, color: AppColors.primary),
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              const GlassIconBubble(icon: AppIcons.briefcase),
+              AppSpacing.gapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.bodyMedium.copyWith(
+                      style: AppTextStyles.headline
+                          .copyWith(color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\u20B9${_formatAmount(paymentAmount)}'
+                      '${category != null && category.isNotEmpty ? ' · $category' : ''}',
+                      style: AppTextStyles.subheadline.copyWith(
+                        color: AppColors.accentOrange,
                         fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
                       ),
                     ),
-                    if (category != null && category.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        category,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark
-                              ? AppColors.darkTextHint
-                              : AppColors.textHint,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              _StatusBadge(status: status),
+              AppSpacing.gapSm,
+              GlassChip.status(
+                label: _statusLabel(status),
+                color: _statusColor(status),
+              ),
             ],
           ),
 
-          const SizedBox(height: AppSpacing.sm),
-
-          // Payment
-          Text(
-            '₹${_formatAmount(paymentAmount)}',
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              color: AppColors.accentOrange,
-            ),
-          ),
-
-          // Rejection reason
-          if (status == 'rejected' &&
-              rejectionReason != null &&
-              rejectionReason.trim().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Container(
+          if (showReason) ...[
+            AppSpacing.gapMd,
+            GlassCard(
+              level: GlassLevel.subtle,
+              rim: AppColors.error.withOpacity(0.25),
               padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.08),
-                borderRadius: AppRadius.allSm,
-                border: Border.all(
-                    color: AppColors.error.withOpacity(0.20)),
-              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(AppIcons.info_circle,
-                      size: 14, color: AppColors.error),
+                  const Icon(
+                    AppIcons.info_circle,
+                    size: 15,
+                    color: AppColors.error,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       rejectionReason,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          height: 1.4),
+                      style: AppTextStyles.caption1.copyWith(
+                        color: AppColors.error,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -775,13 +538,12 @@ class _MyJobCard extends StatelessWidget {
             ),
           ],
 
-          // Submit Task button for applied status
           if (status == 'applied') ...[
-            const SizedBox(height: AppSpacing.md),
-            PremiumButton(
-              label: 'Submit Task',
+            AppSpacing.gapMd,
+            GlassButton.glass(
+              label: 'Submit task',
               icon: AppIcons.document_upload,
-              variant: PremiumButtonVariant.tonal,
+              size: GlassButtonSize.small,
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -806,74 +568,72 @@ class _MyJobCard extends StatelessWidget {
   }
 }
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-class _StatusBadge extends StatelessWidget {
-  final String status;
-
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final config = _configFor(status, isDark);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: config.bg,
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(
-        config.label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: config.fg,
-        ),
-      ),
-    );
-  }
-
-  _BadgeConfig _configFor(String status, bool isDark) {
-    switch (status) {
-      case 'applied':
-        return _BadgeConfig(
-          label: 'Applied',
-          bg: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-          fg: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-        );
-      case 'submitted':
-        return _BadgeConfig(
-          label: 'Submitted',
-          bg: AppColors.accentOrange.withOpacity(0.12),
-          fg: AppColors.accentOrange,
-        );
-      case 'approved':
-        return _BadgeConfig(
-          label: 'Approved',
-          bg: AppColors.success.withOpacity(0.12),
-          fg: AppColors.success,
-        );
-      case 'rejected':
-        return _BadgeConfig(
-          label: 'Rejected',
-          bg: AppColors.error.withOpacity(0.12),
-          fg: AppColors.error,
-        );
-      default:
-        return _BadgeConfig(
-          label: status,
-          bg: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-          fg: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-        );
-    }
+/// Status label / colour pairing, replacing the old `_BadgeConfig` table.
+String _statusLabel(String status) {
+  switch (status) {
+    case 'applied':
+      return 'Applied';
+    case 'submitted':
+      return 'Submitted';
+    case 'approved':
+      return 'Approved';
+    case 'rejected':
+      return 'Rejected';
+    default:
+      return status;
   }
 }
 
-class _BadgeConfig {
-  final String label;
-  final Color bg;
-  final Color fg;
-  const _BadgeConfig({required this.label, required this.bg, required this.fg});
+Color _statusColor(String status) {
+  switch (status) {
+    case 'submitted':
+      return AppColors.accentOrange;
+    case 'approved':
+      return AppColors.success;
+    case 'rejected':
+      return AppColors.error;
+    case 'applied':
+    default:
+      return AppColors.textSecondary;
+  }
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+class _JobSkeletonList extends StatelessWidget {
+  final int count;
+
+  const _JobSkeletonList({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < count; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    GlassSkeleton(width: 110, height: 24),
+                    SizedBox(height: 10),
+                    GlassSkeleton(height: 15),
+                    SizedBox(height: 8),
+                    GlassSkeleton(width: 180, height: 12),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
