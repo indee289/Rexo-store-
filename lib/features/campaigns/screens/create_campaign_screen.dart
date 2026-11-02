@@ -4,18 +4,31 @@ import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/image_upload_field.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_icon_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
 
+/// Create campaign — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over one undifferentiated run of ten
+/// label-plus-field pairs, where four of the ten were Material
+/// `DropdownButton`s inside hand-decorated `Container`s and the submit button
+/// sat at the very bottom of the scroll, past roughly two screens of form.
+///
+/// New layout: a collapsing large title; the form split into named groups
+/// (basics, classification, slots and budget, timing, brand, rules) so the
+/// page reads as six short steps instead of one long column; the four
+/// dropdowns replaced by grouped picker rows that show the current value as
+/// detail text and open a sheet of options; the two money fields paired
+/// side by side because they are read against each other; and the submit
+/// action pinned to the bottom so it is reachable at any scroll offset.
+///
+/// The insert payload, `campaignsListProvider` invalidation, every validator
+/// and the option lists are unchanged.
 class CreateCampaignScreen extends ConsumerStatefulWidget {
   const CreateCampaignScreen({super.key});
 
@@ -89,13 +102,10 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_deadline == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a campaign deadline'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Please select a campaign deadline',
+        tone: GlassToastTone.error,
       );
       return;
     }
@@ -145,274 +155,25 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
       // Invalidate campaigns list to refresh
       ref.invalidate(campaignsListProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Campaign created successfully!'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: AppRadius.allMd,
-          ),
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Campaign created successfully!',
+        tone: GlassToastTone.success,
       );
 
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ErrorUtils.sanitize(e)),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: AppRadius.allMd,
-          ),
-        ),
+      showGlassSnackBar(
+        context,
+        message: ErrorUtils.sanitize(e),
+        tone: GlassToastTone.error,
       );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Create campaign',
-        showBack: true,
-        onBack: () => context.pop(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Campaign Name
-              _buildLabel('Campaign Name'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _campaignNameController,
-                hint: 'Enter campaign name',
-                prefixIcon: AppIcons.document_text,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a campaign name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 2. Category dropdown
-              _buildLabel('Category'),
-              const SizedBox(height: AppSpacing.sm),
-              _buildDropdown(
-                value: _selectedCategory,
-                items: _categories,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedCategory = value);
-                  }
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 3. Platform dropdown
-              _buildLabel('Platform'),
-              const SizedBox(height: AppSpacing.sm),
-              _buildDropdown(
-                value: _selectedPlatform,
-                items: _platforms,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedPlatform = value);
-                  }
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 4. Slots (number)
-              _buildLabel('Slots'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _slotsController,
-                hint: 'Number of slots (e.g. 10)',
-                prefixIcon: AppIcons.people,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter number of slots';
-                  }
-                  if (int.tryParse(value.trim()) == null) {
-                    return 'Please enter a valid number';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 5. Budget (number)
-              _buildLabel('Budget (\u20B9)'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _budgetController,
-                hint: 'Total budget',
-                prefixIcon: AppIcons.money,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter the budget';
-                  }
-                  if (double.tryParse(value.trim()) == null) {
-                    return 'Please enter a valid amount';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 6. Per Creator Budget
-              _buildLabel('Per Creator Budget (\u20B9)'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _perCreatorController,
-                hint: 'Payout per creator',
-                prefixIcon: AppIcons.money_recive,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter per-creator budget';
-                  }
-                  if (double.tryParse(value.trim()) == null) {
-                    return 'Please enter a valid amount';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 7. Deadline
-              _buildLabel('Deadline'),
-              const SizedBox(height: AppSpacing.sm),
-              _buildDeadlineField(),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 8. Company Name
-              _buildLabel('Company Name'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _companyNameController,
-                hint: 'Enter company name',
-                prefixIcon: AppIcons.building,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter company name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 8b. Campaign Description
-              _buildLabel('Description'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField.multiline(
-                controller: _descriptionController,
-                hint: 'Describe your campaign — what creators need to know',
-                minLines: 3,
-                maxLines: 6,
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 8c. Campaign Rules (optional)
-              _buildLabel('Rules (Optional)'),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField.multiline(
-                controller: _rulesController,
-                hint: 'Any specific rules or guidelines for creators',
-                minLines: 2,
-                maxLines: 4,
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 7. Campaign Cover Image
-              ImageUploadField(
-                label: 'Campaign Cover Image',
-                storageFolder: 'campaign-assets',
-                onImageUploaded: (url) {
-                  _coverImageUrl = url;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 8. Gender dropdown
-              _buildLabel('Gender'),
-              const SizedBox(height: AppSpacing.sm),
-              _buildDropdown(
-                value: _selectedGender,
-                items: _genders,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedGender = value);
-                  }
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 9. Page Profile Category dropdown
-              _buildLabel('Page Profile Category'),
-              const SizedBox(height: AppSpacing.sm),
-              _buildDropdown(
-                value: _selectedPageProfileCategory,
-                items: _pageProfileCategories,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedPageProfileCategory = value);
-                  }
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.xxl),
-
-              // Submit button
-              PremiumButton(
-                label: 'Create campaign',
-                icon: AppIcons.add_circle,
-                gradient: true,
-                loading: _isSubmitting,
-                onPressed: _isSubmitting ? null : _handleSubmit,
-              ),
-
-              const SizedBox(height: AppSpacing.xxl),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(text, style: AppTextStyles.labelLarge);
   }
 
   Future<void> _pickDeadline() async {
@@ -426,78 +187,381 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
     if (picked != null) setState(() => _deadline = picked);
   }
 
-  Widget _buildDeadlineField() {
-    final theme = Theme.of(context);
-    final selected = _deadline != null;
-    final label = selected
-        ? '${_deadline!.day.toString().padLeft(2, '0')}/'
-            '${_deadline!.month.toString().padLeft(2, '0')}/${_deadline!.year}'
-        : 'Select deadline date';
-    return GestureDetector(
-      onTap: _pickDeadline,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 52),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: AppRadius.allMd,
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Row(
-          children: [
-            Icon(AppIcons.calendar_1,
-                size: 20, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: selected
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+  /// Opens a sheet of [options] and reports the chosen one.
+  ///
+  /// Replaces the Material `DropdownButton` menus. The stored values are the
+  /// raw option strings exactly as before; only the presentation differs.
+  Future<void> _pickOption({
+    required String title,
+    required List<String> options,
+    required String current,
+    required ValueChanged<String> onSelected,
+  }) async {
+    final picked = await showGlassSheet<String>(
+      context: context,
+      title: title,
+      // A Builder so the rows pop the *sheet* route rather than this screen.
+      child: Builder(
+        builder: (sheetContext) => SingleChildScrollView(
+          child: GlassGroup(
+            children: [
+            for (final option in options)
+              GlassRow(
+                title: _optionLabel(option),
+                showChevron: false,
+                trailing: option == current
+                    ? const Icon(
+                        AppIcons.tick_circle,
+                        size: 20,
+                        color: AppColors.primary,
+                      )
+                    : null,
+                onTap: () => Navigator.of(sheetContext).pop(option),
               ),
-            ),
-            Icon(AppIcons.arrow_down_1,
-                size: 18, color: theme.colorScheme.onSurfaceVariant),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+    if (picked != null) onSelected(picked);
+  }
+
+  /// Display form of an option value. Only the label is prettied — the value
+  /// written to the database is untouched.
+  String _optionLabel(String raw) {
+    if (raw.isEmpty) return raw;
+    if (raw == 'all') return 'All';
+    if (raw == raw.toLowerCase()) {
+      return raw[0].toUpperCase() + raw.substring(1);
+    }
+    return raw;
+  }
+
+  String get _deadlineLabel {
+    final d = _deadline;
+    if (d == null) return 'Not set';
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: CustomScrollView(
+              slivers: [
+                GlassLargeTitleHeader(
+                  title: 'Create campaign',
+                  subtitle: 'Brief creators and open your slots',
+                  showBack: true,
+                  onBack: () => context.pop(),
+                ),
+
+                // 1 — Basics: what the campaign is and what it asks for.
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Campaign basics'),
+                        GlassTextField(
+                          controller: _campaignNameController,
+                          label: 'Campaign name',
+                          hint: 'Enter campaign name',
+                          prefixIcon: AppIcons.document_text,
+                          textCapitalization: TextCapitalization.words,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a campaign name';
+                            }
+                            return null;
+                          },
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField.multiline(
+                          controller: _descriptionController,
+                          label: 'Description',
+                          hint:
+                              'Describe your campaign — what creators need to know',
+                          minLines: 3,
+                          maxLines: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 2 — Classification: the four former dropdowns, as rows that
+                // show their current value and open a picker sheet.
+                SliverToBoxAdapter(
+                  child: GlassSection(
+                    title: 'Classification',
+                    children: [
+                    GlassRow(
+                      title: 'Category',
+                      icon: AppIcons.category,
+                      trailingText: _optionLabel(_selectedCategory),
+                      onTap: () => _pickOption(
+                        title: 'Category',
+                        options: _categories,
+                        current: _selectedCategory,
+                        onSelected: (value) =>
+                            setState(() => _selectedCategory = value),
+                      ),
+                    ),
+                    GlassRow(
+                      title: 'Platform',
+                      icon: AppIcons.global,
+                      trailingText: _optionLabel(_selectedPlatform),
+                      onTap: () => _pickOption(
+                        title: 'Platform',
+                        options: _platforms,
+                        current: _selectedPlatform,
+                        onSelected: (value) =>
+                            setState(() => _selectedPlatform = value),
+                      ),
+                    ),
+                    GlassRow(
+                      title: 'Page profile category',
+                      icon: AppIcons.tag,
+                      trailingText: _optionLabel(_selectedPageProfileCategory),
+                      onTap: () => _pickOption(
+                        title: 'Page profile category',
+                        options: _pageProfileCategories,
+                        current: _selectedPageProfileCategory,
+                        onSelected: (value) => setState(
+                          () => _selectedPageProfileCategory = value,
+                        ),
+                      ),
+                    ),
+                    GlassRow(
+                      title: 'Audience gender',
+                      icon: AppIcons.user,
+                      trailingText: _optionLabel(_selectedGender),
+                      onTap: () => _pickOption(
+                        title: 'Audience gender',
+                        options: _genders,
+                        current: _selectedGender,
+                        onSelected: (value) =>
+                            setState(() => _selectedGender = value),
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
+
+                // 3 — Slots and budget. The two money fields are paired
+                // because each is read against the other.
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Slots & budget'),
+                        GlassTextField(
+                          controller: _slotsController,
+                          label: 'Slots',
+                          hint: 'Number of slots (e.g. 10)',
+                          prefixIcon: AppIcons.people,
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter number of slots';
+                            }
+                            if (int.tryParse(value.trim()) == null) {
+                              return 'Please enter a valid number';
+                            }
+                            return null;
+                          },
+                        ),
+                        AppSpacing.gapLg,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: GlassTextField(
+                                controller: _budgetController,
+                                label: 'Total budget (\u20B9)',
+                                hint: 'Total',
+                                prefixIcon: AppIcons.money,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter the budget';
+                                  }
+                                  if (double.tryParse(value.trim()) == null) {
+                                    return 'Please enter a valid amount';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            AppSpacing.gapMd,
+                            Expanded(
+                              child: GlassTextField(
+                                controller: _perCreatorController,
+                                label: 'Per creator (\u20B9)',
+                                hint: 'Payout',
+                                prefixIcon: AppIcons.money_recive,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter per-creator budget';
+                                  }
+                                  if (double.tryParse(value.trim()) == null) {
+                                    return 'Please enter a valid amount';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 4 — Timing. The deadline is validated in _handleSubmit, not
+                // by the form, so it is surfaced as a row with its own state.
+                SliverToBoxAdapter(
+                  child: GlassSection(
+                    title: 'Timing',
+                    children: [
+                      GlassRow(
+                        title: 'Deadline',
+                        subtitle: _deadline == null
+                            ? 'Required before you can publish'
+                            : null,
+                        icon: AppIcons.calendar_1,
+                        iconColor:
+                            _deadline == null ? AppColors.warning : null,
+                        trailingText: _deadlineLabel,
+                        onTap: _pickDeadline,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 5 — Brand presentation.
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Brand'),
+                        GlassTextField(
+                          controller: _companyNameController,
+                          label: 'Company name',
+                          hint: 'Enter company name',
+                          prefixIcon: AppIcons.building,
+                          textCapitalization: TextCapitalization.words,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter company name';
+                            }
+                            return null;
+                          },
+                        ),
+                        AppSpacing.gapLg,
+                        ImageUploadField(
+                          label: 'Campaign cover image',
+                          storageFolder: 'campaign-assets',
+                          onImageUploaded: (url) {
+                            _coverImageUrl = url;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 6 — Optional rules, last because it is optional.
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Rules'),
+                        GlassTextField.multiline(
+                          controller: _rulesController,
+                          label: 'Rules (optional)',
+                          hint: 'Any specific rules or guidelines for creators',
+                          minLines: 2,
+                          maxLines: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Clearance for the pinned action.
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
+            ),
+          ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: 'Create campaign',
+              icon: AppIcons.add_circle,
+              size: GlassButtonSize.large,
+              loading: _isSubmitting,
+              onPressed: _isSubmitting ? null : _handleSubmit,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDropdown({
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      constraints: const BoxConstraints(minHeight: 52),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: theme.dividerColor),
+  /// Group heading for the field blocks that sit outside a glass pane, matching
+  /// the tracked-caps header [GlassSection] prints for its own groups.
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.xs,
+        AppSpacing.md,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(AppIcons.arrow_down_1, size: 20),
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: theme.colorScheme.onSurface,
-          ),
-          dropdownColor: theme.colorScheme.surface,
-          items: items.map((item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
-            );
-          }).toList(),
-          onChanged: onChanged,
+      child: Text(
+        text.toUpperCase(),
+        style: AppTextStyles.caption1.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
         ),
       ),
     );

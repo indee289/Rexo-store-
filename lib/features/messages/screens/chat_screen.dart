@@ -5,19 +5,38 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_glass.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_icon_button.dart';
-import '../../../core/widgets/premium_sheet.dart';
-import '../../../core/widgets/premium_text_field.dart';
 import '../../../core/widgets/user_actions_menu.dart';
 import '../../../services/supabase_service.dart';
 import '../models/message_view.dart';
 import '../providers/messages_provider.dart';
 import '../widgets/chat_bubble.dart';
 
+/// Chat thread — rebuilt layout.
+///
+/// Old layout: a raw Material `AppBar` holding an `IconButton`, the avatar and
+/// the name in a hand-built `Row`; a composer made of a decorated `Container`
+/// wrapping a bare `TextField` and a `GestureDetector` circle; bare
+/// `CircularProgressIndicator` / `Text` for the loading, empty and error
+/// states; and a `showPremiumSheet` of hand-rolled `_ActionRow`s for the
+/// long-press menu. The screen also carried its own dark-mode colour set.
+///
+/// New layout: a fixed [GlassAppBar] — this is the one screen type that should
+/// *not* use the collapsing large title, because the peer's identity has to
+/// stay on screen while the thread scrolls — with the peer shown as an avatar
+/// and name in its title slot; a composer built from the shared text field and
+/// a filled icon button; the shared glass empty / error / loading states; and
+/// the long-press menu rebuilt as grouped rows in a glass sheet. The
+/// dark-mode colours are gone — the app is light mode only.
+///
+/// `chatMessagesStreamProvider`, `conversationsProvider`, `hiddenChatsProvider`,
+/// `chatPeerProvider`, `messageActionsProvider` (send / read / unsend / edit),
+/// `MessageView.fromMap`, `visibleMessages`, `ChatBubble` and the date-grouping
+/// logic are all unchanged.
 class ChatScreen extends ConsumerStatefulWidget {
   final String otherUserId;
   const ChatScreen({super.key, required this.otherUserId});
@@ -37,7 +56,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Mark the conversation as read as soon as the chat screen opens.
     // Use addPostFrameCallback so ref is available after first build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(messageActionsProvider.notifier)
+      ref
+          .read(messageActionsProvider.notifier)
           .markConversationRead(widget.otherUserId);
     });
   }
@@ -70,16 +90,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _isSending = true);
     _messageController.clear();
 
-    final success =
-        await ref.read(messageActionsProvider.notifier).sendMessage(
-              receiverId: widget.otherUserId,
-              content: content,
-            );
+    final success = await ref
+        .read(messageActionsProvider.notifier)
+        .sendMessage(receiverId: widget.otherUserId, content: content);
 
     if (success) {
       _scrollToBottom();
       // Also mark as read since we just sent — our own messages count as read.
-      ref.read(messageActionsProvider.notifier)
+      ref
+          .read(messageActionsProvider.notifier)
           .markConversationRead(widget.otherUserId);
     }
     if (mounted) setState(() => _isSending = false);
@@ -100,10 +119,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         (c) => c['other_user_id'] == widget.otherUserId,
       );
       if (conv.isNotEmpty) {
-        otherUserName =
-            (conv.first['other_user_name'] ?? '').toString();
-        otherUserAvatar =
-            conv.first['other_user_avatar'] as String?;
+        otherUserName = (conv.first['other_user_name'] ?? '').toString();
+        otherUserAvatar = conv.first['other_user_avatar'] as String?;
       }
     });
 
@@ -112,65 +129,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ref.watch(chatPeerProvider(widget.otherUserId)).asData?.value;
       if (peer != null) {
         final peerName = (peer['name'] ?? '').toString().trim();
-        final peerHandle = (peer['username'] ?? '').toString().trim(); // live: username
+        final peerHandle =
+            (peer['username'] ?? '').toString().trim(); // live: username
         if (peerName.isNotEmpty) {
           otherUserName = peerName;
         } else if (peerHandle.isNotEmpty) {
           otherUserName = '@$peerHandle';
         }
-        otherUserAvatar ??= peer['profileImage'] as String?; // live: profileImage
+        otherUserAvatar ??=
+            peer['profileImage'] as String?; // live: profileImage
       }
     }
 
-    final displayName =
-        otherUserName.isEmpty ? 'User' : otherUserName;
+    final displayName = otherUserName.isEmpty ? 'User' : otherUserName;
 
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final pageBg = isDark ? AppColors.darkBackground : Colors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-    final surfaceAlt =
-        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-
-    return Scaffold(
-      backgroundColor: pageBg,
+    return GlassScaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        backgroundColor: pageBg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Row(
+      appBar: GlassAppBar(
+        title: displayName,
+        showBack: true,
+        // The peer, not a page name, is the subject of this screen.
+        titleWidget: Row(
           children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: Icon(AppIcons.arrow_left,
-                  size: 24, color: cs.onSurface),
-            ),
             PremiumAvatar(
               imageUrl: otherUserAvatar,
               name: displayName,
-              size: 40,
+              size: 36,
             ),
-            const SizedBox(width: 10),
+            AppSpacing.gapSm,
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    displayName,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                displayName,
+                style: AppTextStyles.headline.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -180,24 +175,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             targetUserId: widget.otherUserId,
             targetLabel: displayName,
           ),
-          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: Column(
         children: [
-          // ── Messages ──────────────────────────────────────────────────
           Expanded(
             child: messagesAsync.when(
               data: (messages) {
                 if (messages.isEmpty) return _buildEmptyState();
 
-                final currentUserId =
-                    SupabaseService.currentUser?.id ?? '';
+                final currentUserId = SupabaseService.currentUser?.id ?? '';
                 final views = messages
                     .map((m) => MessageView.fromMap(m))
                     .toList(growable: false);
-                final visible =
-                    visibleMessages(views, currentUserId, hiddenBefore: hiddenAt);
+                final visible = visibleMessages(
+                  views,
+                  currentUserId,
+                  hiddenBefore: hiddenAt,
+                );
 
                 if (visible.isEmpty) return _buildEmptyState();
 
@@ -210,8 +205,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md),
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -223,121 +219,92 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         (msgItem.isMine && !msgItem.message.isUnsent)
                             ? () => _onMessageLongPress(msgItem.message)
                             : null;
-                    return ChatBubble(
-                      message: msgItem.message,
-                      isMine: msgItem.isMine,
-                      showTail: msgItem.showTail,
-                      onLongPress: onLongPress,
+                    return RepaintBoundary(
+                      child: ChatBubble(
+                        message: msgItem.message,
+                        isMine: msgItem.isMine,
+                        showTail: msgItem.showTail,
+                        onLongPress: onLongPress,
+                      ),
                     );
                   },
                 );
               },
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.primary),
-              ),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  child: Text(
-                    "Couldn't load this chat. Check your connection and try again.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: cs.onSurfaceVariant),
-                  ),
+              loading: () => const GlassLoader(),
+              error: (e, _) => GlassErrorState(
+                title: "Couldn't load this chat",
+                message: 'Check your connection and try again.',
+                onRetry: () => ref.invalidate(
+                  chatMessagesStreamProvider(widget.otherUserId),
                 ),
               ),
             ),
           ),
-
-          // ── Input bar ──────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            decoration: BoxDecoration(
-              color: pageBg,
-              border: Border(
-                top: BorderSide(color: borderColor, width: 1),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: surfaceAlt,
-                        borderRadius: AppRadius.pillAll,
-                      ),
-                      child: TextField(
-                        controller: _messageController,
-                        textCapitalization:
-                            TextCapitalization.sentences,
-                        maxLines: 4,
-                        minLines: 1,
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: cs.onSurface),
-                        decoration: InputDecoration(
-                          hintText: 'Message...',
-                          hintStyle: TextStyle(
-                              fontSize: 14, color: cs.onSurfaceVariant),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _sendMessage,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _isSending ? AppIcons.timer : AppIcons.send_1,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildComposer(),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(AppIcons.message_text, size: 48, color: cs.onSurfaceVariant),
-          const SizedBox(height: 12),
-          Text('No messages yet',
-              style: TextStyle(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 4),
-          Text('Say hello!',
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
-        ],
+  /// The message composer: a recessed well plus a filled send disc.
+  Widget _buildComposer() {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.border,
+            width: AppGlass.borderWidth,
+          ),
+        ),
       ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.sm,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: GlassTextField.multiline(
+                  controller: _messageController,
+                  hint: 'Message…',
+                  minLines: 1,
+                  maxLines: 4,
+                ),
+              ),
+              AppSpacing.gapSm,
+              GlassIconButton.filled(
+                icon: _isSending ? AppIcons.timer : AppIcons.send_1,
+                tooltip: 'Send',
+                size: 46,
+                iconSize: 20,
+                onTap: _isSending ? null : _sendMessage,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const GlassEmptyState(
+      icon: AppIcons.message_text,
+      title: 'No messages yet',
+      message: 'Say hello to start the conversation.',
     );
   }
 
   void _onMessageLongPress(MessageView message) {
     final currentUserId = SupabaseService.currentUser?.id ?? '';
     final isMine = message.senderId == currentUserId;
-    showPremiumSheet<void>(
+    showGlassSheet<void>(
       context: context,
       title: 'Message',
       child: _MessageActionsSheet(
@@ -355,8 +322,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final message = visible[i];
       final prev = i > 0 ? visible[i - 1] : null;
 
-      final isNewDay = prev == null ||
-          !_isSameDay(prev.createdAt, message.createdAt);
+      final isNewDay =
+          prev == null || !_isSameDay(prev.createdAt, message.createdAt);
       if (isNewDay) items.add(_DateSeparatorItem(message.createdAt));
 
       final next = i < visible.length - 1 ? visible[i + 1] : null;
@@ -404,24 +371,9 @@ class _DateSeparator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.darkSurfaceAlt
-                : AppColors.surfaceAlt,
-            borderRadius: AppRadius.pillAll,
-          ),
-          child: Text(
-            _label(date),
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
+        child: GlassChip(label: _label(date), dense: true),
       ),
     );
   }
@@ -455,8 +407,7 @@ class _MessageActionsSheet extends ConsumerStatefulWidget {
       _MessageActionsSheetState();
 }
 
-class _MessageActionsSheetState
-    extends ConsumerState<_MessageActionsSheet> {
+class _MessageActionsSheetState extends ConsumerState<_MessageActionsSheet> {
   late final TextEditingController _editController;
   bool _editing = false;
   bool _busy = false;
@@ -464,8 +415,7 @@ class _MessageActionsSheetState
   @override
   void initState() {
     super.initState();
-    _editController =
-        TextEditingController(text: widget.message.content);
+    _editController = TextEditingController(text: widget.message.content);
   }
 
   @override
@@ -474,10 +424,8 @@ class _MessageActionsSheetState
     super.dispose();
   }
 
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  void _showSnack(String message, [GlassToastTone tone = GlassToastTone.error]) {
+    showGlassSnackBar(context, message: message, tone: tone);
   }
 
   void _closeOnSuccess() {
@@ -486,14 +434,16 @@ class _MessageActionsSheetState
   }
 
   Future<void> _copy() async {
-    await Clipboard.setData(
-        ClipboardData(text: widget.message.content));
+    await Clipboard.setData(ClipboardData(text: widget.message.content));
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).maybePop();
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Message copied')),
+    // Raise the toast before popping: the messenger lives above the sheet
+    // route, so the toast outlives it, but the lookup needs a live context.
+    showGlassSnackBar(
+      context,
+      message: 'Message copied',
+      tone: GlassToastTone.success,
     );
+    Navigator.of(context).maybePop();
   }
 
   Future<void> _unsend() async {
@@ -527,8 +477,7 @@ class _MessageActionsSheetState
     setState(() => _busy = true);
     final ok = await ref
         .read(messageActionsProvider.notifier)
-        .editMessage(
-            messageId: widget.message.id, newContent: trimmed);
+        .editMessage(messageId: widget.message.id, newContent: trimmed);
     if (!mounted) return;
     if (ok) {
       _closeOnSuccess();
@@ -548,27 +497,27 @@ class _MessageActionsSheetState
     final canEdit = widget.isMine && !widget.message.isUnsent;
     final canUnsend = widget.isMine;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return GlassGroup(
       children: [
         if (canEdit)
-          _ActionRow(
+          GlassRow(
             icon: AppIcons.edit_2,
-            label: 'Edit',
-            onTap:
-                _busy ? null : () => setState(() => _editing = true),
+            title: 'Edit',
+            showChevron: false,
+            onTap: _busy ? null : () => setState(() => _editing = true),
           ),
         if (canUnsend)
-          _ActionRow(
+          GlassRow(
             icon: AppIcons.slash,
-            label: 'Unsend',
+            title: 'Unsend',
             destructive: true,
+            showChevron: false,
             onTap: _busy ? null : _unsend,
           ),
-        _ActionRow(
+        GlassRow(
           icon: AppIcons.copy,
-          label: 'Copy',
+          title: 'Copy',
+          showChevron: false,
           onTap: _busy ? null : _copy,
         ),
       ],
@@ -580,66 +529,21 @@ class _MessageActionsSheetState
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PremiumTextField.multiline(
+        GlassTextField.multiline(
           controller: _editController,
+          label: 'Edit message',
           hint: 'Edit message',
           minLines: 1,
           maxLines: 5,
         ),
-        const SizedBox(height: AppSpacing.md),
-        PremiumButton(
+        AppSpacing.gapLg,
+        GlassButton(
           label: 'Save',
           icon: AppIcons.tick_circle,
           loading: _busy,
           onPressed: _busy ? null : _saveEdit,
         ),
       ],
-    );
-  }
-}
-
-class _ActionRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool destructive;
-
-  const _ActionRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.destructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = destructive
-        ? AppColors.error
-        : Theme.of(context).colorScheme.onSurface;
-    return Opacity(
-      opacity: onTap == null ? 0.5 : 1.0,
-      child: InkWell(
-        borderRadius: AppRadius.allMd,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: AppSpacing.md),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

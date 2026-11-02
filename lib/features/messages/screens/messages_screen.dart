@@ -5,20 +5,37 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/admin_notify.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../admin/providers/is_admin_provider.dart';
-import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/entrance_animation.dart';
-import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_icon_button.dart';
-import '../../../core/widgets/premium_sheet.dart';
-import '../../../core/widgets/premium_text_field.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../admin/providers/is_admin_provider.dart';
 import '../providers/messages_provider.dart';
 
+/// Messages — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over a `Column` whose search field and
+/// support shortcut scrolled away with the list, and a conversation list of
+/// fixed 72px rows separated by full-bleed bottom borders. States came from
+/// the old `EmptyState` / `ShimmerConversationRow` widgets, the delete
+/// confirmation was an `AlertDialog`, and the new-chat sheet was a
+/// `showPremiumSheet` full of `ListTile`s and `Divider`s.
+///
+/// New layout: a collapsing large title with the search field **pinned** into
+/// the header, so it stays reachable however far the list is scrolled; the
+/// support shortcut as a brand-tinted card; and conversations as discrete
+/// spaced cards rather than bordered rows, which also makes swipe-to-delete
+/// read correctly (a row sliding out of a shared pane does not). Every state
+/// now comes from the shared glass set.
+///
+/// `visibleConversationsProvider`, `isAdminProvider`, `conversationsProvider`,
+/// `hiddenChatsProvider.hide`, `messageActionsProvider.markConversationRead`,
+/// `userSearchProvider`, `AdminNotify.supportAdminId` and the
+/// `/messages/<id>` routes are all unchanged.
 class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
@@ -38,15 +55,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   /// Opens a chat straight with the Campster admin (support).
   Future<void> _openSupportChat() async {
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
     final adminId = await AdminNotify.supportAdminId();
+    if (!mounted) return;
     if (adminId == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Support chat is unavailable right now.'),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Support chat is unavailable right now.',
+        tone: GlassToastTone.warning,
       );
       return;
     }
@@ -66,198 +82,212 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     final conversationsAsync = ref.watch(visibleConversationsProvider);
+    final isAdmin = ref.watch(isAdminProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Messages',
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: PremiumIconButton(
-              icon: AppIcons.edit_2,
-              tooltip: 'New chat',
-              background: true,
-              tonal: true,
-              onPressed: () => _openNewChatSearch(context),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          ref.invalidate(conversationsProvider);
+        },
+        child: CustomScrollView(
+          slivers: [
+            GlassLargeTitleHeader(
+              title: 'Messages',
+              actions: [
+                GlassIconButton(
+                  icon: AppIcons.edit_2,
+                  tooltip: 'New chat',
+                  size: 36,
+                  iconSize: 19,
+                  onTap: () => _openNewChatSearch(context),
+                ),
+              ],
+              // Pinned so search survives scrolling the whole inbox.
+              bottom: GlassHeaderSearch(
+                child: GlassTextField.search(
+                  controller: _searchController,
+                  hint: 'Search',
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+              ),
+              bottomHeight: GlassHeaderSearch.height,
             ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ── Search bar ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: PremiumTextField.search(
-              controller: _searchController,
-              hint: 'Search',
-              onChanged: (value) => setState(() => _query = value),
-            ),
-          ),
 
-          // ── Pinned "Campster Support" shortcut (hidden for admins) ─────
-          if (!ref.watch(isAdminProvider))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Material(
-                color: AppColors.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(14),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: _openSupportChat,
-                  child: Padding(
+            // Support shortcut — hidden for admins, who are the other end.
+            if (!isAdmin)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.xs,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: GlassCard.brand(
+                    onTap: _openSupportChat,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
                     child: Row(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(AppIcons.message_text,
-                              color: AppColors.primary, size: 20),
+                        const GlassIconBubble(
+                          icon: AppIcons.message_text,
+                          color: AppColors.primary,
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
+                        AppSpacing.gapMd,
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('Campster Support',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14)),
-                              SizedBox(height: 2),
-                              Text('Need help? Chat directly with the admin',
-                                  style: TextStyle(fontSize: 12)),
+                              Text(
+                                'Campster Support',
+                                style: AppTextStyles.headline.copyWith(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Need help? Chat directly with the admin',
+                                style: AppTextStyles.footnote.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        const Icon(AppIcons.arrow_right_3,
-                            size: 18, color: AppColors.primary),
+                        AppSpacing.gapSm,
+                        const Icon(
+                          AppIcons.arrow_right_3,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
 
-          // ── Conversation list ───────────────────────────────────────────
-          Expanded(
-            child: conversationsAsync.when(
-              data: (conversations) {
-                if (conversations.isEmpty) {
-                  return const EmptyState(
-                    icon: AppIcons.message,
-                    title: 'No messages yet',
-                    subtitle: "Start a conversation and it'll show up here.",
-                  );
-                }
-
-                final filtered = _filter(conversations);
-                if (filtered.isEmpty) {
-                  return const EmptyState(
-                    icon: AppIcons.search_normal,
-                    title: 'No matches',
-                    subtitle: 'Try a different name.',
-                  );
-                }
-
-                return RefreshIndicator(
-                  color: AppColors.primary,
-                  onRefresh: () async {
-                    ref.invalidate(conversationsProvider);
-                  },
-                  child: ListView.builder(
-                    itemCount: filtered.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == filtered.length) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Center(
-                            child: Text(
-                              'Swipe left or long-press a chat to delete it',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      final conversation = filtered[index];
-                      final peerId =
-                          conversation['other_user_id'] as String;
-                      return Dismissible(
-                        key: ValueKey('conv_$peerId'),
-                        direction: DismissDirection.endToStart,
-                        confirmDismiss: (_) => _confirmDelete(context),
-                        onDismissed: (_) => _deleteConversation(conversation),
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 24),
-                          child: const Icon(AppIcons.trash,
-                              color: Colors.white),
-                        ),
-                        child: _ConversationTile(
-                          conversation: conversation,
-                          onLongPress: () async {
-                            if (await _confirmDelete(context)) {
-                              _deleteConversation(conversation);
-                            }
-                          },
-                        ),
-                      ).staggeredEntrance(index);
-                    },
+            ...conversationsAsync.when(
+              data: _conversationSlivers,
+              loading: () => const [
+                SliverFillRemaining(child: GlassListSkeleton(itemCount: 8)),
+              ],
+              error: (e, _) => [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassErrorState(
+                    title: "Couldn't load your messages",
+                    message: ErrorUtils.sanitize(e),
+                    onRetry: () => ref.invalidate(conversationsProvider),
                   ),
-                );
-              },
-              loading: () => ListView.builder(
-                itemCount: 8,
-                itemBuilder: (_, __) => const ShimmerConversationRow(),
-              ),
-              error: (e, _) => EmptyState(
-                icon: AppIcons.warning_2,
-                title: "Couldn't load your messages",
-                subtitle: ErrorUtils.sanitize(e),
-                ctaLabel: 'Retry',
-                ctaIcon: AppIcons.refresh,
-                onCta: () => ref.invalidate(conversationsProvider),
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Future<bool> _confirmDelete(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete chat?'),
-        content: const Text(
-            'This removes the chat from your inbox only. The other person will still have it.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+  /// The data branch, as slivers so the list shares the header's scroll view.
+  List<Widget> _conversationSlivers(
+    List<Map<String, dynamic>> conversations,
+  ) {
+    if (conversations.isEmpty) {
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: GlassEmptyState(
+            icon: AppIcons.message,
+            title: 'No messages yet',
+            message: "Start a conversation and it'll show up here.",
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete',
-                style: TextStyle(color: Colors.red)),
+        ),
+      ];
+    }
+
+    final filtered = _filter(conversations);
+    if (filtered.isEmpty) {
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: GlassEmptyState(
+            icon: AppIcons.search_normal,
+            title: 'No matches',
+            message: 'Try a different name.',
           ),
-        ],
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.sm,
+        ),
+        sliver: SliverList.separated(
+          itemCount: filtered.length,
+          separatorBuilder: (_, __) => AppSpacing.gapSm,
+          itemBuilder: (context, index) {
+            final conversation = filtered[index];
+            final peerId = conversation['other_user_id'] as String;
+            return RepaintBoundary(
+              child: Dismissible(
+                key: ValueKey('conv_$peerId'),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (_) => _confirmDelete(context),
+                onDismissed: (_) => _deleteConversation(conversation),
+                background: const _DeleteBackground(),
+                child: _ConversationTile(
+                  conversation: conversation,
+                  onLongPress: () async {
+                    if (await _confirmDelete(context)) {
+                      _deleteConversation(conversation);
+                    }
+                  },
+                ),
+              ).staggeredEntrance(index),
+            );
+          },
+        ),
       ),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.sm,
+            AppSpacing.xl,
+            AppSpacing.xl,
+          ),
+          child: Text(
+            'Swipe left or long-press a chat to delete it',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.caption1.copyWith(
+              color: AppColors.textHint,
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) {
+    return showGlassConfirm(
+      context: context,
+      title: 'Delete chat?',
+      message: 'This removes the chat from your inbox only. '
+          'The other person will still have it.',
+      icon: AppIcons.trash,
+      confirmLabel: 'Delete',
+      destructive: true,
     );
-    return ok == true;
   }
 
   void _deleteConversation(Map<String, dynamic> conversation) {
@@ -268,22 +298,43 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     ref.read(hiddenChatsProvider.notifier).hide(peerId, marker);
     ref.read(messageActionsProvider.notifier).markConversationRead(peerId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chat deleted')),
-      );
+      showGlassSnackBar(context, message: 'Chat deleted');
     }
   }
 
   void _openNewChatSearch(BuildContext context) {
-    showPremiumSheet<void>(
+    showGlassSheet<void>(
       context: context,
-      title: 'New Chat',
+      title: 'New chat',
+      subtitle: 'Search for someone to message',
       child: const _NewChatSheet(),
     );
   }
 }
 
-/// Single conversation row — Instagram-style.
+/// Swipe-to-delete backdrop, shaped like the card it sits behind.
+class _DeleteBackground extends StatelessWidget {
+  const _DeleteBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.error,
+        borderRadius: AppRadius.allLg,
+      ),
+      child: const Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: EdgeInsets.only(right: AppSpacing.xl),
+          child: Icon(AppIcons.trash, color: Colors.white, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+/// Single conversation card.
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
   final VoidCallback? onLongPress;
@@ -299,102 +350,76 @@ class _ConversationTile extends StatelessWidget {
         DateTime.tryParse(conversation['last_message_at'] ?? '');
     final isRead = conversation['is_read'] == true;
     final isUnread = !isRead;
-    final timeStr =
-        lastMessageAt != null ? _formatTime(lastMessageAt) : '';
-    final cs = Theme.of(context).colorScheme;
+    final timeStr = lastMessageAt != null ? _formatTime(lastMessageAt) : '';
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => context.push('/messages/$otherUserId'),
-        onLongPress: onLongPress,
-        child: Container(
-          height: 72,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            border: Border(
-                bottom: BorderSide(
-                    color: Theme.of(context).dividerColor, width: 1)),
+    return GlassCard(
+      onTap: () => context.push('/messages/$otherUserId'),
+      onLongPress: onLongPress,
+      // An unread thread gets the brand rim, so the inbox is scannable
+      // without relying on weight alone.
+      rim: isUnread ? AppColors.primaryRim : null,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          PremiumAvatar(imageUrl: avatarUrl, name: name, size: 48),
+          AppSpacing.gapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyles.callout.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: isUnread ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  lastMessage,
+                  style: AppTextStyles.footnote.copyWith(
+                    color: isUnread
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                    fontWeight: isUnread ? FontWeight.w500 : FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          child: Row(
+          AppSpacing.gapSm,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Avatar
-              PremiumAvatar(
-                imageUrl: avatarUrl,
-                name: name,
-                size: 48,
+              Text(
+                timeStr,
+                style: AppTextStyles.caption1.copyWith(
+                  color: isUnread ? AppColors.primary : AppColors.textHint,
+                  fontWeight: isUnread ? FontWeight.w700 : FontWeight.w400,
+                ),
               ),
-              const SizedBox(width: 12),
-
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: isUnread
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              color: cs.onSurface,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          timeStr,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isUnread
-                                ? AppColors.primary
-                                : cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            lastMessage,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isUnread
-                                  ? cs.onSurface
-                                  : cs.onSurfaceVariant,
-                              fontWeight: isUnread
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (isUnread)
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+              const SizedBox(height: 6),
+              // Reserve the dot's space either way so the time never shifts.
+              Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: isUnread ? AppColors.primary : Colors.transparent,
+                  shape: BoxShape.circle,
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -430,89 +455,74 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
   @override
   Widget build(BuildContext context) {
     final resultsAsync = ref.watch(userSearchProvider(_query));
-    final cs = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
       child: Column(
         children: [
-          PremiumTextField.search(
+          GlassTextField.search(
             controller: _controller,
             hint: 'Search by name or @handle',
             autofocus: true,
             onChanged: (value) => setState(() => _query = value),
           ),
-          const SizedBox(height: AppSpacing.md),
+          AppSpacing.gapLg,
           Expanded(
             child: _query.trim().isEmpty
-                ? Center(
-                    child: Text(
-                      'Search for people to start a conversation',
-                      style: TextStyle(
-                          fontSize: 14, color: cs.onSurfaceVariant),
-                      textAlign: TextAlign.center,
-                    ),
+                ? const GlassEmptyState(
+                    icon: AppIcons.search_normal,
+                    title: 'Find someone',
+                    message: 'Search for people to start a conversation.',
+                    compact: true,
                   )
                 : resultsAsync.when(
                     data: (users) {
                       if (users.isEmpty) {
-                        return Center(
-                          child: Text('No users found',
-                              style: TextStyle(
-                                  color: cs.onSurfaceVariant)),
+                        return const GlassEmptyState(
+                          icon: AppIcons.user,
+                          title: 'No users found',
+                          message: 'Try a different name or handle.',
+                          compact: true,
                         );
                       }
                       return ListView.separated(
                         padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.xs),
+                          vertical: AppSpacing.xs,
+                        ),
                         itemCount: users.length,
-                        separatorBuilder: (_, __) => Divider(
-                            height: 1,
-                            color: Theme.of(context).dividerColor),
+                        separatorBuilder: (_, __) => AppSpacing.gapSm,
                         itemBuilder: (context, index) {
                           final user = users[index];
                           final userId =
                               user['uid'] as String? ?? ''; // live: uid
                           final name = user['name'] as String? ?? 'User';
-                          final username =
-                              user['username'] as String? ?? ''; // live: username
-                          final avatarUrl =
-                              user['profileImage'] as String?; // live: profileImage
-                          return ListTile(
-                            leading: PremiumAvatar(
-                              imageUrl: avatarUrl,
-                              name: name,
-                              size: 44,
+                          final username = user['username'] as String? ??
+                              ''; // live: username
+                          final avatarUrl = user['profileImage']
+                              as String?; // live: profileImage
+                          return RepaintBoundary(
+                            child: GlassListCard(
+                              leading: PremiumAvatar(
+                                imageUrl: avatarUrl,
+                                name: name,
+                                size: 44,
+                              ),
+                              title: name,
+                              subtitle:
+                                  username.isNotEmpty ? '@$username' : null,
+                              onTap: () {
+                                Navigator.pop(context);
+                                context.push('/messages/$userId');
+                              },
                             ),
-                            title: Text(name,
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: cs.onSurface)),
-                            subtitle: username.isNotEmpty
-                                ? Text('@$username',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        color: cs.onSurfaceVariant))
-                                : null,
-                            onTap: () {
-                              Navigator.pop(context);
-                              context.push('/messages/$userId');
-                            },
                           );
                         },
                       );
                     },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primary),
-                    ),
-                    error: (e, _) => Center(
-                      child: Text(
-                        ErrorUtils.sanitize(e),
-                        style: TextStyle(
-                            color: cs.onSurfaceVariant),
-                      ),
+                    loading: () => const GlassLoader(),
+                    error: (e, _) => GlassErrorState(
+                      message: ErrorUtils.sanitize(e),
+                      compact: true,
                     ),
                   ),
           ),

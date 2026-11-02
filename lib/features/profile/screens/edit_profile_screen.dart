@@ -6,19 +6,37 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_button.dart';
 import '../providers/profile_provider.dart';
 
+/// Edit profile — rebuilt layout.
+///
+/// Old layout: a hand-assembled fake app bar (a `Container` with a bare
+/// `GestureDetector` back chevron and a text "Save"), a bare centred avatar,
+/// then four fields each built by a local `_buildField` helper that declared
+/// its own `OutlineInputBorder`s and its own label `Text`. The whole screen
+/// also carried a parallel set of dark-mode colour getters.
+///
+/// New layout: the standard collapsing large title; the avatar promoted into a
+/// card that states what tapping it does; the fields grouped under named
+/// headings (identity, about, contact) with labels and borders coming from the
+/// shared text field; the photo-source picker rebuilt as a tile grid in a
+/// glass sheet instead of three hand-drawn squares; and Save pinned to the
+/// bottom as the single primary action rather than a small text target in the
+/// corner. The dark-mode getters are gone — the app is light mode only.
+///
+/// `currentUserProfileProvider`, `profileNotifierProvider.uploadAvatar`,
+/// `updateProfile`, `lastError`, the exact field keys and the image-picker
+/// options are unchanged.
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  ConsumerState<EditProfileScreen> createState() =>
-      _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
@@ -32,17 +50,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isSaving = false;
   bool _isUploadingAvatar = false;
   String? _currentAvatarUrl;
-
-  // ── Theme-aware color helpers ────────────────────────────────────────────
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  ColorScheme get _cs => Theme.of(context).colorScheme;
-  Color get _pageBg =>
-      _isDark ? AppColors.darkBackground : AppColors.background;
-  Color get _cardBg => _isDark ? AppColors.darkCard : Colors.white;
-  Color get _borderColor =>
-      _isDark ? AppColors.darkBorder : AppColors.border;
-  Color get _surfaceAlt =>
-      _isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
 
   @override
   void initState() {
@@ -75,77 +82,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   void _showAvatarPickerSheet() {
-    showModalBottomSheet(
+    showGlassSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: AppRadius.topXl,
-        ),
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _borderColor,
-                  borderRadius: AppRadius.pillAll,
-                ),
+      title: 'Profile photo',
+      subtitle: 'Pick a new photo or remove the current one',
+      child: Builder(
+        builder: (sheetContext) => GlassTileGrid(
+          columns: 3,
+          tiles: [
+            GlassTile(
+              icon: AppIcons.camera,
+              label: 'Camera',
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            GlassTile(
+              icon: AppIcons.gallery,
+              label: 'Gallery',
+              color: AppColors.accentPurple,
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            if (_currentAvatarUrl != null || _selectedImage != null)
+              GlassTile(
+                icon: AppIcons.trash,
+                label: 'Remove',
+                color: AppColors.error,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  setState(() {
+                    _selectedImage = null;
+                    _currentAvatarUrl = null;
+                  });
+                },
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                'Change Profile Photo',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _cs.onSurface,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _AvatarOption(
-                    icon: AppIcons.camera,
-                    label: 'Camera',
-                    color: AppColors.primary,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _pickImage(ImageSource.camera);
-                    },
-                  ),
-                  _AvatarOption(
-                    icon: AppIcons.gallery,
-                    label: 'Gallery',
-                    color: AppColors.accentPurple,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _pickImage(ImageSource.gallery);
-                    },
-                  ),
-                  if (_currentAvatarUrl != null || _selectedImage != null)
-                    _AvatarOption(
-                      icon: AppIcons.trash,
-                      label: 'Remove',
-                      color: AppColors.error,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        setState(() {
-                          _selectedImage = null;
-                          _currentAvatarUrl = null;
-                        });
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -174,29 +149,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             _currentAvatarUrl = avatarUrl;
             _isUploadingAvatar = false;
           });
-          _showSnack('Photo updated!', AppColors.success);
+          _showSnack('Photo updated!', GlassToastTone.success);
         } else if (mounted) {
           setState(() => _isUploadingAvatar = false);
-          _showSnack('Failed to upload photo', AppColors.error);
+          _showSnack('Failed to upload photo', GlassToastTone.error);
         }
       } catch (e) {
         if (mounted) {
           setState(() => _isUploadingAvatar = false);
-          _showSnack(ErrorUtils.sanitize(e), AppColors.error);
+          _showSnack(ErrorUtils.sanitize(e), GlassToastTone.error);
         }
       }
     }
   }
 
-  void _showSnack(String message, Color background) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: background,
-        behavior: SnackBarBehavior.floating,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
-      ),
-    );
+  void _showSnack(String message, GlassToastTone tone) {
+    showGlassSnackBar(context, message: message, tone: tone);
   }
 
   Future<void> _saveProfile() async {
@@ -220,18 +188,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (mounted) {
         if (success) {
           ref.invalidate(currentUserProfileProvider);
-          _showSnack('Profile updated successfully ✓', AppColors.success);
+          _showSnack('Profile updated successfully', GlassToastTone.success);
           Navigator.of(context).pop();
         } else {
           final errorMessage = notifier.lastError != null
               ? ErrorUtils.sanitize(notifier.lastError)
               : 'Failed to update profile';
-          _showSnack(errorMessage, AppColors.error);
+          _showSnack(errorMessage, GlassToastTone.error);
         }
       }
     } catch (e) {
       if (mounted) {
-        _showSnack(ErrorUtils.sanitize(e), AppColors.error);
+        _showSnack(ErrorUtils.sanitize(e), GlassToastTone.error);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -240,346 +208,258 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _pageBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── AppBar ────────────────────────────────────────────────────
-            Container(
-              constraints: const BoxConstraints(minHeight: 56),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: _pageBg,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(
-                      AppIcons.arrow_left,
-                      size: 24,
-                      color: _cs.onSurface,
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: CustomScrollView(
+              slivers: [
+                const GlassLargeTitleHeader(
+                  title: 'Edit profile',
+                  subtitle: 'How others see you across Campster',
+                  showBack: true,
+                ),
+
+                // Avatar hero — a card, so the tap target reads as deliberate
+                // rather than as a floating circle.
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Edit Profile',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _cs.onSurface,
+                    child: GlassCard(
+                      onTap: _isUploadingAvatar ? null : _showAvatarPickerSheet,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.xl,
                       ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _isSaving ? null : _saveProfile,
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Center(
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            ),
-                          )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(
-                              fontSize: 15,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildAvatar(),
+                          AppSpacing.gapMd,
+                          Text(
+                            _isUploadingAvatar
+                                ? 'Uploading photo…'
+                                : 'Tap to change photo',
+                            style: AppTextStyles.subheadline.copyWith(
+                              color: _isUploadingAvatar
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
                             ),
                           ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Body ──────────────────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Avatar section — center
-                      Center(child: _buildAvatarSection()),
-                      const SizedBox(height: AppSpacing.xxl),
-
-                      _buildField(
-                        controller: _nameController,
-                        label: 'Full Name',
-                        hint: 'Enter your full name',
-                        icon: AppIcons.user,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Name is required';
-                          }
-                          return null;
-                        },
+                          const SizedBox(height: 2),
+                          Text(
+                            'JPG or PNG, square works best',
+                            style: AppTextStyles.caption1.copyWith(
+                              color: AppColors.textHint,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      _buildField(
-                        controller: _handleController,
-                        label: 'Username',
-                        hint: '@your_handle',
-                        icon: AppIcons.user_tag,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      _buildMultilineField(
-                        controller: _bioController,
-                        label: 'Bio',
-                        hint: 'Tell the world about yourself...',
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      _buildField(
-                        controller: _phoneController,
-                        label: 'Phone',
-                        hint: '+91 98765 43210',
-                        icon: AppIcons.call,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-
-                      // Save button
-                      PremiumButton(
-                        label: 'Save Changes',
-                        loading: _isSaving,
-                        onPressed: _isSaving ? null : _saveProfile,
-                        icon: AppIcons.save_2,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+
+                // Identity
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Identity'),
+                        GlassTextField(
+                          controller: _nameController,
+                          label: 'Full name',
+                          hint: 'Enter your full name',
+                          prefixIcon: AppIcons.user,
+                          textCapitalization: TextCapitalization.words,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Name is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _handleController,
+                          label: 'Username',
+                          hint: '@your_handle',
+                          prefixIcon: AppIcons.user_tag,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // About
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('About'),
+                        GlassTextField.multiline(
+                          controller: _bioController,
+                          label: 'Bio',
+                          hint: 'Tell the world about yourself…',
+                          helperText:
+                              'Shown on your public profile and applications',
+                          minLines: 3,
+                          maxLines: 5,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Contact
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Contact'),
+                        GlassTextField(
+                          controller: _phoneController,
+                          label: 'Phone',
+                          hint: '+91 98765 43210',
+                          prefixIcon: AppIcons.call,
+                          keyboardType: TextInputType.phone,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Clearance for the pinned action.
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: 'Save changes',
+              icon: AppIcons.save_2,
+              size: GlassButtonSize.large,
+              loading: _isSaving,
+              onPressed: _isSaving ? null : _saveProfile,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildAvatarSection() {
-    return Column(
+  /// The avatar itself, with its camera badge and upload state.
+  Widget _buildAvatar() {
+    const double diameter = 96;
+
+    Widget inner;
+    if (_isUploadingAvatar) {
+      inner = const ColoredBox(
+        color: AppColors.surfaceAlt,
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: AppColors.primary,
+              strokeWidth: 2.4,
+            ),
+          ),
+        ),
+      );
+    } else if (_selectedImage != null) {
+      inner = Image.file(
+        _selectedImage!,
+        width: diameter,
+        height: diameter,
+        fit: BoxFit.cover,
+      );
+    } else {
+      inner = PremiumAvatar(
+        imageUrl: _currentAvatarUrl,
+        name: _nameController.text,
+        size: diameter,
+      );
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        GestureDetector(
-          onTap: _showAvatarPickerSheet,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(shape: BoxShape.circle),
-                child: ClipOval(
-                  child: _isUploadingAvatar
-                      ? Container(
-                          color: _surfaceAlt,
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        )
-                      : _selectedImage != null
-                          ? Image.file(
-                              _selectedImage!,
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                            )
-                          : PremiumAvatar(
-                              imageUrl: _currentAvatarUrl,
-                              name: _nameController.text,
-                              size: 80,
-                            ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _pageBg, width: 2),
-                  ),
-                  child: const Icon(
-                    AppIcons.camera,
-                    size: 14,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        SizedBox(
+          width: diameter,
+          height: diameter,
+          child: ClipOval(child: inner),
         ),
-        const SizedBox(height: 8),
-        Text(
-          _isUploadingAvatar ? 'Uploading...' : 'Tap to change photo',
-          style: TextStyle(
-            fontSize: 12,
-            color: _cs.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: c == Colors.transparent
-              ? BorderSide.none
-              : BorderSide(color: c, width: w),
-        );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-          style: TextStyle(fontSize: 14, color: _cs.onSurface),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-                fontSize: 14,
-                color: _isDark ? AppColors.darkTextHint : AppColors.textHint),
-            filled: true,
-            fillColor: _surfaceAlt,
-            prefixIcon: Icon(icon,
-                color: _isDark ? AppColors.darkTextHint : AppColors.textHint,
-                size: 20),
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 16),
-            border: border(Colors.transparent),
-            enabledBorder: border(Colors.transparent),
-            focusedBorder: border(AppColors.primary, 1.5),
-            errorBorder: border(AppColors.error),
-            focusedErrorBorder: border(AppColors.error, 1.5),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMultilineField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-  }) {
-    OutlineInputBorder border(Color c, [double w = 1.5]) => OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: c == Colors.transparent
-              ? BorderSide.none
-              : BorderSide(color: c, width: w),
-        );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          maxLines: 4,
-          minLines: 3,
-          style: TextStyle(fontSize: 14, color: _cs.onSurface),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-                fontSize: 14,
-                color: _isDark ? AppColors.darkTextHint : AppColors.textHint),
-            filled: true,
-            fillColor: _surfaceAlt,
-            contentPadding: const EdgeInsets.all(16),
-            border: border(Colors.transparent),
-            enabledBorder: border(Colors.transparent),
-            focusedBorder: border(AppColors.primary, 1.5),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Avatar picker option button.
-class _AvatarOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _AvatarOption({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: AppRadius.allMd,
-              border: Border.all(color: color.withOpacity(0.2)),
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2.5),
             ),
-            child: Icon(icon, color: color, size: 26),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: const Icon(
+              AppIcons.camera,
+              size: 14,
+              color: Colors.white,
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  /// Group heading matching the tracked-caps header used by `GlassSection`.
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.xs,
+        AppSpacing.md,
+      ),
+      child: Text(
+        text.toUpperCase(),
+        style: AppTextStyles.caption1.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }
