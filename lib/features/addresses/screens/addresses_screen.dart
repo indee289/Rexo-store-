@@ -7,11 +7,22 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/addresses_provider.dart';
 
+/// Saved addresses — rebuilt layout.
+///
+/// Old: `PremiumAppBar` over a `ListView` of hand-built `Container` cards, each
+/// ending in a row of two `TextButton.icon`s, with a circular `FloatingActionButton`
+/// and an `AlertDialog` for delete confirmation.
+///
+/// New: collapsing large title with the saved count, cards that carry the
+/// default-address state on their own edge, actions as glass buttons, a
+/// pill-shaped primary action pinned to the bottom instead of a floating
+/// circle (a labelled pill says what it does), and a glass confirm for delete.
+///
+/// `addressesProvider`, `addressesActionsProvider.deleteAddress` and the
+/// `/add-address` route (including the `extra` payload for edit) are unchanged.
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
 
@@ -19,48 +30,92 @@ class AddressesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final addressesAsync = ref.watch(addressesProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'My Addresses', showBack: true),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add-address'),
-        backgroundColor: AppColors.primary,
-        child: const Icon(AppIcons.add, color: Colors.white),
-      ),
-      body: addressesAsync.when(
-        data: (addresses) {
-          if (addresses.isEmpty) {
-            return const EmptyState(
-              icon: AppIcons.location,
-              title: 'No addresses saved',
-              subtitle: 'Add your first address to get started',
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 96),
-            itemCount: addresses.length,
-            itemBuilder: (context, index) =>
-                _buildAddressCard(context, ref, addresses[index]),
-          );
-        },
-        loading: () => const ShimmerLoading(),
-        error: (error, _) => EmptyState(
-          icon: AppIcons.warning_2,
-          title: 'Failed to load addresses',
-          ctaLabel: 'Retry',
-          ctaIcon: AppIcons.refresh,
-          onCta: () => ref.invalidate(addressesProvider),
-        ),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              GlassLargeTitleHeader(
+                title: 'My addresses',
+                showBack: true,
+                subtitle: addressesAsync.maybeWhen(
+                  data: (list) => list.isEmpty
+                      ? null
+                      : '${list.length} saved',
+                  orElse: () => null,
+                ),
+              ),
+              addressesAsync.when(
+                data: (addresses) {
+                  if (addresses.isEmpty) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: GlassEmptyState(
+                        icon: AppIcons.location,
+                        title: 'No addresses saved',
+                        message: 'Add your first address to get started.',
+                        actionLabel: 'Add address',
+                        onAction: () => context.push('/add-address'),
+                      ),
+                    );
+                  }
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      96,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: addresses.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, index) => RepaintBoundary(
+                        child: _AddressCard(address: addresses[index]),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassLoader(),
+                ),
+                error: (error, _) => SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassErrorState(
+                    title: 'Failed to load addresses',
+                    onRetry: () => ref.invalidate(addressesProvider),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Pinned primary action. A labelled pill beats a bare circular FAB:
+          // it names the action and gives a much larger target.
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: 'Add address',
+              icon: AppIcons.add,
+              onPressed: () => context.push('/add-address'),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildAddressCard(
-    BuildContext context,
-    WidgetRef ref,
-    Map<String, dynamic> address,
-  ) {
+class _AddressCard extends ConsumerWidget {
+  const _AddressCard({required this.address});
+
+  final Map<String, dynamic> address;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final name = address['name'] as String? ?? '';
     final phone = address['phone'] as String? ?? '';
     final line1 = address['address_line1'] as String? ?? '';
@@ -77,18 +132,12 @@ class AddressesScreen extends ConsumerWidget {
       '$city, $state - $pincode',
     ].join(', ');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+    return GlassCard(
+      borderRadius: AppRadius.allLg,
+      // The default address carries a brand edge rather than needing a chip to
+      // be read at a glance.
+      rim: isDefault ? AppColors.primaryRim : null,
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.allMd,
-        border: Border.all(
-          color: isDefault
-              ? AppColors.primary.withOpacity(0.3)
-              : Theme.of(context).dividerColor,
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -97,67 +146,56 @@ class AddressesScreen extends ConsumerWidget {
               Expanded(
                 child: Text(
                   name,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
+                  style: AppTextStyles.headline.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (isDefault)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: AppRadius.allSm,
-                  ),
-                  child: Text(
-                    'Default',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
+                GlassChip.status(
+                  label: 'Default',
+                  color: AppColors.primary,
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          if (phone.isNotEmpty)
+          if (phone.isNotEmpty) ...[
+            const SizedBox(height: 4),
             Text(
               phone,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
+              style: AppTextStyles.footnote
+                  .copyWith(color: AppColors.textSecondary),
             ),
-          const SizedBox(height: AppSpacing.xs),
+          ],
+          const SizedBox(height: 6),
           Text(
             fullAddress,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            style: AppTextStyles.subheadline.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          AppSpacing.gapLg,
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(
-                onPressed: () => context.push('/add-address', extra: address),
-                icon: const Icon(AppIcons.edit_2, size: 16),
-                label: Text('Edit', style: AppTextStyles.labelMedium),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              Expanded(
+                child: GlassButton.glass(
+                  label: 'Edit',
+                  icon: AppIcons.edit_2,
+                  size: GlassButtonSize.small,
+                  onPressed: () =>
+                      context.push('/add-address', extra: address),
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              TextButton.icon(
-                onPressed: () => _confirmDelete(context, ref, addressId),
-                icon: const Icon(AppIcons.trash, size: 16),
-                label: Text('Delete', style: AppTextStyles.labelMedium),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              AppSpacing.gapSm,
+              Expanded(
+                child: GlassButton.outline(
+                  label: 'Delete',
+                  icon: AppIcons.trash,
+                  size: GlassButtonSize.small,
+                  onPressed: () => _confirmDelete(context, ref, addressId),
                 ),
               ),
             ],
@@ -172,31 +210,17 @@ class AddressesScreen extends ConsumerWidget {
     WidgetRef ref,
     String addressId,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassConfirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete address', style: AppTextStyles.h6),
-        content: Text(
-          'Are you sure you want to delete this address?',
-          style: AppTextStyles.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: AppTextStyles.labelLarge),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Delete',
-              style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete address',
+      message: 'Are you sure you want to delete this address?',
+      icon: AppIcons.trash,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      destructive: true,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       await ref
           .read(addressesActionsProvider.notifier)
           .deleteAddress(addressId);

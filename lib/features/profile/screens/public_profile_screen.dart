@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_card.dart';
-import '../../../core/widgets/role_badge.dart';
-import '../../../core/widgets/shimmer_loading.dart';
-import '../../../core/widgets/verified_badge.dart';
 import '../../../services/supabase_service.dart';
 
 /// Provider to fetch a public profile by username.
@@ -20,12 +17,21 @@ final publicProfileProvider =
   final response = await SupabaseService.client
       .from('users')
       .select()
-      .eq('username', handle)     // live column: username
+      .eq('username', handle) // live column: username
       .maybeSingle();
 
   return response;
 });
 
+/// Public profile — rebuilt layout.
+///
+/// Old: `PremiumAppBar` over a centre-stacked column — avatar, name, handle,
+/// role badge, bio — then one `PremiumCard` holding three `StatPill`s split by
+/// 1px `Container` dividers, with a 200px shimmer block as the loading state.
+///
+/// New: collapsing large title, an identity hero card matching the owner's own
+/// profile screen, and the three stats as separate glass pills so each is its
+/// own surface instead of sharing one card split by rules.
 class PublicProfileScreen extends ConsumerWidget {
   final String handle;
 
@@ -34,152 +40,185 @@ class PublicProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(publicProfileProvider(handle));
-    final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: '@$handle',
-        showBack: true,
-        onBack: () => Navigator.of(context).pop(),
-      ),
-      body: profileAsync.when(
-        data: (profile) {
-          if (profile == null) {
-            return _buildNotFound(context);
-          }
-          return _buildProfileContent(context, profile);
-        },
-        loading: () => const Padding(
-          padding: EdgeInsets.all(AppSpacing.lg),
-          child: ShimmerLoading(height: 200),
-        ),
-        error: (error, _) => EmptyState(
-          icon: AppIcons.warning_2,
-          title: 'Failed to load profile',
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotFound(BuildContext context) {
-    return EmptyState(
-      icon: AppIcons.user,
-      title: 'User not found',
-      subtitle: 'No user with handle @$handle exists.',
-    );
-  }
-
-  // live column: username (was handle); live column: profileImage (was avatar_url)
-  Widget _buildProfileContent(
-      BuildContext context, Map<String, dynamic> profile) {
-    final name = profile['name'] ?? 'User';
-    final avatarUrl = profile['profileImage'] as String?;  // live: profileImage
-    final bio = profile['bio'] ?? '';
-    final role = profile['role'] ?? 'creator';
-    final userHandle = profile['username'] ?? handle;      // live: username
-    final isVerified = (profile['isVerified'] == true);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        children: [
-          const SizedBox(height: AppSpacing.xl),
-          // Avatar
-          PremiumAvatar(
-            imageUrl: avatarUrl,
-            name: name,
-            size: PremiumAvatar.sizeXl,
-            showRing: true,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          // Name + verified badge
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  name,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.h4.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          GlassLargeTitleHeader(title: '@$handle', showBack: true),
+          profileAsync.when(
+            data: (profile) {
+              if (profile == null) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassEmptyState(
+                    icon: AppIcons.user,
+                    title: 'User not found',
+                    message: 'No user with handle @$handle exists.',
                   ),
+                );
+              }
+              return SliverToBoxAdapter(
+                child: _Body(profile: profile, fallbackHandle: handle),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassLoader(),
+            ),
+            error: (error, _) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassErrorState(
+                title: 'Failed to load profile',
+                onRetry: () => ref.invalidate(publicProfileProvider(handle)),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body({required this.profile, required this.fallbackHandle});
+
+  final Map<String, dynamic> profile;
+  final String fallbackHandle;
+
+  @override
+  Widget build(BuildContext context) {
+    // live column: username (was handle); live column: profileImage
+    final name = (profile['name'] ?? 'User').toString();
+    final avatarUrl = profile['profileImage'] as String?;
+    final bio = (profile['bio'] ?? '').toString();
+    final role = (profile['role'] ?? 'creator').toString();
+    final userHandle = (profile['username'] ?? fallbackHandle).toString();
+    final isVerified = profile['isVerified'] == true;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GlassCard(
+            borderRadius: AppRadius.allXl,
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              children: [
+                PremiumAvatar(
+                  imageUrl: avatarUrl,
+                  name: name,
+                  size: PremiumAvatar.sizeXl,
+                  showRing: true,
+                ),
+                AppSpacing.gapLg,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.title1.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (isVerified) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        AppIcons.verify,
+                        size: 20,
+                        color: AppColors.verified,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '@$userHandle',
+                  style: AppTextStyles.subheadline
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                AppSpacing.gapSm,
+                GlassChip.status(
+                  label: _formatRole(role),
+                  color: AppColors.primary,
+                ),
+                if (bio.isNotEmpty) ...[
+                  AppSpacing.gapLg,
+                  Text(
+                    bio,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          AppSpacing.gapLg,
+          Row(
+            children: [
+              Expanded(
+                child: GlassStatPill(
+                  icon: AppIcons.volume_high,
+                  value: profile['campaigns_count']?.toString() ?? '0',
+                  label: 'Campaigns',
                 ),
               ),
-              if (isVerified) const VerifiedBadge(size: 20),
+              AppSpacing.gapMd,
+              Expanded(
+                child: GlassStatPill(
+                  icon: AppIcons.star_1,
+                  value: profile['rating']?.toString() ?? '—',
+                  label: 'Rating',
+                ),
+              ),
+              AppSpacing.gapMd,
+              Expanded(
+                child: GlassStatPill(
+                  icon: AppIcons.calendar,
+                  value: _formatJoinDate(profile['createdAt']),
+                  label: 'Joined',
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          // Handle
-          Text(
-            '@$userHandle',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Role badge (token-driven)
-          RoleBadge.fromString(role.toString()),
-          // Bio
-          if (bio.toString().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              bio.toString(),
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-          const SizedBox(height: AppSpacing.xxl),
-          // Stats
-          _buildStatsSection(context, profile),
         ],
       ),
     );
   }
 
-  Widget _buildStatsSection(
-      BuildContext context, Map<String, dynamic> profile) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          StatPill(
-            label: 'Campaigns',
-            value: profile['campaigns_count']?.toString() ?? '0',
-          ),
-          Container(
-              width: 1, height: 32, color: Theme.of(context).dividerColor),
-          StatPill(
-            label: 'Rating',
-            value: profile['rating']?.toString() ?? '-',
-          ),
-          Container(
-              width: 1, height: 32, color: Theme.of(context).dividerColor),
-          StatPill(
-            label: 'Joined',
-            value: _formatJoinDate(profile['createdAt']),  // live: createdAt
-          ),
-        ],
-      ),
-    );
+  String _formatRole(String r) {
+    if (r.isEmpty) return 'Creator';
+    return r[0].toUpperCase() + r.substring(1).toLowerCase();
   }
 
   String _formatJoinDate(dynamic createdAt) {
-    if (createdAt == null) return '-';
+    if (createdAt == null) return '—';
     try {
       final date = DateTime.parse(createdAt.toString());
-      final months = [
+      const months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
       ];
       return '${months[date.month - 1]} ${date.year}';
     } catch (_) {
-      return '-';
+      return '—';
     }
   }
 }

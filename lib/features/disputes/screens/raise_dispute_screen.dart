@@ -7,11 +7,21 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/disputes_provider.dart';
 
+/// Raise a dispute — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a form of bare `Text` headings, each above
+/// a field, with the Related-To selector as a Material `DropdownButton` inside
+/// a hand-built `Container`, and the submit error as a loose red `Text`.
+///
+/// New layout: collapsing large title; the Related-To choice as a labelled
+/// segmented control (two options do not need a dropdown — a dropdown hides
+/// both until tapped); the fields using the shared text field with its own
+/// labels; and the error as a proper inline error card.
+///
+/// `disputeNotifierProvider.submitDispute` and its payload keys are unchanged.
 class RaiseDisputeScreen extends ConsumerStatefulWidget {
   const RaiseDisputeScreen({super.key});
 
@@ -24,7 +34,13 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
   final _relatedIdController = TextEditingController();
   final _subjectController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String _relatedType = 'Order';
+
+  /// Values sent to the provider. Order matters — the segmented control's
+  /// index maps into this list.
+  static const _relatedTypes = ['Order', 'Campaign'];
+  int _relatedIndex = 0;
+
+  String get _relatedType => _relatedTypes[_relatedIndex];
 
   @override
   void dispose() {
@@ -38,112 +54,95 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
   Widget build(BuildContext context) {
     final formState = ref.watch(disputeNotifierProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: 'Raise dispute', showBack: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Related type dropdown
-              Text('Related To', style: AppTextStyles.h6),
-              const SizedBox(height: AppSpacing.sm),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: AppRadius.allSm,
-                  border: Border.all(color: Theme.of(context).dividerColor),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _relatedType,
-                    isExpanded: true,
-                    style: AppTextStyles.bodyMedium,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'Order',
-                        child: Text('Order'),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(title: 'Raise dispute', showBack: true),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 4,
+                        bottom: AppSpacing.sm,
                       ),
-                      DropdownMenuItem(
-                        value: 'Campaign',
-                        child: Text('Campaign'),
+                      child: Text(
+                        'Related to',
+                        style: AppTextStyles.labelMedium
+                            .copyWith(color: AppColors.textSecondary),
                       ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _relatedType = value);
-                      }
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Related ID
-              Text('$_relatedType ID', style: AppTextStyles.h6),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _relatedIdController,
-                hint: 'Enter the ${_relatedType.toLowerCase()} ID',
-                prefixIcon: AppIcons.hashtag,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'This field is required' : null,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Subject
-              Text('Subject', style: AppTextStyles.h6),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _subjectController,
-                hint: 'Brief subject of your dispute',
-                prefixIcon: AppIcons.document_text,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Subject is required' : null,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Description
-              Text('Description', style: AppTextStyles.h6),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField.multiline(
-                controller: _descriptionController,
-                hint: 'Describe the issue in detail...',
-                minLines: 5,
-                maxLines: 8,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Description is required' : null,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-
-              // Error message
-              if (formState.error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: Text(
-                    formState.error!,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.error,
                     ),
-                  ),
+                    GlassTabBar(
+                      labels: _relatedTypes,
+                      selectedIndex: _relatedIndex,
+                      onSelected: (i) => setState(() => _relatedIndex = i),
+                      margin: EdgeInsets.zero,
+                    ),
+                    AppSpacing.gapLg,
+
+                    GlassTextField(
+                      controller: _relatedIdController,
+                      label: '$_relatedType ID',
+                      hint: 'Enter the ${_relatedType.toLowerCase()} ID',
+                      prefixIcon: AppIcons.hashtag,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'This field is required'
+                          : null,
+                    ),
+                    AppSpacing.gapLg,
+
+                    GlassTextField(
+                      controller: _subjectController,
+                      label: 'Subject',
+                      hint: 'Brief subject of your dispute',
+                      prefixIcon: AppIcons.document_text,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Subject is required'
+                          : null,
+                    ),
+                    AppSpacing.gapLg,
+
+                    GlassTextField.multiline(
+                      controller: _descriptionController,
+                      label: 'Description',
+                      hint: 'Describe the issue in detail...',
+                      minLines: 5,
+                      maxLines: 8,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Description is required'
+                          : null,
+                    ),
+
+                    if (formState.error != null) ...[
+                      AppSpacing.gapLg,
+                      _ErrorCard(message: formState.error!),
+                    ],
+
+                    AppSpacing.gapXl,
+                    GlassButton(
+                      label: 'Submit dispute',
+                      loading: formState.isSubmitting,
+                      size: GlassButtonSize.large,
+                      onPressed:
+                          formState.isSubmitting ? null : _handleSubmit,
+                    ),
+                  ],
                 ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // Submit button
-              PremiumButton(
-                label: 'Submit dispute',
-                gradient: true,
-                loading: formState.isSubmitting,
-                onPressed: formState.isSubmitting ? null : _handleSubmit,
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -162,17 +161,46 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Dispute submitted successfully'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.allSm,
-          ),
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Dispute submitted successfully',
+        tone: GlassToastTone.success,
       );
       context.pop();
     }
+  }
+}
+
+/// Inline submit error.
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.08),
+        borderRadius: AppRadius.allMd,
+        border: Border.all(
+          color: AppColors.error.withOpacity(0.28),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(AppIcons.warning_2, size: 18, color: AppColors.error),
+          AppSpacing.gapSm,
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.footnote.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
