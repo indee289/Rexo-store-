@@ -4,19 +4,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/demo_asset_field.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/image_upload_field.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
 import '../../jobs/providers/jobs_provider.dart';
 
 /// Admin screen for creating a new job, or editing an existing one.
 /// Pass [existingJob] to pre-populate for editing.
+///
+/// Rebuilt layout. Old layout: a `PremiumAppBar` over one undifferentiated run
+/// of nine field blocks, each preceded by a local `_SectionLabel` printing a
+/// bold `Text` (with asterisks for required fields), the platform picker built
+/// from Material `ChoiceChip`s, the deadline a hand-decorated `Container` with
+/// its own clear affordance, and the save button at the very bottom of a very
+/// long scroll.
+///
+/// New layout: a collapsing large title; the form split into five named groups
+/// (basics, classification, payment, timing, extras) so it reads as five short
+/// steps; required/optional conveyed by the shared field's helper text instead
+/// of asterisks; the platform picker on `GlassChip`; the deadline as a grouped
+/// row that shows its value as detail text; and save pinned so it is reachable
+/// at any scroll offset. The `isDark` colour variables are gone — the app is
+/// light mode only.
+///
+/// The insert/update payload, every validation rule, the comma-joined
+/// `platform` convention, the demo-asset key mapping and the `pop(true)`
+/// result are unchanged.
 class PostJobScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingJob;
 
@@ -62,10 +78,8 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       _titleCtrl.text = j['title'] as String? ?? '';
       _descCtrl.text = j['description'] as String? ?? '';
       _categoryCtrl.text = j['category'] as String? ?? '';
-      _paymentCtrl.text =
-          (j['payment_amount'] as num?)?.toString() ?? '';
-      _maxSlotsCtrl.text =
-          (j['max_slots'] as int?)?.toString() ?? '';
+      _paymentCtrl.text = (j['payment_amount'] as num?)?.toString() ?? '';
+      _maxSlotsCtrl.text = (j['max_slots'] as int?)?.toString() ?? '';
       _coverImageUrl = j['cover_image_url'] as String?;
       _rulesCtrl.text = j['rules'] as String? ?? '';
       final dl = j['deadline'] as String?;
@@ -140,7 +154,8 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
         : int.tryParse(_maxSlotsCtrl.text.trim());
     if (_maxSlotsCtrl.text.trim().isNotEmpty &&
         (maxSlotsRaw == null || maxSlotsRaw <= 0)) {
-      _showError('Max slots must be a positive whole number, or leave blank for unlimited.');
+      _showError(
+          'Max slots must be a positive whole number, or leave blank for unlimited.');
       return;
     }
 
@@ -169,7 +184,8 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       // Optional rules (null when empty so the column stays clear).
       'rules': rules.isEmpty ? null : rules,
       // Optional demo asset (null when nothing was attached).
-      'demo_asset_type': hasDemoAsset ? demoAssetTypeToKey(_demoAssetType) : null,
+      'demo_asset_type':
+          hasDemoAsset ? demoAssetTypeToKey(_demoAssetType) : null,
       'demo_asset_url': hasDemoAsset ? demoValue : null,
     };
 
@@ -179,20 +195,17 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
           .read(jobsActionsProvider.notifier)
           .updateJob(widget.existingJob!['id'] as String, data);
     } else {
-      ok = await ref
-          .read(jobsActionsProvider.notifier)
-          .createJob(data);
+      ok = await ref.read(jobsActionsProvider.notifier).createJob(data);
     }
 
     if (!mounted) return;
     setState(() => _saving = false);
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isEdit ? 'Job updated.' : 'Job posted successfully!'),
-          backgroundColor: AppColors.success,
-        ),
+      showGlassSnackBar(
+        context,
+        message: _isEdit ? 'Job updated.' : 'Job posted successfully!',
+        tone: GlassToastTone.success,
       );
       Navigator.of(context).pop(true);
     } else {
@@ -205,267 +218,304 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.error),
-    );
+    showGlassSnackBar(context, message: msg, tone: GlassToastTone.error);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: CustomScrollView(
+              slivers: [
+                GlassLargeTitleHeader(
+                  title: _isEdit ? 'Edit job' : 'Post a job',
+                  subtitle: _isEdit
+                      ? 'Update this listing'
+                      : 'Describe the task and the payout',
+                  showBack: true,
+                ),
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: _isEdit ? 'Edit Job' : 'Post a Job'),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Cover Image ──────────────────────────────────────────────
-              _SectionLabel(label: 'Cover Image (Optional)', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              ImageUploadField(
-                currentImageUrl: _coverImageUrl,
-                storageFolder: 'job-covers',
-                label: 'Upload Cover Image',
-                onImageUploaded: (url) => setState(() => _coverImageUrl = url),
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Title ────────────────────────────────────────────────────
-              _SectionLabel(label: 'Job Title *', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _titleCtrl,
-                hint: 'e.g. Write a product review on Instagram',
-                prefixIcon: AppIcons.briefcase,
-                textCapitalization: TextCapitalization.sentences,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Title is required' : null,
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Description / Instructions ───────────────────────────────
-              _SectionLabel(label: 'Description & Instructions *', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField.multiline(
-                controller: _descCtrl,
-                hint: 'Describe the task, what to do, and what proof to submit…',
-                minLines: 4,
-                maxLines: 10,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Description is required'
-                    : null,
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Category ─────────────────────────────────────────────────
-              _SectionLabel(label: 'Category (Optional)', isDark: isDark),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Used to generate filter chips on the Jobs page.',
-                style: TextStyle(fontSize: 12, color: textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _categoryCtrl,
-                hint: 'e.g. Social Media, Content, Photography',
-                prefixIcon: AppIcons.category,
-                textCapitalization: TextCapitalization.words,
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Platforms (multi-select) ─────────────────────────────────
-              _SectionLabel(label: 'Platforms', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              _buildPlatformChips(isDark, textPrimary),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Payment Amount ────────────────────────────────────────────
-              _SectionLabel(label: 'Payment Amount (₹) *', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _paymentCtrl,
-                hint: '0.00',
-                prefixIcon: AppIcons.money,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Payment amount is required'
-                    : null,
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Max Slots ─────────────────────────────────────────────────
-              _SectionLabel(label: 'Max Slots (Optional)', isDark: isDark),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Leave blank for unlimited applications.',
-                style: TextStyle(fontSize: 12, color: textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _maxSlotsCtrl,
-                hint: 'e.g. 10',
-                prefixIcon: AppIcons.people,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Deadline ──────────────────────────────────────────────────
-              _SectionLabel(label: 'Deadline (Optional)', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              GestureDetector(
-                onTap: _pickDeadline,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurfaceAlt
-                        : AppColors.surfaceAlt,
-                    borderRadius: AppRadius.allMd,
+                // 1 — Basics
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Basics'),
+                        ImageUploadField(
+                          currentImageUrl: _coverImageUrl,
+                          storageFolder: 'job-covers',
+                          label: 'Cover image (optional)',
+                          onImageUploaded: (url) =>
+                              setState(() => _coverImageUrl = url),
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _titleCtrl,
+                          label: 'Job title',
+                          hint: 'e.g. Write a product review on Instagram',
+                          prefixIcon: AppIcons.briefcase,
+                          textCapitalization: TextCapitalization.sentences,
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Title is required'
+                              : null,
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField.multiline(
+                          controller: _descCtrl,
+                          label: 'Description & instructions',
+                          hint:
+                              'Describe the task, what to do, and what proof to submit…',
+                          minLines: 4,
+                          maxLines: 10,
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Description is required'
+                              : null,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
+                ),
+
+                // 2 — Classification
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Classification'),
+                        GlassTextField(
+                          controller: _categoryCtrl,
+                          label: 'Category (optional)',
+                          hint: 'e.g. Social Media, Content, Photography',
+                          helperText:
+                              'Used to generate filter chips on the Jobs page',
+                          prefixIcon: AppIcons.category,
+                          textCapitalization: TextCapitalization.words,
+                        ),
+                        AppSpacing.gapLg,
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 4,
+                            bottom: AppSpacing.sm,
+                          ),
+                          child: Text(
+                            'Platforms',
+                            style: AppTextStyles.labelMedium
+                                .copyWith(color: AppColors.textSecondary),
+                          ),
+                        ),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            for (final platform in _platforms)
+                              GlassChip(
+                                label: platform,
+                                selected: _selectedPlatforms.contains(platform),
+                                onTap: () => _togglePlatform(platform),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 3 — Payment & slots
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Payment & slots'),
+                        GlassTextField(
+                          controller: _paymentCtrl,
+                          label: 'Payment amount (\u20B9)',
+                          hint: '0.00',
+                          prefixIcon: AppIcons.money,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}'),
+                            ),
+                          ],
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Payment amount is required'
+                              : null,
+                        ),
+                        AppSpacing.gapLg,
+                        GlassTextField(
+                          controller: _maxSlotsCtrl,
+                          label: 'Max slots (optional)',
+                          hint: 'e.g. 10',
+                          helperText: 'Leave blank for unlimited applications',
+                          prefixIcon: AppIcons.people,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 4 — Timing
+                SliverToBoxAdapter(
+                  child: GlassSection(
+                    title: 'Timing',
                     children: [
-                      Icon(AppIcons.calendar,
-                          size: 20,
-                          color: isDark
-                              ? AppColors.darkTextHint
-                              : AppColors.textHint),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        _deadline == null
-                            ? 'Select a deadline date'
-                            : '${_deadline!.day} ${_monthName(_deadline!.month)} ${_deadline!.year}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: _deadline == null
-                              ? (isDark
-                                  ? AppColors.darkTextHint
-                                  : AppColors.textHint)
-                              : textPrimary,
-                        ),
+                      GlassRow(
+                        icon: AppIcons.calendar,
+                        title: 'Deadline',
+                        subtitle: 'Optional',
+                        trailingText: _deadline == null
+                            ? 'Not set'
+                            : '${_deadline!.day} '
+                                '${_monthName(_deadline!.month)} '
+                                '${_deadline!.year}',
+                        trailing: _deadline == null
+                            ? null
+                            : GlassIconButton.bare(
+                                icon: AppIcons.close_circle,
+                                tooltip: 'Clear deadline',
+                                size: 30,
+                                iconSize: 18,
+                                onTap: () => setState(() => _deadline = null),
+                              ),
+                        onTap: _pickDeadline,
                       ),
-                      const Spacer(),
-                      if (_deadline != null)
-                        GestureDetector(
-                          onTap: () => setState(() => _deadline = null),
-                          child: Icon(AppIcons.close_circle,
-                              size: 18,
-                              color: isDark
-                                  ? AppColors.darkTextHint
-                                  : AppColors.textHint),
-                        ),
                     ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: AppSpacing.xl),
+                // 5 — Extras
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionLabel('Extras'),
+                        GlassTextField.multiline(
+                          controller: _rulesCtrl,
+                          label: 'Rules (optional)',
+                          hint:
+                              'Add any rules or guidelines creators must follow…',
+                          minLines: 3,
+                          maxLines: 8,
+                        ),
+                        AppSpacing.gapLg,
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 4,
+                            bottom: AppSpacing.sm,
+                          ),
+                          child: Text(
+                            'Demo asset (optional)',
+                            style: AppTextStyles.labelMedium
+                                .copyWith(color: AppColors.textSecondary),
+                          ),
+                        ),
+                        DemoAssetField(
+                          storageFolder: 'job-demo-assets',
+                          initialType: _demoAssetType,
+                          initialValue: _demoAssetValue,
+                          onChanged: (type, value) {
+                            setState(() {
+                              _demoAssetType = type;
+                              _demoAssetValue = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
-              // ── Rules (Optional) ─────────────────────────────────────────
-              _SectionLabel(label: 'Rules (Optional)', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField.multiline(
-                controller: _rulesCtrl,
-                hint: 'Add any rules or guidelines creators must follow…',
-                minLines: 3,
-                maxLines: 8,
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // ── Demo Asset (Optional) ────────────────────────────────────
-              _SectionLabel(label: 'Demo Asset (Optional)', isDark: isDark),
-              const SizedBox(height: AppSpacing.sm),
-              DemoAssetField(
-                storageFolder: 'job-demo-assets',
-                initialType: _demoAssetType,
-                initialValue: _demoAssetValue,
-                onChanged: (type, value) {
-                  setState(() {
-                    _demoAssetType = type;
-                    _demoAssetValue = value;
-                  });
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.xxl),
-
-              // ── Save Button ───────────────────────────────────────────────
-              PremiumButton(
-                label: _isEdit ? 'Save Changes' : 'Post Job',
-                icon: _isEdit ? AppIcons.save_2 : AppIcons.send_1,
-                loading: _saving,
-                onPressed: _save,
-              ),
-
-              const SizedBox(height: AppSpacing.xxl),
-            ],
+                // Clearance for the pinned action.
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
+            ),
           ),
-        ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: _isEdit ? 'Save changes' : 'Post job',
+              icon: _isEdit ? AppIcons.save_2 : AppIcons.send_1,
+              size: GlassButtonSize.large,
+              loading: _saving,
+              onPressed: _saving ? null : _save,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPlatformChips(bool isDark, Color textPrimary) {
-    final surface =
-        isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-    final border = isDark ? AppColors.darkBorder : AppColors.border;
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      children: _platforms.map((platform) {
-        final isSelected = _selectedPlatforms.contains(platform);
-        return ChoiceChip(
-          label: Text(platform),
-          selected: isSelected,
-          showCheckmark: false,
-          onSelected: (_) {
-            setState(() {
-              if (isSelected) {
-                // Keep at least one platform selected.
-                if (_selectedPlatforms.length > 1) {
-                  _selectedPlatforms.remove(platform);
-                }
-              } else {
-                _selectedPlatforms.add(platform);
-              }
-            });
-          },
-          selectedColor: AppColors.primary,
-          backgroundColor: surface,
-          side: BorderSide(
-            color: isSelected ? AppColors.primary : border,
-          ),
-          labelStyle: AppTextStyles.bodyMedium.copyWith(
-            color: isSelected ? Colors.white : textPrimary,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.allSm,
-          ),
-        );
-      }).toList(),
+  /// Toggles a platform, keeping at least one selected — unchanged rule.
+  void _togglePlatform(String platform) {
+    setState(() {
+      if (_selectedPlatforms.contains(platform)) {
+        if (_selectedPlatforms.length > 1) {
+          _selectedPlatforms.remove(platform);
+        }
+      } else {
+        _selectedPlatforms.add(platform);
+      }
+    });
+  }
+
+  /// Group heading matching the tracked-caps header used by `GlassSection`.
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.xs,
+        AppSpacing.md,
+      ),
+      child: Text(
+        text.toUpperCase(),
+        style: AppTextStyles.caption1.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
     );
   }
 
@@ -475,23 +525,5 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return names[month];
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final bool isDark;
-
-  const _SectionLabel({required this.label, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTextStyles.bodyMedium.copyWith(
-        fontWeight: FontWeight.w700,
-        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-      ),
-    );
   }
 }

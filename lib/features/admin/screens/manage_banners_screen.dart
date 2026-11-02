@@ -7,16 +7,35 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/image_upload_field.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
-import '../../../core/widgets/shimmer_loading.dart';
 import '../../home/providers/banners_provider.dart';
 import '../providers/admin_provider.dart';
-import '../widgets/premium_card.dart';
 
+/// Admin manage banners — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` with an "add" `IconButton` *and* a
+/// `FloatingActionButton` doing the same thing; admin-local `PremiumCard`
+/// rows whose three actions were `GestureDetector`s with 6px of padding
+/// (well under a usable tap target); two bespoke chip `Container`s; and an
+/// edit screen that was another long single-column form with a Material
+/// `Switch`, a hand-built three-segment `_LinkTypeSelector` and a
+/// `DropdownButtonFormField` for the campaign picker.
+///
+/// New layout: one add affordance instead of two, rows on the shared card
+/// surface with actions as `GlassIconButton`s (which guarantee the 44pt tap
+/// target), the chips from the shared set, and an edit screen split into named
+/// groups with the shared switch row, segmented control and a campaign picker
+/// sheet.
+///
+/// This screen keeps a fixed [GlassAppBar] rather than the collapsing large
+/// title: the list is a `ReorderableListView`, which owns its own scrollable
+/// and cannot be driven from a shared `CustomScrollView`.
+///
+/// `adminBannersProvider`, `bannersActionsProvider`
+/// (`toggleVisibility` / `deleteBanner` / `updateBanner` / `createBanner`),
+/// the drag-to-reorder `sort_order` writes and the saved payload are all
+/// unchanged.
 class ManageBannersScreen extends ConsumerWidget {
   const ManageBannersScreen({super.key});
 
@@ -24,21 +43,19 @@ class ManageBannersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final banners = ref.watch(adminBannersProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Manage Banners',
+    return GlassScaffold(
+      appBar: GlassAppBar(
+        title: 'Manage banners',
+        showBack: true,
         actions: [
-          IconButton(
-            icon: const Icon(AppIcons.add_circle, color: AppColors.primary),
-            onPressed: () => _openEdit(context, ref, null),
+          GlassIconButton(
+            icon: AppIcons.add,
+            tooltip: 'Add banner',
+            size: 36,
+            iconSize: 19,
+            onTap: () => _openEdit(context, ref, null),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: () => _openEdit(context, ref, null),
-        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -53,23 +70,23 @@ class ManageBannersScreen extends ConsumerWidget {
                   slivers: [
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: EmptyState(
+                      child: GlassEmptyState(
                         icon: AppIcons.image,
                         title: 'No banners yet',
-                        subtitle: 'Tap + to upload your first banner.',
-                        cta: PremiumButton(
-                          label: 'Add Banner',
-                          icon: AppIcons.add,
-                          expand: false,
-                          onPressed: () => _openEdit(context, ref, null),
-                        ),
+                        message: 'Upload your first home banner.',
+                        actionLabel: 'Add banner',
+                        onAction: () => _openEdit(context, ref, null),
                       ),
                     ),
                   ],
                 )
               : ReorderableListView.builder(
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 100),
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    100,
+                  ),
                   itemCount: list.length,
                   onReorder: (oldIndex, newIndex) async {
                     if (newIndex > oldIndex) newIndex--;
@@ -94,27 +111,11 @@ class ManageBannersScreen extends ConsumerWidget {
                     );
                   },
                 ),
-          loading: () => ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: 3,
-            itemBuilder: (_, __) => const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.md),
-              child: ShimmerCard(height: 100),
-            ),
-          ),
-          error: (e, _) => Center(
-            child: EmptyState(
-              icon: AppIcons.warning_2,
-              title: 'Failed to load banners',
-              subtitle: ErrorUtils.sanitize(e),
-              cta: PremiumButton(
-                label: 'Retry',
-                icon: AppIcons.refresh,
-                variant: PremiumButtonVariant.tonal,
-                expand: false,
-                onPressed: () => ref.invalidate(adminBannersProvider),
-              ),
-            ),
+          loading: () => const GlassListSkeleton(itemCount: 3),
+          error: (e, _) => GlassErrorState(
+            title: 'Failed to load banners',
+            message: ErrorUtils.sanitize(e),
+            onRetry: () => ref.invalidate(adminBannersProvider),
           ),
         ),
       ),
@@ -122,7 +123,10 @@ class ManageBannersScreen extends ConsumerWidget {
   }
 
   void _openEdit(
-      BuildContext context, WidgetRef ref, Map<String, dynamic>? banner) {
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic>? banner,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -138,7 +142,11 @@ class _BannerAdminCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> banner;
   final VoidCallback onEdit;
 
-  const _BannerAdminCard({super.key, required this.banner, required this.onEdit});
+  const _BannerAdminCard({
+    super.key,
+    required this.banner,
+    required this.onEdit,
+  });
 
   @override
   ConsumerState<_BannerAdminCard> createState() => _BannerAdminCardState();
@@ -150,7 +158,6 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final b = widget.banner;
     final imageUrl = b['image_url'] as String? ?? '';
     final title = b['title'] as String?;
@@ -159,17 +166,13 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: PremiumCard(
+      child: GlassCard(
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
-            // Drag handle
-            Icon(AppIcons.drag,
-                size: 20,
-                color: isDark ? AppColors.darkTextHint : AppColors.textHint),
-            const SizedBox(width: AppSpacing.sm),
+            const Icon(AppIcons.drag, size: 20, color: AppColors.textHint),
+            AppSpacing.gapSm,
 
-            // Thumbnail
             ClipRRect(
               borderRadius: AppRadius.allSm,
               child: imageUrl.isNotEmpty
@@ -178,102 +181,107 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
                       width: 64,
                       height: 48,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
+                      errorBuilder: (_, __, ___) => const _Placeholder(),
                     )
-                  : _placeholder(),
+                  : const _Placeholder(),
             ),
 
-            const SizedBox(width: AppSpacing.md),
+            AppSpacing.gapMd,
 
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     title?.isNotEmpty == true ? title! : 'Banner',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyMedium.copyWith(
+                    style: AppTextStyles.callout.copyWith(
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Row(
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
-                      _LinkChip(linkType: linkType, isDark: isDark),
-                      const SizedBox(width: 6),
-                      _VisibilityChip(isVisible: isVisible),
+                      GlassChip.status(
+                        label: _linkLabel(linkType),
+                        color: AppColors.primary,
+                      ),
+                      GlassChip.status(
+                        label: isVisible ? 'Visible' : 'Hidden',
+                        color: isVisible
+                            ? AppColors.success
+                            : AppColors.textHint,
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Actions
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Edit
-                _iconBtn(
-                  icon: AppIcons.edit,
-                  color: AppColors.primary,
-                  onTap: widget.onEdit,
-                ),
-                // Hide/Show
-                _toggling
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.warning),
-                      )
-                    : _iconBtn(
-                        icon: isVisible ? AppIcons.eye_slash : AppIcons.eye,
-                        color: AppColors.warning,
-                        onTap: () => _toggle(isVisible),
-                      ),
-                // Delete
-                _deleting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.error),
-                      )
-                    : _iconBtn(
-                        icon: AppIcons.trash,
-                        color: AppColors.error,
-                        onTap: () => _delete(context),
-                      ),
-              ],
+            // Actions. These were 6px-padded GestureDetectors; GlassIconButton
+            // guarantees the 44pt minimum tap target.
+            GlassIconButton.bare(
+              icon: AppIcons.edit,
+              tooltip: 'Edit banner',
+              size: 34,
+              iconSize: 18,
+              onTap: widget.onEdit,
             ),
+            if (_toggling)
+              const SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.warning,
+                    ),
+                  ),
+                ),
+              )
+            else
+              GlassIconButton.bare(
+                icon: isVisible ? AppIcons.eye_slash : AppIcons.eye,
+                tooltip: isVisible ? 'Hide banner' : 'Show banner',
+                color: AppColors.warning,
+                size: 34,
+                iconSize: 18,
+                onTap: () => _toggle(isVisible),
+              ),
+            if (_deleting)
+              const SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ),
+              )
+            else
+              GlassIconButton.bare(
+                icon: AppIcons.trash,
+                tooltip: 'Delete banner',
+                color: AppColors.error,
+                size: 34,
+                iconSize: 18,
+                onTap: _delete,
+              ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _placeholder() => Container(
-        width: 64,
-        height: 48,
-        color: AppColors.primary.withOpacity(0.10),
-        child: const Icon(AppIcons.image, color: AppColors.primary, size: 20),
-      );
-
-  Widget _iconBtn(
-      {required IconData icon,
-      required Color color,
-      required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
@@ -286,26 +294,16 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
     if (mounted) setState(() => _toggling = false);
   }
 
-  Future<void> _delete(BuildContext context) async {
-    final ok = await showDialog<bool>(
+  Future<void> _delete() async {
+    final ok = await showGlassConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Banner?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete banner?',
+      message: 'This cannot be undone.',
+      icon: AppIcons.trash,
+      confirmLabel: 'Delete',
+      destructive: true,
     );
-    if (ok != true || !mounted) return;
+    if (!ok || !mounted) return;
     setState(() => _deleting = true);
     await ref
         .read(bannersActionsProvider.notifier)
@@ -314,54 +312,22 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
   }
 }
 
-class _LinkChip extends StatelessWidget {
-  final String linkType;
-  final bool isDark;
-  const _LinkChip({required this.linkType, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (linkType) {
+String _linkLabel(String linkType) => switch (linkType) {
       'campaign' => 'Campaign',
       'page' => 'Page',
       _ => 'No link',
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.10),
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.primary,
-              fontWeight: FontWeight.w600)),
-    );
-  }
-}
 
-class _VisibilityChip extends StatelessWidget {
-  final bool isVisible;
-  const _VisibilityChip({required this.isVisible});
+class _Placeholder extends StatelessWidget {
+  const _Placeholder();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: (isVisible ? AppColors.success : AppColors.textHint)
-            .withOpacity(0.12),
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(
-        isVisible ? 'Visible' : 'Hidden',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: isVisible ? AppColors.success : AppColors.textHint,
-        ),
-      ),
+      width: 64,
+      height: 48,
+      color: AppColors.primaryGlass,
+      child: const Icon(AppIcons.image, color: AppColors.primary, size: 20),
     );
   }
 }
@@ -388,6 +354,9 @@ class _BannerEditScreenState extends ConsumerState<_BannerEditScreen> {
 
   bool get _isEdit => widget.existing != null;
 
+  /// Index into [_linkTypes] for the segmented control.
+  static const _linkTypes = ['none', 'campaign', 'page'];
+
   @override
   void initState() {
     super.initState();
@@ -411,10 +380,11 @@ class _BannerEditScreenState extends ConsumerState<_BannerEditScreen> {
 
   Future<void> _save() async {
     if (_imageUrl == null || _imageUrl!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please upload a banner image first.'),
-        backgroundColor: AppColors.error,
-      ));
+      showGlassSnackBar(
+        context,
+        message: 'Please upload a banner image first.',
+        tone: GlassToastTone.error,
+      );
       return;
     }
 
@@ -435,265 +405,255 @@ class _BannerEditScreenState extends ConsumerState<_BannerEditScreen> {
           .read(bannersActionsProvider.notifier)
           .updateBanner(widget.existing!['id'] as String, data);
     } else {
-      ok = await ref
-          .read(bannersActionsProvider.notifier)
-          .createBanner(data);
+      ok = await ref.read(bannersActionsProvider.notifier).createBanner(data);
     }
 
     if (!mounted) return;
     setState(() => _saving = false);
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_isEdit ? 'Banner updated.' : 'Banner added!'),
-        backgroundColor: AppColors.success,
-      ));
+      showGlassSnackBar(
+        context,
+        message: _isEdit ? 'Banner updated.' : 'Banner added!',
+        tone: GlassToastTone.success,
+      );
       Navigator.pop(context);
     } else {
       final err = ref.read(bannersActionsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(err.hasError
+      showGlassSnackBar(
+        context,
+        message: err.hasError
             ? ErrorUtils.sanitize(err.error)
-            : 'Could not save banner.'),
-        backgroundColor: AppColors.error,
-      ));
+            : 'Could not save banner.',
+        tone: GlassToastTone.error,
+      );
+    }
+  }
+
+  /// Campaign picker, replacing the Material `DropdownButtonFormField`.
+  Future<void> _pickCampaign(List<Map<String, dynamic>> list) async {
+    final picked = await showGlassSheet<Map<String, dynamic>>(
+      context: context,
+      title: 'Link a campaign',
+      child: Builder(
+        builder: (sheetContext) => SingleChildScrollView(
+          child: GlassGroup(
+            children: [
+              for (final c in list)
+                GlassRow(
+                  title: c['title'] as String? ?? 'Untitled',
+                  showChevron: false,
+                  trailing: c['id'] == _linkedCampaignId
+                      ? const Icon(
+                          AppIcons.tick_circle,
+                          size: 20,
+                          color: AppColors.primary,
+                        )
+                      : null,
+                  onTap: () => Navigator.of(sheetContext).pop(c),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _linkedCampaignId = picked['id'] as String?;
+        _linkedCampaignTitle = picked['title'] as String?;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final campaigns = ref.watch(adminCampaignsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(title: _isEdit ? 'Edit Banner' : 'Add Banner'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image upload
-            _Label('Banner Image *', isDark),
-            const SizedBox(height: AppSpacing.sm),
-            ImageUploadField(
-              currentImageUrl: _imageUrl,
-              storageFolder: 'banners',
-              label: 'Upload Banner Image',
-              onImageUploaded: (url) => setState(() => _imageUrl = url),
-            ),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              GlassLargeTitleHeader(
+                title: _isEdit ? 'Edit banner' : 'Add banner',
+                subtitle: 'Shown on the home screen',
+                showBack: true,
+              ),
 
-            const SizedBox(height: AppSpacing.xl),
-
-            // Title
-            _Label('Title (Optional)', isDark),
-            const SizedBox(height: AppSpacing.sm),
-            PremiumTextField(
-              controller: _titleCtrl,
-              hint: 'e.g. Summer Sale, New Feature',
-              prefixIcon: AppIcons.edit,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // Visibility toggle
-            Row(
-              children: [
-                Expanded(
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Label('Visible on Home', isDark),
-                      Text(
-                        'Toggle off to hide without deleting.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark
-                              ? AppColors.darkTextHint
-                              : AppColors.textHint,
-                        ),
+                      _sectionLabel('Artwork'),
+                      ImageUploadField(
+                        currentImageUrl: _imageUrl,
+                        storageFolder: 'banners',
+                        label: 'Banner image',
+                        onImageUploaded: (url) =>
+                            setState(() => _imageUrl = url),
+                      ),
+                      AppSpacing.gapLg,
+                      GlassTextField(
+                        controller: _titleCtrl,
+                        label: 'Title (optional)',
+                        hint: 'e.g. Summer Sale, New Feature',
+                        prefixIcon: AppIcons.edit,
+                        textCapitalization: TextCapitalization.sentences,
                       ),
                     ],
                   ),
                 ),
-                Switch(
-                  value: _isVisible,
-                  activeColor: AppColors.primary,
-                  onChanged: (v) => setState(() => _isVisible = v),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // Link type
-            _Label('Link To (Optional)', isDark),
-            const SizedBox(height: AppSpacing.sm),
-            _LinkTypeSelector(
-              selected: _linkType,
-              isDark: isDark,
-              onChanged: (v) => setState(() {
-                _linkType = v;
-                _linkedCampaignId = null;
-                _linkedCampaignTitle = null;
-                _pageCtrl.clear();
-              }),
-            ),
-
-            if (_linkType == 'campaign') ...[
-              const SizedBox(height: AppSpacing.md),
-              _Label('Select Campaign', isDark),
-              const SizedBox(height: AppSpacing.sm),
-              campaigns.when(
-                data: (list) => DropdownButtonFormField<String>(
-                  value: _linkedCampaignId,
-                  hint: const Text('Choose a campaign'),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: isDark
-                        ? AppColors.darkSurfaceAlt
-                        : AppColors.surfaceAlt,
-                    border: OutlineInputBorder(
-                      borderRadius: AppRadius.allMd,
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                  ),
-                  items: list
-                      .map((c) => DropdownMenuItem<String>(
-                            value: c['id'] as String,
-                            child: Text(
-                              c['title'] as String? ?? 'Untitled',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
-                      .toList(),
-                  onChanged: (id) => setState(() {
-                    _linkedCampaignId = id;
-                    _linkedCampaignTitle = list.firstWhere(
-                        (c) => c['id'] == id,
-                        orElse: () => {})['title'] as String?;
-                  }),
-                ),
-                loading: () => const LinearProgressIndicator(
-                    color: AppColors.primary),
-                error: (_, __) =>
-                    const Text('Could not load campaigns'),
               ),
-            ],
 
-            if (_linkType == 'page') ...[
-              const SizedBox(height: AppSpacing.md),
-              _Label('Page Route', isDark),
-              const SizedBox(height: AppSpacing.sm),
-              PremiumTextField(
-                controller: _pageCtrl,
-                hint: 'e.g. /campaigns, /wallet, /jobs',
-                prefixIcon: AppIcons.link,
-              ),
-            ],
-
-            const SizedBox(height: AppSpacing.xxl),
-
-            PremiumButton(
-              label: _isEdit ? 'Save Changes' : 'Add Banner',
-              icon: _isEdit ? AppIcons.save_2 : AppIcons.add,
-              loading: _saving,
-              onPressed: _save,
-            ),
-
-            const SizedBox(height: AppSpacing.xxl),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  final String text;
-  final bool isDark;
-  const _Label(this.text, this.isDark);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: AppTextStyles.bodyMedium.copyWith(
-        fontWeight: FontWeight.w700,
-        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-      ),
-    );
-  }
-}
-
-class _LinkTypeSelector extends StatelessWidget {
-  final String selected;
-  final bool isDark;
-  final ValueChanged<String> onChanged;
-
-  const _LinkTypeSelector({
-    required this.selected,
-    required this.isDark,
-    required this.onChanged,
-  });
-
-  static const _options = [
-    ('none', AppIcons.slash, 'No Link'),
-    ('campaign', AppIcons.volume_high, 'Campaign'),
-    ('page', AppIcons.link, 'Page'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
-        borderRadius: AppRadius.allMd,
-      ),
-      child: Row(
-        children: _options.map((o) {
-          final isSelected = o.$1 == selected;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(o.$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  gradient: isSelected ? AppColors.primaryGradient : null,
-                  borderRadius: AppRadius.allSm,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              SliverToBoxAdapter(
+                child: GlassSection(
+                  title: 'Visibility',
                   children: [
-                    Icon(o.$2,
-                        size: 18,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary)),
-                    const SizedBox(height: 4),
-                    Text(o.$3,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.textSecondary),
-                        )),
+                    GlassSwitchRow(
+                      title: 'Visible on home',
+                      subtitle: 'Toggle off to hide without deleting',
+                      icon: AppIcons.eye,
+                      value: _isVisible,
+                      onChanged: (v) => setState(() => _isVisible = v),
+                    ),
                   ],
                 ),
               ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xl,
+                          0,
+                          AppSpacing.xl,
+                          AppSpacing.xs,
+                        ),
+                        child: Text(
+                          'LINK TO (OPTIONAL)',
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      GlassTabBar(
+                        labels: const ['No link', 'Campaign', 'Page'],
+                        selectedIndex: _linkTypes.indexOf(_linkType) < 0
+                            ? 0
+                            : _linkTypes.indexOf(_linkType),
+                        onSelected: (i) => setState(() {
+                          _linkType = _linkTypes[i];
+                          _linkedCampaignId = null;
+                          _linkedCampaignTitle = null;
+                          _pageCtrl.clear();
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_linkType == 'campaign')
+                SliverToBoxAdapter(
+                  child: campaigns.when(
+                    data: (list) => GlassSection(
+                      children: [
+                        GlassRow(
+                          icon: AppIcons.volume_high,
+                          title: 'Campaign',
+                          subtitle: _linkedCampaignId == null
+                              ? 'None selected'
+                              : null,
+                          trailingText: _linkedCampaignTitle ??
+                              (_linkedCampaignId == null ? 'Choose' : 'Linked'),
+                          onTap: () => _pickCampaign(list),
+                        ),
+                      ],
+                    ),
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: GlassLoader(size: 22),
+                    ),
+                    error: (_, __) => const Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: GlassErrorState(
+                        title: 'Could not load campaigns',
+                        compact: true,
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (_linkType == 'page')
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                    ),
+                    child: GlassTextField(
+                      controller: _pageCtrl,
+                      label: 'Page route',
+                      hint: 'e.g. /campaigns, /wallet, /jobs',
+                      prefixIcon: AppIcons.link,
+                    ),
+                  ),
+                ),
+
+              // Clearance for the pinned action.
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            ],
+          ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: _isEdit ? 'Save changes' : 'Add banner',
+              icon: _isEdit ? AppIcons.save_2 : AppIcons.add,
+              size: GlassButtonSize.large,
+              loading: _saving,
+              onPressed: _saving ? null : _save,
             ),
-          );
-        }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Group heading matching the tracked-caps header used by `GlassSection`.
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.xs,
+        AppSpacing.md,
+      ),
+      child: Text(
+        text.toUpperCase(),
+        style: AppTextStyles.caption1.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }

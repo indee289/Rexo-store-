@@ -9,14 +9,24 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/avatar_widget.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../jobs/providers/jobs_provider.dart';
-import '../widgets/premium_card.dart';
 
+/// Admin review of job submissions — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over admin-local `PremiumCard`s in which the
+/// payment pill, the job-title pill, the notes block and the link-proof box
+/// were each a separate hand-decorated `Container`, and rejecting opened an
+/// `AlertDialog` whose body stacked a `Text` over a `PremiumTextField`.
+///
+/// New layout: a collapsing large title; the submitter, job and payout read as
+/// one header row with the payout as a chip; the proof and the notes share the
+/// card surface; and rejecting opens a glass sheet. States come from the
+/// shared glass set.
+///
+/// `adminJobSubmissionsProvider`, `approveJobSubmission`,
+/// `rejectJobSubmission(rejectionReason:)`, the `users`/`jobs` join keys, the
+/// proof type switch and the external-application link launch are unchanged.
 class ReviewJobSubmissionsScreen extends ConsumerWidget {
   const ReviewJobSubmissionsScreen({super.key});
 
@@ -24,62 +34,63 @@ class ReviewJobSubmissionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final submissions = ref.watch(adminJobSubmissionsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const PremiumAppBar(title: 'Review Job Submissions'),
+    return GlassScaffold(
+      padBodyForAppBar: false,
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
           ref.invalidate(adminJobSubmissionsProvider);
           await ref.read(adminJobSubmissionsProvider.future);
         },
-        child: submissions.when(
-          data: (list) => list.isEmpty
-              ? CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        icon: AppIcons.tick_circle,
-                        title: 'All caught up!',
-                        subtitle: 'No job submissions are pending review.',
-                      ),
-                    ),
-                  ],
-                )
-              : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xxl),
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.md),
-                  itemBuilder: (context, index) =>
-                      _SubmissionCard(submission: list[index]),
-                ),
-          loading: () => ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: 4,
-            itemBuilder: (_, __) => const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.md),
-              child: ShimmerCard(height: 200),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            const GlassLargeTitleHeader(
+              title: 'Job submissions',
+              subtitle: 'Approve to credit, reject to notify',
+              showBack: true,
             ),
-          ),
-          error: (e, _) => Center(
-            child: EmptyState(
-              icon: AppIcons.warning_2,
-              title: 'Failed to load submissions',
-              subtitle: ErrorUtils.sanitize(e),
-              cta: PremiumButton(
-                label: 'Retry',
-                icon: AppIcons.refresh,
-                variant: PremiumButtonVariant.tonal,
-                expand: false,
-                onPressed: () => ref.invalidate(adminJobSubmissionsProvider),
+            submissions.when(
+              data: (list) {
+                if (list.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GlassEmptyState(
+                      icon: AppIcons.tick_circle,
+                      title: 'All caught up',
+                      message: 'No job submissions are pending review.',
+                    ),
+                  );
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xxl,
+                  ),
+                  sliver: SliverList.separated(
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => AppSpacing.gapMd,
+                    itemBuilder: (context, index) => RepaintBoundary(
+                      child: _SubmissionCard(submission: list[index]),
+                    ),
+                  ),
+                );
+              },
+              loading: () => const SliverFillRemaining(
+                child: GlassListSkeleton(itemCount: 4),
+              ),
+              error: (e, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: GlassErrorState(
+                  title: 'Failed to load submissions',
+                  message: ErrorUtils.sanitize(e),
+                  onRetry: () => ref.invalidate(adminJobSubmissionsProvider),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -103,7 +114,6 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sub = widget.submission;
 
     final applicationId = sub['id'] as String? ?? '';
@@ -111,8 +121,8 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
     final job = sub['jobs'] as Map<String, dynamic>? ?? {};
 
     final userName = user['name'] as String? ?? 'Unknown User';
-    final userHandle = user['username'] as String?;           // live: username
-    final userAvatar = user['profileImage'] as String?;       // live: profileImage
+    final userHandle = user['username'] as String?; // live: username
+    final userAvatar = user['profileImage'] as String?; // live: profileImage
     final jobTitle = job['title'] as String? ?? 'Untitled Job';
     final paymentAmount = (job['payment_amount'] as num?)?.toDouble() ?? 0.0;
 
@@ -120,172 +130,127 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
     final submissionUrl = sub['submission_url'] as String? ?? '';
     final submissionNote = sub['submission_note'] as String?;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── User + Job info ────────────────────────────────────────────
+          // Who submitted, and what it pays.
           Row(
             children: [
-              AvatarWidget(
-                url: userAvatar,
-                name: userName,
-                size: 40,
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              AvatarWidget(url: userAvatar, name: userName, size: 40),
+              AppSpacing.gapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       userName,
-                      style: AppTextStyles.bodyMedium.copyWith(
+                      style: AppTextStyles.callout.copyWith(
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
-                        color: textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (userHandle != null && userHandle.isNotEmpty)
                       Text(
                         '@$userHandle',
-                        style: TextStyle(fontSize: 12, color: textSecondary),
+                        style: AppTextStyles.caption1
+                            .copyWith(color: AppColors.textSecondary),
                       ),
                   ],
                 ),
               ),
-              // Payment pill
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.accentOrange.withOpacity(0.12),
-                  borderRadius: AppRadius.allSm,
-                ),
-                child: Text(
-                  '₹${paymentAmount.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.accentOrange,
-                  ),
-                ),
+              AppSpacing.gapSm,
+              GlassChip.status(
+                label: '\u20B9${paymentAmount.toStringAsFixed(0)}',
+                color: AppColors.accentOrange,
               ),
             ],
           ),
 
-          const SizedBox(height: AppSpacing.sm),
-
-          // Job title
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: AppRadius.allSm,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(AppIcons.briefcase,
-                    size: 13, color: AppColors.primary),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    jobTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          AppSpacing.gapSm,
+          GlassChip(
+            label: jobTitle,
+            icon: AppIcons.briefcase,
+            dense: true,
           ),
 
-          const SizedBox(height: AppSpacing.md),
+          AppSpacing.gapMd,
+          _sublabel('Submission'),
+          _SubmissionProof(type: submissionType, url: submissionUrl),
 
-          // ── Submission proof ───────────────────────────────────────────
-          Text(
-            'Submission',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.w700,
-              color: textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-
-          _SubmissionProof(
-            type: submissionType,
-            url: submissionUrl,
-            isDark: isDark,
-          ),
-
-          // Optional notes
           if (submissionNote != null && submissionNote.trim().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              width: double.infinity,
+            AppSpacing.gapSm,
+            GlassCard(
+              level: GlassLevel.subtle,
               padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkSurfaceAlt
-                    : AppColors.surfaceAlt,
-                borderRadius: AppRadius.allSm,
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Notes',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: textSecondary,
-                        fontWeight: FontWeight.w600),
+                    'NOTES',
+                    style: AppTextStyles.caption2.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     submissionNote,
-                    style: TextStyle(fontSize: 13, color: textPrimary, height: 1.4),
+                    style: AppTextStyles.footnote.copyWith(
+                      color: AppColors.textPrimary,
+                      height: 1.45,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
 
-          const SizedBox(height: AppSpacing.md),
-
-          // ── Approve / Reject buttons ───────────────────────────────────
+          AppSpacing.gapMd,
           Row(
             children: [
               Expanded(
-                child: PremiumButton(
+                child: GlassButton(
                   label: 'Approve',
                   icon: AppIcons.tick_circle,
+                  size: GlassButtonSize.small,
                   loading: _approving,
                   onPressed: _rejecting ? null : _approve,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              AppSpacing.gapSm,
               Expanded(
-                child: PremiumButton(
+                child: GlassButton.outline(
                   label: 'Reject',
                   icon: AppIcons.close_circle,
-                  variant: PremiumButtonVariant.outline,
+                  size: GlassButtonSize.small,
                   loading: _rejecting,
-                  onPressed: _approving ? null : () => _showRejectDialog(context, applicationId),
+                  onPressed: _approving
+                      ? null
+                      : () => _showRejectSheet(applicationId),
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _sublabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text.toUpperCase(),
+        style: AppTextStyles.caption2.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
@@ -301,89 +266,80 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
 
     if (!ok) {
       final err = ref.read(jobsActionsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(err.hasError
-              ? ErrorUtils.sanitize(err.error)
-              : 'Approval failed.'),
-          backgroundColor: AppColors.error,
-        ),
+      showGlassSnackBar(
+        context,
+        message: err.hasError
+            ? ErrorUtils.sanitize(err.error)
+            : 'Approval failed.',
+        tone: GlassToastTone.error,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Submission approved & wallet credited.'),
-          backgroundColor: AppColors.success,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Submission approved & wallet credited.',
+        tone: GlassToastTone.success,
       );
     }
   }
 
-  Future<void> _showRejectDialog(
-      BuildContext context, String applicationId) async {
+  /// Reject flow.
+  ///
+  /// The reason stays optional, exactly as before. The controller is disposed
+  /// in a `finally` — the old version disposed it only on the happy path, so
+  /// it leaked whenever the dialog was cancelled or the widget unmounted.
+  Future<void> _showRejectSheet(String applicationId) async {
     final reasonCtrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reject Submission'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Provide an optional reason — the user will see this.',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            PremiumTextField.multiline(
-              controller: reasonCtrl,
-              hint: 'e.g. The submitted link was not accessible…',
-              minLines: 2,
-              maxLines: 4,
-            ),
-          ],
+    try {
+      final confirmed = await showGlassSheet<bool>(
+        context: context,
+        title: 'Reject submission',
+        subtitle: 'The reason is optional, and the user will see it',
+        child: Builder(
+          builder: (sheetContext) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              GlassTextField.multiline(
+                controller: reasonCtrl,
+                label: 'Reason (optional)',
+                hint: 'e.g. The submitted link was not accessible…',
+                minLines: 2,
+                maxLines: 5,
+              ),
+              AppSpacing.gapLg,
+              GlassButton.destructive(
+                label: 'Reject submission',
+                icon: AppIcons.close_circle,
+                size: GlassButtonSize.large,
+                onPressed: () => Navigator.pop(sheetContext, true),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reject'),
-          ),
-        ],
-      ),
-    );
+      );
 
-    if (confirmed != true || !mounted) return;
+      if (confirmed != true || !mounted) return;
 
-    setState(() => _rejecting = true);
-    final ok = await ref
-        .read(jobsActionsProvider.notifier)
-        .rejectJobSubmission(
-          applicationId,
-          rejectionReason: reasonCtrl.text.trim().isEmpty
-              ? null
-              : reasonCtrl.text.trim(),
-        );
-    if (!mounted) return;
-    setState(() => _rejecting = false);
-    reasonCtrl.dispose();
+      setState(() => _rejecting = true);
+      final reason = reasonCtrl.text.trim();
+      final ok =
+          await ref.read(jobsActionsProvider.notifier).rejectJobSubmission(
+                applicationId,
+                rejectionReason: reason.isEmpty ? null : reason,
+              );
+      if (!mounted) return;
+      setState(() => _rejecting = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      ok
-          ? const SnackBar(
-              content: Text('Submission rejected & user notified.'),
-              backgroundColor: AppColors.warning,
-            )
-          : SnackBar(
-              content: Text(ErrorUtils.sanitize(
-                  ref.read(jobsActionsProvider).error)),
-              backgroundColor: AppColors.error,
-            ),
-    );
+      showGlassSnackBar(
+        context,
+        message: ok
+            ? 'Submission rejected & user notified.'
+            : ErrorUtils.sanitize(ref.read(jobsActionsProvider).error),
+        tone: ok ? GlassToastTone.warning : GlassToastTone.error,
+      );
+    } finally {
+      reasonCtrl.dispose();
+    }
   }
 }
 
@@ -392,42 +348,34 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
 class _SubmissionProof extends StatelessWidget {
   final String type;
   final String url;
-  final bool isDark;
 
-  const _SubmissionProof({
-    required this.type,
-    required this.url,
-    required this.isDark,
-  });
+  const _SubmissionProof({required this.type, required this.url});
 
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty) {
       return Text(
         'No URL provided',
-        style: TextStyle(
-            fontSize: 13,
-            color: isDark ? AppColors.darkTextHint : AppColors.textHint),
+        style: AppTextStyles.footnote.copyWith(color: AppColors.textHint),
       );
     }
 
     switch (type) {
       case 'photo':
-        return _PhotoProof(url: url, isDark: isDark);
+        return _PhotoProof(url: url);
       case 'video':
       case 'pdf':
       case 'link':
       default:
-        return _LinkProof(url: url, type: type, isDark: isDark);
+        return _LinkProof(url: url, type: type);
     }
   }
 }
 
 class _PhotoProof extends StatelessWidget {
   final String url;
-  final bool isDark;
 
-  const _PhotoProof({required this.url, required this.isDark});
+  const _PhotoProof({required this.url});
 
   @override
   Widget build(BuildContext context) {
@@ -438,11 +386,7 @@ class _PhotoProof extends StatelessWidget {
         height: 180,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _LinkProof(
-          url: url,
-          type: 'photo',
-          isDark: isDark,
-        ),
+        errorBuilder: (_, __, ___) => _LinkProof(url: url, type: 'photo'),
       ),
     );
   }
@@ -451,10 +395,8 @@ class _PhotoProof extends StatelessWidget {
 class _LinkProof extends StatelessWidget {
   final String url;
   final String type;
-  final bool isDark;
 
-  const _LinkProof(
-      {required this.url, required this.type, required this.isDark});
+  const _LinkProof({required this.url, required this.type});
 
   IconData get _icon {
     switch (type) {
@@ -484,60 +426,46 @@ class _LinkProof extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textHint = isDark ? AppColors.darkTextHint : AppColors.textHint;
-
-    return GestureDetector(
+    return GlassCard(
+      level: GlassLevel.subtle,
+      rim: AppColors.primaryRim,
+      padding: const EdgeInsets.all(AppSpacing.sm),
       onTap: () async {
         final uri = Uri.tryParse(url);
         if (uri != null) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
       },
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: AppRadius.allSm,
-          border: Border.all(
-            color: AppColors.primary.withOpacity(0.20),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(_icon, size: 20, color: AppColors.primary),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _typeLabel,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: textHint,
-                        fontWeight: FontWeight.w500),
+      child: Row(
+        children: [
+          Icon(_icon, size: 20, color: AppColors.primary),
+          AppSpacing.gapSm,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _typeLabel,
+                  style: AppTextStyles.caption2
+                      .copyWith(color: AppColors.textHint),
+                ),
+                Text(
+                  url,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.footnote.copyWith(
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.primary,
                   ),
-                  Text(
-                    url,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.primary,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Icon(AppIcons.export_1, size: 16, color: textHint),
-          ],
-        ),
+          ),
+          AppSpacing.gapSm,
+          const Icon(AppIcons.export_1, size: 16, color: AppColors.textHint),
+        ],
       ),
     );
   }

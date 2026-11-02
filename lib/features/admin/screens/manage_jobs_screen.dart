@@ -4,18 +4,31 @@ import 'package:intl/intl.dart';
 
 import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../jobs/providers/jobs_provider.dart';
-import '../widgets/premium_card.dart';
 import 'post_job_screen.dart';
 
+/// Admin manage jobs — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` with a "post job" `IconButton` *and* a
+/// `FloatingActionButton` doing the identical thing; admin-local
+/// `PremiumCard`s whose footer squeezed four `_OutlineActionButton`s into one
+/// row, the last of which had to be labelled "Del" to fit; and the old
+/// `EmptyState` / `ShimmerCard` widgets.
+///
+/// New layout: the collapsing large title with one pinned create pill instead
+/// of two competing create affordances; each card keeps Edit as a direct
+/// action and moves hide/show, close/open and delete into a "Manage" sheet
+/// where they are full-width rows with real labels; the status badge becomes a
+/// `GlassChip.status`; and the states come from the shared glass set.
+///
+/// `adminJobsProvider`, `adminJobApplicantCountProvider`,
+/// `jobsActionsProvider.updateJob`/`deleteJob`, the status strings
+/// ('active' / 'closed' / 'draft', where draft means hidden from users), the
+/// `PostJobScreen(existingJob:)` route and its boolean result are unchanged.
 class ManageJobsScreen extends ConsumerWidget {
   const ManageJobsScreen({super.key});
 
@@ -23,84 +36,82 @@ class ManageJobsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final jobs = ref.watch(adminJobsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Manage Jobs',
-        actions: [
-          IconButton(
-            icon: const Icon(AppIcons.add_circle, color: AppColors.primary),
-            tooltip: 'Post new job',
-            onPressed: () => _openPostJob(context, ref),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        tooltip: 'Post new job',
-        onPressed: () => _openPostJob(context, ref),
-        child: const Icon(AppIcons.add, color: Colors.white),
-      ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () async {
-          ref.invalidate(adminJobsProvider);
-          await ref.read(adminJobsProvider.future);
-        },
-        child: jobs.when(
-          data: (list) => list.isEmpty
-              ? CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        icon: AppIcons.briefcase,
-                        title: 'No jobs posted yet',
-                        subtitle: 'Tap the + button to post your first job.',
-                        cta: PremiumButton(
-                          label: 'Post a Job',
-                          icon: AppIcons.add,
-                          expand: false,
-                          onPressed: () => _openPostJob(context, ref),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              ref.invalidate(adminJobsProvider);
+              await ref.read(adminJobsProvider.future);
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                const GlassLargeTitleHeader(
+                  title: 'Manage jobs',
+                  subtitle: 'Post, edit and close listings',
+                  showBack: true,
+                ),
+                jobs.when(
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: GlassEmptyState(
+                          icon: AppIcons.briefcase,
+                          title: 'No jobs posted yet',
+                          message: 'Post your first job to get started.',
+                          actionLabel: 'Post a job',
+                          onAction: () => _openPostJob(context, ref),
+                        ),
+                      );
+                    }
+                    return SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                        AppSpacing.lg,
+                        130,
+                      ),
+                      sliver: SliverList.separated(
+                        itemCount: list.length,
+                        separatorBuilder: (_, __) => AppSpacing.gapMd,
+                        itemBuilder: (context, index) => RepaintBoundary(
+                          child: _JobAdminCard(job: list[index]),
                         ),
                       ),
+                    );
+                  },
+                  loading: () => const SliverFillRemaining(
+                    child: GlassListSkeleton(itemCount: 5),
+                  ),
+                  error: (e, _) => SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GlassErrorState(
+                      title: 'Failed to load jobs',
+                      message: ErrorUtils.sanitize(e),
+                      onRetry: () => ref.invalidate(adminJobsProvider),
                     ),
-                  ],
-                )
-              : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 100),
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.sm),
-                  itemBuilder: (context, index) =>
-                      _JobAdminCard(job: list[index]),
+                  ),
                 ),
-          loading: () => ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: 5,
-            itemBuilder: (_, __) => const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.sm),
-              child: ShimmerCard(height: 120),
+              ],
             ),
           ),
-          error: (e, _) => Center(
-            child: EmptyState(
-              icon: AppIcons.warning_2,
-              title: 'Failed to load jobs',
-              subtitle: ErrorUtils.sanitize(e),
-              cta: PremiumButton(
-                label: 'Retry',
-                icon: AppIcons.refresh,
-                variant: PremiumButtonVariant.tonal,
-                expand: false,
-                onPressed: () => ref.invalidate(adminJobsProvider),
-              ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: 'Post a job',
+              icon: AppIcons.add,
+              size: GlassButtonSize.large,
+              onPressed: () => _openPostJob(context, ref),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -121,11 +132,8 @@ class _JobAdminCard extends ConsumerWidget {
 
   const _JobAdminCard({required this.job});
 
-  static const _statusValues = ['active', 'closed', 'draft'];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final jobId = job['id'] as String? ?? '';
     final title = job['title'] as String? ?? 'Untitled';
     final category = job['category'] as String?;
@@ -137,71 +145,60 @@ class _JobAdminCard extends ConsumerWidget {
         : null;
     final applicantCount = ref.watch(adminJobApplicantCountProvider(jobId));
 
-    final isActive = status == 'active';
-    final isHidden = status == 'draft'; // draft = hidden from users
-
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: title + status badge
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                      ),
+                      style: AppTextStyles.headline
+                          .copyWith(color: AppColors.textPrimary),
                     ),
                     if (category != null && category.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         category,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark
-                              ? AppColors.darkTextHint
-                              : AppColors.textHint,
-                        ),
+                        style: AppTextStyles.caption1
+                            .copyWith(color: AppColors.textHint),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              _StatusChip(status: status, isDark: isDark),
+              AppSpacing.gapSm,
+              GlassChip.status(
+                label: _statusLabel(status),
+                color: _statusColor(status),
+              ),
             ],
           ),
 
-          const SizedBox(height: AppSpacing.sm),
+          AppSpacing.gapSm,
 
           Wrap(
-            spacing: AppSpacing.md,
+            spacing: AppSpacing.lg,
             runSpacing: AppSpacing.xs,
             children: [
               _MetaItem(
                 icon: AppIcons.money,
-                label: '₹${_fmt(paymentAmount)}',
+                label: '\u20B9${_fmt(paymentAmount)}',
                 color: AppColors.accentOrange,
               ),
               applicantCount.when(
                 data: (n) => _MetaItem(
                   icon: AppIcons.people,
                   label: '$n applicant${n == 1 ? '' : 's'}',
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
+                  color: AppColors.textSecondary,
                 ),
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -210,84 +207,120 @@ class _JobAdminCard extends ConsumerWidget {
                 _MetaItem(
                   icon: AppIcons.task_square,
                   label: '$maxSlots slots',
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
+                  color: AppColors.textSecondary,
                 ),
               if (deadline != null)
                 _MetaItem(
                   icon: AppIcons.calendar,
                   label: DateFormat('d MMM y').format(deadline),
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
+                  color: AppColors.textSecondary,
                 ),
             ],
           ),
 
-          const SizedBox(height: AppSpacing.md),
+          AppSpacing.gapMd,
 
-          // Action buttons: Edit | Hide/Show | Close/Open | Delete
           Row(
             children: [
-              // Edit
               Expanded(
-                child: _OutlineActionButton(
-                  icon: AppIcons.edit,
+                child: GlassButton.outline(
                   label: 'Edit',
-                  color: AppColors.primary,
-                  onTap: () async {
-                    final updated = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PostJobScreen(existingJob: job),
-                      ),
-                    );
-                    if (updated == true) ref.invalidate(adminJobsProvider);
-                  },
+                  icon: AppIcons.edit,
+                  size: GlassButtonSize.small,
+                  onPressed: () => _edit(context, ref),
                 ),
               ),
-              const SizedBox(width: AppSpacing.xs),
-              // Hide / Show (draft = hidden)
+              AppSpacing.gapSm,
               Expanded(
-                child: _OutlineActionButton(
-                  icon: isHidden ? AppIcons.eye : AppIcons.eye_slash,
-                  label: isHidden ? 'Show' : 'Hide',
-                  color: AppColors.accentPurple,
-                  onTap: () => _setStatus(
-                    context,
-                    ref,
-                    jobId,
-                    isHidden ? 'active' : 'draft',
-                  ),
+                child: GlassButton.glass(
+                  label: 'Manage',
+                  icon: AppIcons.setting_2,
+                  size: GlassButtonSize.small,
+                  onPressed: () =>
+                      _showManageSheet(context, ref, jobId, title, status),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              // Close / Reopen
-              Expanded(
-                child: _OutlineActionButton(
-                  icon: isActive ? AppIcons.pause : AppIcons.play,
-                  label: isActive ? 'Close' : 'Open',
-                  color: isActive ? AppColors.warning : AppColors.success,
-                  onTap: () => _setStatus(
-                    context,
-                    ref,
-                    jobId,
-                    isActive ? 'closed' : 'active',
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              // Delete
-              _OutlineActionButton(
-                icon: AppIcons.trash,
-                label: 'Del',
-                color: AppColors.error,
-                onTap: () => _confirmDelete(context, ref, jobId, title),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PostJobScreen(existingJob: job),
+      ),
+    );
+    if (updated == true) ref.invalidate(adminJobsProvider);
+  }
+
+  /// Visibility, open/close and delete — previously three cramped buttons in
+  /// the card footer, the last of which read "Del".
+  void _showManageSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String jobId,
+    String title,
+    String status,
+  ) {
+    final isActive = status == 'active';
+    final isHidden = status == 'draft'; // draft = hidden from users
+
+    showGlassSheet<void>(
+      context: context,
+      title: 'Manage job',
+      subtitle: title,
+      child: Builder(
+        builder: (sheetContext) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GlassGroup(
+              children: [
+                GlassRow(
+                  icon: isHidden ? AppIcons.eye : AppIcons.eye_slash,
+                  iconColor: AppColors.accentPurple,
+                  title: isHidden ? 'Show to users' : 'Hide from users',
+                  subtitle: isHidden
+                      ? 'Publish this job again'
+                      : 'Keep it as a hidden draft',
+                  showChevron: false,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _setStatus(context, ref, jobId, isHidden ? 'active' : 'draft');
+                  },
+                ),
+                GlassRow(
+                  icon: isActive ? AppIcons.pause : AppIcons.play,
+                  iconColor:
+                      isActive ? AppColors.warning : AppColors.success,
+                  title: isActive ? 'Close applications' : 'Reopen job',
+                  subtitle: isActive
+                      ? 'Stop accepting new applicants'
+                      : 'Start accepting applicants again',
+                  showChevron: false,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _setStatus(
+                        context, ref, jobId, isActive ? 'closed' : 'active');
+                  },
+                ),
+              ],
+            ),
+            AppSpacing.gapLg,
+            GlassButton.destructive(
+              label: 'Delete job',
+              icon: AppIcons.trash,
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _confirmDelete(context, ref, jobId, title);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -303,12 +336,10 @@ class _JobAdminCard extends ConsumerWidget {
         .updateJob(jobId, {'status': newStatus});
     if (!context.mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ErrorUtils.sanitize(
-              ref.read(jobsActionsProvider).error)),
-          backgroundColor: AppColors.error,
-        ),
+      showGlassSnackBar(
+        context,
+        message: ErrorUtils.sanitize(ref.read(jobsActionsProvider).error),
+        tone: GlassToastTone.error,
       );
     }
   }
@@ -319,89 +350,52 @@ class _JobAdminCard extends ConsumerWidget {
     String jobId,
     String title,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Job?'),
-        content: Text(
-          'This will permanently delete "$title" and all its applications. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete job?',
+      message: 'This permanently deletes "$title" and all its applications. '
+          'This cannot be undone.',
+      icon: AppIcons.trash,
+      confirmLabel: 'Delete',
+      destructive: true,
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     final ok = await ref.read(jobsActionsProvider.notifier).deleteJob(jobId);
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      ok
-          ? const SnackBar(
-              content: Text('Job deleted.'),
-              backgroundColor: AppColors.success,
-            )
-          : SnackBar(
-              content: Text(
-                  ErrorUtils.sanitize(ref.read(jobsActionsProvider).error)),
-              backgroundColor: AppColors.error,
-            ),
+    showGlassSnackBar(
+      context,
+      message: ok
+          ? 'Job deleted.'
+          : ErrorUtils.sanitize(ref.read(jobsActionsProvider).error),
+      tone: ok ? GlassToastTone.success : GlassToastTone.error,
     );
   }
 
-  String _fmt(double amount) =>
-      amount >= 1000 ? NumberFormat('#,##0').format(amount) : amount.toStringAsFixed(0);
+  String _fmt(double amount) => amount >= 1000
+      ? NumberFormat('#,##0').format(amount)
+      : amount.toStringAsFixed(0);
 }
 
 // ─── Supporting Widgets ───────────────────────────────────────────────────────
 
-class _StatusChip extends StatelessWidget {
-  final String status;
-  final bool isDark;
+String _statusLabel(String status) {
+  if (status == 'draft') return 'Hidden';
+  if (status.isEmpty) return status;
+  return status[0].toUpperCase() + status.substring(1);
+}
 
-  const _StatusChip({required this.status, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    Color bg;
-    Color fg;
-    switch (status) {
-      case 'active':
-        bg = AppColors.success.withOpacity(0.12);
-        fg = AppColors.success;
-        break;
-      case 'closed':
-        bg = AppColors.error.withOpacity(0.12);
-        fg = AppColors.error;
-        break;
-      case 'draft':
-        bg = AppColors.accentPurple.withOpacity(0.12);
-        fg = AppColors.accentPurple;
-        break;
-      default:
-        bg = isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
-        fg = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    }
-
-    final label = status == 'draft' ? 'Hidden' : status[0].toUpperCase() + status.substring(1);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.allSm),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
-      ),
-    );
+Color _statusColor(String status) {
+  switch (status) {
+    case 'active':
+      return AppColors.success;
+    case 'closed':
+      return AppColors.error;
+    case 'draft':
+      return AppColors.accentPurple;
+    default:
+      return AppColors.textSecondary;
   }
 }
 
@@ -410,8 +404,11 @@ class _MetaItem extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _MetaItem(
-      {required this.icon, required this.label, required this.color});
+  const _MetaItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -422,55 +419,12 @@ class _MetaItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(
-              fontSize: 12, color: color, fontWeight: FontWeight.w600),
+          style: AppTextStyles.footnote.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _OutlineActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _OutlineActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: AppRadius.allSm,
-          border: Border.all(color: color.withOpacity(0.20)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 15, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
