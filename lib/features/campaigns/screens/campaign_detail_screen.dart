@@ -143,7 +143,7 @@ class _DetailBody extends StatelessWidget {
                 // Applied banner
                 if (hasApplied.valueOrNull == true) ...[
                   _InfoBanner(
-                    icon: Iconsax.tick_circle,
+                    icon: AppIcons.tick_circle,
                     text: 'You have already applied to this campaign',
                     color: AppColors.success,
                   ),
@@ -174,7 +174,7 @@ class _DetailBody extends StatelessWidget {
                         child: _StatTile(
                           label: 'Per Creator',
                           value: '₹${_fmtNum(perCreator)}',
-                          icon: Iconsax.wallet,
+                          icon: AppIcons.wallet,
                           color: AppColors.primary,
                         ),
                       ),
@@ -185,7 +185,7 @@ class _DetailBody extends StatelessWidget {
                         child: _StatTile(
                           label: 'Slots',
                           value: '$filledSlots / $slots',
-                          icon: Iconsax.people,
+                          icon: AppIcons.people,
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -198,7 +198,7 @@ class _DetailBody extends StatelessWidget {
                   _StatTile(
                     label: 'Total Budget',
                     value: '₹${_fmtNum(budget)}',
-                    icon: Iconsax.chart_2,
+                    icon: AppIcons.chart_2,
                     color: AppColors.primary,
                   ),
                 ],
@@ -222,7 +222,7 @@ class _DetailBody extends StatelessWidget {
                 if (deadlineDate != null || createdAt != null) ...[
                   const SizedBox(height: 16),
                   _InfoRow(
-                    icon: Iconsax.calendar,
+                    icon: AppIcons.calendar,
                     label: 'Deadline',
                     value: deadlineDate != null
                         ? DateFormat('d MMM yyyy').format(deadlineDate)
@@ -236,7 +236,7 @@ class _DetailBody extends StatelessWidget {
                 if (minFollowers != null && minFollowers > 0) ...[
                   const SizedBox(height: 10),
                   _InfoBanner(
-                    icon: Iconsax.people,
+                    icon: AppIcons.people,
                     text: 'Minimum ${NumberFormat.compact().format(minFollowers)} followers required',
                     color: AppColors.warning,
                   ),
@@ -285,7 +285,7 @@ class _DetailBody extends StatelessWidget {
                       'targetId': (campaign['id'] ?? '').toString(),
                       'targetLabel': title,
                     }),
-                    icon: const Icon(Iconsax.flag, size: 18),
+                    icon: const Icon(AppIcons.flag, size: 18),
                     label: const Text('Report this campaign'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
@@ -345,7 +345,7 @@ class _CoverSection extends StatelessWidget {
           top: topPad + 8,
           left: 8,
           child: PremiumIconButton(
-            icon: Iconsax.arrow_left,
+            icon: AppIcons.arrow_left,
             background: true,
             color: Colors.white,
             onPressed: onBack,
@@ -687,7 +687,7 @@ class _ApplyBtn extends StatelessWidget {
                       style: AppTextStyles.button
                           .copyWith(color: Colors.white, fontSize: 15)),
                   const SizedBox(width: 6),
-                  const Icon(Iconsax.arrow_right_3,
+                  const Icon(AppIcons.arrow_right_3,
                       size: 18, color: Colors.white),
                 ],
               ),
@@ -765,13 +765,13 @@ class _Error extends StatelessWidget {
           Positioned(
             top: 8, left: 8,
             child: PremiumIconButton(
-              icon: Iconsax.arrow_left,
+              icon: AppIcons.arrow_left,
               onPressed: onBack,
             ),
           ),
           Center(
             child: EmptyState(
-              icon: Iconsax.warning_2,
+              icon: AppIcons.warning_2,
               title: 'Failed to load campaign',
               subtitle: message,
               ctaLabel: 'Retry',
@@ -796,13 +796,13 @@ class _NotFound extends StatelessWidget {
           Positioned(
             top: 8, left: 8,
             child: PremiumIconButton(
-              icon: Iconsax.arrow_left,
+              icon: AppIcons.arrow_left,
               onPressed: onBack,
             ),
           ),
           const Center(
             child: EmptyState(
-              icon: Iconsax.document,
+              icon: AppIcons.document,
               title: 'Campaign not found',
               subtitle: 'This campaign may have been removed.',
             ),

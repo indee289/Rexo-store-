@@ -244,7 +244,7 @@ class _SubmitTaskScreenState extends ConsumerState<SubmitTaskScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Iconsax.briefcase,
+                  const Icon(AppIcons.briefcase,
                       size: 18, color: AppColors.primary),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -304,7 +304,7 @@ class _SubmitTaskScreenState extends ConsumerState<SubmitTaskScreen> {
               PremiumTextField(
                 controller: _linkController,
                 hint: 'https://...',
-                prefixIcon: Iconsax.link,
+                prefixIcon: AppIcons.link,
                 keyboardType: TextInputType.url,
                 textInputAction: TextInputAction.done,
                 onChanged: (_) => setState(() {}),
@@ -353,7 +353,7 @@ class _SubmitTaskScreenState extends ConsumerState<SubmitTaskScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Iconsax.info_circle,
+                  Icon(AppIcons.info_circle,
                       size: 16,
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -382,7 +382,7 @@ class _SubmitTaskScreenState extends ConsumerState<SubmitTaskScreen> {
             // Submit button
             PremiumButton(
               label: 'Submit Task',
-              icon: Iconsax.send_1,
+              icon: AppIcons.send_1,
               loading: _isSubmitting,
               onPressed: _canSubmit ? _submit : null,
             ),
@@ -409,10 +409,10 @@ class _SubmissionTypeSelector extends StatelessWidget {
   });
 
   static const _types = [
-    (_SubmissionType.link, Iconsax.link, 'Link'),
-    (_SubmissionType.photo, Iconsax.gallery, 'Photo'),
-    (_SubmissionType.pdf, Iconsax.document, 'PDF'),
-    (_SubmissionType.video, Iconsax.video, 'Video'),
+    (_SubmissionType.link, AppIcons.link, 'Link'),
+    (_SubmissionType.photo, AppIcons.gallery, 'Photo'),
+    (_SubmissionType.pdf, AppIcons.document, 'PDF'),
+    (_SubmissionType.video, AppIcons.video, 'Video'),
   ];
 
   @override
@@ -555,7 +555,7 @@ class _FileUploadArea extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Iconsax.tick_circle,
+            const Icon(AppIcons.tick_circle,
                 size: 36, color: AppColors.success),
             const SizedBox(height: AppSpacing.sm),
             const Text(
@@ -613,13 +613,13 @@ class _FileUploadArea extends StatelessWidget {
   (IconData, String) _iconAndLabel() {
     switch (type) {
       case _SubmissionType.photo:
-        return (Iconsax.gallery, 'Select a photo');
+        return (AppIcons.gallery, 'Select a photo');
       case _SubmissionType.pdf:
-        return (Iconsax.document, 'Select a PDF');
+        return (AppIcons.document, 'Select a PDF');
       case _SubmissionType.video:
-        return (Iconsax.video, 'Select a video');
+        return (AppIcons.video, 'Select a video');
       default:
-        return (Iconsax.document_upload, 'Select a file');
+        return (AppIcons.document_upload, 'Select a file');
     }
   }
 }

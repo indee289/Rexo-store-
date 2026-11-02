@@ -133,7 +133,7 @@ class AdminProfileScreen extends ConsumerWidget {
             // Contact info card
             PremiumCard(
               child: ListTile(
-                leading: const Icon(Iconsax.sms, color: AppColors.primary),
+                leading: const Icon(AppIcons.sms, color: AppColors.primary),
                 title: Text(
                   'Email',
                   style: TextStyle(
@@ -160,7 +160,7 @@ class AdminProfileScreen extends ConsumerWidget {
                   await ref.read(authProvider.notifier).signOut();
                   if (context.mounted) context.go('/login');
                 },
-                icon: const Icon(Iconsax.logout),
+                icon: const Icon(AppIcons.logout),
                 label: const Text('Sign Out'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,

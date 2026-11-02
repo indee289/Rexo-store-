@@ -82,7 +82,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 controller: _nameController,
                 label: 'Full Name',
                 hint: 'Enter full name',
-                icon: Iconsax.user,
+                icon: AppIcons.user,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Name is required' : null,
               ),
@@ -91,7 +91,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 controller: _phoneController,
                 label: 'Phone Number',
                 hint: 'Enter phone number',
-                icon: Iconsax.call,
+                icon: AppIcons.call,
                 keyboardType: TextInputType.phone,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Phone is required' : null,
@@ -101,7 +101,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 controller: _line1Controller,
                 label: 'Address Line 1',
                 hint: 'House no., Street, Area',
-                icon: Iconsax.location,
+                icon: AppIcons.location,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Address is required' : null,
               ),
@@ -110,7 +110,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 controller: _line2Controller,
                 label: 'Address Line 2 (Optional)',
                 hint: 'Landmark, Building name',
-                icon: Iconsax.building,
+                icon: AppIcons.building,
               ),
               const SizedBox(height: AppSpacing.lg),
               Row(
@@ -121,7 +121,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       controller: _cityController,
                       label: 'City',
                       hint: 'City',
-                      icon: Iconsax.buildings,
+                      icon: AppIcons.buildings,
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Required' : null,
                     ),
@@ -132,7 +132,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       controller: _stateController,
                       label: 'State',
                       hint: 'State',
-                      icon: Iconsax.map,
+                      icon: AppIcons.map,
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Required' : null,
                     ),
@@ -144,7 +144,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 controller: _pincodeController,
                 label: 'Pincode',
                 hint: '6-digit pincode',
-                icon: Iconsax.hashtag,
+                icon: AppIcons.hashtag,
                 keyboardType: TextInputType.number,
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Pincode is required';
@@ -165,7 +165,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      Iconsax.star_1,
+                      AppIcons.star_1,
                       size: 20,
                       color: Theme.of(context)
                           .colorScheme

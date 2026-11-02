@@ -29,7 +29,7 @@ class ManageJobsScreen extends ConsumerWidget {
         title: 'Manage Jobs',
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.add_circle, color: AppColors.primary),
+            icon: const Icon(AppIcons.add_circle, color: AppColors.primary),
             tooltip: 'Post new job',
             onPressed: () => _openPostJob(context, ref),
           ),
@@ -39,7 +39,7 @@ class ManageJobsScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         tooltip: 'Post new job',
         onPressed: () => _openPostJob(context, ref),
-        child: const Icon(Iconsax.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -55,12 +55,12 @@ class ManageJobsScreen extends ConsumerWidget {
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: EmptyState(
-                        icon: Iconsax.briefcase,
+                        icon: AppIcons.briefcase,
                         title: 'No jobs posted yet',
                         subtitle: 'Tap the + button to post your first job.',
                         cta: PremiumButton(
                           label: 'Post a Job',
-                          icon: Iconsax.add,
+                          icon: AppIcons.add,
                           expand: false,
                           onPressed: () => _openPostJob(context, ref),
                         ),
@@ -88,12 +88,12 @@ class ManageJobsScreen extends ConsumerWidget {
           ),
           error: (e, _) => Center(
             child: EmptyState(
-              icon: Iconsax.warning_2,
+              icon: AppIcons.warning_2,
               title: 'Failed to load jobs',
               subtitle: ErrorUtils.sanitize(e),
               cta: PremiumButton(
                 label: 'Retry',
-                icon: Iconsax.refresh,
+                icon: AppIcons.refresh,
                 variant: PremiumButtonVariant.tonal,
                 expand: false,
                 onPressed: () => ref.invalidate(adminJobsProvider),
@@ -191,13 +191,13 @@ class _JobAdminCard extends ConsumerWidget {
             runSpacing: AppSpacing.xs,
             children: [
               _MetaItem(
-                icon: Iconsax.money,
+                icon: AppIcons.money,
                 label: '₹${_fmt(paymentAmount)}',
                 color: AppColors.accentOrange,
               ),
               applicantCount.when(
                 data: (n) => _MetaItem(
-                  icon: Iconsax.people,
+                  icon: AppIcons.people,
                   label: '$n applicant${n == 1 ? '' : 's'}',
                   color: isDark
                       ? AppColors.darkTextSecondary
@@ -208,7 +208,7 @@ class _JobAdminCard extends ConsumerWidget {
               ),
               if (maxSlots != null)
                 _MetaItem(
-                  icon: Iconsax.task_square,
+                  icon: AppIcons.task_square,
                   label: '$maxSlots slots',
                   color: isDark
                       ? AppColors.darkTextSecondary
@@ -216,7 +216,7 @@ class _JobAdminCard extends ConsumerWidget {
                 ),
               if (deadline != null)
                 _MetaItem(
-                  icon: Iconsax.calendar,
+                  icon: AppIcons.calendar,
                   label: DateFormat('d MMM y').format(deadline),
                   color: isDark
                       ? AppColors.darkTextSecondary
@@ -233,7 +233,7 @@ class _JobAdminCard extends ConsumerWidget {
               // Edit
               Expanded(
                 child: _OutlineActionButton(
-                  icon: Iconsax.edit,
+                  icon: AppIcons.edit,
                   label: 'Edit',
                   color: AppColors.primary,
                   onTap: () async {
@@ -251,7 +251,7 @@ class _JobAdminCard extends ConsumerWidget {
               // Hide / Show (draft = hidden)
               Expanded(
                 child: _OutlineActionButton(
-                  icon: isHidden ? Iconsax.eye : Iconsax.eye_slash,
+                  icon: isHidden ? AppIcons.eye : AppIcons.eye_slash,
                   label: isHidden ? 'Show' : 'Hide',
                   color: AppColors.accentPurple,
                   onTap: () => _setStatus(
@@ -266,7 +266,7 @@ class _JobAdminCard extends ConsumerWidget {
               // Close / Reopen
               Expanded(
                 child: _OutlineActionButton(
-                  icon: isActive ? Iconsax.pause : Iconsax.play,
+                  icon: isActive ? AppIcons.pause : AppIcons.play,
                   label: isActive ? 'Close' : 'Open',
                   color: isActive ? AppColors.warning : AppColors.success,
                   onTap: () => _setStatus(
@@ -280,7 +280,7 @@ class _JobAdminCard extends ConsumerWidget {
               const SizedBox(width: AppSpacing.xs),
               // Delete
               _OutlineActionButton(
-                icon: Iconsax.trash,
+                icon: AppIcons.trash,
                 label: 'Del',
                 color: AppColors.error,
                 onTap: () => _confirmDelete(context, ref, jobId, title),

@@ -8,15 +8,14 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Central app theme — **Campster Liquid Glass, light only**.
+/// Central app theme — **Campster premium, light only**.
 ///
-/// The theme's job in a glass UI is mostly *subtractive*: it strips the opaque
-/// fills, tints, elevations and ripples that Material paints by default, so the
-/// `Glass*` components in `core/widgets/glass/` are free to supply the real
-/// material. Concretely, every component theme below sets a transparent
-/// background, zero elevation and a transparent `surfaceTintColor` — without
-/// that, Material 3 would paint a solid tinted surface *over* the blur and the
-/// glass effect would vanish.
+/// The theme's job here is mostly *subtractive*: it strips the saturated
+/// fills, surface tints, elevations and ink ripples Material paints by default,
+/// so the components in `core/widgets/glass/` supply the real material. Every
+/// component theme below sets zero elevation and a transparent
+/// `surfaceTintColor`, because Material 3's tint overlay would otherwise shift
+/// the colour of every surface away from the palette.
 ///
 /// Component themes for raw Material widgets (`ElevatedButton`, `Card`,
 /// `TextField`, ...) are still defined, tuned to brand red and the glass

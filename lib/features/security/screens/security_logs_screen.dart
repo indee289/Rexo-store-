@@ -64,7 +64,7 @@ class SecurityLogsScreen extends ConsumerWidget {
                 child: ShimmerLoading(height: 360),
               ),
               error: (error, _) => const EmptyState(
-                icon: Iconsax.warning_2,
+                icon: AppIcons.warning_2,
                 title: 'Failed to load security logs',
               ),
             ),
@@ -158,7 +158,7 @@ class SecurityLogsScreen extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Iconsax.warning_2,
+                              AppIcons.warning_2,
                               color: AppColors.error,
                               size: 12,
                             ),
@@ -219,31 +219,31 @@ class SecurityLogsScreen extends ConsumerWidget {
     switch (eventType) {
       case 'login':
         return _EventConfig(
-          icon: Iconsax.key,
+          icon: AppIcons.key,
           color: AppColors.success,
           label: 'Login',
         );
       case 'logout':
         return _EventConfig(
-          icon: Iconsax.logout,
+          icon: AppIcons.logout,
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           label: 'Logout',
         );
       case 'failed_login':
         return _EventConfig(
-          icon: Iconsax.close_circle,
+          icon: AppIcons.close_circle,
           color: AppColors.error,
           label: 'Failed login',
         );
       case 'password_change':
         return const _EventConfig(
-          icon: Iconsax.lock,
+          icon: AppIcons.lock,
           color: AppColors.warning,
           label: 'Password changed',
         );
       default:
         return _EventConfig(
-          icon: Iconsax.shield_tick,
+          icon: AppIcons.shield_tick,
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           label: eventType.replaceAll('_', ' ').split(' ').map(
               (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}' : w
@@ -254,7 +254,7 @@ class SecurityLogsScreen extends ConsumerWidget {
 
   Widget _buildEmptyState() {
     return const EmptyState(
-      icon: Iconsax.shield_tick,
+      icon: AppIcons.shield_tick,
       title: 'No security events',
       subtitle: 'Your security log is clear',
     );

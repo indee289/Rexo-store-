@@ -73,10 +73,10 @@ class _CouponsTab extends ConsumerWidget {
       },
       loading: () => const ShimmerLoading(),
       error: (error, _) => EmptyState(
-        icon: Iconsax.warning_2,
+        icon: AppIcons.warning_2,
         title: 'Failed to load coupons',
         ctaLabel: 'Retry',
-        ctaIcon: Iconsax.refresh,
+        ctaIcon: AppIcons.refresh,
         onCta: () => ref.invalidate(availableCouponsProvider),
       ),
     );
@@ -123,7 +123,7 @@ class _CouponsTab extends ConsumerWidget {
               borderRadius: AppRadius.allSm,
             ),
             child: const Icon(
-              Iconsax.ticket_discount,
+              AppIcons.ticket_discount,
               color: AppColors.primary,
               size: 24,
             ),
@@ -168,7 +168,7 @@ class _CouponsTab extends ConsumerWidget {
 
   Widget _buildEmpty() {
     return const EmptyState(
-      icon: Iconsax.ticket_discount,
+      icon: AppIcons.ticket_discount,
       title: 'No coupons available',
       subtitle: 'Check back later for new offers',
     );
@@ -201,7 +201,7 @@ class _RewardsTab extends ConsumerWidget {
                 child: Column(
                   children: [
                     const Icon(
-                      Iconsax.medal_star,
+                      AppIcons.medal_star,
                       size: 48,
                       color: Colors.white,
                     ),
@@ -272,10 +272,10 @@ class _RewardsTab extends ConsumerWidget {
       },
       loading: () => const ShimmerLoading(),
       error: (error, _) => EmptyState(
-        icon: Iconsax.warning_2,
+        icon: AppIcons.warning_2,
         title: 'Failed to load rewards',
         ctaLabel: 'Retry',
-        ctaIcon: Iconsax.refresh,
+        ctaIcon: AppIcons.refresh,
         onCta: () => ref.invalidate(userRewardPointsProvider),
       ),
     );

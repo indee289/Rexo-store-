@@ -30,10 +30,10 @@ class MediaKitScreen extends ConsumerWidget {
         data: (profileState) => _buildContent(context, profileState),
         loading: () => const ShimmerLoading(),
         error: (error, _) => EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Failed to load profile',
           ctaLabel: 'Retry',
-          ctaIcon: Iconsax.refresh,
+          ctaIcon: AppIcons.refresh,
           onCta: () => ref.invalidate(currentUserProfileProvider),
         ),
       ),
@@ -185,7 +185,7 @@ class MediaKitScreen extends ConsumerWidget {
                 PremiumButton(
                   label: 'Share media kit',
                   variant: PremiumButtonVariant.outline,
-                  icon: Iconsax.export_1,
+                  icon: AppIcons.export_1,
                   onPressed: () {
                     final shareHandle = handle.isNotEmpty ? '@$handle' : name;
                     Share.share(

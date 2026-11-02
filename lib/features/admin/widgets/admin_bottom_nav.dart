@@ -47,31 +47,31 @@ class AdminBottomNav extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _NavItem(
-              icon: Iconsax.chart_square,
+              icon: AppIcons.chart_square,
               label: 'Dashboard',
               isActive: currentIndex == 0,
               onTap: () => onTap(0),
             ),
             _NavItem(
-              icon: Iconsax.people,
+              icon: AppIcons.people,
               label: 'Users',
               isActive: currentIndex == 1,
               onTap: () => onTap(1),
             ),
             _NavItem(
-              icon: Iconsax.task_square,
+              icon: AppIcons.task_square,
               label: 'Actions',
               isActive: currentIndex == 2,
               onTap: () => onTap(2),
             ),
             _NavItem(
-              icon: Iconsax.setting_2,
+              icon: AppIcons.setting_2,
               label: 'Settings',
               isActive: currentIndex == 3,
               onTap: () => onTap(3),
             ),
             _NavItem(
-              icon: Iconsax.profile_circle,
+              icon: AppIcons.profile_circle,
               label: 'Profile',
               isActive: currentIndex == 4,
               onTap: () => onTap(4),

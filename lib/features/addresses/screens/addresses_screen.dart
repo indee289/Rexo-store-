@@ -25,13 +25,13 @@ class AddressesScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add-address'),
         backgroundColor: AppColors.primary,
-        child: const Icon(Iconsax.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: addressesAsync.when(
         data: (addresses) {
           if (addresses.isEmpty) {
             return const EmptyState(
-              icon: Iconsax.location,
+              icon: AppIcons.location,
               title: 'No addresses saved',
               subtitle: 'Add your first address to get started',
             );
@@ -46,10 +46,10 @@ class AddressesScreen extends ConsumerWidget {
         },
         loading: () => const ShimmerLoading(),
         error: (error, _) => EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Failed to load addresses',
           ctaLabel: 'Retry',
-          ctaIcon: Iconsax.refresh,
+          ctaIcon: AppIcons.refresh,
           onCta: () => ref.invalidate(addressesProvider),
         ),
       ),
@@ -141,7 +141,7 @@ class AddressesScreen extends ConsumerWidget {
             children: [
               TextButton.icon(
                 onPressed: () => context.push('/add-address', extra: address),
-                icon: const Icon(Iconsax.edit_2, size: 16),
+                icon: const Icon(AppIcons.edit_2, size: 16),
                 label: Text('Edit', style: AppTextStyles.labelMedium),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
@@ -152,7 +152,7 @@ class AddressesScreen extends ConsumerWidget {
               const SizedBox(width: AppSpacing.sm),
               TextButton.icon(
                 onPressed: () => _confirmDelete(context, ref, addressId),
-                icon: const Icon(Iconsax.trash, size: 16),
+                icon: const Icon(AppIcons.trash, size: 16),
                 label: Text('Delete', style: AppTextStyles.labelMedium),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,

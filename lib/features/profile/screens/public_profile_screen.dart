@@ -55,7 +55,7 @@ class PublicProfileScreen extends ConsumerWidget {
           child: ShimmerLoading(height: 200),
         ),
         error: (error, _) => EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Failed to load profile',
         ),
       ),
@@ -64,7 +64,7 @@ class PublicProfileScreen extends ConsumerWidget {
 
   Widget _buildNotFound(BuildContext context) {
     return EmptyState(
-      icon: Iconsax.user,
+      icon: AppIcons.user,
       title: 'User not found',
       subtitle: 'No user with handle @$handle exists.',
     );

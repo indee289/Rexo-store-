@@ -65,7 +65,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
+                  const Icon(AppIcons.tick_circle, size: 48, color: AppColors.success),
                   const SizedBox(height: 12),
                   Text('No pending withdrawals',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
@@ -135,7 +135,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
                               onPressed: () => ref
                                   .read(adminActionsProvider.notifier)
                                   .approveWithdrawal(withdrawal['id']),
-                              icon: const Icon(Iconsax.tick_circle, size: 16),
+                              icon: const Icon(AppIcons.tick_circle, size: 16),
                               label: const Text('Approve'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.success,
@@ -149,7 +149,7 @@ class WithdrawalQueueScreen extends ConsumerWidget {
                               onPressed: () => ref
                                   .read(adminActionsProvider.notifier)
                                   .rejectWithdrawal(withdrawal['id']),
-                              icon: const Icon(Iconsax.close_circle, size: 16),
+                              icon: const Icon(AppIcons.close_circle, size: 16),
                               label: const Text('Reject'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.error,

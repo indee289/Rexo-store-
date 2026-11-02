@@ -39,7 +39,7 @@ class ServicesScreen extends ConsumerWidget {
               children: [
                 _buildServiceCard(
                   context,
-                  icon: Iconsax.document_text,
+                  icon: AppIcons.document_text,
                   title: 'Media kit',
                   subtitle: 'Generate your media kit',
                   color: AppColors.roleBrand,
@@ -47,7 +47,7 @@ class ServicesScreen extends ConsumerWidget {
                 ),
                 _buildServiceCard(
                   context,
-                  icon: Iconsax.calculator,
+                  icon: AppIcons.calculator,
                   title: 'Rate calculator',
                   subtitle: 'Find your ideal rate',
                   color: AppColors.success,
@@ -66,7 +66,7 @@ class ServicesScreen extends ConsumerWidget {
                   return const Padding(
                     padding: EdgeInsets.all(AppSpacing.xl),
                     child: EmptyState(
-                      icon: Iconsax.shop,
+                      icon: AppIcons.shop,
                       title: 'No services listed yet',
                     ),
                   );
@@ -79,10 +79,10 @@ class ServicesScreen extends ConsumerWidget {
               },
               loading: () => const ShimmerCard(height: 120),
               error: (error, _) => EmptyState(
-                icon: Iconsax.warning_2,
+                icon: AppIcons.warning_2,
                 title: 'Failed to load services',
                 ctaLabel: 'Retry',
-                ctaIcon: Iconsax.refresh,
+                ctaIcon: AppIcons.refresh,
                 onCta: () => ref.invalidate(activeServicesProvider),
               ),
             ),
@@ -159,7 +159,7 @@ class ServicesScreen extends ConsumerWidget {
                 borderRadius: AppRadius.allSm,
               ),
               child: const Icon(
-                Iconsax.briefcase,
+                AppIcons.briefcase,
                 size: 22,
                 color: AppColors.primary,
               ),

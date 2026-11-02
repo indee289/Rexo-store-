@@ -75,25 +75,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Account',
               children: [
                 GlassRow(
-                  icon: Iconsax.edit,
+                  icon: AppIcons.edit,
                   title: 'Edit profile',
                   subtitle: 'Update name, photo, bio',
                   onTap: _openEditProfile,
                 ),
                 GlassRow(
-                  icon: Iconsax.link_2,
+                  icon: AppIcons.link_2,
                   title: 'Linked accounts',
                   subtitle: 'Instagram, YouTube, TikTok',
                   onTap: () => context.push('/linked-accounts'),
                 ),
                 GlassRow(
-                  icon: Iconsax.gift,
+                  icon: AppIcons.gift,
                   title: 'Refer & earn',
                   subtitle: 'Invite friends, earn rewards',
                   onTap: () => context.push('/referrals'),
                 ),
                 GlassRow(
-                  icon: Iconsax.global,
+                  icon: AppIcons.global,
                   title: 'Language',
                   trailingText: _languageLabel(ref.watch(localeProvider)),
                   onTap: () => _showLanguagePicker(context, ref),
@@ -107,26 +107,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Security',
               children: [
                 GlassRow(
-                  icon: Iconsax.shield_tick,
+                  icon: AppIcons.shield_tick,
                   title: 'Two-factor auth',
                   subtitle: 'Secure your account with TOTP',
                   trailing: const _RecommendedBadge(),
                   onTap: () => context.push('/two-factor-auth'),
                 ),
                 GlassRow(
-                  icon: Iconsax.monitor,
+                  icon: AppIcons.monitor,
                   title: 'Active sessions',
                   subtitle: 'Manage signed-in devices',
                   onTap: () => context.push('/sessions'),
                 ),
                 GlassRow(
-                  icon: Iconsax.eye,
+                  icon: AppIcons.eye,
                   title: 'Security logs',
                   subtitle: 'View account activity',
                   onTap: () => context.push('/security-logs'),
                 ),
                 GlassRow(
-                  icon: Iconsax.lock,
+                  icon: AppIcons.lock,
                   title: 'Change password',
                   subtitle: 'Send a password reset email',
                   onTap: () => _handleChangePassword(context),
@@ -140,19 +140,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Notifications',
               children: [
                 GlassSwitchRow(
-                  icon: Iconsax.notification,
+                  icon: AppIcons.notification,
                   title: 'Push notifications',
                   value: settings.notificationsEnabled,
                   onChanged: notifier.setNotificationsEnabled,
                 ),
                 GlassSwitchRow(
-                  icon: Iconsax.sms,
+                  icon: AppIcons.sms,
                   title: 'Email notifications',
                   value: settings.emailNotificationsEnabled,
                   onChanged: notifier.setEmailNotificationsEnabled,
                 ),
                 GlassSwitchRow(
-                  icon: Iconsax.volume_high,
+                  icon: AppIcons.volume_high,
                   title: 'Campaign updates',
                   value: settings.campaignUpdatesEnabled,
                   onChanged: notifier.setCampaignUpdatesEnabled,
@@ -166,14 +166,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Privacy',
               children: [
                 GlassSwitchRow(
-                  icon: Iconsax.user,
+                  icon: AppIcons.user,
                   title: 'Public profile',
                   subtitle: 'Let brands discover you',
                   value: settings.publicProfileEnabled,
                   onChanged: notifier.setPublicProfileEnabled,
                 ),
                 GlassRow(
-                  icon: Iconsax.user_remove,
+                  icon: AppIcons.user_remove,
                   title: 'Blocked accounts',
                   subtitle: 'Manage users you have blocked',
                   onTap: () => context.push('/settings/blocked-accounts'),
@@ -187,30 +187,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Support',
               children: [
                 GlassRow(
-                  icon: Iconsax.message_question,
+                  icon: AppIcons.message_question,
                   title: 'Help & support',
                   subtitle: 'FAQs and contact',
                   onTap: () => context.push('/help-support'),
                 ),
                 GlassRow(
-                  icon: Iconsax.warning_2,
+                  icon: AppIcons.warning_2,
                   title: 'My disputes',
                   subtitle: 'View raised disputes',
                   onTap: () => context.push('/disputes'),
                 ),
                 GlassRow(
-                  icon: Iconsax.location,
+                  icon: AppIcons.location,
                   title: 'My addresses',
                   subtitle: 'Manage saved addresses',
                   onTap: () => context.push('/addresses'),
                 ),
                 GlassRow(
-                  icon: Iconsax.shield_tick,
+                  icon: AppIcons.shield_tick,
                   title: 'Privacy policy',
                   onTap: () => context.push('/privacy-policy'),
                 ),
                 GlassRow(
-                  icon: Iconsax.document_text,
+                  icon: AppIcons.document_text,
                   title: 'Terms of service',
                   onTap: () => context.push('/terms-of-service'),
                 ),
@@ -224,14 +224,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Danger zone',
               children: [
                 GlassRow(
-                  icon: Iconsax.logout,
+                  icon: AppIcons.logout,
                   title: 'Log out',
                   destructive: true,
                   showChevron: false,
                   onTap: () => _handleLogout(context, ref),
                 ),
                 GlassRow(
-                  icon: Iconsax.trash,
+                  icon: AppIcons.trash,
                   title: 'Delete account',
                   subtitle: 'Permanently remove your account and data',
                   destructive: true,
@@ -319,11 +319,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String? current,
   ) {
     return GlassRow(
-      icon: Iconsax.global,
+      icon: AppIcons.global,
       title: label,
       showChevron: false,
       trailing: current == code
-          ? const Icon(Iconsax.tick_circle, color: AppColors.primary, size: 20)
+          ? const Icon(AppIcons.tick_circle, color: AppColors.primary, size: 20)
           : null,
       onTap: () {
         ref
@@ -344,7 +344,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       title: 'Log out',
       message: 'Are you sure you want to log out of Campster?',
-      icon: Iconsax.logout,
+      icon: AppIcons.logout,
       confirmLabel: 'Log out',
       cancelLabel: 'Cancel',
       destructive: true,

@@ -31,7 +31,7 @@ class StarRatingWidget extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Icon(
-              Iconsax.star_1,
+              AppIcons.star_1,
               size: size,
               color:
                   isFilled ? AppColors.warning : Theme.of(context).dividerColor,
@@ -64,7 +64,7 @@ class StarRatingCompact extends StatelessWidget {
         final isHalf = starIndex == rating.ceil() && rating % 1 >= 0.5;
 
         return Icon(
-          Iconsax.star_1,
+          AppIcons.star_1,
           size: size,
           color: isFilled || isHalf
               ? AppColors.warning

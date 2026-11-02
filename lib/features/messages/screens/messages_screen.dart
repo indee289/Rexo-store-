@@ -75,7 +75,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: PremiumIconButton(
-              icon: Iconsax.edit_2,
+              icon: AppIcons.edit_2,
               tooltip: 'New chat',
               background: true,
               tonal: true,
@@ -118,7 +118,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             color: AppColors.primary.withOpacity(0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Iconsax.message_text,
+                          child: const Icon(AppIcons.message_text,
                               color: AppColors.primary, size: 20),
                         ),
                         const SizedBox(width: 12),
@@ -136,7 +136,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             ],
                           ),
                         ),
-                        const Icon(Iconsax.arrow_right_3,
+                        const Icon(AppIcons.arrow_right_3,
                             size: 18, color: AppColors.primary),
                       ],
                     ),
@@ -151,7 +151,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               data: (conversations) {
                 if (conversations.isEmpty) {
                   return const EmptyState(
-                    icon: Iconsax.message,
+                    icon: AppIcons.message,
                     title: 'No messages yet',
                     subtitle: "Start a conversation and it'll show up here.",
                   );
@@ -160,7 +160,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 final filtered = _filter(conversations);
                 if (filtered.isEmpty) {
                   return const EmptyState(
-                    icon: Iconsax.search_normal,
+                    icon: AppIcons.search_normal,
                     title: 'No matches',
                     subtitle: 'Try a different name.',
                   );
@@ -202,7 +202,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           color: Colors.red,
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 24),
-                          child: const Icon(Iconsax.trash,
+                          child: const Icon(AppIcons.trash,
                               color: Colors.white),
                         ),
                         child: _ConversationTile(
@@ -223,11 +223,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 itemBuilder: (_, __) => const ShimmerConversationRow(),
               ),
               error: (e, _) => EmptyState(
-                icon: Iconsax.warning_2,
+                icon: AppIcons.warning_2,
                 title: "Couldn't load your messages",
                 subtitle: ErrorUtils.sanitize(e),
                 ctaLabel: 'Retry',
-                ctaIcon: Iconsax.refresh,
+                ctaIcon: AppIcons.refresh,
                 onCta: () => ref.invalidate(conversationsProvider),
               ),
             ),

@@ -26,7 +26,7 @@ class BlockedAccountsScreen extends ConsumerWidget {
         data: (users) {
           if (users.isEmpty) {
             return const EmptyState(
-              icon: Iconsax.user_tick,
+              icon: AppIcons.user_tick,
               title: 'No blocked accounts',
               subtitle: 'People you block will appear here.',
             );
@@ -69,7 +69,7 @@ class BlockedAccountsScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => const EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Could not load',
           subtitle: 'Please try again later.',
         ),

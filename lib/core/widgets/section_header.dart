@@ -28,7 +28,7 @@ class SectionHeader extends StatelessWidget {
     this.subtitle,
     this.actionLabel,
     this.onAction,
-    this.actionIcon = Iconsax.arrow_right_3,
+    this.actionIcon = AppIcons.arrow_right_3,
     this.action,
     this.padding = const EdgeInsets.symmetric(vertical: AppSpacing.sm),
     this.uppercase = false,

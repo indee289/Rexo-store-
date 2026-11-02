@@ -227,32 +227,11 @@ class _GlassButtonState extends State<GlassButton>
             borderRadius: radius,
             child: DecoratedBox(
               decoration: BoxDecoration(gradient: _solidGradient),
-              child: Stack(
-                fit: StackFit.passthrough,
-                children: [
-                  // Specular shine across the top of the solid pill.
-                  const Positioned.fill(child: GlassSheen()),
-                  _Body(
-                    height: _height,
-                    padding: _padding,
-                    expand: widget.expand,
-                    child: content,
-                  ),
-                  // Inner rim so the pill edge catches light.
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: radius,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.28),
-                            width: AppGlass.borderWidth,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: _Body(
+                height: _height,
+                padding: _padding,
+                expand: widget.expand,
+                child: content,
               ),
             ),
           ),

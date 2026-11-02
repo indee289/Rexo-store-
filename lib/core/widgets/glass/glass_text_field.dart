@@ -177,7 +177,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final radius = _isSearch ? AppRadius.pillAll : AppRadius.allMd;
 
     final IconData? prefix =
-        _isSearch ? Iconsax.search_normal : widget.prefixIcon;
+        _isSearch ? AppIcons.search_normal : widget.prefixIcon;
 
     Widget? suffix = widget.suffix;
     if (widget.obscureText) {
@@ -187,7 +187,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Icon(
-            _obscured ? Iconsax.eye : Iconsax.eye_slash,
+            _obscured ? AppIcons.eye : AppIcons.eye_slash,
             size: 20,
             color: AppColors.textSecondary,
           ),
@@ -200,7 +200,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
         child: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 14),
           child: Icon(
-            Iconsax.close_circle,
+            AppIcons.close_circle,
             size: 19,
             color: AppColors.textSecondary,
           ),

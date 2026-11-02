@@ -95,7 +95,7 @@ class FeaturedCampaignCard extends StatelessWidget {
                 ),
               ),
               GlassIconButton.bare(
-                icon: Iconsax.bookmark,
+                icon: AppIcons.bookmark,
                 onTap: onToggleSave,
                 size: 36,
                 iconSize: 20,
@@ -202,7 +202,7 @@ class _ThumbPlaceholder extends StatelessWidget {
         color: AppColors.primary.withOpacity(0.10),
       ),
       child: const Center(
-        child: Icon(Iconsax.gallery, size: 20, color: AppColors.primaryLight),
+        child: Icon(AppIcons.gallery, size: 20, color: AppColors.primaryLight),
       ),
     );
   }
@@ -215,20 +215,26 @@ class _PlatformRow extends StatelessWidget {
   final List<String> platforms;
   final bool private;
 
+  /// Real brand marks. Previously TikTok showed a generic music note and X,
+  /// Twitter and Facebook all showed the same globe, so three platforms were
+  /// indistinguishable on a card.
   static IconData _platformIcon(String p) {
     switch (p.toLowerCase()) {
       case 'instagram':
-        return Iconsax.instagram;
+        return AppIcons.instagram;
       case 'tiktok':
-        return Iconsax.music;
+        return AppIcons.tiktok;
       case 'youtube':
-        return Iconsax.video_play;
+        return AppIcons.youtube;
       case 'x':
       case 'twitter':
+        return AppIcons.x;
       case 'facebook':
-        return Iconsax.global;
+        return AppIcons.facebook;
+      case 'linkedin':
+        return AppIcons.linkedin;
       default:
-        return Iconsax.global;
+        return AppIcons.global;
     }
   }
 
@@ -236,7 +242,7 @@ class _PlatformRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final icons = <Widget>[];
     if (private) {
-      icons.add(const Icon(Iconsax.lock_1, size: 15, color: AppColors.error));
+      icons.add(const Icon(AppIcons.lock_1, size: 15, color: AppColors.error));
       icons.add(const SizedBox(width: 6));
     }
     for (final p in platforms) {

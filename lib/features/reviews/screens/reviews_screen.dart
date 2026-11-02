@@ -47,7 +47,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddReviewSheet(context),
         backgroundColor: AppColors.primary,
-        icon: const Icon(Iconsax.edit, color: Colors.white, size: 20),
+        icon: const Icon(AppIcons.edit, color: Colors.white, size: 20),
         label: Text(
           'Add review',
           style: AppTextStyles.labelLarge.copyWith(
@@ -217,7 +217,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
 
   Widget _buildEmptyState() {
     return const EmptyState(
-      icon: Iconsax.star_1,
+      icon: AppIcons.star_1,
       title: 'No reviews yet',
       subtitle: 'Be the first to leave a review',
     );
@@ -225,11 +225,11 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
 
   Widget _buildErrorState(String error) {
     return EmptyState(
-      icon: Iconsax.warning_2,
+      icon: AppIcons.warning_2,
       title: 'Failed to load reviews',
       subtitle: error,
       ctaLabel: 'Retry',
-      ctaIcon: Iconsax.refresh,
+      ctaIcon: AppIcons.refresh,
       onCta: () {
         ref.invalidate(reviewsProvider(ReviewsParam(
           targetId: widget.targetId,

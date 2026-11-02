@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../icons/app_icons.dart';
@@ -9,16 +7,17 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
 import 'glass_icon_button.dart';
-import 'glass_surface.dart';
 
-/// Shows a frosted-glass modal bottom sheet.
+/// Shows a modal bottom sheet.
 ///
 /// Presentation:
-///   * One heavy [BackdropFilter] over the whole sheet, clipped to
-///     [AppRadius.topXxl], with a specular sheen and a top rim light.
+///   * An opaque surface clipped to [AppRadius.topXxl], lifted by the modal
+///     shadow. The previous version ran a heavy `BackdropFilter` plus a sheen
+///     and a rim light over the whole sheet; a sheet covers most of the screen,
+///     so that was the most expensive blur in the app.
 ///   * A grab handle, a title row and a trailing close button.
 ///   * Height capped at 92% of the screen; tall content scrolls inside while
-///     short content sizes to its own height.
+///     short content sizes to itself.
 ///   * Keyboard-aware: the sheet lifts above the on-screen keyboard.
 ///   * Drag-to-dismiss and tap-outside-to-dismiss both enabled.
 ///
@@ -37,11 +36,9 @@ Future<T?> showGlassSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
-    // We paint our own frosted pane, so the framework surface must be fully
-    // transparent or an opaque Material sheet would cover the blur.
+    // The sheet paints its own surface, so the framework's must be invisible.
     backgroundColor: Colors.transparent,
     elevation: 0,
-    // This primitive draws its own handle; suppress the themed one.
     showDragHandle: false,
     clipBehavior: Clip.none,
     barrierColor: AppGlass.scrim(false),
@@ -57,8 +54,8 @@ Future<T?> showGlassSheet<T>({
   );
 }
 
-/// The frosted sheet pane itself. Normally created by [showGlassSheet], but
-/// exposed for use as a `Scaffold.bottomSheet` or inside a custom route.
+/// The sheet surface itself. Normally created by [showGlassSheet], but exposed
+/// for use as a `Scaffold.bottomSheet` or inside a custom route.
 class GlassSheet extends StatelessWidget {
   const GlassSheet({
     super.key,
@@ -82,63 +79,42 @@ class GlassSheet extends StatelessWidget {
     return Padding(
       // Lift above the on-screen keyboard when a field inside is focused.
       padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-      child: ClipRRect(
-        borderRadius: AppRadius.topXxl,
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(
-            sigmaX: AppGlass.blurSigmaModal,
-            sigmaY: AppGlass.blurSigmaModal,
-          ),
-          child: GlassBlurScope(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppGlass.surface(false),
-                borderRadius: AppRadius.topXxl,
-              ),
-              child: Stack(
-                children: [
-                  const Positioned.fill(
-                    child: GlassSheen(radius: AppRadius.topXxl),
-                  ),
-                  // Top rim light.
-                  Positioned(
-                    top: 0,
-                    left: AppRadius.xxl,
-                    right: AppRadius.xxl,
-                    height: AppGlass.borderWidth,
-                    child: const GlassRimLight(),
-                  ),
-                  ConstrainedBox(
-                    constraints:
-                        BoxConstraints(maxHeight: media.size.height * 0.92),
-                    child: SafeArea(
-                      top: false,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const _GrabHandle(),
-                          _TitleRow(
-                            title: title,
-                            subtitle: subtitle,
-                            showCloseButton: showCloseButton,
-                          ),
-                          Flexible(
-                            child: Padding(
-                              padding: padding ??
-                                  const EdgeInsets.fromLTRB(
-                                    AppSpacing.lg,
-                                    AppSpacing.xs,
-                                    AppSpacing.lg,
-                                    AppSpacing.lg,
-                                  ),
-                              child: child,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.topXxl,
+          boxShadow: AppElevation.modal(false),
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.topXxl,
+          child: ColoredBox(
+            color: AppColors.surface,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: media.size.height * 0.92),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _GrabHandle(),
+                    _TitleRow(
+                      title: title,
+                      subtitle: subtitle,
+                      showCloseButton: showCloseButton,
+                    ),
+                    Flexible(
+                      child: Padding(
+                        padding: padding ??
+                            const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.xs,
+                              AppSpacing.lg,
+                              AppSpacing.lg,
                             ),
-                          ),
-                        ],
+                        child: child,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -155,10 +131,10 @@ class _GrabHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
-      width: 44,
-      height: 5,
-      decoration: BoxDecoration(
-        color: AppColors.textPrimary.withOpacity(0.18),
+      width: 40,
+      height: 4,
+      decoration: const BoxDecoration(
+        color: AppColors.systemGray4,
         borderRadius: AppRadius.pillAll,
       ),
     );
@@ -215,7 +191,7 @@ class _TitleRow extends StatelessWidget {
           if (showCloseButton) ...[
             AppSpacing.gapSm,
             GlassIconButton(
-              icon: Iconsax.close_circle,
+              icon: AppIcons.close_circle,
               tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
               onTap: () => Navigator.of(context).maybePop(),
               size: 34,

@@ -30,7 +30,7 @@ class FraudReviewScreen extends ConsumerWidget {
               return ListView(
                 children: [
                   const SizedBox(height: 120),
-                  const Icon(Iconsax.shield_tick,
+                  const Icon(AppIcons.shield_tick,
                       size: 48, color: AppColors.success),
                   const SizedBox(height: 12),
                   Center(

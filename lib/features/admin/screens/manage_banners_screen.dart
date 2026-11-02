@@ -30,7 +30,7 @@ class ManageBannersScreen extends ConsumerWidget {
         title: 'Manage Banners',
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.add_circle, color: AppColors.primary),
+            icon: const Icon(AppIcons.add_circle, color: AppColors.primary),
             onPressed: () => _openEdit(context, ref, null),
           ),
         ],
@@ -38,7 +38,7 @@ class ManageBannersScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () => _openEdit(context, ref, null),
-        child: const Icon(Iconsax.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -54,12 +54,12 @@ class ManageBannersScreen extends ConsumerWidget {
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: EmptyState(
-                        icon: Iconsax.image,
+                        icon: AppIcons.image,
                         title: 'No banners yet',
                         subtitle: 'Tap + to upload your first banner.',
                         cta: PremiumButton(
                           label: 'Add Banner',
-                          icon: Iconsax.add,
+                          icon: AppIcons.add,
                           expand: false,
                           onPressed: () => _openEdit(context, ref, null),
                         ),
@@ -104,12 +104,12 @@ class ManageBannersScreen extends ConsumerWidget {
           ),
           error: (e, _) => Center(
             child: EmptyState(
-              icon: Iconsax.warning_2,
+              icon: AppIcons.warning_2,
               title: 'Failed to load banners',
               subtitle: ErrorUtils.sanitize(e),
               cta: PremiumButton(
                 label: 'Retry',
-                icon: Iconsax.refresh,
+                icon: AppIcons.refresh,
                 variant: PremiumButtonVariant.tonal,
                 expand: false,
                 onPressed: () => ref.invalidate(adminBannersProvider),
@@ -164,7 +164,7 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
         child: Row(
           children: [
             // Drag handle
-            Icon(Iconsax.drag,
+            Icon(AppIcons.drag,
                 size: 20,
                 color: isDark ? AppColors.darkTextHint : AppColors.textHint),
             const SizedBox(width: AppSpacing.sm),
@@ -219,7 +219,7 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
               children: [
                 // Edit
                 _iconBtn(
-                  icon: Iconsax.edit,
+                  icon: AppIcons.edit,
                   color: AppColors.primary,
                   onTap: widget.onEdit,
                 ),
@@ -232,7 +232,7 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
                             strokeWidth: 2, color: AppColors.warning),
                       )
                     : _iconBtn(
-                        icon: isVisible ? Iconsax.eye_slash : Iconsax.eye,
+                        icon: isVisible ? AppIcons.eye_slash : AppIcons.eye,
                         color: AppColors.warning,
                         onTap: () => _toggle(isVisible),
                       ),
@@ -245,7 +245,7 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
                             strokeWidth: 2, color: AppColors.error),
                       )
                     : _iconBtn(
-                        icon: Iconsax.trash,
+                        icon: AppIcons.trash,
                         color: AppColors.error,
                         onTap: () => _delete(context),
                       ),
@@ -261,7 +261,7 @@ class _BannerAdminCardState extends ConsumerState<_BannerAdminCard> {
         width: 64,
         height: 48,
         color: AppColors.primary.withOpacity(0.10),
-        child: const Icon(Iconsax.image, color: AppColors.primary, size: 20),
+        child: const Icon(AppIcons.image, color: AppColors.primary, size: 20),
       );
 
   Widget _iconBtn(
@@ -491,7 +491,7 @@ class _BannerEditScreenState extends ConsumerState<_BannerEditScreen> {
             PremiumTextField(
               controller: _titleCtrl,
               hint: 'e.g. Summer Sale, New Feature',
-              prefixIcon: Iconsax.edit,
+              prefixIcon: AppIcons.edit,
               textCapitalization: TextCapitalization.sentences,
             ),
 
@@ -591,7 +591,7 @@ class _BannerEditScreenState extends ConsumerState<_BannerEditScreen> {
               PremiumTextField(
                 controller: _pageCtrl,
                 hint: 'e.g. /campaigns, /wallet, /jobs',
-                prefixIcon: Iconsax.link,
+                prefixIcon: AppIcons.link,
               ),
             ],
 
@@ -599,7 +599,7 @@ class _BannerEditScreenState extends ConsumerState<_BannerEditScreen> {
 
             PremiumButton(
               label: _isEdit ? 'Save Changes' : 'Add Banner',
-              icon: _isEdit ? Iconsax.save_2 : Iconsax.add,
+              icon: _isEdit ? AppIcons.save_2 : AppIcons.add,
               loading: _saving,
               onPressed: _save,
             ),
@@ -641,9 +641,9 @@ class _LinkTypeSelector extends StatelessWidget {
   });
 
   static const _options = [
-    ('none', Iconsax.slash, 'No Link'),
-    ('campaign', Iconsax.volume_high, 'Campaign'),
-    ('page', Iconsax.link, 'Page'),
+    ('none', AppIcons.slash, 'No Link'),
+    ('campaign', AppIcons.volume_high, 'Campaign'),
+    ('page', AppIcons.link, 'Page'),
   ];
 
   @override

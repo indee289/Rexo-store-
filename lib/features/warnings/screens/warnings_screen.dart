@@ -104,7 +104,7 @@ class WarningsScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Iconsax.warning_2, color: AppColors.error, size: 20),
+              const Icon(AppIcons.warning_2, color: AppColors.error, size: 20),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -136,7 +136,7 @@ class WarningsScreen extends ConsumerWidget {
             PremiumButton(
               label: 'Submit appeal',
               variant: PremiumButtonVariant.outline,
-              icon: Iconsax.message_text,
+              icon: AppIcons.message_text,
               onPressed: () =>
                   _showAppealBottomSheet(context, ref, suspensionId),
             )
@@ -267,7 +267,7 @@ class WarningsScreen extends ConsumerWidget {
       child: Column(
         children: [
           const Icon(
-            Iconsax.shield_tick,
+            AppIcons.shield_tick,
             size: 48,
             color: AppColors.success,
           ),

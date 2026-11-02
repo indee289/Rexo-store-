@@ -145,7 +145,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Iconsax.wallet_2,
+                    const Icon(AppIcons.wallet_2,
                         color: AppColors.success, size: 24),
                     const SizedBox(width: 12),
                     Column(

@@ -147,7 +147,7 @@ class _PremiumAvatarState extends State<PremiumAvatar> {
       alignment: Alignment.center,
       color: AppColors.primaryBg,
       child: Icon(
-        Iconsax.user,
+        AppIcons.user,
         size: size * 0.5,
         color: AppColors.primary,
       ),
@@ -177,7 +177,7 @@ class _PremiumAvatarState extends State<PremiumAvatar> {
               border: Border.all(color: Colors.white, width: 2),
             ),
             child: Icon(
-              Iconsax.verify,
+              AppIcons.verify,
               size: iconSize,
               color: Colors.white,
             ),

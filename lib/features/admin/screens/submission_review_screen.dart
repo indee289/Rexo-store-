@@ -27,7 +27,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
+                  const Icon(AppIcons.tick_circle, size: 48, color: AppColors.success),
                   const SizedBox(height: 12),
                   Text('All caught up!',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
@@ -74,7 +74,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
                               onPressed: () => ref
                                   .read(adminActionsProvider.notifier)
                                   .approveSubmission(submission['id']),
-                              icon: const Icon(Iconsax.tick_circle, size: 16),
+                              icon: const Icon(AppIcons.tick_circle, size: 16),
                               label: const Text('Approve'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.success,
@@ -88,7 +88,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
                               onPressed: () => ref
                                   .read(adminActionsProvider.notifier)
                                   .rejectSubmission(submission['id']),
-                              icon: const Icon(Iconsax.close_circle, size: 16),
+                              icon: const Icon(AppIcons.close_circle, size: 16),
                               label: const Text('Reject'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.error,
@@ -101,7 +101,7 @@ class SubmissionReviewScreen extends ConsumerWidget {
                           IconButton(
                             onPressed: () => _showDisburseDialog(
                                 context, ref, submission['id']),
-                            icon: const Icon(Iconsax.money_send),
+                            icon: const Icon(AppIcons.money_send),
                             color: AppColors.primary,
                             tooltip: 'Disburse Payout',
                           ),

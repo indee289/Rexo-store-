@@ -106,14 +106,14 @@ class HelpSupportScreen extends StatelessWidget {
 
           // Contact options
           _ContactCard(
-            icon: Iconsax.sms,
+            icon: AppIcons.sms,
             title: 'Email Support',
             subtitle: _supportEmail,
             onTap: () => _emailSupport(context),
           ),
           const SizedBox(height: AppSpacing.md),
           _ContactCard(
-            icon: Iconsax.message,
+            icon: AppIcons.message,
             title: 'Message us',
             subtitle: 'Chat directly with the Campster admin',
             onTap: () => _messageAdmin(context),
@@ -206,7 +206,7 @@ class _ContactCard extends StatelessWidget {
             ),
           ),
           Icon(
-            Iconsax.arrow_right_3,
+            AppIcons.arrow_right_3,
             size: 18,
             color: theme.colorScheme.onSurface.withOpacity(0.4),
           ),

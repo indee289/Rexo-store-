@@ -52,15 +52,15 @@ enum UserRole {
     }
   }
 
-  /// Leading Iconsax glyph representing the role.
+  /// Leading AppIcons glyph representing the role.
   IconData get icon {
     switch (this) {
       case UserRole.brand:
-        return Iconsax.shop;
+        return AppIcons.shop;
       case UserRole.admin:
-        return Iconsax.shield_tick;
+        return AppIcons.shield_tick;
       case UserRole.creator:
-        return Iconsax.user;
+        return AppIcons.user;
     }
   }
 }
@@ -74,7 +74,7 @@ class RoleBadge extends StatelessWidget {
   /// The role to display.
   final UserRole role;
 
-  /// Whether to show the leading Iconsax glyph.
+  /// Whether to show the leading AppIcons glyph.
   final bool showIcon;
 
   const RoleBadge({
@@ -128,7 +128,7 @@ class RoleBadge extends StatelessWidget {
 ///
 /// Instagram-style: a bold [value] stacked over a muted [label]. Optionally
 /// tappable (e.g. tapping "followers" to open a list) with press-scale feedback,
-/// and an optional leading Iconsax glyph.
+/// and an optional leading AppIcons glyph.
 class StatPill extends StatefulWidget {
   /// The emphasized value (e.g. "1.2k").
   final String value;
@@ -136,7 +136,7 @@ class StatPill extends StatefulWidget {
   /// The muted caption under the value (e.g. "Followers").
   final String label;
 
-  /// Optional leading Iconsax glyph shown above the value.
+  /// Optional leading AppIcons glyph shown above the value.
   final IconData? icon;
 
   /// Optional tap handler; enables press-scale feedback when non-null.

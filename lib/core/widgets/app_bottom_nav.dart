@@ -35,23 +35,23 @@ class AppBottomNav extends StatelessWidget {
       onTap: onTap,
       items: [
         GlassNavItem(
-          icon: Iconsax.home_2,
-          activeIcon: Iconsax.home_2,
+          icon: AppIcons.home_2,
+          activeIcon: AppIcons.fill.home_2,
           label: l10n.home,
         ),
         GlassNavItem(
-          icon: Iconsax.volume_high,
-          activeIcon: Iconsax.volume_high,
+          icon: AppIcons.volume_high,
+          activeIcon: AppIcons.fill.volume_high,
           label: l10n.campaigns,
         ),
         GlassNavItem(
-          icon: Iconsax.briefcase,
-          activeIcon: Iconsax.briefcase,
+          icon: AppIcons.briefcase,
+          activeIcon: AppIcons.fill.briefcase,
           label: l10n.jobs,
         ),
         GlassNavItem(
-          icon: Iconsax.user,
-          activeIcon: Iconsax.user,
+          icon: AppIcons.user,
+          activeIcon: AppIcons.fill.user,
           label: l10n.profile,
         ),
       ],

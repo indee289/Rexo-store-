@@ -46,7 +46,7 @@ class CampaignApplicantsScreen extends ConsumerWidget {
         data: (applicants) {
           if (applicants.isEmpty) {
             return const EmptyState(
-              icon: Iconsax.people,
+              icon: AppIcons.people,
               title: 'No applicants yet',
               subtitle: 'Creators who apply will appear here',
             );
@@ -73,7 +73,7 @@ class CampaignApplicantsScreen extends ConsumerWidget {
           itemBuilder: (_, __) => const ShimmerConversationRow(),
         ),
         error: (e, _) => EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Could not load applicants',
           subtitle: ErrorUtils.sanitize(e),
         ),
@@ -145,7 +145,7 @@ class _ApplicantTile extends StatelessWidget {
                   Row(
                     children: [
                       if (category.isNotEmpty) ...[
-                        Icon(Iconsax.category,
+                        Icon(AppIcons.category,
                             size: 13,
                             color:
                                 theme.colorScheme.onSurface.withOpacity(0.5)),
@@ -161,7 +161,7 @@ class _ApplicantTile extends StatelessWidget {
                         const SizedBox(width: AppSpacing.sm),
                       ],
                       if (followers != null) ...[
-                        Icon(Iconsax.people,
+                        Icon(AppIcons.people,
                             size: 13,
                             color:
                                 theme.colorScheme.onSurface.withOpacity(0.5)),
@@ -316,25 +316,25 @@ class _ApplicantDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           _DetailRow(
-              icon: Iconsax.location,
+              icon: AppIcons.location,
               label: 'Location',
               value: application['location']),
           _DetailRow(
-              icon: Iconsax.category,
+              icon: AppIcons.category,
               label: 'Category',
               value: application['category']),
           _DetailRow(
-              icon: Iconsax.building,
+              icon: AppIcons.building,
               label: 'City',
               value: application['city']),
           _DetailRow(
-              icon: Iconsax.map, label: 'State', value: application['state']),
+              icon: AppIcons.map, label: 'State', value: application['state']),
           _DetailRow(
-              icon: Iconsax.call,
+              icon: AppIcons.call,
               label: 'Contact',
               value: application['contact_number'] ?? application['contact']),
           _DetailRow(
-            icon: Iconsax.people,
+            icon: AppIcons.people,
             label: 'Followers',
             value: (application['followers_count'] ?? application['followers']) !=
                     null
@@ -347,14 +347,14 @@ class _ApplicantDetailSheet extends StatelessWidget {
           // Clickable Instagram link
           if (instagram != null)
             _LinkTile(
-              icon: Iconsax.instagram,
+              icon: AppIcons.instagram,
               label: 'Instagram',
               display: (application['instagram_url'] ?? instagram).toString(),
               url: instagram,
             ),
           if (portfolio.isNotEmpty)
             _LinkTile(
-              icon: Iconsax.link,
+              icon: AppIcons.link,
               label: 'Portfolio',
               display: portfolio,
               url: portfolio,
@@ -477,7 +477,7 @@ class _LinkTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(Iconsax.export_1, size: 16, color: AppColors.primary),
+            const Icon(AppIcons.export_1, size: 16, color: AppColors.primary),
           ],
         ),
       ),

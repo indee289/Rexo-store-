@@ -90,7 +90,7 @@ class MyCampaignsScreen extends ConsumerWidget {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   onPressed: () => context.push('/create-campaign'),
-                  icon: const Icon(Iconsax.add),
+                  icon: const Icon(AppIcons.add),
                   label: const Text('New campaign'),
                 )
               : null,
@@ -105,7 +105,7 @@ class MyCampaignsScreen extends ConsumerWidget {
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: _appBar(context, 'My Campaigns'),
         body: const EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Failed to load',
           subtitle: 'Please try again in a moment.',
         ),
@@ -137,7 +137,7 @@ class _BrandCampaignsList extends ConsumerWidget {
       data: (campaigns) {
         if (campaigns.isEmpty) {
           return const EmptyState(
-            icon: Iconsax.volume_high,
+            icon: AppIcons.volume_high,
             title: 'No campaigns yet',
             subtitle: 'Create your first campaign to find creators',
           );
@@ -159,7 +159,7 @@ class _BrandCampaignsList extends ConsumerWidget {
       },
       loading: _buildListSkeleton,
       error: (e, _) => const EmptyState(
-        icon: Iconsax.warning_2,
+        icon: AppIcons.warning_2,
         title: 'Failed to load campaigns',
         subtitle: 'Pull to refresh or try again shortly.',
       ),
@@ -178,7 +178,7 @@ class _CreatorApplicationsList extends ConsumerWidget {
       data: (applications) {
         if (applications.isEmpty) {
           return const EmptyState(
-            icon: Iconsax.document,
+            icon: AppIcons.document,
             title: 'No applications yet',
             subtitle: 'Apply to campaigns to start collaborating with brands',
           );
@@ -200,7 +200,7 @@ class _CreatorApplicationsList extends ConsumerWidget {
       },
       loading: _buildListSkeleton,
       error: (e, _) => const EmptyState(
-        icon: Iconsax.warning_2,
+        icon: AppIcons.warning_2,
         title: 'Failed to load applications',
         subtitle: 'Pull to refresh or try again shortly.',
       ),
@@ -287,7 +287,7 @@ class _BrandCampaignCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                Icon(Iconsax.people,
+                Icon(AppIcons.people,
                     size: 14,
                     color: theme.colorScheme.onSurface.withOpacity(0.6)),
                 const SizedBox(width: AppSpacing.xs),
@@ -296,7 +296,7 @@ class _BrandCampaignCard extends StatelessWidget {
                   style: AppTextStyles.bodySmall,
                 ),
                 const Spacer(),
-                Icon(Iconsax.calendar,
+                Icon(AppIcons.calendar,
                     size: 14,
                     color: theme.colorScheme.onSurface.withOpacity(0.6)),
                 const SizedBox(width: AppSpacing.xs),
@@ -317,7 +317,7 @@ class _BrandCampaignCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 2),
-                const Icon(Iconsax.arrow_right_3,
+                const Icon(AppIcons.arrow_right_3,
                     size: 14, color: AppColors.primary),
               ],
             ),
@@ -381,7 +381,7 @@ class _ApplicationCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              Icon(Iconsax.calendar,
+              Icon(AppIcons.calendar,
                   size: 14,
                   color: theme.colorScheme.onSurface.withOpacity(0.6)),
               const SizedBox(width: AppSpacing.xs),

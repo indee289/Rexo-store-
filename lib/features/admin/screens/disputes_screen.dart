@@ -27,7 +27,7 @@ class DisputesScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Iconsax.tick_circle, size: 48, color: AppColors.success),
+                  const Icon(AppIcons.tick_circle, size: 48, color: AppColors.success),
                   const SizedBox(height: 12),
                   Text('No disputes yet',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
@@ -54,7 +54,7 @@ class DisputesScreen extends ConsumerWidget {
                               color: AppColors.error.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Iconsax.message_question,
+                            child: const Icon(AppIcons.message_question,
                                 color: AppColors.error, size: 18),
                           ),
                           const SizedBox(width: 12),
@@ -121,7 +121,7 @@ class DisputesScreen extends ConsumerWidget {
                         child: ElevatedButton.icon(
                           onPressed: () => _showResolveDialog(
                               context, ref, dispute['id'].toString()),
-                          icon: const Icon(Iconsax.tick_circle, size: 16),
+                          icon: const Icon(AppIcons.tick_circle, size: 16),
                           label: const Text('Resolve'),
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size(0, 36),

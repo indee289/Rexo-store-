@@ -57,7 +57,7 @@ class DashboardScreen extends ConsumerWidget {
                         borderRadius: AppRadius.allSm,
                         border: Border.all(color: borderColor),
                       ),
-                      child: Icon(Iconsax.refresh,
+                      child: Icon(AppIcons.refresh,
                           size: 18, color: cs.onSurfaceVariant),
                     ),
                   ),
@@ -105,21 +105,21 @@ class DashboardScreen extends ConsumerWidget {
                                   _StatCard(
                                     label: 'Total users',
                                     value: '${data['total_users'] ?? 0}',
-                                    icon: Iconsax.people,
+                                    icon: AppIcons.people,
                                     color: AppColors.primary,
                                   ),
                                   _StatCard(
                                     label: 'Active campaigns',
                                     value:
                                         '${data['active_campaigns'] ?? 0}',
-                                    icon: Iconsax.briefcase,
+                                    icon: AppIcons.briefcase,
                                     color: AppColors.success,
                                   ),
                                   _StatCard(
                                     label: 'Pending withdrawals',
                                     value:
                                         '${data['pending_withdrawals'] ?? 0}',
-                                    icon: Iconsax.money_send,
+                                    icon: AppIcons.money_send,
                                     color: AppColors.accentPurple,
                                   ),
                                 ];
@@ -149,7 +149,7 @@ class DashboardScreen extends ConsumerWidget {
                               children: [
                                 _QuickAction(
                                   label: 'Users',
-                                  icon: Iconsax.people,
+                                  icon: AppIcons.people,
                                   onTap: () => ref
                                       .read(adminTabIndexProvider.notifier)
                                       .state = 1,
@@ -157,7 +157,7 @@ class DashboardScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 _QuickAction(
                                   label: 'Actions',
-                                  icon: Iconsax.task_square,
+                                  icon: AppIcons.task_square,
                                   onTap: () => ref
                                       .read(adminTabIndexProvider.notifier)
                                       .state = 2,
@@ -165,7 +165,7 @@ class DashboardScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 _QuickAction(
                                   label: 'Settings',
-                                  icon: Iconsax.setting_2,
+                                  icon: AppIcons.setting_2,
                                   onTap: () => ref
                                       .read(adminTabIndexProvider.notifier)
                                       .state = 3,
@@ -188,7 +188,7 @@ class DashboardScreen extends ConsumerWidget {
                                   border: Border.all(color: AppColors.textPrimary, width: 1.5),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Icon(Iconsax.chart_2, size: 28, color: AppColors.textPrimary),
+                                child: const Icon(AppIcons.chart_2, size: 28, color: AppColors.textPrimary),
                               ),
                               const SizedBox(height: 16),
                               const Text(

@@ -78,7 +78,7 @@ class AvatarWidget extends StatelessWidget {
           height: size,
           color: colorScheme.onSurface.withOpacity(0.08),
           child: Icon(
-            Iconsax.user,
+            AppIcons.user,
             size: size * 0.5,
             color: colorScheme.onSurface.withOpacity(0.4),
           ),

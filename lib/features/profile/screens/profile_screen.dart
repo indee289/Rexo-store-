@@ -89,7 +89,7 @@ class _Body extends ConsumerWidget {
           SliverFillRemaining(
             hasScrollBody: false,
             child: GlassEmptyState(
-              icon: Iconsax.user,
+              icon: AppIcons.user,
               title: 'No profile data',
               message: 'We could not read your profile. Try again shortly.',
             ),
@@ -115,14 +115,14 @@ class _Body extends ConsumerWidget {
           automaticallyImplyLeading: false,
           actions: [
             GlassIconButton(
-              icon: Iconsax.setting_2,
+              icon: AppIcons.setting_2,
               tooltip: 'Settings',
               size: 36,
               iconSize: 19,
               onTap: () => context.push('/settings'),
             ),
             GlassIconButton(
-              icon: Iconsax.logout,
+              icon: AppIcons.logout,
               tooltip: 'Log out',
               size: 36,
               iconSize: 19,
@@ -168,7 +168,7 @@ class _Body extends ConsumerWidget {
                 Expanded(
                   child: GlassButton(
                     label: 'Edit profile',
-                    icon: Iconsax.edit,
+                    icon: AppIcons.edit,
                     size: GlassButtonSize.small,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -181,14 +181,14 @@ class _Body extends ConsumerWidget {
                 Expanded(
                   child: GlassButton.glass(
                     label: 'Share',
-                    icon: Iconsax.share,
+                    icon: AppIcons.share,
                     size: GlassButtonSize.small,
                     onPressed: () => _shareProfile(context, handle),
                   ),
                 ),
                 AppSpacing.gapSm,
                 GlassIconButton(
-                  icon: Iconsax.user_add,
+                  icon: AppIcons.user_add,
                   tooltip: 'Linked accounts',
                   size: 38,
                   iconSize: 19,
@@ -225,18 +225,18 @@ class _Body extends ConsumerWidget {
                 columns: isAdmin ? 3 : 2,
                 tiles: [
                   GlassTile(
-                    icon: Iconsax.wallet_1,
+                    icon: AppIcons.wallet_1,
                     label: 'Wallet',
                     onTap: () => context.push('/wallet'),
                   ),
                   GlassTile(
-                    icon: Iconsax.volume_high,
+                    icon: AppIcons.volume_high,
                     label: 'Campaigns',
                     onTap: () => context.push('/my-campaigns'),
                   ),
                   if (isAdmin)
                     GlassTile(
-                      icon: Iconsax.shield_tick,
+                      icon: AppIcons.shield_tick,
                       label: 'Admin',
                       color: AppColors.accentIndigo,
                       onTap: () => context.push('/admin'),
@@ -261,7 +261,7 @@ class _Body extends ConsumerWidget {
       context: context,
       title: 'Log out',
       message: 'Are you sure you want to log out of Campster?',
-      icon: Iconsax.logout,
+      icon: AppIcons.logout,
       confirmLabel: 'Log out',
       cancelLabel: 'Cancel',
       destructive: true,
@@ -336,7 +336,7 @@ class _HeroCard extends StatelessWidget {
               if (isVerified) ...[
                 const SizedBox(width: 6),
                 const Icon(
-                  Iconsax.verify,
+                  AppIcons.verify,
                   size: 20,
                   color: AppColors.verified,
                 ),
@@ -462,7 +462,7 @@ class _StatPills extends ConsumerWidget {
         children: [
           Expanded(
             child: GlassStatPill(
-              icon: Iconsax.people,
+              icon: AppIcons.people,
               value: _fmt(followers),
               label: 'Followers',
             ),
@@ -470,7 +470,7 @@ class _StatPills extends ConsumerWidget {
           AppSpacing.gapMd,
           Expanded(
             child: GlassStatPill(
-              icon: Iconsax.user_add,
+              icon: AppIcons.user_add,
               value: _fmt(following),
               label: 'Following',
             ),
@@ -541,7 +541,7 @@ class _CampaignTabsState extends ConsumerState<_CampaignTabs> {
             if (items.isEmpty) {
               return GlassEmptyState(
                 compact: true,
-                icon: _tab == 1 ? Iconsax.bookmark : Iconsax.volume_high,
+                icon: _tab == 1 ? AppIcons.bookmark : AppIcons.volume_high,
                 title: _tab == 1
                     ? 'No saved campaigns yet'
                     : 'No campaigns yet',

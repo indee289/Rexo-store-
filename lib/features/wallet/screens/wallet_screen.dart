@@ -64,7 +64,7 @@ class WalletScreen extends ConsumerWidget {
                 data: (transactions) {
                   if (transactions.isEmpty) {
                     return const EmptyState(
-                      icon: Iconsax.receipt,
+                      icon: AppIcons.receipt,
                       title: 'No activity yet',
                       subtitle:
                           'Your earnings and withdrawals will appear here.',
@@ -89,11 +89,11 @@ class WalletScreen extends ConsumerWidget {
                   ),
                 ),
                 error: (e, _) => EmptyState(
-                  icon: Iconsax.warning_2,
+                  icon: AppIcons.warning_2,
                   title: "Couldn't load your activity",
                   subtitle: ErrorUtils.sanitize(e),
                   ctaLabel: 'Retry',
-                  ctaIcon: Iconsax.refresh,
+                  ctaIcon: AppIcons.refresh,
                   onCta: () => ref.invalidate(transactionsProvider),
                 ),
               ),
@@ -143,7 +143,7 @@ class _BalanceHeroCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Iconsax.wallet_3,
+              Icon(AppIcons.wallet_3,
                   size: 16, color: Colors.white.withOpacity(0.85)),
               const SizedBox(width: 6),
               Text(
@@ -174,7 +174,7 @@ class _BalanceHeroCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _GlassStat(
-                  icon: Iconsax.lock_1,
+                  icon: AppIcons.lock_1,
                   label: 'In escrow',
                   value: '₹${_formatAmount(escrow)}',
                 ),
@@ -182,7 +182,7 @@ class _BalanceHeroCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _GlassStat(
-                  icon: Iconsax.money_recive,
+                  icon: AppIcons.money_recive,
                   label: 'Total earned',
                   value: '₹${_formatAmount(earnings)}',
                 ),
@@ -192,7 +192,7 @@ class _BalanceHeroCard extends StatelessWidget {
           const SizedBox(height: 18),
           PremiumButton(
             label: 'Withdraw',
-            icon: Iconsax.money_send,
+            icon: AppIcons.money_send,
             variant: PremiumButtonVariant.glass,
             expand: true,
             onPressed: () => context.push('/wallet/withdraw'),
@@ -319,7 +319,7 @@ class _TransactionTile extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.10),
               borderRadius: AppRadius.allMd,
             ),
-            child: const Icon(Iconsax.money_send,
+            child: const Icon(AppIcons.money_send,
                 color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 12),

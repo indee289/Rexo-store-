@@ -90,7 +90,7 @@ class _CampaignSliver extends StatelessWidget {
       return SliverFillRemaining(
         hasScrollBody: false,
         child: GlassEmptyState(
-          icon: Iconsax.document,
+          icon: AppIcons.document,
           title: "You haven't applied yet",
           message: 'Campaigns you apply to will show up here.',
           actionLabel: 'Browse campaigns',

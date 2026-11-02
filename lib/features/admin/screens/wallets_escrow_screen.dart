@@ -47,7 +47,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                               color: AppColors.accentBrown.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Iconsax.wallet,
+                            child: const Icon(AppIcons.wallet,
                                 color: AppColors.accentBrown, size: 18),
                           ),
                           const SizedBox(width: 12),
@@ -89,7 +89,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                             child: OutlinedButton.icon(
                               onPressed: () => _showAmountDialog(
                                   context, ref, wallet['id'], true),
-                              icon: const Icon(Iconsax.add, size: 16),
+                              icon: const Icon(AppIcons.add, size: 16),
                               label: const Text('Credit'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.success,
@@ -103,7 +103,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                             child: OutlinedButton.icon(
                               onPressed: () => _showAmountDialog(
                                   context, ref, wallet['id'], false),
-                              icon: const Icon(Iconsax.minus, size: 16),
+                              icon: const Icon(AppIcons.minus, size: 16),
                               label: const Text('Debit'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.error,
@@ -117,7 +117,7 @@ class WalletsEscrowScreen extends ConsumerWidget {
                             onPressed: () => ref
                                 .read(adminActionsProvider.notifier)
                                 .freezeWallet(wallet['id']),
-                            icon: const Icon(Iconsax.lock, size: 20),
+                            icon: const Icon(AppIcons.lock, size: 20),
                             color: AppColors.warning,
                             tooltip: 'Freeze Wallet',
                           ),

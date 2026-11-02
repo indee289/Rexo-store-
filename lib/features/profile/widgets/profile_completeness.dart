@@ -81,7 +81,7 @@ class ProfileCompletenessCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Iconsax.user_edit, size: 18, color: AppColors.primary),
+                  const Icon(AppIcons.user_edit, size: 18, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

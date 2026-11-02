@@ -42,7 +42,7 @@ class VerifiedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = Icon(
-      Iconsax.verify,
+      AppIcons.verify,
       size: size,
       color: color,
     );

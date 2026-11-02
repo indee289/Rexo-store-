@@ -81,7 +81,7 @@ class SellerProfileScreen extends ConsumerWidget {
                     if (isVerified) ...[
                       const SizedBox(width: AppSpacing.xs + 2),
                       const Icon(
-                        Iconsax.verify,
+                        AppIcons.verify,
                         size: 20,
                         color: AppColors.verified,
                       ),
@@ -103,7 +103,7 @@ class SellerProfileScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     StatPill(
-                      icon: Iconsax.star_1,
+                      icon: AppIcons.star_1,
                       value: rating.toStringAsFixed(1),
                       label: 'Rating',
                     ),
@@ -113,7 +113,7 @@ class SellerProfileScreen extends ConsumerWidget {
                       color: Theme.of(context).dividerColor,
                     ),
                     StatPill(
-                      icon: Iconsax.bag_2,
+                      icon: AppIcons.bag_2,
                       value: '$totalSales',
                       label: 'Sales',
                     ),
@@ -132,7 +132,7 @@ class SellerProfileScreen extends ConsumerWidget {
 
   Widget _buildNotFound(BuildContext context) {
     return EmptyState(
-      icon: Iconsax.warning_2,
+      icon: AppIcons.warning_2,
       title: 'Seller not found',
       ctaLabel: 'Go back',
       onCta: () => context.pop(),
@@ -141,11 +141,11 @@ class SellerProfileScreen extends ConsumerWidget {
 
   Widget _buildError(WidgetRef ref, String error) {
     return EmptyState(
-      icon: Iconsax.warning_2,
+      icon: AppIcons.warning_2,
       title: 'Failed to load seller',
       subtitle: error,
       ctaLabel: 'Retry',
-      ctaIcon: Iconsax.refresh,
+      ctaIcon: AppIcons.refresh,
       onCta: () => ref.invalidate(sellerProfileProvider(sellerId)),
     );
   }

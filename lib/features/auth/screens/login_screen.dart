@@ -72,7 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       barrierColor: Colors.black.withOpacity(0.28),
       builder: (dialogContext) => GlassDialog(
         title: 'Reset password',
-        icon: Iconsax.lock,
+        icon: AppIcons.lock,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -90,7 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               hint: 'Email',
               keyboardType: TextInputType.emailAddress,
               autofocus: true,
-              prefixIcon: Iconsax.sms,
+              prefixIcon: AppIcons.sms,
             ),
           ],
         ),
@@ -181,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     GlassTextField(
                       controller: _emailController,
                       hint: 'Email',
-                      prefixIcon: Iconsax.sms,
+                      prefixIcon: AppIcons.sms,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       validator: (v) {
@@ -197,7 +197,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     GlassTextField(
                       controller: _passwordController,
                       hint: 'Password',
-                      prefixIcon: Iconsax.lock,
+                      prefixIcon: AppIcons.lock,
                       obscureText: true,
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) {
@@ -228,7 +228,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     GlassButton.glass(
                       label: 'Create an account',
-                      icon: Iconsax.user_add,
+                      icon: AppIcons.user_add,
                       onPressed: () => context.go(AppRoutes.register),
                     ),
                   ],

@@ -138,7 +138,7 @@ class CachedImage extends StatelessWidget {
       alignment: Alignment.center,
       color: onSurface.withOpacity(0.06),
       child: Icon(
-        Iconsax.gallery,
+        AppIcons.gallery,
         color: onSurface.withOpacity(0.3),
         size: 28,
       ),

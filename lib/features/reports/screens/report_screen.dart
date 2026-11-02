@@ -163,7 +163,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Iconsax.tick_circle,
+            const Icon(AppIcons.tick_circle,
                 size: 64, color: AppColors.success),
             const SizedBox(height: AppSpacing.lg),
             Text('Thanks for letting us know',

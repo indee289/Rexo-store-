@@ -244,7 +244,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         scrolledUnderElevation: 0.5,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Iconsax.arrow_left),
+          icon: const Icon(AppIcons.arrow_left),
         ),
       ),
       body: SingleChildScrollView(
@@ -261,7 +261,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 controller: _campaignNameController,
                 decoration: _inputDecoration(
                   hint: 'Enter campaign name',
-                  icon: Iconsax.edit,
+                  icon: AppIcons.edit,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -284,7 +284,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 maxLines: 6,
                 decoration: _inputDecoration(
                   hint: 'Describe the campaign, what creators should do…',
-                  icon: Iconsax.document_text,
+                  icon: AppIcons.document_text,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -303,7 +303,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 value: _selectedCategory,
                 decoration: _inputDecoration(
                   hint: 'Select category',
-                  icon: Iconsax.category,
+                  icon: AppIcons.category,
                 ),
                 items: _categories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -332,7 +332,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 keyboardType: TextInputType.number,
                 decoration: _inputDecoration(
                   hint: 'Number of slots',
-                  icon: Iconsax.people,
+                  icon: AppIcons.people,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -355,7 +355,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 keyboardType: TextInputType.number,
                 decoration: _inputDecoration(
                   hint: 'Campaign budget',
-                  icon: Iconsax.wallet_3,
+                  icon: AppIcons.wallet_3,
                   prefix: '\u20B9 ',
                 ),
                 validator: (value) {
@@ -379,7 +379,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 keyboardType: TextInputType.number,
                 decoration: _inputDecoration(
                   hint: 'Payout per creator',
-                  icon: Iconsax.money_recive,
+                  icon: AppIcons.money_recive,
                   prefix: '\u20B9 ',
                 ),
                 validator: (value) {
@@ -409,7 +409,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 controller: _companyNameController,
                 decoration: _inputDecoration(
                   hint: 'Enter company name',
-                  icon: Iconsax.building,
+                  icon: AppIcons.building,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -444,7 +444,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 maxLines: 6,
                 decoration: _inputDecoration(
                   hint: 'Add any rules or guidelines for creators…',
-                  icon: Iconsax.task_square,
+                  icon: AppIcons.task_square,
                 ),
               ),
 
@@ -474,7 +474,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 value: _selectedGender,
                 decoration: _inputDecoration(
                   hint: 'Select gender',
-                  icon: Iconsax.user,
+                  icon: AppIcons.user,
                 ),
                 items: _genders
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
@@ -495,7 +495,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 value: _selectedPageProfileCategory,
                 decoration: _inputDecoration(
                   hint: 'Select page profile category',
-                  icon: Iconsax.tag,
+                  icon: AppIcons.tag,
                 ),
                 items: _pageProfileCategories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -623,7 +623,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         ),
         child: Row(
           children: [
-            Icon(Iconsax.calendar_1,
+            Icon(AppIcons.calendar_1,
                 size: 20, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
@@ -638,7 +638,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Iconsax.arrow_down_1,
+            Icon(AppIcons.arrow_down_1,
                 size: 18, color: theme.colorScheme.onSurfaceVariant),
           ],
         ),

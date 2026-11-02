@@ -4,96 +4,38 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_glass.dart';
 import '../../theme/app_radius.dart';
 
-/// Marks the subtree of a glass surface that has **already** applied a
-/// [BackdropFilter].
-///
-/// Nested `BackdropFilter`s are the single biggest performance trap in a glass
-/// UI: each one forces another full-screen save-layer + blur pass, so a card
-/// inside a sheet inside a scaffold would blur three times per frame for no
-/// visual gain (the inner blur samples the already-blurred output).
-///
-/// [GlassSurface] reads this scope and, when it finds one, renders tint + sheen
-/// + rim **without** a second blur. The result is visually equivalent and costs
-/// one blur instead of N.
-class GlassBlurScope extends InheritedWidget {
-  const GlassBlurScope({super.key, required super.child});
-
-  /// True when an ancestor already blurs this subtree.
-  static bool isBlurred(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<GlassBlurScope>() != null;
-
-  @override
-  bool updateShouldNotify(GlassBlurScope oldWidget) => false;
-}
-
-/// The specular highlight laid over a glass pane.
-///
-/// This is the layer that makes a pane read as *curved* glass rather than flat
-/// translucent plastic, so it sits on top of every glass surface in the app.
-/// Because it is `const` and takes no arguments, Flutter can skip rebuilding it
-/// entirely — which matters precisely because it appears on every pane.
-///
-/// Wrap in a [Positioned.fill] (or give it a size) and keep it below the
-/// content in the stack. [radius] is only needed when the sheen must be
-/// clipped by the pane's own corners rather than an ancestor [ClipRRect].
-class GlassSheen extends StatelessWidget {
-  const GlassSheen({super.key, this.radius});
-
-  final BorderRadius? radius;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: AppGlass.sheen,
-          borderRadius: radius,
-        ),
-      ),
-    );
-  }
-}
-
-/// The bright rim light running along the top edge of a glass pane.
-class GlassRimLight extends StatelessWidget {
-  const GlassRimLight({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(gradient: AppGlass.rimHighlight),
-      ),
-    );
-  }
-}
-
-/// How heavy a glass pane's blur and tint should be.
+/// How prominent a surface should be.
 enum GlassLevel {
-  /// Chips, icon buttons, inline pills — light blur.
+  /// Chips, icon buttons, inline pills — recessed fill, no shadow.
   subtle,
 
-  /// Cards, tiles, list rows — the default.
+  /// Cards, tiles, grouped sections — the default.
   card,
 
-  /// App bars, nav bars, section panes.
+  /// Bars and section panels.
   surface,
 
-  /// Sheets and dialogs — heaviest blur, strongest lift.
+  /// Sheets and dialogs — the heaviest lift.
   modal,
 }
 
-/// The one true liquid-glass pane.
+/// The app's one surface primitive.
 ///
-/// Every other `Glass*` widget composes this, so the material is defined in
-/// exactly one place. Layers, in paint order:
+/// Every other component composes this, so the material is defined in exactly
+/// one place. Three layers:
 ///
-///   1. [BackdropFilter] blur — skipped when inside a [GlassBlurScope].
-///   2. Translucent tint.
-///   3. Specular sheen fading from the top edge.
-///   4. 1px rim + a brighter top-edge rim light.
+///   1. an opaque fill,
+///   2. a hairline border at very low alpha,
+///   3. a layered shadow from [AppElevation].
 ///
-/// Set [interactive] (via [onTap]) to get the spring press animation.
+/// Previously this widget wrapped its content in a [BackdropFilter] and
+/// painted a specular sheen and rim light on top, with an inherited scope to
+/// stop nested panes blurring twice. All of that is gone: the blur cost a
+/// save-layer plus a blur pass per pane, which dominated frame time in
+/// scrolling lists, and on a light canvas the opaque version is visually
+/// near-identical.
+///
+/// Pass [onTap] to get the shared spring press animation.
 class GlassSurface extends StatefulWidget {
   const GlassSurface({
     super.key,
@@ -108,8 +50,7 @@ class GlassSurface extends StatefulWidget {
     this.rim,
     this.shadow,
     this.gradient,
-    this.showSheen = true,
-    this.showRimHighlight = true,
+    this.bordered = true,
     this.width,
     this.height,
     this.constraints,
@@ -126,10 +67,10 @@ class GlassSurface extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  /// Overrides the level's default tint.
+  /// Overrides the level's default fill colour.
   final Color? tint;
 
-  /// Overrides the level's default rim colour.
+  /// Overrides the border colour. Ignored when [bordered] is false.
   final Color? rim;
 
   /// Overrides the level's default shadow stack.
@@ -138,8 +79,9 @@ class GlassSurface extends StatefulWidget {
   /// Paints a gradient instead of a flat [tint].
   final Gradient? gradient;
 
-  final bool showSheen;
-  final bool showRimHighlight;
+  /// Draw the hairline border.
+  final bool bordered;
+
   final double? width;
   final double? height;
   final BoxConstraints? constraints;
@@ -155,14 +97,12 @@ class _GlassSurfaceState extends State<GlassSurface>
     with SingleTickerProviderStateMixin {
   late final AnimationController _press = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 140),
-    reverseDuration: const Duration(milliseconds: 260),
+    duration: const Duration(milliseconds: 130),
+    reverseDuration: const Duration(milliseconds: 250),
   );
 
-  // A gentle spring: overshoots very slightly on release so the press feels
-  // physical rather than linear.
   late final Animation<double> _scale = _press.drive(
-    Tween<double>(begin: 1.0, end: 0.972)
+    Tween<double>(begin: 1.0, end: 0.978)
         .chain(CurveTween(curve: Curves.easeOutCubic)),
   );
 
@@ -174,20 +114,7 @@ class _GlassSurfaceState extends State<GlassSurface>
     super.dispose();
   }
 
-  double get _blurSigma {
-    switch (widget.level) {
-      case GlassLevel.subtle:
-        return AppGlass.blurSigmaSubtle;
-      case GlassLevel.card:
-        return AppGlass.blurSigma;
-      case GlassLevel.surface:
-        return AppGlass.blurSigma;
-      case GlassLevel.modal:
-        return AppGlass.blurSigmaModal;
-    }
-  }
-
-  Color get _tint {
+  Color get _fill {
     if (widget.tint != null) return widget.tint!;
     switch (widget.level) {
       case GlassLevel.subtle:
@@ -208,7 +135,7 @@ class _GlassSurfaceState extends State<GlassSurface>
       case GlassLevel.card:
         return AppElevation.card(false);
       case GlassLevel.surface:
-        return AppElevation.raised(false);
+        return AppElevation.card(false);
       case GlassLevel.modal:
         return AppElevation.modal(false);
     }
@@ -220,7 +147,6 @@ class _GlassSurfaceState extends State<GlassSurface>
       case GlassLevel.subtle:
         return AppRadius.allSm;
       case GlassLevel.card:
-        return AppRadius.allLg;
       case GlassLevel.surface:
         return AppRadius.allLg;
       case GlassLevel.modal:
@@ -231,85 +157,30 @@ class _GlassSurfaceState extends State<GlassSurface>
   @override
   Widget build(BuildContext context) {
     final radius = _radius;
-    final alreadyBlurred = GlassBlurScope.isBlurred(context);
 
-    // ── Layers 2-4: tint, sheen, rim ────────────────────────────────────────
-    Widget pane = DecoratedBox(
+    // Fill + border + shadow in one decoration, so this is a single paint.
+    Widget result = Container(
+      width: widget.width,
+      height: widget.height,
+      constraints: widget.constraints,
+      alignment: widget.alignment,
+      clipBehavior: widget.clipBehavior,
       decoration: BoxDecoration(
-        color: widget.gradient == null ? _tint : null,
+        color: widget.gradient == null ? _fill : null,
         gradient: widget.gradient,
         borderRadius: radius,
+        border: widget.bordered
+            ? Border.all(
+                color: widget.rim ?? AppGlass.border(false),
+                width: AppGlass.borderWidth,
+              )
+            : null,
+        boxShadow: _shadow,
       ),
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          // Specular sheen — curved-glass cue.
-          if (widget.showSheen)
-            Positioned.fill(child: GlassSheen(radius: radius)),
-          // Top-edge rim light.
-          if (widget.showRimHighlight)
-            Positioned(
-              top: 0,
-              left: radius.topLeft.x,
-              right: radius.topRight.x,
-              height: AppGlass.borderWidth,
-              child: const GlassRimLight(),
-            ),
-          // Content.
-          Padding(
-            padding: widget.padding ?? EdgeInsets.zero,
-            child: widget.child,
-          ),
-          // Hairline rim, painted last so content cannot cover it.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: radius,
-                  border: Border.all(
-                    color: widget.rim ?? AppGlass.border(false),
-                    width: AppGlass.borderWidth,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: widget.padding == null
+          ? widget.child
+          : Padding(padding: widget.padding!, child: widget.child),
     );
-
-    // ── Layer 1: blur (only if no ancestor already blurred us) ──────────────
-    pane = ClipRRect(
-      borderRadius: radius,
-      clipBehavior: widget.clipBehavior,
-      child: alreadyBlurred
-          ? pane
-          : GlassBlurScope(
-              child: BackdropFilter(
-                filter: AppGlass.blurOf(_blurSigma),
-                child: pane,
-              ),
-            ),
-    );
-
-    // Shadow must sit outside the clip or it gets clipped away.
-    Widget result = DecoratedBox(
-      decoration: BoxDecoration(borderRadius: radius, boxShadow: _shadow),
-      child: pane,
-    );
-
-    if (widget.width != null ||
-        widget.height != null ||
-        widget.constraints != null ||
-        widget.alignment != null) {
-      result = Container(
-        width: widget.width,
-        height: widget.height,
-        constraints: widget.constraints,
-        alignment: widget.alignment,
-        child: result,
-      );
-    }
 
     if (widget.margin != null) {
       result = Padding(padding: widget.margin!, child: result);

@@ -140,7 +140,7 @@ class CampaignCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _ValuePill(
-                      icon: Iconsax.wallet_2,
+                      icon: AppIcons.wallet_2,
                       value: _formatBudget(budget),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -182,13 +182,13 @@ class CampaignCard extends StatelessWidget {
   IconData _platformIcon(String platform) {
     switch (platform.toLowerCase()) {
       case 'instagram':
-        return Iconsax.camera;
+        return AppIcons.camera;
       case 'youtube':
-        return Iconsax.video;
+        return AppIcons.video;
       case 'tiktok':
-        return Iconsax.music;
+        return AppIcons.music;
       default:
-        return Iconsax.global;
+        return AppIcons.global;
     }
   }
 
@@ -206,7 +206,7 @@ class CampaignCard extends StatelessWidget {
   }
 }
 
-/// Compact budget/value pill: an Iconsax wallet glyph + the formatted value in
+/// Compact budget/value pill: an AppIcons wallet glyph + the formatted value in
 /// the brand primary colour so price emphasis matches the rest of the app.
 class _ValuePill extends StatelessWidget {
   final IconData icon;

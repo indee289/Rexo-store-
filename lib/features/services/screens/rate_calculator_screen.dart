@@ -62,7 +62,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
               child: Column(
                 children: [
                   const Icon(
-                    Iconsax.calculator,
+                    AppIcons.calculator,
                     size: 40,
                     color: Colors.white,
                   ),
@@ -89,7 +89,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
             PremiumTextField(
               controller: _followersController,
               hint: 'e.g., 50000',
-              prefixIcon: Iconsax.people,
+              prefixIcon: AppIcons.people,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -99,7 +99,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
             PremiumTextField(
               controller: _engagementController,
               hint: 'e.g., 3.5',
-              prefixIcon: Iconsax.chart_1,
+              prefixIcon: AppIcons.chart_1,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               suffix: Padding(
@@ -113,7 +113,7 @@ class _RateCalculatorScreenState extends State<RateCalculatorScreen> {
             PremiumButton(
               label: 'Calculate',
               gradient: true,
-              icon: Iconsax.calculator,
+              icon: AppIcons.calculator,
               onPressed: _calculate,
             ),
             const SizedBox(height: AppSpacing.xl),

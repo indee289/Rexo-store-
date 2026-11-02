@@ -45,7 +45,7 @@ class ModerationScreen extends ConsumerWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PremiumAppBar(title: 'Moderation', showBack: true),
       body: const EmptyState(
-        icon: Iconsax.lock,
+        icon: AppIcons.lock,
         title: 'Access denied',
         subtitle: 'Only administrators can access moderation tools.',
       ),
@@ -92,7 +92,7 @@ class ModerationScreen extends ConsumerWidget {
       data: (items) {
         if (items.isEmpty) {
           return const EmptyState(
-            icon: Iconsax.tick_circle,
+            icon: AppIcons.tick_circle,
             title: 'Queue is clear',
             subtitle: 'No pending moderation items',
           );
@@ -109,7 +109,7 @@ class ModerationScreen extends ConsumerWidget {
         child: ShimmerLoading(height: 400),
       ),
       error: (_, __) => const EmptyState(
-        icon: Iconsax.warning_2,
+        icon: AppIcons.warning_2,
         title: 'Failed to load queue',
       ),
     );
@@ -219,7 +219,7 @@ class ModerationScreen extends ConsumerWidget {
       data: (logs) {
         if (logs.isEmpty) {
           return const EmptyState(
-            icon: Iconsax.chart_2,
+            icon: AppIcons.chart_2,
             title: 'No AI moderation logs',
           );
         }
@@ -235,7 +235,7 @@ class ModerationScreen extends ConsumerWidget {
         child: ShimmerLoading(height: 400),
       ),
       error: (_, __) => const EmptyState(
-        icon: Iconsax.warning_2,
+        icon: AppIcons.warning_2,
         title: 'Failed to load AI logs',
       ),
     );
@@ -263,7 +263,7 @@ class ModerationScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Iconsax.chart_2, size: 16, color: AppColors.primary),
+              const Icon(AppIcons.chart_2, size: 16, color: AppColors.primary),
               const SizedBox(width: AppSpacing.xs + 2),
               Expanded(
                 child: Text(

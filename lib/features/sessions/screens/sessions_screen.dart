@@ -72,7 +72,7 @@ class SessionsScreen extends ConsumerWidget {
                 onPressed: sessionsState.isLoading
                     ? null
                     : () => _showTerminateAllDialog(context, ref),
-                icon: const Icon(Iconsax.logout, size: 20),
+                icon: const Icon(AppIcons.logout, size: 20),
                 label: Text(
                   'Logout All Other Sessions',
                   style: AppTextStyles.labelLarge.copyWith(
@@ -133,7 +133,7 @@ class SessionsScreen extends ConsumerWidget {
               borderRadius: AppRadius.allSm,
             ),
             child: const Icon(
-              Iconsax.monitor,
+              AppIcons.monitor,
               color: AppColors.primary,
               size: 20,
             ),
@@ -178,7 +178,7 @@ class SessionsScreen extends ConsumerWidget {
                   .terminateSession(sessionId);
             },
             icon: const Icon(
-              Iconsax.close_circle,
+              AppIcons.close_circle,
               color: AppColors.error,
               size: 22,
             ),
@@ -198,16 +198,16 @@ class SessionsScreen extends ConsumerWidget {
     IconData deviceIcon;
     switch (deviceType) {
       case 'mobile':
-        deviceIcon = Iconsax.mobile;
+        deviceIcon = AppIcons.mobile;
         break;
       case 'tablet':
-        deviceIcon = Iconsax.mobile;
+        deviceIcon = AppIcons.mobile;
         break;
       case 'desktop':
-        deviceIcon = Iconsax.monitor;
+        deviceIcon = AppIcons.monitor;
         break;
       default:
-        deviceIcon = Iconsax.mobile;
+        deviceIcon = AppIcons.mobile;
     }
 
     return Container(
@@ -284,7 +284,7 @@ class SessionsScreen extends ConsumerWidget {
       child: Column(
         children: [
           Icon(
-            Iconsax.info_circle,
+            AppIcons.info_circle,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             size: 32,
           ),

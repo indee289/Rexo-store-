@@ -78,7 +78,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Iconsax.gift, color: Colors.white, size: 32),
+                  const Icon(AppIcons.gift, color: Colors.white, size: 32),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'Invite friends, earn rewards',
@@ -124,7 +124,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                   ),
                   if (code.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Iconsax.copy, color: AppColors.primary),
+                      icon: const Icon(AppIcons.copy, color: AppColors.primary),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: code));
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -139,7 +139,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
             if (code.isNotEmpty)
               PremiumButton(
                 label: 'Share invite',
-                icon: Iconsax.send_2,
+                icon: AppIcons.send_2,
                 variant: PremiumButtonVariant.outline,
                 onPressed: () async {
                   final message =
@@ -168,7 +168,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                     child: _StatBox(
                       label: 'Friends referred',
                       value: s.referredCount.toString(),
-                      icon: Iconsax.people,
+                      icon: AppIcons.people,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -176,7 +176,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                     child: _StatBox(
                       label: 'Reward points',
                       value: s.rewardPoints.toString(),
-                      icon: Iconsax.medal_star,
+                      icon: AppIcons.medal_star,
                     ),
                   ),
                 ],
@@ -202,7 +202,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen> {
                 ),
                 child: Row(
                   children: const [
-                    Icon(Iconsax.tick_circle, color: AppColors.success, size: 20),
+                    Icon(AppIcons.tick_circle, color: AppColors.success, size: 20),
                     SizedBox(width: 10),
                     Expanded(child: Text("You've already applied a referral code.")),
                   ],

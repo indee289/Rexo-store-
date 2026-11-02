@@ -50,7 +50,7 @@ class DemoAssetView extends StatelessWidget {
         return _ImageView(url: v, isDark: isDark);
       case 'video':
         return _LinkCard(
-          icon: Iconsax.video,
+          icon: AppIcons.video,
           label: 'Watch Video',
           subtitle: 'Opens in an external player',
           isDark: isDark,
@@ -58,7 +58,7 @@ class DemoAssetView extends StatelessWidget {
         );
       case 'pdf':
         return _LinkCard(
-          icon: Iconsax.document,
+          icon: AppIcons.document,
           label: 'View PDF',
           subtitle: 'Opens in your browser',
           isDark: isDark,
@@ -66,7 +66,7 @@ class DemoAssetView extends StatelessWidget {
         );
       case 'link':
         return _LinkCard(
-          icon: Iconsax.link,
+          icon: AppIcons.link,
           label: 'Open Link',
           subtitle: v,
           isDark: isDark,
@@ -112,7 +112,7 @@ class _ImageView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Iconsax.gallery, size: 32, color: hint),
+                Icon(AppIcons.gallery, size: 32, color: hint),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Image unavailable',
@@ -199,7 +199,7 @@ class _LinkCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Icon(Iconsax.arrow_right_3, size: 18, color: textSecondary),
+            Icon(AppIcons.arrow_right_3, size: 18, color: textSecondary),
           ],
         ),
       ),

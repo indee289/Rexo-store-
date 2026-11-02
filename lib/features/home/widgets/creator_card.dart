@@ -73,7 +73,7 @@ class CreatorCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
-                Iconsax.people,
+                AppIcons.people,
                 size: 13,
                 color: AppColors.textSecondary,
               ),
@@ -86,7 +86,7 @@ class CreatorCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              const Icon(Iconsax.star_1, size: 13, color: AppColors.warning),
+              const Icon(AppIcons.star_1, size: 13, color: AppColors.warning),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 double.tryParse(rating.toString())?.toStringAsFixed(1) ?? '0.0',

@@ -89,7 +89,7 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
               PremiumTextField(
                 controller: _relatedIdController,
                 hint: 'Enter the ${_relatedType.toLowerCase()} ID',
-                prefixIcon: Iconsax.hashtag,
+                prefixIcon: AppIcons.hashtag,
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'This field is required' : null,
               ),
@@ -101,7 +101,7 @@ class _RaiseDisputeScreenState extends ConsumerState<RaiseDisputeScreen> {
               PremiumTextField(
                 controller: _subjectController,
                 hint: 'Brief subject of your dispute',
-                prefixIcon: Iconsax.document_text,
+                prefixIcon: AppIcons.document_text,
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'Subject is required' : null,
               ),

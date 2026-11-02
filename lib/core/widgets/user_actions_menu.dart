@@ -31,7 +31,7 @@ class UserActionsMenu extends ConsumerWidget {
     final isBlocked = iBlocked.maybeWhen(data: (v) => v, orElse: () => false);
 
     return PopupMenuButton<String>(
-      icon: const Icon(Iconsax.more),
+      icon: const Icon(AppIcons.more),
       onSelected: (value) async {
         switch (value) {
           case 'report':
@@ -54,7 +54,7 @@ class UserActionsMenu extends ConsumerWidget {
           value: 'report',
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Iconsax.flag),
+            leading: Icon(AppIcons.flag),
             title: Text('Report'),
           ),
         ),
@@ -63,7 +63,7 @@ class UserActionsMenu extends ConsumerWidget {
             value: 'unblock',
             child: ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Iconsax.user_tick),
+              leading: Icon(AppIcons.user_tick),
               title: Text('Unblock'),
             ),
           )
@@ -72,7 +72,7 @@ class UserActionsMenu extends ConsumerWidget {
             value: 'block',
             child: ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Iconsax.user_remove, color: AppColors.error),
+              leading: Icon(AppIcons.user_remove, color: AppColors.error),
               title: Text('Block', style: TextStyle(color: AppColors.error)),
             ),
           ),

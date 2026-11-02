@@ -62,12 +62,12 @@ class JobDetailScreen extends ConsumerWidget {
         loading: () => const ShimmerLoading(),
         error: (e, _) => Center(
           child: EmptyState(
-            icon: Iconsax.warning_2,
+            icon: AppIcons.warning_2,
             title: 'Failed to load job',
             subtitle: ErrorUtils.sanitize(e),
             cta: PremiumButton(
               label: 'Retry',
-              icon: Iconsax.refresh,
+              icon: AppIcons.refresh,
               variant: PremiumButtonVariant.tonal,
               expand: false,
               onPressed: () => ref.invalidate(jobDetailProvider(jobId)),
@@ -227,19 +227,19 @@ class _JobDetailScrollView extends StatelessWidget {
                         rows: [
                           if (deadline != null)
                             _DetailRowData(
-                              icon: Iconsax.calendar,
+                              icon: AppIcons.calendar,
                               label: 'Deadline',
                               value: DateFormat('d MMM y').format(deadline),
                             ),
                           _DetailRowData(
-                            icon: Iconsax.people,
+                            icon: AppIcons.people,
                             label: 'Slots',
                             value: slotsValue,
                             valueColor: slotsColor,
                           ),
                           if (createdAt != null)
                             _DetailRowData(
-                              icon: Iconsax.clock,
+                              icon: AppIcons.clock,
                               label: 'Posted',
                               value: _relativeTime(createdAt),
                             ),
@@ -396,7 +396,7 @@ class _CoverHeader extends ConsumerWidget {
                 )
               : const Center(
                   child: Icon(
-                    Iconsax.briefcase,
+                    AppIcons.briefcase,
                     size: 56,
                     color: Colors.white70,
                   ),
@@ -412,7 +412,7 @@ class _CoverHeader extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               PremiumIconButton(
-                icon: Iconsax.arrow_left,
+                icon: AppIcons.arrow_left,
                 background: true,
                 color: Colors.white,
                 tooltip: 'Back',
@@ -430,7 +430,7 @@ class _CoverHeader extends ConsumerWidget {
                   final saved = ref.watch(savedJobsProvider);
                   final isSaved = saved.contains(jobId);
                   return PremiumIconButton(
-                    icon: isSaved ? Iconsax.bookmark : Iconsax.save_2,
+                    icon: isSaved ? AppIcons.bookmark : AppIcons.save_2,
                     background: true,
                     color: isSaved ? AppColors.primary : Colors.white,
                     tooltip: isSaved ? 'Saved' : 'Save',
@@ -510,7 +510,7 @@ class _CategoryPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Iconsax.category, size: 14, color: textSecondary),
+          Icon(AppIcons.category, size: 14, color: textSecondary),
           const SizedBox(width: 6),
           Text(
             category,
@@ -541,10 +541,10 @@ class _PlatformPill extends StatelessWidget {
 
   IconData get _icon {
     final p = platform.toLowerCase();
-    if (p.contains('insta')) return Iconsax.instagram;
-    if (p.contains('face')) return Iconsax.facebook;
-    if (p.contains('you')) return Iconsax.youtube;
-    return Iconsax.global;
+    if (p.contains('insta')) return AppIcons.instagram;
+    if (p.contains('face')) return AppIcons.facebook;
+    if (p.contains('you')) return AppIcons.youtube;
+    return AppIcons.global;
   }
 
   @override
@@ -612,7 +612,7 @@ class _PaymentCard extends StatelessWidget {
               borderRadius: AppRadius.allMd,
             ),
             child: const Icon(
-              Iconsax.wallet,
+              AppIcons.wallet,
               size: 24,
               color: AppColors.primary,
             ),
@@ -870,10 +870,10 @@ class _WhatToSubmitCard extends StatelessWidget {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: const [
-              _SubmitChip(icon: Iconsax.link, label: 'Link'),
-              _SubmitChip(icon: Iconsax.gallery, label: 'Photo'),
-              _SubmitChip(icon: Iconsax.document, label: 'PDF'),
-              _SubmitChip(icon: Iconsax.video, label: 'Video'),
+              _SubmitChip(icon: AppIcons.link, label: 'Link'),
+              _SubmitChip(icon: AppIcons.gallery, label: 'Photo'),
+              _SubmitChip(icon: AppIcons.document, label: 'PDF'),
+              _SubmitChip(icon: AppIcons.video, label: 'Video'),
             ],
           ),
         ],
@@ -982,7 +982,7 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
     if (widget.hasApplied) {
       return _StatusButton(
         label: 'Already Applied',
-        icon: Iconsax.tick_circle,
+        icon: AppIcons.tick_circle,
         color: AppColors.success,
       );
     }
@@ -990,7 +990,7 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
     if (widget.isFull) {
       return _StatusButton(
         label: 'Slots Full',
-        icon: Iconsax.slash,
+        icon: AppIcons.slash,
         color: AppColors.error,
       );
     }
@@ -998,7 +998,7 @@ class _ApplyBarState extends ConsumerState<_ApplyBar> {
     if (widget.isClosed) {
       return _StatusButton(
         label: 'Closed',
-        icon: Iconsax.slash,
+        icon: AppIcons.slash,
         color: AppColors.neutral,
       );
     }
@@ -1086,7 +1086,7 @@ class _ApplyNowButtonState extends State<_ApplyNowButton> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Iconsax.send_1, size: 18, color: Colors.white),
+                    const Icon(AppIcons.send_1, size: 18, color: Colors.white),
                     const SizedBox(width: 6),
                     Text(
                       'Apply Now',

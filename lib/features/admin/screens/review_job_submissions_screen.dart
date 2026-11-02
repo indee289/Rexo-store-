@@ -41,7 +41,7 @@ class ReviewJobSubmissionsScreen extends ConsumerWidget {
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: EmptyState(
-                        icon: Iconsax.tick_circle,
+                        icon: AppIcons.tick_circle,
                         title: 'All caught up!',
                         subtitle: 'No job submissions are pending review.',
                       ),
@@ -68,12 +68,12 @@ class ReviewJobSubmissionsScreen extends ConsumerWidget {
           ),
           error: (e, _) => Center(
             child: EmptyState(
-              icon: Iconsax.warning_2,
+              icon: AppIcons.warning_2,
               title: 'Failed to load submissions',
               subtitle: ErrorUtils.sanitize(e),
               cta: PremiumButton(
                 label: 'Retry',
-                icon: Iconsax.refresh,
+                icon: AppIcons.refresh,
                 variant: PremiumButtonVariant.tonal,
                 expand: false,
                 onPressed: () => ref.invalidate(adminJobSubmissionsProvider),
@@ -191,7 +191,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Iconsax.briefcase,
+                const Icon(AppIcons.briefcase,
                     size: 13, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Flexible(
@@ -268,7 +268,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
               Expanded(
                 child: PremiumButton(
                   label: 'Approve',
-                  icon: Iconsax.tick_circle,
+                  icon: AppIcons.tick_circle,
                   loading: _approving,
                   onPressed: _rejecting ? null : _approve,
                 ),
@@ -277,7 +277,7 @@ class _SubmissionCardState extends ConsumerState<_SubmissionCard> {
               Expanded(
                 child: PremiumButton(
                   label: 'Reject',
-                  icon: Iconsax.close_circle,
+                  icon: AppIcons.close_circle,
                   variant: PremiumButtonVariant.outline,
                   loading: _rejecting,
                   onPressed: _approving ? null : () => _showRejectDialog(context, applicationId),
@@ -459,13 +459,13 @@ class _LinkProof extends StatelessWidget {
   IconData get _icon {
     switch (type) {
       case 'video':
-        return Iconsax.video;
+        return AppIcons.video;
       case 'pdf':
-        return Iconsax.document;
+        return AppIcons.document;
       case 'photo':
-        return Iconsax.gallery;
+        return AppIcons.gallery;
       default:
-        return Iconsax.link;
+        return AppIcons.link;
     }
   }
 
@@ -535,7 +535,7 @@ class _LinkProof extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Icon(Iconsax.export_1, size: 16, color: textHint),
+            Icon(AppIcons.export_1, size: 16, color: textHint),
           ],
         ),
       ),

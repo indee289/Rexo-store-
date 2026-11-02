@@ -45,7 +45,7 @@ class CampaignCoverHeader extends StatelessWidget {
     final fallback = Container(
       decoration: const BoxDecoration(gradient: gradient),
       child: const Center(
-        child: Icon(Iconsax.gallery, color: Colors.white54, size: 32),
+        child: Icon(AppIcons.gallery, color: Colors.white54, size: 32),
       ),
     );
 

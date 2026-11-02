@@ -53,7 +53,7 @@ class GlassEmptyState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               GlassIconBubble(
-                icon: icon ?? Iconsax.box,
+                icon: icon ?? AppIcons.box,
                 size: compact ? 52 : 68,
                 iconSize: compact ? 26 : 34,
               ),
@@ -127,7 +127,7 @@ class GlassErrorState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               GlassIconBubble(
-                icon: Iconsax.warning_2,
+                icon: AppIcons.warning_2,
                 color: AppColors.error,
                 size: compact ? 52 : 68,
                 iconSize: compact ? 26 : 34,
@@ -157,7 +157,7 @@ class GlassErrorState extends StatelessWidget {
                   onPressed: onRetry,
                   size: GlassButtonSize.small,
                   expand: false,
-                  icon: Iconsax.refresh,
+                  icon: AppIcons.refresh,
                 ),
               ],
             ],

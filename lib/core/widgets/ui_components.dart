@@ -197,7 +197,7 @@ class ListActionTile extends StatelessWidget {
                 ),
               ),
               trailing ??
-                  Icon(Iconsax.arrow_right_3,
+                  Icon(AppIcons.arrow_right_3,
                       size: 18, color: cs.onSurfaceVariant),
             ],
           ),

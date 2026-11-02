@@ -47,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Row(
                         children: [
-                          Icon(Iconsax.setting,
+                          Icon(AppIcons.setting,
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
@@ -75,10 +75,10 @@ class SettingsScreen extends ConsumerWidget {
                   child: Column(
                     children: settings.map((setting) {
                       return _SettingTile(
-                        icon: Iconsax.setting,
+                        icon: AppIcons.setting,
                         title: setting['key'] ?? '',
                         subtitle: 'Value: ${setting['value'] ?? 'N/A'}',
-                        trailing: Icon(Iconsax.edit_2,
+                        trailing: Icon(AppIcons.edit_2,
                             size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                         onTap: () => _showEditSettingDialog(
                           context,
@@ -115,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Iconsax.document_text, color: AppColors.primary),
+                  const Icon(AppIcons.document_text, color: AppColors.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -138,7 +138,7 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(Iconsax.arrow_right_3, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), size: 18),
+                  Icon(AppIcons.arrow_right_3, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), size: 18),
                 ],
               ),
             ),
@@ -152,7 +152,7 @@ class SettingsScreen extends ConsumerWidget {
                   ref.read(authProvider.notifier).signOut();
                   context.go('/login');
                 },
-                icon: const Icon(Iconsax.logout),
+                icon: const Icon(AppIcons.logout),
                 label: const Text('Sign Out'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,

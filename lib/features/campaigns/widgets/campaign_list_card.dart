@@ -104,7 +104,7 @@ class CampaignListCard extends StatelessWidget {
           Row(
             children: [
               _buildInfoChip(
-                icon: Iconsax.wallet_2,
+                icon: AppIcons.wallet_2,
                 label: budget != null
                     ? '\u20B9${NumberFormat.compact().format(budget)}'
                     : 'N/A',
@@ -112,7 +112,7 @@ class CampaignListCard extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               _buildInfoChip(
-                icon: Iconsax.money_recive,
+                icon: AppIcons.money_recive,
                 label: perCreatorPayout != null
                     ? '\u20B9${NumberFormat.compact().format(perCreatorPayout)}'
                     : 'N/A',
@@ -129,7 +129,7 @@ class CampaignListCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Iconsax.calendar_1,
+                  AppIcons.calendar_1,
                   size: 14,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
@@ -161,13 +161,13 @@ class CampaignListCard extends StatelessWidget {
   IconData _getPlatformIcon(String platform) {
     switch (platform.toLowerCase()) {
       case 'instagram':
-        return Iconsax.camera;
+        return AppIcons.camera;
       case 'youtube':
-        return Iconsax.video;
+        return AppIcons.video;
       case 'tiktok':
-        return Iconsax.music;
+        return AppIcons.music;
       default:
-        return Iconsax.global;
+        return AppIcons.global;
     }
   }
 

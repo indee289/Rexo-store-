@@ -22,7 +22,7 @@ class AuditLogsScreen extends ConsumerWidget {
         title: 'Audit Logs',
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.refresh, size: 20),
+            icon: const Icon(AppIcons.refresh, size: 20),
             onPressed: () => ref.invalidate(adminAuditLogsProvider),
           ),
         ],
@@ -34,7 +34,7 @@ class AuditLogsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.document_text, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+                  Icon(AppIcons.document_text, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                   const SizedBox(height: 12),
                   Text('No audit logs',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
@@ -65,7 +65,7 @@ class AuditLogsScreen extends ConsumerWidget {
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Icon(Iconsax.document_text,
+                        child: const Icon(AppIcons.document_text,
                             size: 14, color: AppColors.primary),
                       ),
                       const SizedBox(width: 10),

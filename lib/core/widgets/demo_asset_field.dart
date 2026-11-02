@@ -298,7 +298,7 @@ class _DemoAssetFieldState extends State<DemoAssetField> {
         return PremiumTextField(
           controller: _urlController,
           hint: 'Paste a public link / PDF URL',
-          prefixIcon: Iconsax.link,
+          prefixIcon: AppIcons.link,
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
           onChanged: (_) => _emit(),
@@ -329,12 +329,12 @@ class _DemoAssetTypeSelector extends StatelessWidget {
   });
 
   static const _types = <(DemoAssetType, IconData, String)>[
-    (DemoAssetType.none, Iconsax.close_circle, 'None'),
-    (DemoAssetType.image, Iconsax.gallery, 'Image'),
-    (DemoAssetType.video, Iconsax.video, 'Video'),
-    (DemoAssetType.pdf, Iconsax.document, 'PDF'),
-    (DemoAssetType.link, Iconsax.link, 'Link'),
-    (DemoAssetType.text, Iconsax.edit, 'Text'),
+    (DemoAssetType.none, AppIcons.close_circle, 'None'),
+    (DemoAssetType.image, AppIcons.gallery, 'Image'),
+    (DemoAssetType.video, AppIcons.video, 'Video'),
+    (DemoAssetType.pdf, AppIcons.document, 'PDF'),
+    (DemoAssetType.link, AppIcons.link, 'Link'),
+    (DemoAssetType.text, AppIcons.edit, 'Text'),
   ];
 
   @override
@@ -480,7 +480,7 @@ class _VideoUploadArea extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Iconsax.tick_circle, size: 36, color: AppColors.success),
+            const Icon(AppIcons.tick_circle, size: 36, color: AppColors.success),
             const SizedBox(height: AppSpacing.sm),
             const Text(
               'Video uploaded successfully',
@@ -505,7 +505,7 @@ class _VideoUploadArea extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.video, size: 36, color: hint),
+          Icon(AppIcons.video, size: 36, color: hint),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Select a video',

@@ -199,7 +199,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               PremiumTextField(
                 controller: _campaignNameController,
                 hint: 'Enter campaign name',
-                prefixIcon: Iconsax.document_text,
+                prefixIcon: AppIcons.document_text,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -247,7 +247,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               PremiumTextField(
                 controller: _slotsController,
                 hint: 'Number of slots (e.g. 10)',
-                prefixIcon: Iconsax.people,
+                prefixIcon: AppIcons.people,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -268,7 +268,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               PremiumTextField(
                 controller: _budgetController,
                 hint: 'Total budget',
-                prefixIcon: Iconsax.money,
+                prefixIcon: AppIcons.money,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -289,7 +289,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               PremiumTextField(
                 controller: _perCreatorController,
                 hint: 'Payout per creator',
-                prefixIcon: Iconsax.money_recive,
+                prefixIcon: AppIcons.money_recive,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -317,7 +317,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               PremiumTextField(
                 controller: _companyNameController,
                 hint: 'Enter company name',
-                prefixIcon: Iconsax.building,
+                prefixIcon: AppIcons.building,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -397,7 +397,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
               // Submit button
               PremiumButton(
                 label: 'Create campaign',
-                icon: Iconsax.add_circle,
+                icon: AppIcons.add_circle,
                 gradient: true,
                 loading: _isSubmitting,
                 onPressed: _isSubmitting ? null : _handleSubmit,
@@ -445,7 +445,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         ),
         child: Row(
           children: [
-            Icon(Iconsax.calendar_1,
+            Icon(AppIcons.calendar_1,
                 size: 20, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
@@ -460,7 +460,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Iconsax.arrow_down_1,
+            Icon(AppIcons.arrow_down_1,
                 size: 18, color: theme.colorScheme.onSurfaceVariant),
           ],
         ),
@@ -486,7 +486,7 @@ class _CreateCampaignScreenState extends ConsumerState<CreateCampaignScreen> {
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          icon: const Icon(Iconsax.arrow_down_1, size: 20),
+          icon: const Icon(AppIcons.arrow_down_1, size: 20),
           style: AppTextStyles.bodyMedium.copyWith(
             color: theme.colorScheme.onSurface,
           ),

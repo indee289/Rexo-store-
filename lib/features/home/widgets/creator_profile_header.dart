@@ -85,7 +85,7 @@ class CreatorProfileHeader extends StatelessWidget {
             ),
             if (creator.isVerified) ...[
               const SizedBox(width: AppSpacing.xs),
-              const Icon(Iconsax.verify, size: 20, color: AppColors.verified),
+              const Icon(AppIcons.verify, size: 20, color: AppColors.verified),
             ],
           ],
         ),
@@ -131,19 +131,19 @@ class CreatorProfileHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               StatPill(
-                icon: Iconsax.people,
+                icon: AppIcons.people,
                 value: _formatCount(followerCount),
                 label: 'Followers',
               ),
               const _StatDivider(),
               StatPill(
-                icon: Iconsax.medal_star,
+                icon: AppIcons.medal_star,
                 value: creator.campaignsCompleted.toString(),
                 label: 'Campaigns',
               ),
               const _StatDivider(),
               StatPill(
-                icon: Iconsax.star_1,
+                icon: AppIcons.star_1,
                 value: creator.rating.toStringAsFixed(1),
                 label: 'Rating',
               ),
@@ -158,7 +158,7 @@ class CreatorProfileHeader extends StatelessWidget {
             Expanded(
               child: GlassButton(
                 label: isFollowing ? 'Following' : 'Follow',
-                icon: isFollowing ? Iconsax.user_tick : Iconsax.user_add,
+                icon: isFollowing ? AppIcons.user_tick : AppIcons.user_add,
                 onPressed: onToggleFollow,
                 variant: isFollowing
                     ? GlassButtonVariant.outline
@@ -169,13 +169,13 @@ class CreatorProfileHeader extends StatelessWidget {
             Expanded(
               child: GlassButton.glass(
                 label: 'Message',
-                icon: Iconsax.message,
+                icon: AppIcons.message,
                 onPressed: onMessage,
               ),
             ),
             AppSpacing.gapMd,
             GlassIconButton(
-              icon: Iconsax.link,
+              icon: AppIcons.link,
               onTap: onCopyLink,
               tooltip: 'Copy profile link',
               size: 50,

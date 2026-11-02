@@ -83,7 +83,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Iconsax.warning_2, color: AppColors.error),
+                  const Icon(AppIcons.warning_2, color: AppColors.error),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(

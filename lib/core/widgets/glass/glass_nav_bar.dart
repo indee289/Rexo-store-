@@ -116,9 +116,9 @@ class GlassNavBar extends StatelessWidget {
 
 /// The brand-tinted capsule that slides between destinations.
 ///
-/// No `BackdropFilter` here: [GlassNavBar]'s surface already established a
-/// blur scope, and a second blur would cost another save-layer every frame
-/// while the indicator animates.
+/// A flat wash rather than a bordered pill: the capsule moves on every tab
+/// change, and a visible border animating across the dock reads as a separate
+/// moving object instead of a selection highlight.
 class _SlidingIndicator extends StatelessWidget {
   const _SlidingIndicator();
 
@@ -128,17 +128,9 @@ class _SlidingIndicator extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 3),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0x2E8B1A1A), Color(0x1FA52020)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: AppColors.primaryBg,
           borderRadius: AppRadius.pillAll,
-          border: Border.fromBorderSide(
-            BorderSide(color: Color(0x4D8B1A1A), width: 1),
-          ),
         ),
-        child: GlassSheen(radius: AppRadius.pillAll),
       ),
     );
   }

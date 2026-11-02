@@ -135,7 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     GlassTextField(
                       controller: _nameController,
                       hint: 'Full name',
-                      prefixIcon: Iconsax.user,
+                      prefixIcon: AppIcons.user,
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
                       validator: (v) {
@@ -148,7 +148,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     GlassTextField(
                       controller: _emailController,
                       hint: 'Email',
-                      prefixIcon: Iconsax.sms,
+                      prefixIcon: AppIcons.sms,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       validator: (v) {
@@ -162,7 +162,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     GlassTextField(
                       controller: _handleController,
                       hint: 'Username',
-                      prefixIcon: Iconsax.user_tag,
+                      prefixIcon: AppIcons.user_tag,
                       prefixText: '@',
                       textInputAction: TextInputAction.next,
                       validator: (v) {
@@ -178,7 +178,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     GlassTextField(
                       controller: _passwordController,
                       hint: 'Password',
-                      prefixIcon: Iconsax.lock,
+                      prefixIcon: AppIcons.lock,
                       obscureText: true,
                       textInputAction: TextInputAction.done,
                       validator: (v) {

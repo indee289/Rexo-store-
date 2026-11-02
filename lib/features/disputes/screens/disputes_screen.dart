@@ -30,7 +30,7 @@ class DisputesScreen extends ConsumerWidget {
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/disputes/raise'),
-            icon: const Icon(Iconsax.add, size: 18, color: AppColors.primary),
+            icon: const Icon(AppIcons.add, size: 18, color: AppColors.primary),
             label: Text(
               'Raise',
               style: AppTextStyles.labelLarge.copyWith(
@@ -149,7 +149,7 @@ class DisputesScreen extends ConsumerWidget {
 
   Widget _buildEmptyState() {
     return const EmptyState(
-      icon: Iconsax.message_question,
+      icon: AppIcons.message_question,
       title: 'No disputes',
       subtitle: 'You have no active disputes at the moment',
     );
@@ -157,11 +157,11 @@ class DisputesScreen extends ConsumerWidget {
 
   Widget _buildErrorState(WidgetRef ref, String error) {
     return EmptyState(
-      icon: Iconsax.warning_2,
+      icon: AppIcons.warning_2,
       title: 'Failed to load disputes',
       subtitle: error,
       ctaLabel: 'Retry',
-      ctaIcon: Iconsax.refresh,
+      ctaIcon: AppIcons.refresh,
       onCta: () => ref.invalidate(userDisputesProvider),
     );
   }

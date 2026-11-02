@@ -179,7 +179,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
             children: [
               const Center(
                 child: GlassIconBubble(
-                  icon: Iconsax.shield_tick,
+                  icon: AppIcons.shield_tick,
                   size: 72,
                   iconSize: 34,
                 ),
@@ -343,7 +343,7 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Iconsax.warning_2, color: AppColors.error, size: 18),
+          const Icon(AppIcons.warning_2, color: AppColors.error, size: 18),
           AppSpacing.gapSm,
           Expanded(
             child: Text(

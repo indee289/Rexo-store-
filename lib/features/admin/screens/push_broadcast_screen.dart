@@ -101,7 +101,7 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Iconsax.notification,
+                  const Icon(AppIcons.notification,
                       color: AppColors.accentPink, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
@@ -177,7 +177,7 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Iconsax.send_1),
+                    : const Icon(AppIcons.send_1),
                 label: Text(_isSending ? 'Sending...' : 'Send Broadcast'),
               ),
             ),

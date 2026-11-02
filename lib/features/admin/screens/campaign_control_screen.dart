@@ -100,7 +100,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () => _navigateToCreateCampaign(context),
-        child: const Icon(Iconsax.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: campaigns.when(
         data: (list) {
@@ -142,7 +142,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                               minHeight: 32,
                             ),
                             tooltip: 'Delete campaign',
-                            icon: const Icon(Iconsax.trash,
+                            icon: const Icon(AppIcons.trash,
                                 size: 18, color: AppColors.error),
                             onPressed: () => _confirmDeleteCampaign(
                               context,
@@ -167,7 +167,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                         children: [
                           _ActionButton(
                             label: 'Edit',
-                            icon: Iconsax.edit,
+                            icon: AppIcons.edit,
                             color: AppColors.primary,
                             onTap: () async {
                               await Navigator.push(
@@ -184,7 +184,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                           const SizedBox(width: 8),
                           _ActionButton(
                             label: 'Pause',
-                            icon: Iconsax.pause,
+                            icon: AppIcons.pause,
                             color: AppColors.warning,
                             onTap: () => ref
                                 .read(adminActionsProvider.notifier)
@@ -194,7 +194,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                           const SizedBox(width: 8),
                           _ActionButton(
                             label: 'Resume',
-                            icon: Iconsax.play,
+                            icon: AppIcons.play,
                             color: AppColors.success,
                             onTap: () => ref
                                 .read(adminActionsProvider.notifier)
@@ -204,7 +204,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                           const SizedBox(width: 8),
                           _ActionButton(
                             label: 'Complete',
-                            icon: Iconsax.tick_circle,
+                            icon: AppIcons.tick_circle,
                             color: AppColors.primary,
                             onTap: () => ref
                                 .read(adminActionsProvider.notifier)
@@ -214,7 +214,7 @@ class _CampaignControlScreenState extends ConsumerState<CampaignControlScreen> {
                           const SizedBox(width: 8),
                           _ActionButton(
                             label: 'Cancel',
-                            icon: Iconsax.close_circle,
+                            icon: AppIcons.close_circle,
                             color: AppColors.error,
                             onTap: () => ref
                                 .read(adminActionsProvider.notifier)

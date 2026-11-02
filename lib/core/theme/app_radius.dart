@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 
-/// Corner radius scale — **Liquid Glass**.
+/// Corner radius scale — **Campster premium**.
 ///
-/// Glass panes need generous, continuous-looking corners: the blur reads as
-/// thick material only when the corner is large. The scale below is the glass
-/// ramp; every token name from the previous (tight, 6-16px) scale is preserved
-/// so existing call-sites compile and automatically pick up the new geometry.
+/// Tighter than the previous glass ramp (10/14/20/26/32/40). Very large radii
+/// read as "soft" and work for thick translucent material, but on opaque cards
+/// they waste corner space and make dense content look like it is bulging. This
+/// scale is the one used by most premium product UIs: moderate on cards,
+/// generous on sheets, pills for anything interactive and short.
+///
+/// Every token name from the earlier scales is preserved, so existing
+/// call-sites compile and pick up the new geometry automatically.
 abstract class AppRadius {
   AppRadius._();
 
-  static const double xs = 10;  // tiny badges, dots, inline tags
-  static const double sm = 14;  // chips, small pills, stat tiles
-  static const double md = 20;  // inputs, compact buttons, list rows
-  static const double lg = 26;  // cards, standard glass panes
-  static const double xl = 32;  // sheets, dialogs, large surfaces
-  static const double xxl = 40; // hero panes, full-bleed glass headers
-  static const double pill = 999; // fully rounded pills / avatars
+  static const double xs = 8; // badges, tiny tags, skeleton bars
+  static const double sm = 12; // icon bubbles, chips, small tiles
+  static const double md = 14; // inputs, list rows, compact buttons
+  static const double lg = 18; // cards, grouped sections
+  static const double xl = 24; // dialogs, large cards
+  static const double xxl = 28; // sheets, hero panels
+  static const double pill = 999; // pills, avatars, nav dock
 
-  /// Pre-built `BorderRadius` helpers.
   static const BorderRadius allXs = BorderRadius.all(Radius.circular(xs));
   static const BorderRadius allSm = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius allMd = BorderRadius.all(Radius.circular(md));
@@ -26,83 +29,79 @@ abstract class AppRadius {
   static const BorderRadius allXxl = BorderRadius.all(Radius.circular(xxl));
   static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 
-  /// Top-only radius for bottom sheets / modals.
+  /// Top-only radius for bottom sheets.
   static const BorderRadius topXl =
       BorderRadius.vertical(top: Radius.circular(xl));
-
-  /// Top-only radius for full-height glass sheets.
   static const BorderRadius topXxl =
       BorderRadius.vertical(top: Radius.circular(xxl));
 
-  /// Bottom-only radius for glass app bars that float under the status bar.
+  /// Bottom-only radius, for bars anchored under the status bar.
   static const BorderRadius bottomXl =
       BorderRadius.vertical(bottom: Radius.circular(xl));
 }
 
-/// Elevation — **Liquid Glass**.
+/// Elevation — **soft layered shadows**.
 ///
-/// Glass depth comes from three stacked cues: a wide ambient shadow that
-/// separates the pane from the backdrop, a tight contact shadow, and the
-/// specular rim drawn by the glass widgets themselves. Shadows stay soft and
-/// low-alpha so panes never look like opaque Material cards.
+/// Depth is the whole job now that surfaces are opaque. Each level is two
+/// shadows: a tight contact shadow that grounds the edge, and a wide ambient
+/// shadow that gives the lift. Alphas stay very low (3-10%); a single dark
+/// shadow is the fastest way to make a light UI look heavy and dated.
 ///
 /// The `isDark` parameter is retained for call-site compatibility; the app is
 /// light-only so both branches return the same values.
 abstract class AppElevation {
   AppElevation._();
 
-  /// Resting glass pane (cards, tiles).
+  /// Resting surface — cards, grouped sections, tiles.
   static List<BoxShadow> card(bool isDark) => const [
         BoxShadow(
-          color: Color(0x14000000), // 8% ink — ambient
-          blurRadius: 24,
-          offset: Offset(0, 10),
-          spreadRadius: -6,
+          color: Color(0x0A000000), // 4% — contact
+          blurRadius: 2,
+          offset: Offset(0, 1),
         ),
         BoxShadow(
-          color: Color(0x0A000000), // 4% ink — contact
-          blurRadius: 6,
-          offset: Offset(0, 2),
-          spreadRadius: -2,
+          color: Color(0x0F000000), // 6% — ambient
+          blurRadius: 14,
+          offset: Offset(0, 4),
+          spreadRadius: -4,
         ),
       ];
 
-  /// Floating glass (nav bar, FAB, sticky action bars).
+  /// Floating surface — nav dock, FAB, sticky action bars.
   static List<BoxShadow> raised(bool isDark) => const [
         BoxShadow(
-          color: Color(0x1F000000), // 12% ink
-          blurRadius: 36,
-          offset: Offset(0, 14),
+          color: Color(0x0F000000), // 6%
+          blurRadius: 4,
+          offset: Offset(0, 2),
+        ),
+        BoxShadow(
+          color: Color(0x1A000000), // 10%
+          blurRadius: 28,
+          offset: Offset(0, 10),
           spreadRadius: -8,
         ),
-        BoxShadow(
-          color: Color(0x0F000000), // 6% ink
-          blurRadius: 10,
-          offset: Offset(0, 3),
-          spreadRadius: -3,
-        ),
       ];
 
-  /// Modal glass (sheets, dialogs) — the heaviest lift.
+  /// Modal surface — sheets and dialogs.
   static List<BoxShadow> modal(bool isDark) => const [
         BoxShadow(
-          color: Color(0x2E000000), // 18% ink
+          color: Color(0x1F000000), // 12%
           blurRadius: 48,
-          offset: Offset(0, 18),
-          spreadRadius: -10,
+          offset: Offset(0, 20),
+          spreadRadius: -12,
         ),
       ];
 
-  /// Brand-tinted glow under filled red buttons.
+  /// Brand-tinted lift under a filled red button.
   static List<BoxShadow> brand(bool isDark) => const [
         BoxShadow(
-          color: Color(0x4D8B1A1A), // brand red @ 30%
-          blurRadius: 22,
-          offset: Offset(0, 8),
+          color: Color(0x338B1A1A), // brand red @ 20%
+          blurRadius: 16,
+          offset: Offset(0, 6),
           spreadRadius: -6,
         ),
       ];
 
-  /// No shadow — for panes that sit flush inside another glass pane.
+  /// No shadow — for a surface nested inside another surface.
   static List<BoxShadow> none(bool isDark) => const [];
 }

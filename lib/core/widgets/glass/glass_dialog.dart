@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
@@ -9,13 +7,15 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
 import 'glass_button.dart';
 import 'glass_card.dart';
-import 'glass_surface.dart';
 
-/// Frosted modal dialog.
+/// Modal dialog.
 ///
-/// Replaces `AlertDialog` everywhere. Actions stack vertically — a glass pill
-/// pair side-by-side gets cramped on narrow phones and the primary action
-/// deserves full width.
+/// Replaces `AlertDialog` everywhere. An opaque surface with the modal shadow;
+/// the previous version blurred its own backdrop, which is wasteful for a
+/// control that already sits on a dimmed scrim.
+///
+/// Actions stack vertically: a side-by-side pair gets cramped on narrow
+/// phones, and the primary action deserves full width.
 class GlassDialog extends StatelessWidget {
   const GlassDialog({
     super.key,
@@ -60,97 +60,80 @@ class GlassDialog extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
-          child: ClipRRect(
-            borderRadius: AppRadius.allXl,
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(
-                sigmaX: AppGlass.blurSigmaModal,
-                sigmaY: AppGlass.blurSigmaModal,
-              ),
-              child: GlassBlurScope(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppGlass.surface(false),
-                    borderRadius: AppRadius.allXl,
-                    border: Border.all(
-                      color: AppGlass.border(false),
-                      width: AppGlass.borderWidth,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      const Positioned.fill(
-                        child: GlassSheen(radius: AppRadius.allXl),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (icon != null) ...[
-                              Center(
-                                child: GlassIconBubble(
-                                  icon: icon!,
-                                  color: accent,
-                                  size: 56,
-                                  iconSize: 28,
-                                ),
-                              ),
-                              AppSpacing.gapLg,
-                            ],
-                            Text(
-                              title,
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.title2
-                                  .copyWith(color: AppColors.textPrimary),
-                            ),
-                            if (content != null) ...[
-                              AppSpacing.gapMd,
-                              content!,
-                            ] else if (message != null) ...[
-                              AppSpacing.gapSm,
-                              Text(
-                                message!,
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.body.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ],
-                            if (confirmLabel != null ||
-                                cancelLabel != null) ...[
-                              AppSpacing.gapXl,
-                              if (confirmLabel != null)
-                                GlassButton(
-                                  label: confirmLabel!,
-                                  loading: loading,
-                                  variant: destructive
-                                      ? GlassButtonVariant.destructive
-                                      : GlassButtonVariant.filled,
-                                  onPressed: onConfirm ??
-                                      () => Navigator.of(context)
-                                          .maybePop(true),
-                                ),
-                              if (confirmLabel != null && cancelLabel != null)
-                                AppSpacing.gapSm,
-                              if (cancelLabel != null)
-                                GlassButton.glass(
-                                  label: cancelLabel!,
-                                  onPressed: loading
-                                      ? null
-                                      : (onCancel ??
-                                          () => Navigator.of(context)
-                                              .maybePop(false)),
-                                ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: AppRadius.allXl,
+              boxShadow: AppElevation.modal(false),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppRadius.allXl,
+                border: Border.all(
+                  color: AppColors.border,
+                  width: AppGlass.borderWidth,
                 ),
+              ),
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (icon != null) ...[
+                    Center(
+                      child: GlassIconBubble(
+                        icon: icon!,
+                        color: accent,
+                        size: 52,
+                        iconSize: 25,
+                      ),
+                    ),
+                    AppSpacing.gapLg,
+                  ],
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.title2
+                        .copyWith(color: AppColors.textPrimary),
+                  ),
+                  if (content != null) ...[
+                    AppSpacing.gapMd,
+                    content!,
+                  ] else if (message != null) ...[
+                    AppSpacing.gapSm,
+                    Text(
+                      message!,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                  if (confirmLabel != null || cancelLabel != null) ...[
+                    AppSpacing.gapXl,
+                    if (confirmLabel != null)
+                      GlassButton(
+                        label: confirmLabel!,
+                        loading: loading,
+                        variant: destructive
+                            ? GlassButtonVariant.destructive
+                            : GlassButtonVariant.filled,
+                        onPressed: onConfirm ??
+                            () => Navigator.of(context).maybePop(true),
+                      ),
+                    if (confirmLabel != null && cancelLabel != null)
+                      AppSpacing.gapSm,
+                    if (cancelLabel != null)
+                      GlassButton.glass(
+                        label: cancelLabel!,
+                        onPressed: loading
+                            ? null
+                            : (onCancel ??
+                                () => Navigator.of(context).maybePop(false)),
+                      ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -160,7 +143,7 @@ class GlassDialog extends StatelessWidget {
   }
 }
 
-/// Shows a [GlassDialog] over a blurred, dimmed barrier.
+/// Shows a [GlassDialog] over a dimmed barrier.
 ///
 /// Returns `true` when confirmed, `false` when cancelled, `null` when
 /// dismissed by tapping the barrier.

@@ -94,7 +94,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           // Genuinely unknown user id → creator unavailable (Req 7.4).
           if (creator == null) {
             return const GlassEmptyState(
-              icon: Iconsax.user_remove,
+              icon: AppIcons.user_remove,
               title: 'Creator unavailable',
               message: "We couldn't find this creator's profile. They may no "
                   'longer be available.',

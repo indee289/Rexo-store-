@@ -256,7 +256,7 @@ class _GlassRowState extends State<GlassRow> {
           if (chevron) ...[
             const SizedBox(width: AppSpacing.xs),
             const Icon(
-              Iconsax.arrow_right_3,
+              AppIcons.arrow_right_3,
               size: 18,
               color: AppColors.textHint,
             ),

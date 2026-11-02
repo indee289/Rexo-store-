@@ -118,7 +118,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Iconsax.edit_2,
+                    AppIcons.edit_2,
                     color: Colors.white,
                     size: 16,
                   ),
@@ -153,7 +153,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Iconsax.edit_2,
+                    AppIcons.edit_2,
                     color: Colors.white,
                     size: 16,
                   ),
@@ -175,7 +175,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Iconsax.gallery_add,
+          AppIcons.gallery_add,
           size: 40,
           color: colorScheme.onSurface.withOpacity(0.4),
         ),
@@ -220,7 +220,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Iconsax.camera, color: AppColors.primary),
+                leading: const Icon(AppIcons.camera, color: AppColors.primary),
                 title: Text(
                   'Camera',
                   style: GoogleFonts.poppins(fontSize: 14),
@@ -231,7 +231,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                 },
               ),
               ListTile(
-                leading: const Icon(Iconsax.gallery, color: AppColors.primary),
+                leading: const Icon(AppIcons.gallery, color: AppColors.primary),
                 title: Text(
                   'Gallery',
                   style: GoogleFonts.poppins(fontSize: 14),

@@ -49,7 +49,7 @@ class ActionsScreen extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Iconsax.setting_2,
+                    child: const Icon(AppIcons.setting_2,
                         color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 12),
@@ -83,13 +83,13 @@ class ActionsScreen extends StatelessWidget {
                       title: 'Finance',
                       tiles: [
                         _Tile(
-                          icon: Iconsax.money_send,
+                          icon: AppIcons.money_send,
                           label: 'Withdrawal Queue',
                           color: AppColors.accentPurple,
                           screen: const WithdrawalQueueScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.wallet,
+                          icon: AppIcons.wallet,
                           label: 'Wallets & Escrow',
                           color: AppColors.accentBrown,
                           screen: const WalletsEscrowScreen(),
@@ -100,19 +100,19 @@ class ActionsScreen extends StatelessWidget {
                       title: 'Content',
                       tiles: [
                         _Tile(
-                          icon: Iconsax.image,
+                          icon: AppIcons.image,
                           label: 'Manage Banners',
                           color: AppColors.accentIndigo,
                           screen: const ManageBannersScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.briefcase,
+                          icon: AppIcons.briefcase,
                           label: 'Campaign Control',
                           color: AppColors.primary,
                           screen: const CampaignControlScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.task_square,
+                          icon: AppIcons.task_square,
                           label: 'Manage Jobs',
                           color: AppColors.accentTeal,
                           screen: const ManageJobsScreen(),
@@ -123,25 +123,25 @@ class ActionsScreen extends StatelessWidget {
                       title: 'Reviews',
                       tiles: [
                         _Tile(
-                          icon: Iconsax.document_upload,
+                          icon: AppIcons.document_upload,
                           label: 'Submissions',
                           color: AppColors.success,
                           screen: const SubmissionReviewScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.document_text,
+                          icon: AppIcons.document_text,
                           label: 'Job Submissions',
                           color: AppColors.accentOrange,
                           screen: const ReviewJobSubmissionsScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.message_question,
+                          icon: AppIcons.message_question,
                           label: 'Disputes',
                           color: AppColors.error,
                           screen: const DisputesScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.award,
+                          icon: AppIcons.award,
                           label: 'Program Review',
                           color: AppColors.accentAmber,
                           screen: const RexoProgramScreen(),
@@ -152,25 +152,25 @@ class ActionsScreen extends StatelessWidget {
                       title: 'Safety & Comms',
                       tiles: [
                         _Tile(
-                          icon: Iconsax.shield_cross,
+                          icon: AppIcons.shield_cross,
                           label: 'Risk & Fraud',
                           color: AppColors.error,
                           screen: const FraudReviewScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.flag,
+                          icon: AppIcons.flag,
                           label: 'Reports',
                           color: AppColors.accentOrange,
                           screen: const ModerationScreen(),
                         ),
                         _Tile(
-                          icon: Iconsax.message_text,
+                          icon: AppIcons.message_text,
                           label: 'Support Inbox',
                           color: AppColors.primary,
                           route: '/messages',
                         ),
                         _Tile(
-                          icon: Iconsax.notification,
+                          icon: AppIcons.notification,
                           label: 'Push Broadcast',
                           color: AppColors.accentPink,
                           screen: const PushBroadcastScreen(),

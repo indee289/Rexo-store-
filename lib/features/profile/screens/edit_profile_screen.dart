@@ -111,7 +111,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _AvatarOption(
-                    icon: Iconsax.camera,
+                    icon: AppIcons.camera,
                     label: 'Camera',
                     color: AppColors.primary,
                     onTap: () {
@@ -120,7 +120,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     },
                   ),
                   _AvatarOption(
-                    icon: Iconsax.gallery,
+                    icon: AppIcons.gallery,
                     label: 'Gallery',
                     color: AppColors.accentPurple,
                     onTap: () {
@@ -130,7 +130,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                   if (_currentAvatarUrl != null || _selectedImage != null)
                     _AvatarOption(
-                      icon: Iconsax.trash,
+                      icon: AppIcons.trash,
                       label: 'Remove',
                       color: AppColors.error,
                       onTap: () {
@@ -255,7 +255,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Icon(
-                      Iconsax.arrow_left,
+                      AppIcons.arrow_left,
                       size: 24,
                       color: _cs.onSurface,
                     ),
@@ -318,7 +318,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         controller: _nameController,
                         label: 'Full Name',
                         hint: 'Enter your full name',
-                        icon: Iconsax.user,
+                        icon: AppIcons.user,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
                             return 'Name is required';
@@ -332,7 +332,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         controller: _handleController,
                         label: 'Username',
                         hint: '@your_handle',
-                        icon: Iconsax.user_tag,
+                        icon: AppIcons.user_tag,
                       ),
                       const SizedBox(height: AppSpacing.lg),
 
@@ -347,7 +347,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         controller: _phoneController,
                         label: 'Phone',
                         hint: '+91 98765 43210',
-                        icon: Iconsax.call,
+                        icon: AppIcons.call,
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: AppSpacing.xxl),
@@ -357,7 +357,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         label: 'Save Changes',
                         loading: _isSaving,
                         onPressed: _isSaving ? null : _saveProfile,
-                        icon: Iconsax.save_2,
+                        icon: AppIcons.save_2,
                       ),
                       const SizedBox(height: AppSpacing.xl),
                     ],
@@ -420,7 +420,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     border: Border.all(color: _pageBg, width: 2),
                   ),
                   child: const Icon(
-                    Iconsax.camera,
+                    AppIcons.camera,
                     size: 14,
                     color: Colors.white,
                   ),

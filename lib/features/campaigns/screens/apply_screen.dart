@@ -116,7 +116,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                     child: Row(
                       children: [
                         const Icon(
-                          Iconsax.briefcase,
+                          AppIcons.briefcase,
                           color: AppColors.primary,
                           size: 20,
                         ),
@@ -144,7 +144,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Iconsax.warning_2,
+                      Icon(AppIcons.warning_2,
                           size: 28, color: AppColors.error),
                       const SizedBox(height: 4),
                       Text(
@@ -168,7 +168,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 label: 'Name',
                 controller: _nameController,
                 hint: 'Your full name',
-                icon: Iconsax.user,
+                icon: AppIcons.user,
                 textCapitalization: TextCapitalization.words,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Please enter your name'
@@ -180,7 +180,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 label: 'Location',
                 controller: _locationController,
                 hint: 'Country / region',
-                icon: Iconsax.location,
+                icon: AppIcons.location,
                 textCapitalization: TextCapitalization.words,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Please enter your location'
@@ -192,7 +192,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 label: 'Category / Niche',
                 controller: _categoryController,
                 hint: 'e.g. Fashion, Tech, Fitness',
-                icon: Iconsax.category,
+                icon: AppIcons.category,
                 textCapitalization: TextCapitalization.words,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Please enter your category'
@@ -208,7 +208,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                       label: 'City',
                       controller: _cityController,
                       hint: 'City',
-                      icon: Iconsax.building,
+                      icon: AppIcons.building,
                       textCapitalization: TextCapitalization.words,
                       validator: (v) =>
                           (v == null || v.trim().isEmpty) ? 'Enter city' : null,
@@ -220,7 +220,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                       label: 'State',
                       controller: _stateController,
                       hint: 'State',
-                      icon: Iconsax.map,
+                      icon: AppIcons.map,
                       textCapitalization: TextCapitalization.words,
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'Enter state'
@@ -235,7 +235,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 label: 'Contact Number',
                 controller: _contactController,
                 hint: '10-digit mobile number',
-                icon: Iconsax.call,
+                icon: AppIcons.call,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
@@ -256,7 +256,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 label: 'Instagram Profile',
                 controller: _instagramController,
                 hint: '@handle or https://instagram.com/handle',
-                icon: Iconsax.instagram,
+                icon: AppIcons.instagram,
                 keyboardType: TextInputType.url,
                 validator: (v) {
                   final value = (v ?? '').trim();
@@ -280,7 +280,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 label: 'Followers',
                 controller: _followersController,
                 hint: 'Total followers (number)',
-                icon: Iconsax.people,
+                icon: AppIcons.people,
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
@@ -322,7 +322,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
               PremiumTextField(
                 controller: _portfolioUrlController,
                 hint: 'https://your-portfolio.com',
-                prefixIcon: Iconsax.link,
+                prefixIcon: AppIcons.link,
                 keyboardType: TextInputType.url,
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
@@ -339,7 +339,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
               // Submit button
               PremiumButton(
                 label: 'Submit application',
-                icon: Iconsax.send_2,
+                icon: AppIcons.send_2,
                 gradient: true,
                 loading: _isSubmitting,
                 onPressed: _isSubmitting ? null : _submitApplication,
@@ -418,7 +418,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
           ),
           title: Row(
             children: [
-              const Icon(Iconsax.tick_circle, color: AppColors.success),
+              const Icon(AppIcons.tick_circle, color: AppColors.success),
               const SizedBox(width: AppSpacing.sm),
               Text('Application Sent!', style: AppTextStyles.h6),
             ],

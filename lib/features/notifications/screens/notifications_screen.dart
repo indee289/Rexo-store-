@@ -45,7 +45,7 @@ class NotificationsScreen extends ConsumerWidget {
         data: (notifications) {
           if (notifications.isEmpty) {
             return const EmptyState(
-              icon: Iconsax.notification,
+              icon: AppIcons.notification,
               title: 'No notifications',
               subtitle: 'You\'re all caught up!',
             );
@@ -98,7 +98,7 @@ class NotificationsScreen extends ConsumerWidget {
           itemBuilder: (_, __) => const ShimmerLoading(height: 72),
         ),
         error: (e, _) => const EmptyState(
-          icon: Iconsax.warning_2,
+          icon: AppIcons.warning_2,
           title: 'Failed to load notifications',
           subtitle: 'Please try again.',
         ),
@@ -258,17 +258,17 @@ class _NotificationTile extends StatelessWidget {
   IconData _iconForType(String type) {
     switch (type) {
       case 'campaign':
-        return Iconsax.briefcase;
+        return AppIcons.briefcase;
       case 'wallet':
-        return Iconsax.wallet_1;
+        return AppIcons.wallet_1;
       case 'message':
-        return Iconsax.message;
+        return AppIcons.message;
       case 'follow':
-        return Iconsax.people;
+        return AppIcons.people;
       case 'alert':
-        return Iconsax.warning_2;
+        return AppIcons.warning_2;
       default:
-        return Iconsax.notification;
+        return AppIcons.notification;
     }
   }
 

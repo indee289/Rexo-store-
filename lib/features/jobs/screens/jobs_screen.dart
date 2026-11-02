@@ -182,7 +182,7 @@ class _AvailableJobsTabState extends ConsumerState<_AvailableJobsTab> {
                 ? SliverFillRemaining(
                     hasScrollBody: false,
                     child: EmptyState(
-                      icon: Iconsax.briefcase,
+                      icon: AppIcons.briefcase,
                       title: 'No jobs available',
                       subtitle: 'Check back soon — new jobs get posted regularly.',
                     ),
@@ -224,12 +224,12 @@ class _AvailableJobsTabState extends ConsumerState<_AvailableJobsTab> {
             error: (e, _) => SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Iconsax.warning_2,
+                icon: AppIcons.warning_2,
                 title: 'Something went wrong',
                 subtitle: ErrorUtils.sanitize(e),
                 cta: PremiumButton(
                   label: 'Retry',
-                  icon: Iconsax.refresh,
+                  icon: AppIcons.refresh,
                   variant: PremiumButtonVariant.tonal,
                   expand: false,
                   onPressed: () => ref.invalidate(availableJobsProvider),
@@ -391,7 +391,7 @@ class _JobCard extends StatelessWidget {
                 // Payment — most prominent number
                 Row(
                   children: [
-                    Icon(Iconsax.money,
+                    Icon(AppIcons.money,
                         size: 16, color: AppColors.accentOrange),
                     const SizedBox(width: 4),
                     Text(
@@ -430,14 +430,14 @@ class _JobCard extends StatelessWidget {
                     children: [
                       if (deadline != null)
                         _MetaChip(
-                          icon: Iconsax.calendar,
+                          icon: AppIcons.calendar,
                           label:
                               'Due ${DateFormat('d MMM y').format(deadline)}',
                           isDark: isDark,
                         ),
                       if (hasSlotCap)
                         _MetaChip(
-                          icon: Iconsax.people,
+                          icon: AppIcons.people,
                           label: '$maxSlots slots',
                           isDark: isDark,
                         ),
@@ -602,7 +602,7 @@ class _MyJobsTab extends ConsumerWidget {
                 ? SliverFillRemaining(
                     hasScrollBody: false,
                     child: EmptyState(
-                      icon: Iconsax.briefcase,
+                      icon: AppIcons.briefcase,
                       title: 'No jobs here yet',
                       subtitle: selected == 'all'
                           ? 'Apply to a job from Available Jobs to get started.'
@@ -638,12 +638,12 @@ class _MyJobsTab extends ConsumerWidget {
             error: (e, _) => SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Iconsax.warning_2,
+                icon: AppIcons.warning_2,
                 title: 'Something went wrong',
                 subtitle: ErrorUtils.sanitize(e),
                 cta: PremiumButton(
                   label: 'Retry',
-                  icon: Iconsax.refresh,
+                  icon: AppIcons.refresh,
                   variant: PremiumButtonVariant.tonal,
                   expand: false,
                   onPressed: () => ref.invalidate(myJobApplicationsProvider),
@@ -691,7 +691,7 @@ class _MyJobCard extends StatelessWidget {
                   color: AppColors.primary.withOpacity(0.10),
                   borderRadius: AppRadius.allSm,
                 ),
-                child: const Icon(Iconsax.briefcase,
+                child: const Icon(AppIcons.briefcase,
                     size: 20, color: AppColors.primary),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -758,7 +758,7 @@ class _MyJobCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Iconsax.info_circle,
+                  const Icon(AppIcons.info_circle,
                       size: 14, color: AppColors.error),
                   const SizedBox(width: 6),
                   Expanded(
@@ -780,7 +780,7 @@ class _MyJobCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             PremiumButton(
               label: 'Submit Task',
-              icon: Iconsax.document_upload,
+              icon: AppIcons.document_upload,
               variant: PremiumButtonVariant.tonal,
               onPressed: () => Navigator.push(
                 context,

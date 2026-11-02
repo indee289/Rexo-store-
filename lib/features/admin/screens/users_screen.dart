@@ -58,7 +58,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               const Divider(),
               // Verify: sets "isVerified" = true (live camelCase column)
               ListTile(
-                leading: const Icon(Iconsax.verify, color: AppColors.success),
+                leading: const Icon(AppIcons.verify, color: AppColors.success),
                 title: const Text('Verify user'),
                 onTap: () => _performUserAction(
                   context,
@@ -69,7 +69,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
               // Ban: sets "isBanned" = true (live column — no account_status)
               ListTile(
-                leading: const Icon(Iconsax.close_circle, color: AppColors.error),
+                leading: const Icon(AppIcons.close_circle, color: AppColors.error),
                 title: const Text('Ban user'),
                 onTap: () => _performUserAction(
                   context,
@@ -80,7 +80,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
               // Unban: sets "isBanned" = false
               ListTile(
-                leading: const Icon(Iconsax.tick_circle, color: AppColors.warning),
+                leading: const Icon(AppIcons.tick_circle, color: AppColors.warning),
                 title: const Text('Unban user'),
                 onTap: () => _performUserAction(
                   context,
@@ -91,7 +91,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
               // Role changes use the live `role` column
               ListTile(
-                leading: const Icon(Iconsax.user_edit, color: AppColors.primary),
+                leading: const Icon(AppIcons.user_edit, color: AppColors.primary),
                 title: const Text('Change role to admin'),
                 onTap: () => _performUserAction(
                   context,
@@ -101,7 +101,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 ),
               ),
               ListTile(
-                leading: Icon(Iconsax.user,
+                leading: Icon(AppIcons.user,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 title: const Text('Change role to creator'),
                 onTap: () => _performUserAction(
@@ -199,11 +199,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search users...',
-                prefixIcon: Icon(Iconsax.search_normal,
+                prefixIcon: Icon(AppIcons.search_normal,
                     color: theme.colorScheme.onSurface.withOpacity(0.4)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Iconsax.close_circle),
+                        icon: const Icon(AppIcons.close_circle),
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');

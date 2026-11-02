@@ -246,7 +246,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               PremiumTextField(
                 controller: _titleCtrl,
                 hint: 'e.g. Write a product review on Instagram',
-                prefixIcon: Iconsax.briefcase,
+                prefixIcon: AppIcons.briefcase,
                 textCapitalization: TextCapitalization.sentences,
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Title is required' : null,
@@ -280,7 +280,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               PremiumTextField(
                 controller: _categoryCtrl,
                 hint: 'e.g. Social Media, Content, Photography',
-                prefixIcon: Iconsax.category,
+                prefixIcon: AppIcons.category,
                 textCapitalization: TextCapitalization.words,
               ),
 
@@ -299,7 +299,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               PremiumTextField(
                 controller: _paymentCtrl,
                 hint: '0.00',
-                prefixIcon: Iconsax.money,
+                prefixIcon: AppIcons.money,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
@@ -322,7 +322,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               PremiumTextField(
                 controller: _maxSlotsCtrl,
                 hint: 'e.g. 10',
-                prefixIcon: Iconsax.people,
+                prefixIcon: AppIcons.people,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
@@ -346,7 +346,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Iconsax.calendar,
+                      Icon(AppIcons.calendar,
                           size: 20,
                           color: isDark
                               ? AppColors.darkTextHint
@@ -369,7 +369,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                       if (_deadline != null)
                         GestureDetector(
                           onTap: () => setState(() => _deadline = null),
-                          child: Icon(Iconsax.close_circle,
+                          child: Icon(AppIcons.close_circle,
                               size: 18,
                               color: isDark
                                   ? AppColors.darkTextHint
@@ -414,7 +414,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               // ── Save Button ───────────────────────────────────────────────
               PremiumButton(
                 label: _isEdit ? 'Save Changes' : 'Post Job',
-                icon: _isEdit ? Iconsax.save_2 : Iconsax.send_1,
+                icon: _isEdit ? AppIcons.save_2 : AppIcons.send_1,
                 loading: _saving,
                 onPressed: _save,
               ),

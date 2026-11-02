@@ -56,14 +56,14 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           GlassIconButton(
-            icon: Iconsax.wallet_2,
+            icon: AppIcons.wallet_2,
             tooltip: 'Wallet',
             size: 36,
             iconSize: 19,
             onTap: () => context.push(AppRoutes.wallet),
           ),
           GlassIconButton(
-            icon: Iconsax.notification,
+            icon: AppIcons.notification,
             tooltip: 'Notifications',
             size: 36,
             iconSize: 19,
@@ -71,7 +71,7 @@ class HomeScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.notifications),
           ),
           GlassIconButton(
-            icon: Iconsax.message_text,
+            icon: AppIcons.message_text,
             tooltip: 'Messages',
             size: 36,
             iconSize: 19,
@@ -230,7 +230,7 @@ class _BannerFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Icon(Iconsax.gallery, color: AppColors.textHint, size: 30),
+      child: Icon(AppIcons.gallery, color: AppColors.textHint, size: 30),
     );
   }
 }
@@ -273,7 +273,7 @@ class _FeedList extends ConsumerWidget {
         if (items.isEmpty) {
           return const SliverToBoxAdapter(
             child: GlassEmptyState(
-              icon: Iconsax.volume_high,
+              icon: AppIcons.volume_high,
               title: 'No campaigns yet',
               message: 'New campaigns will show up here as brands post them.',
             ),

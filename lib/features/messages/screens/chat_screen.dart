@@ -146,7 +146,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: Icon(Iconsax.arrow_left,
+              icon: Icon(AppIcons.arrow_left,
                   size: 24, color: cs.onSurface),
             ),
             PremiumAvatar(
@@ -301,7 +301,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        _isSending ? Iconsax.timer : Iconsax.send_1,
+                        _isSending ? AppIcons.timer : AppIcons.send_1,
                         color: Colors.white,
                         size: 20,
                       ),
@@ -322,7 +322,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.message_text, size: 48, color: cs.onSurfaceVariant),
+          Icon(AppIcons.message_text, size: 48, color: cs.onSurfaceVariant),
           const SizedBox(height: 12),
           Text('No messages yet',
               style: TextStyle(color: cs.onSurfaceVariant)),
@@ -554,20 +554,20 @@ class _MessageActionsSheetState
       children: [
         if (canEdit)
           _ActionRow(
-            icon: Iconsax.edit_2,
+            icon: AppIcons.edit_2,
             label: 'Edit',
             onTap:
                 _busy ? null : () => setState(() => _editing = true),
           ),
         if (canUnsend)
           _ActionRow(
-            icon: Iconsax.slash,
+            icon: AppIcons.slash,
             label: 'Unsend',
             destructive: true,
             onTap: _busy ? null : _unsend,
           ),
         _ActionRow(
-          icon: Iconsax.copy,
+          icon: AppIcons.copy,
           label: 'Copy',
           onTap: _busy ? null : _copy,
         ),
@@ -589,7 +589,7 @@ class _MessageActionsSheetState
         const SizedBox(height: AppSpacing.md),
         PremiumButton(
           label: 'Save',
-          icon: Iconsax.tick_circle,
+          icon: AppIcons.tick_circle,
           loading: _busy,
           onPressed: _busy ? null : _saveEdit,
         ),

@@ -158,7 +158,7 @@ class _NormalContent extends StatelessWidget {
             if (isMine) ...[
               const SizedBox(width: AppSpacing.xs),
               Icon(
-                Iconsax.tick_circle,
+                AppIcons.tick_circle,
                 size: 12,
                 color: message.isRead ? Colors.white : metaColor,
               ),
@@ -182,7 +182,7 @@ class _UnsentContent extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Iconsax.slash, size: 14, color: placeholderColor),
+        Icon(AppIcons.slash, size: 14, color: placeholderColor),
         const SizedBox(width: AppSpacing.xs),
         Text(
           'message unsent',

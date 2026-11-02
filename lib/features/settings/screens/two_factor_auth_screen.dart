@@ -278,7 +278,7 @@ class _TwoFactorAuthScreenState
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left,
+                    icon: Icon(AppIcons.arrow_left,
                         size: 24, color: _cs.onSurface),
                   ),
                   Expanded(
@@ -330,8 +330,8 @@ class _TwoFactorAuthScreenState
                                   ),
                                   child: Icon(
                                     _isMfaEnabled
-                                        ? Iconsax.shield_tick
-                                        : Iconsax.shield_cross,
+                                        ? AppIcons.shield_tick
+                                        : AppIcons.shield_cross,
                                     size: 22,
                                     color: _isMfaEnabled
                                         ? AppColors.success
@@ -401,7 +401,7 @@ class _TwoFactorAuthScreenState
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Iconsax.warning_2,
+                                  const Icon(AppIcons.warning_2,
                                       color: AppColors.error, size: 18),
                                   const SizedBox(width: AppSpacing.sm),
                                   Expanded(
@@ -443,17 +443,17 @@ class _TwoFactorAuthScreenState
       children: [
         // Benefits
         _benefitItem(
-          icon: Iconsax.shield_tick,
+          icon: AppIcons.shield_tick,
           title: 'Prevents unauthorized access',
           desc: 'Extra protection even if your password is compromised.',
         ),
         _benefitItem(
-          icon: Iconsax.wallet_3,
+          icon: AppIcons.wallet_3,
           title: 'Required for large withdrawals',
           desc: 'Wallet withdrawals above threshold need 2FA verification.',
         ),
         _benefitItem(
-          icon: Iconsax.verify,
+          icon: AppIcons.verify,
           title: 'Industry-standard security',
           desc:
               'Works with Google Authenticator, Authy, and other apps.',
@@ -476,7 +476,7 @@ class _TwoFactorAuthScreenState
                     height: 18,
                     child: CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2))
-                : const Icon(Iconsax.shield_tick, size: 18),
+                : const Icon(AppIcons.shield_tick, size: 18),
             label: Text(
               _isEnrolling
                   ? 'Setting up...'
@@ -749,7 +749,7 @@ class _TwoFactorAuthScreenState
           ),
           child: Row(
             children: [
-              const Icon(Iconsax.shield_tick,
+              const Icon(AppIcons.shield_tick,
                   color: AppColors.success, size: 22),
               const SizedBox(width: 12),
               Expanded(
@@ -789,7 +789,7 @@ class _TwoFactorAuthScreenState
                     height: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: AppColors.error))
-                : const Icon(Iconsax.shield_cross, size: 18),
+                : const Icon(AppIcons.shield_cross, size: 18),
             label: Text(
               _isUnenrolling ? 'Disabling...' : 'Disable 2FA',
               style: const TextStyle(

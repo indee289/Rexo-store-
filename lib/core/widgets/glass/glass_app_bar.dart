@@ -1,21 +1,22 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../icons/app_icons.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_glass.dart';
+import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
 import 'glass_icon_button.dart';
-import 'glass_surface.dart';
 
-/// Frosted navigation bar.
+/// Fixed navigation bar.
 ///
-/// Content scrolls *underneath* it (pair with `GlassScaffold`, which sets
-/// `extendBodyBehindAppBar`), so the bar refracts the page as you scroll. The
-/// bottom edge is a hairline rim rather than a Material divider, and the title
-/// is centred with glass icon buttons on either side.
+/// Prefer [GlassLargeTitleHeader], which gives the iOS large title that
+/// collapses on scroll. Use this only where a screen genuinely needs a static
+/// bar — a modal step, or a screen whose body is not scrollable.
+///
+/// The bar is an opaque surface with a hairline bottom edge and no elevation
+/// until content scrolls under it. The previous version ran a `BackdropFilter`
+/// over the whole bar and painted a specular sheen; both are removed.
 class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   const GlassAppBar({
     super.key,
@@ -26,8 +27,9 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.automaticallyImplyLeading = true,
     this.bottom,
-    this.centerTitle = true,
+    this.centerTitle = false,
     this.titleWidget,
+    this.transparent = false,
   });
 
   final String title;
@@ -40,9 +42,14 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final bool automaticallyImplyLeading;
   final PreferredSizeWidget? bottom;
+
+  /// Left-aligned by default. Centre only for modal-style screens.
   final bool centerTitle;
 
-  static const double _barHeight = kToolbarHeight;
+  /// Draw no fill or edge — for a bar over full-bleed imagery.
+  final bool transparent;
+
+  static const double _barHeight = 52;
 
   @override
   Size get preferredSize =>
@@ -54,10 +61,13 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     Widget? resolvedLeading = leading;
     if (resolvedLeading == null &&
-        (showBack || (automaticallyImplyLeading && Navigator.of(context).canPop()))) {
+        (showBack ||
+            (automaticallyImplyLeading && Navigator.of(context).canPop()))) {
       resolvedLeading = GlassIconButton(
-        icon: Iconsax.arrow_left,
+        icon: AppIcons.arrow_left,
         tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        size: 36,
+        iconSize: 19,
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
       );
     }
@@ -74,71 +84,59 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
           textAlign: centerTitle ? TextAlign.center : TextAlign.start,
         );
 
-    final Widget bar = SizedBox(
-      height: _barHeight,
-      child: Row(
-        children: [
-          const SizedBox(width: AppSpacing.sm),
-          if (resolvedLeading != null) resolvedLeading,
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: resolvedLeading == null ? AppSpacing.sm : AppSpacing.xs,
-                right: AppSpacing.xs,
-              ),
-              child: Align(
-                alignment:
-                    centerTitle ? Alignment.center : Alignment.centerLeft,
-                child: titleContent,
-              ),
-            ),
-          ),
-          if (actions != null) ...actions!,
-          const SizedBox(width: AppSpacing.sm),
-        ],
-      ),
-    );
-
-    // One blur for the whole bar, including the status-bar strip above it.
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: AppGlass.blurSigmaModal,
-          sigmaY: AppGlass.blurSigmaModal,
-        ),
-        child: GlassBlurScope(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppGlass.surface(false),
-              border: const Border(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: transparent ? Colors.transparent : AppColors.surface,
+        border: transparent
+            ? null
+            : const Border(
                 bottom: BorderSide(
                   color: AppColors.border,
                   width: AppGlass.borderWidth,
                 ),
               ),
-            ),
-            child: Stack(
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: topInset),
+          SizedBox(
+            height: _barHeight,
+            child: Row(
               children: [
-                // Specular sheen across the bar.
-                const Positioned.fill(child: GlassSheen()),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: topInset),
-                    bar,
-                    if (bottom != null) bottom!,
-                  ],
+                const SizedBox(width: AppSpacing.sm),
+                if (resolvedLeading != null) resolvedLeading,
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: resolvedLeading == null
+                          ? AppSpacing.sm
+                          : AppSpacing.xs,
+                      right: AppSpacing.xs,
+                    ),
+                    child: Align(
+                      alignment: centerTitle
+                          ? Alignment.center
+                          : Alignment.centerLeft,
+                      child: titleContent,
+                    ),
+                  ),
                 ),
+                if (actions != null) ...actions!,
+                const SizedBox(width: AppSpacing.sm),
               ],
             ),
           ),
-        ),
+          if (bottom != null) bottom!,
+        ],
       ),
     );
   }
 }
 
-/// Sliver variant — for screens with a collapsing glass header.
+/// Sliver bar with a collapsing image/content header.
+///
+/// For a plain collapsing title use [GlassLargeTitleHeader] instead.
 class GlassSliverAppBar extends StatelessWidget {
   const GlassSliverAppBar({
     super.key,
@@ -150,7 +148,7 @@ class GlassSliverAppBar extends StatelessWidget {
     this.expandedHeight = 220,
     this.pinned = true,
     this.floating = false,
-    this.centerTitle = true,
+    this.centerTitle = false,
   });
 
   final String title;
@@ -168,8 +166,10 @@ class GlassSliverAppBar extends StatelessWidget {
     Widget? leading;
     if (showBack || Navigator.of(context).canPop()) {
       leading = GlassIconButton(
-        icon: Iconsax.arrow_left,
+        icon: AppIcons.arrow_left,
         tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        size: 36,
+        iconSize: 19,
         onTap: onBack ?? () => Navigator.of(context).maybePop(),
       );
     }
@@ -190,56 +190,20 @@ class GlassSliverAppBar extends StatelessWidget {
         if (actions != null) ...actions!,
         const SizedBox(width: AppSpacing.sm),
       ],
-      // The glass itself is painted by flexibleSpace's backdrop filter below.
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: centerTitle,
-      // Only grow into a collapsing header when the caller supplied one.
       expandedHeight: flexibleSpace == null ? null : expandedHeight,
       pinned: pinned,
       floating: floating,
-      // The blurred pane is always present; it carries the caller's header
-      // content when there is any, and is a bare glass background otherwise.
-      flexibleSpace: _GlassBarBackground(
-        child: flexibleSpace ?? const SizedBox.expand(),
+      shape: const RoundedRectangleBorder(
+        borderRadius: AppRadius.bottomXl,
       ),
-    );
-  }
-}
-
-/// Blurred translucent background used behind a sliver app bar.
-class _GlassBarBackground extends StatelessWidget {
-  const _GlassBarBackground({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: AppGlass.blurSigmaModal,
-          sigmaY: AppGlass.blurSigmaModal,
-        ),
-        child: GlassBlurScope(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppGlass.surface(false),
-              border: const Border(
-                bottom: BorderSide(
-                  color: AppColors.border,
-                  width: AppGlass.borderWidth,
-                ),
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
+      flexibleSpace: flexibleSpace,
     );
   }
 }

@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../icons/app_icons.dart';
@@ -8,16 +6,21 @@ import '../../theme/app_glass.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
-import 'glass_surface.dart';
 
-/// Tone of a glass snackbar, which picks its icon and accent colour.
+/// Tone of a toast, which picks its icon and accent colour.
 enum GlassToastTone { neutral, success, error, warning }
 
-/// Floating frosted toast.
+/// Floating toast.
 ///
 /// Shown via `ScaffoldMessenger` so it respects route changes and the existing
-/// snackbar queue, but rendered as a pill-shaped glass pane instead of a
-/// Material bar: transparent background, no elevation, and our own blur.
+/// snackbar queue, but rendered as our own surface instead of a Material bar:
+/// transparent background, no elevation, a leading tone icon and an optional
+/// inline action.
+///
+/// The previous version blurred its own backdrop. A toast appears over
+/// arbitrary content and is on screen for seconds at a time, so that blur ran
+/// for the whole duration; it is now an opaque surface with a modal shadow,
+/// which also keeps the message readable over any background.
 void showGlassSnackBar(
   BuildContext context, {
   required String message,
@@ -32,14 +35,14 @@ void showGlassSnackBar(
   messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(
-      content: _GlassToast(
+      content: _Toast(
         message: message,
         tone: tone,
         actionLabel: actionLabel,
         onAction: onAction,
       ),
       duration: duration,
-      // The toast paints its own glass pane, so the SnackBar chrome must be
+      // The toast paints its own surface, so the SnackBar chrome must be
       // completely invisible.
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -56,8 +59,8 @@ void showGlassSnackBar(
   );
 }
 
-class _GlassToast extends StatelessWidget {
-  const _GlassToast({
+class _Toast extends StatelessWidget {
+  const _Toast({
     required this.message,
     required this.tone,
     this.actionLabel,
@@ -69,83 +72,84 @@ class _GlassToast extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
-  (IconData, Color) get _toneStyle {
+  IconData get _icon {
     switch (tone) {
       case GlassToastTone.success:
-        return (Iconsax.tick_circle, AppColors.success);
+        return AppIcons.tick_circle;
       case GlassToastTone.error:
-        return (Iconsax.close_circle, AppColors.error);
+        return AppIcons.close_circle;
       case GlassToastTone.warning:
-        return (Iconsax.warning_2, AppColors.warning);
+        return AppIcons.warning_2;
       case GlassToastTone.neutral:
-        return (Iconsax.info_circle, AppColors.primary);
+        return AppIcons.info_circle;
+    }
+  }
+
+  Color get _accent {
+    switch (tone) {
+      case GlassToastTone.success:
+        return AppColors.success;
+      case GlassToastTone.error:
+        return AppColors.error;
+      case GlassToastTone.warning:
+        return AppColors.warning;
+      case GlassToastTone.neutral:
+        return AppColors.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final (icon, accent) = _toneStyle;
-
-    return ClipRRect(
-      borderRadius: AppRadius.pillAll,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: AppGlass.blurSigmaModal,
-          sigmaY: AppGlass.blurSigmaModal,
-        ),
-        child: GlassBlurScope(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              // A touch more opaque than a standard pane: a toast must stay
-              // readable over whatever happens to be behind it.
-              color: Colors.white.withOpacity(0.86),
-              borderRadius: AppRadius.pillAll,
-              border: Border.all(
-                color: AppColors.border,
-                width: AppGlass.borderWidth,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              child: Row(
-                children: [
-                  Icon(icon, size: 20, color: accent),
-                  AppSpacing.gapMd,
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: AppTextStyles.subheadline.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 3,
-                    ),
-                  ),
-                  if (actionLabel != null) ...[
-                    AppSpacing.gapSm,
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        ScaffoldMessenger.maybeOf(context)
-                            ?.hideCurrentSnackBar();
-                        onAction?.call();
-                      },
-                      child: Text(
-                        actionLabel!,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.allMd,
+        boxShadow: AppElevation.raised(false),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.allMd,
+          border: Border.all(
+            color: AppColors.border,
+            width: AppGlass.borderWidth,
           ),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Icon(_icon, size: 20, color: _accent),
+            AppSpacing.gapMd,
+            Expanded(
+              child: Text(
+                message,
+                style: AppTextStyles.subheadline.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 3,
+              ),
+            ),
+            if (actionLabel != null) ...[
+              AppSpacing.gapSm,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+                  onAction?.call();
+                },
+                child: Text(
+                  actionLabel!,
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

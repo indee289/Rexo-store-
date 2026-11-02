@@ -36,7 +36,7 @@ class RexoProgramScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Iconsax.award, size: 48, color: AppColors.warning),
+                  const Icon(AppIcons.award, size: 48, color: AppColors.warning),
                   const SizedBox(height: 12),
                   Text('No applications to review',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
@@ -63,7 +63,7 @@ class RexoProgramScreen extends ConsumerWidget {
                               color: AppColors.accentAmber.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Iconsax.award,
+                            child: const Icon(AppIcons.award,
                                 color: AppColors.accentAmber, size: 18),
                           ),
                           const SizedBox(width: 12),
