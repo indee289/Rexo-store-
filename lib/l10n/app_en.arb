@@ -25,5 +25,7 @@
   "messages": "Messages",
   "notifications": "Notifications",
   "completeYourProfile": "Complete your profile",
-  "languageChanged": "Language updated"
+  "languageChanged": "Language updated",
+  "jobs": "Jobs",
+  "profile": "Profile"
 }

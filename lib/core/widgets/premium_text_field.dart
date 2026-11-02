@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
-import '../theme/app_text_styles.dart';
+import 'glass/glass.dart';
 
-/// Visual variants for [PremiumTextField].
+/// Visual variants for the [PremiumTextField] shim.
 enum PremiumTextFieldVariant { standard, search, multiline }
 
-/// Instagram-style text field — flat gray fill (#EFEFEF), no borders,
-/// small radius, 14pt body text.
-class PremiumTextField extends StatefulWidget {
+/// **Migration shim.** Use [GlassTextField] directly.
+///
+/// Forwards to [GlassTextField]. The old treatment (flat opaque grey `#EFEFEF`
+/// fill, 8px radius, floating Material label) is gone; inputs are now recessed
+/// glass wells with a brand-red focus rim and the label sitting above the
+/// field.
+///
+/// Scheduled for deletion once every call-site is migrated.
+class PremiumTextField extends StatelessWidget {
   final TextEditingController? controller;
   final PremiumTextFieldVariant variant;
   final String? hint;
@@ -105,112 +108,51 @@ class PremiumTextField extends StatefulWidget {
         );
 
   @override
-  State<PremiumTextField> createState() => _PremiumTextFieldState();
-}
-
-class _PremiumTextFieldState extends State<PremiumTextField> {
-  late final TextEditingController _controller;
-  bool _ownsController = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = widget.controller ?? TextEditingController();
-    _ownsController = widget.controller == null;
-    if (_isSearch) _controller.addListener(_onChanged);
-  }
-
-  bool get _isSearch => widget.variant == PremiumTextFieldVariant.search;
-  bool get _isMultiline => widget.variant == PremiumTextFieldVariant.multiline;
-
-  void _onChanged() => setState(() {});
-
-  void _clear() {
-    _controller.clear();
-    widget.onChanged?.call('');
-  }
-
-  @override
-  void dispose() {
-    if (_isSearch) _controller.removeListener(_onChanged);
-    if (_ownsController) _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final IconData? prefix =
-        _isSearch ? Iconsax.search_normal : widget.prefixIcon;
-
-    Widget? suffix = widget.suffix;
-    if (_isSearch && _controller.text.isNotEmpty) {
-      suffix = GestureDetector(
-        onTap: _clear,
-        behavior: HitTestBehavior.opaque,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: Icon(
-            Iconsax.close_circle,
-            size: 18,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      );
-    }
-
-    OutlineInputBorder border(Color color, [double width = 1]) =>
-        OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: color == Colors.transparent
-              ? BorderSide.none
-              : BorderSide(color: color, width: width),
+    switch (variant) {
+      case PremiumTextFieldVariant.search:
+        return GlassTextField.search(
+          controller: controller,
+          hint: hint,
+          enabled: enabled,
+          autofocus: autofocus,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
         );
-
-    InputDecoration decoration = InputDecoration(
-      hintText: widget.hint,
-      labelText: widget.label,
-      prefixText: _isSearch ? null : widget.prefixText,
-      prefixIcon: prefix == null
-          ? null
-          : Icon(prefix, size: 20, color: AppColors.textSecondary),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: AppColors.surfaceAlt,
-      border: border(Colors.transparent),
-      enabledBorder: border(Colors.transparent),
-      focusedBorder: border(Colors.transparent),
-      errorBorder: border(AppColors.error),
-      focusedErrorBorder: border(AppColors.error, 1),
-      hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-      labelStyle:
-          AppTextStyles.subheadline.copyWith(color: AppColors.textSecondary),
-      floatingLabelStyle:
-          AppTextStyles.footnote.copyWith(color: AppColors.textSecondary),
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: _isSearch ? 12 : 14,
-      ),
-      isDense: _isSearch,
-    );
-
-    return TextFormField(
-      controller: _controller,
-      decoration: decoration,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
-      textCapitalization: widget.textCapitalization,
-      inputFormatters: widget.inputFormatters,
-      obscureText: widget.obscureText,
-      enabled: widget.enabled,
-      autofocus: widget.autofocus,
-      minLines: _isMultiline ? widget.minLines : 1,
-      maxLines: widget.obscureText ? 1 : (_isMultiline ? widget.maxLines : 1),
-      maxLength: widget.maxLength,
-      style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-      cursorColor: AppColors.textPrimary,
-      onChanged: widget.onChanged,
-      onFieldSubmitted: widget.onSubmitted,
-      validator: widget.validator,
-    );
+      case PremiumTextFieldVariant.multiline:
+        return GlassTextField.multiline(
+          controller: controller,
+          hint: hint,
+          label: label,
+          enabled: enabled,
+          minLines: minLines,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          onChanged: onChanged,
+          validator: validator,
+        );
+      case PremiumTextFieldVariant.standard:
+        return GlassTextField(
+          controller: controller,
+          hint: hint,
+          label: label,
+          prefixIcon: prefixIcon,
+          suffix: suffix,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          obscureText: obscureText,
+          enabled: enabled,
+          autofocus: autofocus,
+          minLines: minLines,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          inputFormatters: inputFormatters,
+          prefixText: prefixText,
+          textCapitalization: textCapitalization,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          validator: validator,
+        );
+    }
   }
 }

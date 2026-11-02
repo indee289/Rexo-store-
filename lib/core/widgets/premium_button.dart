@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
-import '../theme/app_text_styles.dart';
+import 'glass/glass.dart';
 
-/// Visual variants for [PremiumButton] — mapped to Instagram button styles.
+/// Visual variants for the deprecated [PremiumButton].
 ///
-/// - [filled]: IG "Follow" style — solid blue with white text
-/// - [tonal]: Same as filled (kept for API compat)
-/// - [outline]: IG "Following" / "Message" style — white with hairline border
-/// - [ghost]: IG plain text button (blue text)
-/// - [glass]: Kept for compat — renders as outline
+/// Each one maps onto a [GlassButtonVariant]:
+/// `filled`/`tonal` → filled, `outline` → outline, `ghost` → ghost,
+/// `glass` → glass.
 enum PremiumButtonVariant { filled, tonal, outline, ghost, glass }
 
-/// Instagram-style button — flat, tight, no shadow.
+/// **Deprecated — migration shim.** Use [GlassButton] directly.
 ///
-/// Height 44 (IG standard). No ripple, opacity press feedback.
-class PremiumButton extends StatefulWidget {
+/// Forwards to [GlassButton] so the ~72 remaining call-sites render the real
+/// pill-shaped glass button. The previous styling (48px tall, 26px radius,
+/// flat Instagram-blue fill, opacity-only press feedback) has been removed
+/// outright; nothing can render it any more.
+///
+/// Scheduled for deletion once every call-site is migrated.
+class PremiumButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final PremiumButtonVariant variant;
   final IconData? icon;
   final bool loading;
+
+  /// Ignored. The filled variant is always a brand-red gradient now.
   final bool gradient;
   final bool expand;
 
@@ -36,133 +39,29 @@ class PremiumButton extends StatefulWidget {
     this.expand = true,
   });
 
-  @override
-  State<PremiumButton> createState() => _PremiumButtonState();
-}
-
-class _PremiumButtonState extends State<PremiumButton> {
-  bool _pressed = false;
-
-  static const double _height = 48;
-
-  bool get _enabled => widget.onPressed != null && !widget.loading;
-
-  void _setPressed(bool value) {
-    if (!_enabled) return;
-    if (_pressed != value) setState(() => _pressed = value);
+  GlassButtonVariant get _mapped {
+    switch (variant) {
+      case PremiumButtonVariant.filled:
+      case PremiumButtonVariant.tonal:
+        return GlassButtonVariant.filled;
+      case PremiumButtonVariant.outline:
+        return GlassButtonVariant.outline;
+      case PremiumButtonVariant.ghost:
+        return GlassButtonVariant.ghost;
+      case PremiumButtonVariant.glass:
+        return GlassButtonVariant.glass;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final style = _resolveStyle();
-
-    final Widget content = widget.loading
-        ? SizedBox(
-            height: 18,
-            width: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.2,
-              valueColor: AlwaysStoppedAnimation<Color>(style.foreground),
-            ),
-          )
-        : Row(
-            mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (widget.icon != null) ...[
-                Icon(widget.icon, size: 18, color: style.foreground),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.button.copyWith(
-                    color: style.foreground,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          );
-
-    Widget surface = Container(
-      constraints: const BoxConstraints(minHeight: _height),
-      width: widget.expand ? double.infinity : null,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: style.fill,
-        borderRadius: AppRadius.allLg,
-        border: style.border,
-        boxShadow: style.shadow,
-      ),
-      child: content,
-    );
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
-      onTap: _enabled ? widget.onPressed : null,
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 90),
-        scale: _pressed ? 0.98 : 1.0,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 90),
-          opacity: !_enabled ? 0.45 : (_pressed ? 0.85 : 1.0),
-          child: surface,
-        ),
-      ),
+    return GlassButton(
+      label: label,
+      onPressed: onPressed,
+      variant: _mapped,
+      icon: icon,
+      loading: loading,
+      expand: expand,
     );
   }
-
-  _ButtonStyle _resolveStyle() {
-    switch (widget.variant) {
-      case PremiumButtonVariant.filled:
-      case PremiumButtonVariant.tonal:
-        return const _ButtonStyle(
-          fill: AppColors.primary,
-          foreground: Colors.white,
-          shadow: [
-            BoxShadow(
-              color: Color(0x330095F6), // primary @ 20%
-              blurRadius: 12,
-              offset: Offset(0, 4),
-              spreadRadius: -2,
-            ),
-          ],
-        );
-      case PremiumButtonVariant.outline:
-      case PremiumButtonVariant.glass:
-        return _ButtonStyle(
-          fill: Colors.white,
-          foreground: AppColors.textPrimary,
-          border: Border.all(color: const Color(0xFFD9D5CB), width: 1),
-        );
-      case PremiumButtonVariant.ghost:
-        return const _ButtonStyle(
-          fill: Colors.transparent,
-          foreground: AppColors.primary,
-        );
-    }
-  }
-}
-
-class _ButtonStyle {
-  final Color? fill;
-  final Color foreground;
-  final BoxBorder? border;
-  final List<BoxShadow>? shadow;
-
-  const _ButtonStyle({
-    this.fill,
-    required this.foreground,
-    this.border,
-    this.shadow,
-  });
 }

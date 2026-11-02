@@ -1,23 +1,32 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
+import 'glass/glass.dart';
 
-/// Clean card used across the app.
+/// **Deprecated — migration shim.** Use [GlassCard] directly.
 ///
-/// Opaque white surface with a soft hairline border and a very light shadow on
-/// the Sand Dune background. (Previously every card ran its own
-/// `BackdropFilter` blur; with 10-20 cards in a list that made scrolling slow
-/// on mid-range phones, so the per-card blur was removed. Visually the card is
-/// nearly identical on the flat sand background, but it is far cheaper to
-/// paint.)
-class PremiumCard extends StatefulWidget {
+/// This type now contains no styling of its own: it forwards straight to
+/// [GlassCard] so the ~58 call-sites that still say `PremiumCard` render real
+/// liquid glass while they are migrated screen by screen. The old treatment
+/// (opaque white fill, 0.8px grey border, 12px radius, flat 4% drop shadow) is
+/// gone entirely — there is no code path left that can paint it.
+///
+/// Scheduled for deletion once every call-site is migrated.
+class PremiumCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
   final double borderRadius;
+
+  /// Ignored. Retained so existing call-sites compile; [GlassCard] decides its
+  /// own gradient from the glass tokens.
   final bool gradient;
+
+  /// Ignored — every card is glass now.
   final bool glass;
+
+  /// Forwarded as the glass tint when supplied. Call-sites passing an opaque
+  /// colour will get an opaque card, so these are the ones to migrate first.
   final Color? backgroundColor;
 
   const PremiumCard({
@@ -32,58 +41,13 @@ class PremiumCard extends StatefulWidget {
   });
 
   @override
-  State<PremiumCard> createState() => _PremiumCardState();
-}
-
-class _PremiumCardState extends State<PremiumCard> {
-  bool _pressed = false;
-
-  bool get _tappable => widget.onTap != null;
-
-  @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(widget.borderRadius);
-    final bg = widget.backgroundColor ?? Colors.white;
-
-    final Widget card = Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: radius,
-        border: Border.all(color: AppColors.border, width: 0.8),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000), // 4% black
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Padding(
-          padding: widget.padding ?? EdgeInsets.zero,
-          child: widget.child,
-        ),
-      ),
-    );
-
-    if (!_tappable) return card;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 90),
-        scale: _pressed ? 0.985 : 1.0,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 90),
-          opacity: _pressed ? 0.85 : 1.0,
-          child: card,
-        ),
-      ),
+    return GlassCard(
+      padding: padding ?? EdgeInsets.zero,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(borderRadius),
+      tint: backgroundColor,
+      child: child,
     );
   }
 }

@@ -3,230 +3,294 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_glass.dart';
 import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Central app theme — **Instagram-inspired, light only**.
+/// Central app theme — **Campster Liquid Glass, light only**.
 ///
-/// Pure white surfaces, hairline separators, blue accents, no shadows.
+/// The theme's job in a glass UI is mostly *subtractive*: it strips the opaque
+/// fills, tints, elevations and ripples that Material paints by default, so the
+/// `Glass*` components in `core/widgets/glass/` are free to supply the real
+/// material. Concretely, every component theme below sets a transparent
+/// background, zero elevation and a transparent `surfaceTintColor` — without
+/// that, Material 3 would paint a solid tinted surface *over* the blur and the
+/// glass effect would vanish.
+///
+/// Component themes for raw Material widgets (`ElevatedButton`, `Card`,
+/// `TextField`, ...) are still defined, tuned to brand red and the glass
+/// radius ramp. They exist as a safety net for any call-site not yet migrated
+/// to the `Glass*` equivalents, so no screen can render in the retired blue
+/// Instagram style at any point during the migration.
 class AppTheme {
   AppTheme._();
 
   // ---------------------------------------------------------------------------
-  // Light theme (Instagram)
+  // Light theme (Liquid Glass)
   // ---------------------------------------------------------------------------
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: AppColors.primary,
+      // Opaque on purpose. `GlassScaffold` overrides this to transparent and
+      // paints `GlassBackdrop` behind itself; a globally transparent scaffold
+      // would leave any plain `Scaffold` with no background at all.
       scaffoldBackgroundColor: AppColors.background,
+      canvasColor: AppColors.background,
       fontFamily: GoogleFonts.inter().fontFamily,
-      splashFactory: NoSplash.splashFactory, // IG has no ripple
+      // Glass components run their own spring press animation, so Material's
+      // ink ripple would double up and smear across the blur.
+      splashFactory: NoSplash.splashFactory,
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
       splashColor: Colors.transparent,
+
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
+        onPrimary: AppColors.textOnPrimary,
         primaryContainer: AppColors.primaryBg,
         onPrimaryContainer: AppColors.primaryDark,
-        secondary: AppColors.primary,
-        surface: AppColors.surface,
-        error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        secondary: AppColors.primaryLight,
+        onSecondary: AppColors.textOnPrimary,
+        surface: AppColors.background,
         onSurface: AppColors.textPrimary,
         onSurfaceVariant: AppColors.textSecondary,
+        error: AppColors.error,
+        onError: AppColors.textOnPrimary,
         outline: AppColors.border,
         outlineVariant: AppColors.divider,
-        onError: Colors.white,
+        // Kill the M3 surface tint everywhere at once.
+        surfaceTint: Colors.transparent,
       ),
+
       textTheme: _buildTextTheme(),
 
-      // ── Instagram-style app bar ──────────────────────────────────────────
+      // ── App bar — glass is painted by GlassAppBar; strip Material's ──────
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         titleSpacing: AppSpacing.lg,
-        iconTheme: const IconThemeData(
-          color: AppColors.textPrimary,
-          size: 24,
-        ),
-        actionsIconTheme: const IconThemeData(
-          color: AppColors.textPrimary,
-          size: 24,
-        ),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
+        actionsIconTheme:
+            const IconThemeData(color: AppColors.textPrimary, size: 22),
         titleTextStyle: AppTextStyles.title3.copyWith(
           color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
         ),
+        // Dark status-bar icons, because the backdrop is light.
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
 
-      // ── Instagram-style card (no shadow, just white) ─────────────────────
+      // ── Card — translucent, large radius, soft glass shadow ─────────────
       cardTheme: CardTheme(
         color: AppColors.card,
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.allLg,
+          side: BorderSide(color: AppGlass.border(false), width: 1),
+        ),
         margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
       ),
 
-      // ── IG "Follow" style filled blue button ─────────────────────────────
+      // ── Filled button — brand red pill ──────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          textStyle: AppTextStyles.button,
-          minimumSize: const Size(double.infinity, 44),
+          foregroundColor: AppColors.textOnPrimary,
+          disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
+          disabledForegroundColor: AppColors.textOnPrimary.withOpacity(0.7),
+          textStyle: AppTextStyles.labelLarge.copyWith(fontSize: 15),
+          minimumSize: const Size(double.infinity, 50),
           elevation: 0,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          surfaceTintColor: Colors.transparent,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.pillAll,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
         ),
       ),
 
-      // ── IG "Following" bordered secondary button ─────────────────────────
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.textOnPrimary,
+          textStyle: AppTextStyles.labelLarge.copyWith(fontSize: 15),
+          minimumSize: const Size(double.infinity, 50),
+          elevation: 0,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.pillAll,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+        ),
+      ),
+
+      // ── Outlined button — brand rim on glass ────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.textPrimary,
-          textStyle: AppTextStyles.button
-              .copyWith(color: AppColors.textPrimary),
-          side: const BorderSide(color: AppColors.border, width: 1),
-          backgroundColor: AppColors.background,
-          minimumSize: const Size(double.infinity, 44),
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          foregroundColor: AppColors.primary,
+          backgroundColor: Colors.transparent,
+          textStyle: AppTextStyles.labelLarge.copyWith(fontSize: 15),
+          side: const BorderSide(color: AppColors.primaryRim, width: 1.2),
+          minimumSize: const Size(double.infinity, 50),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.pillAll,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
         ),
       ),
 
-      // ── IG plain text button (blue links) ────────────────────────────────
+      // ── Text button — red label, no chrome ──────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          textStyle: AppTextStyles.button.copyWith(color: AppColors.primary),
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
+          textStyle: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.primary,
+            fontSize: 15,
+          ),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.pillAll,
+          ),
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
+          ),
         ),
       ),
 
-      // ── IG search bar / input (gray fill, no border) ─────────────────────
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: AppColors.textPrimary,
+          highlightColor: Colors.transparent,
+          shape: const CircleBorder(),
+        ),
+      ),
+
+      // ── Input — recessed glass well, red focus rim ───────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceAlt,
         isDense: false,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
         ),
-        hintStyle:
-            AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+        hintStyle: AppTextStyles.body.copyWith(color: AppColors.textHint),
         labelStyle:
             AppTextStyles.subheadline.copyWith(color: AppColors.textSecondary),
         floatingLabelStyle:
-            AppTextStyles.footnote.copyWith(color: AppColors.textSecondary),
+            AppTextStyles.footnote.copyWith(color: AppColors.primary),
+        errorStyle: AppTextStyles.footnote.copyWith(color: AppColors.error),
         prefixIconColor: AppColors.textSecondary,
         suffixIconColor: AppColors.textSecondary,
-        border: OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: BorderSide.none,
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: const BorderSide(color: AppColors.error, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppRadius.allMd,
-          borderSide: const BorderSide(color: AppColors.error, width: 1),
-        ),
+        border: _inputBorder(AppColors.border),
+        enabledBorder: _inputBorder(AppColors.border),
+        disabledBorder: _inputBorder(AppColors.divider),
+        focusedBorder: _inputBorder(AppColors.primaryRim, 1.4),
+        errorBorder: _inputBorder(AppColors.error),
+        focusedErrorBorder: _inputBorder(AppColors.error, 1.4),
       ),
 
-      // ── IG-style tag chip ────────────────────────────────────────────────
+      // ── Chip — frosted pill ──────────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceAlt,
-        selectedColor: AppColors.primaryBg,
+        selectedColor: AppColors.primary.withOpacity(0.14),
+        secondarySelectedColor: AppColors.primary.withOpacity(0.14),
         deleteIconColor: AppColors.textSecondary,
-        disabledColor: AppColors.surfaceAlt.withOpacity(0.5),
-        labelStyle: AppTextStyles.footnote
-            .copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+        disabledColor: AppColors.surfaceAlt.withOpacity(0.4),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        pressElevation: 0,
+        labelStyle: AppTextStyles.labelMedium
+            .copyWith(color: AppColors.textSecondary),
         secondaryLabelStyle:
-            AppTextStyles.footnote.copyWith(color: AppColors.primary),
-        side: BorderSide.none,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs + 2,
-        ),
+            AppTextStyles.labelMedium.copyWith(color: AppColors.primary),
+        side: const BorderSide(color: AppColors.border, width: 1),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       ),
 
-      // ── Bottom sheet ─────────────────────────────────────────────────────
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.background,
+      // ── Bottom sheet — fully transparent; GlassSheet paints the pane ────
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        modalBackgroundColor: AppColors.background,
+        modalBackgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         elevation: 0,
         modalElevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.topXl),
-        clipBehavior: Clip.antiAlias,
-        showDragHandle: true,
-        dragHandleColor: AppColors.systemGray3,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.topXxl),
+        clipBehavior: Clip.none,
+        // GlassSheet draws its own grab handle.
+        showDragHandle: false,
+        dragHandleColor: AppColors.textPrimary.withOpacity(0.18),
+        modalBarrierColor: AppGlass.scrim(false),
       ),
 
-      // ── Dialog ───────────────────────────────────────────────────────────
+      // ── Dialog — transparent; GlassDialog paints the pane ───────────────
       dialogTheme: DialogTheme(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allLg),
-        titleTextStyle: AppTextStyles.title3
-            .copyWith(color: AppColors.textPrimary),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allXl),
+        titleTextStyle:
+            AppTextStyles.title2.copyWith(color: AppColors.textPrimary),
         contentTextStyle:
-            AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+            AppTextStyles.body.copyWith(color: AppColors.textSecondary),
       ),
 
-      // ── Bottom nav (IG-style — light, no elevation) ──────────────────────
+      // ── Bottom nav — transparent; GlassNavBar paints the dock ───────────
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: Colors.white,
-        selectedItemColor: AppColors.textPrimary,
-        unselectedItemColor: AppColors.textPrimary,
-        selectedLabelStyle: AppTextStyles.caption2,
-        unselectedLabelStyle: AppTextStyles.caption2,
+        backgroundColor: Colors.transparent,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        selectedLabelStyle:
+            AppTextStyles.labelSmall.copyWith(fontWeight: FontWeight.w700),
+        unselectedLabelStyle: AppTextStyles.labelSmall,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        showSelectedLabels: false,
+        showSelectedLabels: true,
         showUnselectedLabels: false,
       ),
 
-      // ── IG toggle (blue) ─────────────────────────────────────────────────
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: AppColors.primary.withOpacity(0.14),
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        indicatorShape:
+            const RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
+      ),
+
+      // ── Switch — brand red track ─────────────────────────────────────────
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith(
-            (_) => Colors.white),
+        thumbColor: MaterialStateProperty.all(Colors.white),
         trackColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
             return AppColors.primary;
           }
-          return AppColors.systemGray4;
+          return AppColors.surfaceAlt;
         }),
-        trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+        trackOutlineColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return AppColors.primaryRim;
+          }
+          return AppColors.border;
+        }),
+        trackOutlineWidth: MaterialStateProperty.all(1),
       ),
 
-      // ── Checkbox / Radio (blue) ──────────────────────────────────────────
       checkboxTheme: CheckboxThemeData(
         fillColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
@@ -234,10 +298,9 @@ class AppTheme {
           }
           return Colors.transparent;
         }),
-        checkColor: MaterialStateProperty.all(Colors.white),
+        checkColor: MaterialStateProperty.all(AppColors.textOnPrimary),
         side: const BorderSide(color: AppColors.systemGray3, width: 1.5),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
       ),
 
       radioTheme: RadioThemeData(
@@ -249,74 +312,110 @@ class AppTheme {
         }),
       ),
 
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.primary,
+        inactiveTrackColor: AppColors.surfaceAlt,
+        thumbColor: Colors.white,
+        overlayColor: AppColors.primary.withOpacity(0.12),
+        trackHeight: 5,
+      ),
+
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
         linearTrackColor: AppColors.surfaceAlt,
+        circularTrackColor: Colors.transparent,
       ),
 
-      // ── IG hairline dividers (1px light gray) ────────────────────────────
       dividerTheme: const DividerThemeData(
-        color: AppColors.border,
-        thickness: 0.5,
-        space: 0,
+        color: AppColors.divider,
+        thickness: 1,
+        space: 1,
       ),
 
-      textSelectionTheme: const TextSelectionThemeData(
+      textSelectionTheme: TextSelectionThemeData(
         cursorColor: AppColors.primary,
-        selectionColor: AppColors.primaryBg,
+        selectionColor: AppColors.primary.withOpacity(0.22),
         selectionHandleColor: AppColors.primary,
       ),
 
+      // ── Snackbar — transparent; showGlassSnackBar paints the toast ──────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.textPrimary,
+        backgroundColor: Colors.transparent,
         contentTextStyle:
-            AppTextStyles.body.copyWith(color: Colors.white),
-        actionTextColor: AppColors.primaryLight,
+            AppTextStyles.subheadline.copyWith(color: AppColors.textPrimary),
+        actionTextColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.allMd),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
         elevation: 0,
       ),
 
-      // ── IG list tile (minimal, no color) ─────────────────────────────────
+      // ── List tile — transparent so the glass pane behind shows ──────────
       listTileTheme: ListTileThemeData(
-        tileColor: Colors.white,
-        selectedTileColor: AppColors.surfaceAlt,
-        iconColor: AppColors.textPrimary,
+        tileColor: Colors.transparent,
+        selectedTileColor: AppColors.primary.withOpacity(0.10),
+        iconColor: AppColors.textSecondary,
         textColor: AppColors.textPrimary,
+        selectedColor: AppColors.primary,
         titleTextStyle:
-            AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-        subtitleTextStyle: AppTextStyles.footnote
-            .copyWith(color: AppColors.textSecondary),
+            AppTextStyles.headline.copyWith(color: AppColors.textPrimary),
+        subtitleTextStyle:
+            AppTextStyles.footnote.copyWith(color: AppColors.textSecondary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.xs,
         ),
         minLeadingWidth: 28,
         horizontalTitleGap: AppSpacing.md,
-        shape: const RoundedRectangleBorder(),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.allMd),
       ),
 
-      iconTheme: const IconThemeData(
-        color: AppColors.textPrimary,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
 
-      // ── IG tab bar (Photos/Reels/Tagged style) ──────────────────────────
+      // ── Tab bar — red pill indicator (GlassTabBar is preferred) ─────────
       tabBarTheme: TabBarTheme(
-        labelColor: AppColors.textPrimary,
+        labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondary,
         labelStyle:
-            AppTextStyles.subheadline.copyWith(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: AppTextStyles.subheadline,
-        indicatorColor: AppColors.textPrimary,
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: AppColors.border,
+            AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700),
+        unselectedLabelStyle: AppTextStyles.labelMedium,
+        indicatorColor: AppColors.primary,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        overlayColor: MaterialStateProperty.all(Colors.transparent),
+      ),
+
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: AppColors.textPrimary.withOpacity(0.9),
+          borderRadius: AppRadius.allSm,
+        ),
+        textStyle: AppTextStyles.footnote.copyWith(color: Colors.white),
+      ),
+
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white.withOpacity(0.92),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.allMd,
+          side: BorderSide(color: AppColors.border, width: 1),
+        ),
+        textStyle:
+            AppTextStyles.body.copyWith(color: AppColors.textPrimary),
       ),
     );
   }
 
-  // Dark alias — points to light (app is light-only).
+  /// Dark alias — points to light. The app is light-only by product decision,
+  /// and the Appearance picker in Settings is retained for compatibility only.
   static ThemeData get darkTheme => lightTheme;
+
+  static OutlineInputBorder _inputBorder(Color color, [double width = 1]) {
+    return OutlineInputBorder(
+      borderRadius: AppRadius.allMd,
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
 
   static TextTheme _buildTextTheme() {
     const Color primary = AppColors.textPrimary;

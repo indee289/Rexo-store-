@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
+import 'glass/glass.dart';
 
-/// Instagram-style navigation bar.
+/// **Migration shim.** Use [GlassAppBar] directly.
 ///
-/// White background with a hairline bottom border. Bold title on the left
-/// (or centered when there's a back button), action icons on the right.
+/// Forwards to [GlassAppBar]. The old treatment (opaque sand-coloured bar,
+/// 0.5px grey bottom border, Material `AppBar` inside a `Container`) is gone;
+/// every bar is now a blurred translucent pane that page content scrolls
+/// under.
+///
+/// Scheduled for deletion once every call-site is migrated.
 class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -30,93 +32,24 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0) + 0.5,
+        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
       );
 
   @override
   Widget build(BuildContext context) {
-    Widget? resolvedLeading = leading;
-    final bool canPop = Navigator.of(context).canPop();
-    if (resolvedLeading == null &&
-        (showBack || (automaticallyImplyLeading && canPop))) {
-      resolvedLeading = _BackButton(
-        onTap: onBack ?? () => Navigator.of(context).maybePop(),
-      );
-    }
-
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 0.5),
-        ),
-      ),
-      child: AppBar(
-        title: Text(
-          title,
-          style: AppTextStyles.title3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        leading: resolvedLeading,
-        automaticallyImplyLeading: false,
-        actions: [
-          if (actions != null) ...actions!,
-          const SizedBox(width: 8),
-        ],
-        bottom: bottom,
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-      ),
+    return GlassAppBar(
+      title: title,
+      actions: actions,
+      leading: leading,
+      showBack: showBack,
+      onBack: onBack,
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      bottom: bottom,
     );
   }
 }
 
-/// Instagram-style back button — thin left arrow, no chrome.
-class _BackButton extends StatefulWidget {
-  final VoidCallback onTap;
-
-  const _BackButton({required this.onTap});
-
-  @override
-  State<_BackButton> createState() => _BackButtonState();
-}
-
-class _BackButtonState extends State<_BackButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.4 : 1.0,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: Icon(
-            Iconsax.arrow_left,
-            size: 24,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Sliver version — for scroll-collapsing headers.
+/// **Migration shim.** Use [GlassSliverAppBar] directly.
 class PremiumSliverAppBar extends StatelessWidget {
   final String title;
   final List<Widget>? actions;
@@ -141,40 +74,15 @@ class PremiumSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool canPop = Navigator.of(context).canPop();
-    Widget? leading;
-    if (showBack || canPop) {
-      leading = _BackButton(
-        onTap: onBack ?? () => Navigator.of(context).maybePop(),
-      );
-    }
-
-    return SliverAppBar(
-      title: Text(
-        title,
-        style: AppTextStyles.title3.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w700,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      leading: leading,
-      automaticallyImplyLeading: false,
-      actions: [
-        if (actions != null) ...actions!,
-        const SizedBox(width: 8),
-      ],
-      backgroundColor: AppColors.background,
-      surfaceTintColor: Colors.transparent,
-      foregroundColor: AppColors.textPrimary,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: true,
-      expandedHeight: flexibleSpace != null ? expandedHeight : null,
+    return GlassSliverAppBar(
+      title: title,
+      actions: actions,
+      showBack: showBack,
+      onBack: onBack,
+      flexibleSpace: flexibleSpace,
+      expandedHeight: expandedHeight,
       pinned: pinned,
       floating: floating,
-      flexibleSpace: flexibleSpace,
     );
   }
 }

@@ -158,13 +158,17 @@ class _BootstrapShell extends StatelessWidget {
     return MaterialApp(
       title: 'Campster',
       debugShowCheckedModeBanner: false,
+      // Brand red seed and the glass backdrop base, so the pre-app loading and
+      // error states match the real app instead of flashing a different
+      // palette. Kept inline rather than importing AppTheme: this shell must
+      // render even if app-level initialization failed.
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0095F6),
+          seedColor: const Color(0xFF8B1A1A),
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF0EDE5),
+        scaffoldBackgroundColor: const Color(0xFFEFECEE),
       ),
       home: child,
     );

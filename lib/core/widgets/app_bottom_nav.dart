@@ -1,17 +1,19 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
+import '../../l10n/app_localizations.dart';
+import '../icons/app_icons.dart';
+import 'glass/glass.dart';
 
-/// Instagram iOS-style floating dock nav bar.
+/// The app's bottom navigation — a floating pill-shaped glass dock.
 ///
-/// A pill-shaped frosted-glass dock floating above the bottom edge with
-/// horizontal margin and a subtle shadow. Icons are black, active icon is
-/// slightly bolder/filled. No labels (like IG). BackdropFilter gives the
-/// frosted translucent look.
+/// Thin wrapper that supplies this app's four destinations to [GlassNavBar].
+/// Destination order and indices are unchanged, so the router's
+/// `StatefulShellBranch` ordering (home, campaigns, jobs, profile) still maps
+/// one-to-one and no navigation behaviour shifts.
+///
+/// Previously this widget assembled its own `ClipRRect` + `BackdropFilter` +
+/// `Container` dock with hardcoded warm-white colours. All of that now lives in
+/// [GlassNavBar], so the dock shares one material with the rest of the app.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -22,117 +24,37 @@ class AppBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _items = [
-    _Item(inactive: Iconsax.home_2, active: Iconsax.home_2),
-    _Item(inactive: Iconsax.volume_high, active: Iconsax.volume_high),
-    _Item(inactive: Iconsax.briefcase, active: Iconsax.briefcase),
-    _Item(inactive: Iconsax.user, active: Iconsax.user),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).padding.bottom;
+    // Labels come from the existing ARB bundle, so the dock reads correctly in
+    // both English and Hindi.
+    final l10n = AppLocalizations.of(context);
 
-    return Padding(
-      // Float above the bottom edge — 12px above the safe area
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad + 12),
-      child: ClipRRect(
-        borderRadius: AppRadius.pillAll,
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            height: 60,
-            decoration: BoxDecoration(
-              // Semi-transparent warm white — frosted glass on sand dune bg
-              color: const Color(0xFFFAF8F3).withOpacity(0.88),
-              borderRadius: AppRadius.pillAll,
-              border: Border.all(
-                color: AppColors.border.withOpacity(0.5),
-                width: 0.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -4,
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: List.generate(
-                _items.length,
-                (i) => Expanded(
-                  child: _TabItem(
-                    item: _items[i],
-                    active: currentIndex == i,
-                    onTap: () => onTap(i),
-                  ),
-                ),
-              ),
-            ),
-          ),
+    return GlassNavBar(
+      currentIndex: currentIndex,
+      onTap: onTap,
+      items: [
+        GlassNavItem(
+          icon: Iconsax.home_2,
+          activeIcon: Iconsax.home_2,
+          label: l10n.home,
         ),
-      ),
-    );
-  }
-}
-
-class _Item {
-  final IconData inactive;
-  final IconData active;
-  const _Item({required this.inactive, required this.active});
-}
-
-class _TabItem extends StatefulWidget {
-  final _Item item;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _TabItem({
-    required this.item,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  State<_TabItem> createState() => _TabItemState();
-}
-
-class _TabItemState extends State<_TabItem> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.5 : 1.0,
-        child: AnimatedScale(
-          scale: _pressed ? 0.90 : 1.0,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          child: Center(
-            child: Icon(
-              widget.active ? widget.item.active : widget.item.inactive,
-              size: widget.active ? 28 : 26,
-              color: widget.active
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary,
-            ),
-          ),
+        GlassNavItem(
+          icon: Iconsax.volume_high,
+          activeIcon: Iconsax.volume_high,
+          label: l10n.campaigns,
         ),
-      ),
+        GlassNavItem(
+          icon: Iconsax.briefcase,
+          activeIcon: Iconsax.briefcase,
+          label: l10n.jobs,
+        ),
+        GlassNavItem(
+          icon: Iconsax.user,
+          activeIcon: Iconsax.user,
+          label: l10n.profile,
+        ),
+      ],
     );
   }
 }

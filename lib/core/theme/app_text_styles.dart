@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Instagram-inspired typography.
+/// Typography — **Campster Liquid Glass**.
 ///
-/// Instagram uses a single sans-serif family with sharp weight contrast.
-/// We use **Inter** as the equivalent. Body text is 14pt regular, titles
-/// are bold with tight letter-spacing.
+/// One sans-serif family (**Inter**) with sharp weight contrast, which is what
+/// keeps labels legible on a translucent pane: on glass, weight and size carry
+/// the hierarchy because background contrast is partly lost to the blur.
+/// Titles are bold with tight negative tracking; body text is 14pt regular.
 ///
-/// Legacy aliases (h1..h6, bodyLarge, caption etc.) map onto the IG scale
-/// so all screens automatically adopt the new type ramp.
+/// Legacy aliases (h1..h6, bodyLarge, caption, ...) map onto this ramp so every
+/// screen picks it up without touching its call-sites.
 class AppTextStyles {
   AppTextStyles._();
 
@@ -29,8 +30,8 @@ class AppTextStyles {
 
   static String? get fontFamily => GoogleFonts.inter().fontFamily;
 
-  // ── Instagram Scale ────────────────────────────────────────────────────────
-  /// Screen big title (Instagram logo / large screen name).
+  // ── Scale ─────────────────────────────────────────────────────────────────
+  /// Screen big title / large screen name.
   static TextStyle get largeTitle =>
       _t(fontSize: 26, fontWeight: FontWeight.w700, height: 1.20, letterSpacing: -0.4);
 
@@ -38,19 +39,19 @@ class AppTextStyles {
   static TextStyle get title1 =>
       _t(fontSize: 22, fontWeight: FontWeight.w700, height: 1.20, letterSpacing: -0.3);
 
-  /// Section title / username on profile.
+  /// Section title / profile name.
   static TextStyle get title2 =>
       _t(fontSize: 18, fontWeight: FontWeight.w700, height: 1.25, letterSpacing: -0.2);
 
-  /// Sub-section title / stat number.
+  /// Sub-section title / stat value.
   static TextStyle get title3 =>
       _t(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.1);
 
-  /// Headline — bold username inline, key labels.
+  /// Headline — inline bold names, key labels, card titles.
   static TextStyle get headline =>
       _t(fontSize: 14, fontWeight: FontWeight.w600, height: 1.30, letterSpacing: -0.1);
 
-  /// Body — IG standard body text.
+  /// Body — standard body text.
   static TextStyle get body =>
       _t(fontSize: 14, fontWeight: FontWeight.w400, height: 1.35);
 
@@ -58,7 +59,7 @@ class AppTextStyles {
   static TextStyle get callout =>
       _t(fontSize: 15, fontWeight: FontWeight.w400, height: 1.30);
 
-  /// Subheadline — sub-content, descriptions.
+  /// Subheadline — secondary content and descriptions.
   static TextStyle get subheadline =>
       _t(fontSize: 13, fontWeight: FontWeight.w400, height: 1.35);
 
@@ -66,7 +67,7 @@ class AppTextStyles {
   static TextStyle get footnote =>
       _t(fontSize: 12, fontWeight: FontWeight.w400, height: 1.35);
 
-  /// Caption 1 — tiny meta.
+  /// Caption 1 — small meta text.
   static TextStyle get caption1 =>
       _t(fontSize: 11, fontWeight: FontWeight.w400, height: 1.35);
 
@@ -89,7 +90,8 @@ class AppTextStyles {
   static TextStyle get bodySmall => subheadline;
   static TextStyle get caption => caption1;
 
-  /// Instagram button text — 14pt semibold white on blue.
+  /// Button label — 14pt semibold, white for use on the brand-red fill.
+  /// Glass buttons override the colour per variant.
   static TextStyle get button => _t(
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -113,7 +115,7 @@ class AppTextStyles {
         height: 1.30,
       );
 
-  /// IG section header (uppercase gray).
+  /// Section header — small, tracked-out, muted.
   static TextStyle get sectionHeader => _t(
         fontSize: 12,
         fontWeight: FontWeight.w500,

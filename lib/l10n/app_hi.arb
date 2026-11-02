@@ -25,5 +25,7 @@
   "messages": "संदेश",
   "notifications": "सूचनाएँ",
   "completeYourProfile": "अपनी प्रोफ़ाइल पूरी करें",
-  "languageChanged": "भाषा अपडेट हो गई"
+  "languageChanged": "भाषा अपडेट हो गई",
+  "jobs": "काम",
+  "profile": "प्रोफ़ाइल"
 }
