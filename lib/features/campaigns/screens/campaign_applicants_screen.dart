@@ -5,21 +5,32 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/widgets/premium_sheet.dart';
-import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/campaigns_provider.dart';
 
 /// Lists the applicants for one of the brand's own campaigns. Each row is
 /// tappable and opens a detail sheet with the applicant's full profile,
 /// including a clickable Instagram link. RLS restricts the underlying query to
 /// the campaign owner.
+///
+/// Rebuilt layout. Old layout: a `PremiumAppBar` over rows built from an
+/// `InkWell` wrapping a hand-decorated `Container`, a bespoke `_StatusBadge`,
+/// and a `showPremiumSheet` detail view whose facts were `_DetailRow`s
+/// printing "Label:" and a value side by side.
+///
+/// New layout: a collapsing large title carrying the campaign name with
+/// "Applicants" as its subtitle; rows on the shared card surface with the
+/// status as a chip; and the detail sheet rebuilt so the applicant's facts are
+/// a grouped section and the Instagram/portfolio links are grouped rows,
+/// rather than two different hand-built row shapes.
+///
+/// `campaignApplicantsProvider`, every field fallback chain, the Instagram
+/// handle normalisation and the external-application link launch are
+/// unchanged.
 class CampaignApplicantsScreen extends ConsumerWidget {
   final String campaignId;
   final String campaignTitle;
@@ -32,50 +43,66 @@ class CampaignApplicantsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final applicantsAsync = ref.watch(campaignApplicantsProvider(campaignId));
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: campaignTitle,
-        showBack: true,
-        onBack: () => Navigator.of(context).pop(),
-      ),
-      body: applicantsAsync.when(
-        data: (applicants) {
-          if (applicants.isEmpty) {
-            return const EmptyState(
-              icon: AppIcons.people,
-              title: 'No applicants yet',
-              subtitle: 'Creators who apply will appear here',
-            );
-          }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async {
-              ref.invalidate(campaignApplicantsProvider(campaignId));
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              itemCount: applicants.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (context, index) {
-                return _ApplicantTile(application: applicants[index]);
-              },
-            ),
-          );
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          ref.invalidate(campaignApplicantsProvider(campaignId));
         },
-        loading: () => ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          itemCount: 6,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
-          itemBuilder: (_, __) => const ShimmerConversationRow(),
-        ),
-        error: (e, _) => EmptyState(
-          icon: AppIcons.warning_2,
-          title: 'Could not load applicants',
-          subtitle: ErrorUtils.sanitize(e),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            GlassLargeTitleHeader(
+              title: campaignTitle,
+              subtitle: 'Applicants',
+              showBack: true,
+              onBack: () => Navigator.of(context).pop(),
+            ),
+            applicantsAsync.when(
+              data: (applicants) {
+                if (applicants.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GlassEmptyState(
+                      icon: AppIcons.people,
+                      title: 'No applicants yet',
+                      message: 'Creators who apply will appear here.',
+                    ),
+                  );
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xxl,
+                  ),
+                  sliver: SliverList.separated(
+                    itemCount: applicants.length,
+                    separatorBuilder: (_, __) => AppSpacing.gapSm,
+                    itemBuilder: (context, index) => RepaintBoundary(
+                      child: _ApplicantTile(application: applicants[index]),
+                    ),
+                  ),
+                );
+              },
+              loading: () => const SliverFillRemaining(
+                child: GlassListSkeleton(itemCount: 6),
+              ),
+              error: (e, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: GlassErrorState(
+                  title: 'Could not load applicants',
+                  message: ErrorUtils.sanitize(e),
+                  onRetry: () =>
+                      ref.invalidate(campaignApplicantsProvider(campaignId)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -89,96 +116,100 @@ class _ApplicantTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final creator = application['creator'] as Map<String, dynamic>?;
-    final displayName =
-        (application['applicant_name'] ??
-                application['creatorName'] ??
-                creator?['name'] ??
-                'Applicant')
-            .toString();
+    final displayName = (application['applicant_name'] ??
+            application['creatorName'] ??
+            creator?['name'] ??
+            'Applicant')
+        .toString();
     final handle = (creator?['username'] ?? '').toString(); // live: username
-    final avatarUrl = creator?['profileImage'] as String?;  // live: profileImage
+    final avatarUrl = creator?['profileImage'] as String?; // live: profileImage
     final isVerified = creator?['isVerified'] == true;
     final status = (application['status'] ?? 'pending').toString();
     final category = (application['category'] ?? '').toString();
-    final followers =
-        application['followers_count'] ?? application['followers'];
+    final followers = application['followers_count'] ?? application['followers'];
 
-    return InkWell(
-      borderRadius: AppRadius.allLg,
+    return GlassCard(
       onTap: () => _showApplicantDetail(context, application),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: AppRadius.allLg,
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Row(
-          children: [
-            PremiumAvatar(
-              imageUrl: avatarUrl,
-              name: displayName,
-              size: 48,
-              isVerified: isVerified,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          PremiumAvatar(
+            imageUrl: avatarUrl,
+            name: displayName,
+            size: 48,
+            isVerified: isVerified,
+          ),
+          AppSpacing.gapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  displayName,
+                  style: AppTextStyles.callout.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (handle.isNotEmpty)
                   Text(
-                    displayName,
-                    style: AppTextStyles.labelLarge,
+                    '@$handle',
+                    style: AppTextStyles.footnote
+                        .copyWith(color: AppColors.textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (handle.isNotEmpty)
-                    Text(
-                      '@$handle',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
+                if (category.isNotEmpty || followers != null) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Row(
                     children: [
                       if (category.isNotEmpty) ...[
-                        Icon(AppIcons.category,
-                            size: 13,
-                            color:
-                                theme.colorScheme.onSurface.withOpacity(0.5)),
+                        const Icon(
+                          AppIcons.category,
+                          size: 13,
+                          color: AppColors.textHint,
+                        ),
                         const SizedBox(width: 3),
                         Flexible(
                           child: Text(
                             category,
-                            style: AppTextStyles.caption,
+                            style: AppTextStyles.caption1
+                                .copyWith(color: AppColors.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
+                        AppSpacing.gapSm,
                       ],
                       if (followers != null) ...[
-                        Icon(AppIcons.people,
-                            size: 13,
-                            color:
-                                theme.colorScheme.onSurface.withOpacity(0.5)),
+                        const Icon(
+                          AppIcons.people,
+                          size: 13,
+                          color: AppColors.textHint,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           _formatCount(followers),
-                          style: AppTextStyles.caption,
+                          style: AppTextStyles.caption1
+                              .copyWith(color: AppColors.textSecondary),
                         ),
                       ],
                     ],
                   ),
                 ],
-              ),
+              ],
             ),
-            _StatusBadge(status: status),
-          ],
-        ),
+          ),
+          AppSpacing.gapSm,
+          GlassChip.status(
+            label: status[0].toUpperCase() + status.substring(1).toLowerCase(),
+            color: _statusColor(status),
+          ),
+        ],
       ),
     );
   }
@@ -189,43 +220,16 @@ class _ApplicantTile extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (status) {
-      case 'approved':
-        color = AppColors.success;
-        break;
-      case 'rejected':
-        color = AppColors.error;
-        break;
-      case 'withdrawn':
-        color = AppColors.textSecondary;
-        break;
-      default:
-        color = AppColors.warning;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(
-        status[0].toUpperCase() + status.substring(1).toLowerCase(),
-        style: AppTextStyles.labelSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
+Color _statusColor(String status) {
+  switch (status) {
+    case 'approved':
+      return AppColors.success;
+    case 'rejected':
+      return AppColors.error;
+    case 'withdrawn':
+      return AppColors.textSecondary;
+    default:
+      return AppColors.warning;
   }
 }
 
@@ -245,9 +249,9 @@ String? _normalizeInstagram(String? raw) {
 
 void _showApplicantDetail(
     BuildContext context, Map<String, dynamic> application) {
-  showPremiumSheet<void>(
+  showGlassSheet<void>(
     context: context,
-    title: 'Applicant Details',
+    title: 'Applicant details',
     child: _ApplicantDetailSheet(application: application),
   );
 }
@@ -259,16 +263,14 @@ class _ApplicantDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final creator = application['creator'] as Map<String, dynamic>?;
-    final displayName =
-        (application['applicant_name'] ??
-                application['creatorName'] ??
-                creator?['name'] ??
-                'Applicant')
-            .toString();
+    final displayName = (application['applicant_name'] ??
+            application['creatorName'] ??
+            creator?['name'] ??
+            'Applicant')
+        .toString();
     final handle = (creator?['username'] ?? '').toString(); // live: username
-    final avatarUrl = creator?['profileImage'] as String?;  // live: profileImage
+    final avatarUrl = creator?['profileImage'] as String?; // live: profileImage
     final isVerified = creator?['isVerified'] == true;
     final instagram = _normalizeInstagram(
         (application['instagram_url'] ?? application['instagram'] ?? '')
@@ -278,10 +280,48 @@ class _ApplicantDetailSheet extends StatelessWidget {
         (application['portfolio_url'] ?? application['contentLink'] ?? '')
             .toString();
 
+    final followersRaw =
+        application['followers_count'] ?? application['followers'];
+
+    // The facts, as grouped rows. Empty values are dropped, exactly as the
+    // old `_DetailRow` did by returning a shrink-wrapped box.
+    final factRows = <Widget>[
+      ..._fact(AppIcons.location, 'Location', application['location']),
+      ..._fact(AppIcons.category, 'Category', application['category']),
+      ..._fact(AppIcons.building, 'City', application['city']),
+      ..._fact(AppIcons.map, 'State', application['state']),
+      ..._fact(AppIcons.call, 'Contact',
+          application['contact_number'] ?? application['contact']),
+      ..._fact(
+        AppIcons.people,
+        'Followers',
+        followersRaw != null
+            ? NumberFormat.decimalPattern().format(followersRaw)
+            : null,
+      ),
+    ];
+
+    final linkRows = <Widget>[
+      if (instagram != null)
+        _LinkRow(
+          icon: AppIcons.instagram,
+          label: 'Instagram',
+          display: (application['instagram_url'] ?? instagram).toString(),
+          url: instagram,
+        ),
+      if (portfolio.isNotEmpty)
+        _LinkRow(
+          icon: AppIcons.link,
+          label: 'Portfolio',
+          display: portfolio,
+          url: portfolio,
+        ),
+    ];
+
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
@@ -291,136 +331,89 @@ class _ApplicantDetailSheet extends StatelessWidget {
                 size: 56,
                 isVerified: isVerified,
               ),
-              const SizedBox(width: AppSpacing.md),
+              AppSpacing.gapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       displayName,
-                      style: AppTextStyles.h6,
+                      style: AppTextStyles.title3
+                          .copyWith(color: AppColors.textPrimary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (handle.isNotEmpty)
                       Text(
                         '@$handle',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                        style: AppTextStyles.footnote
+                            .copyWith(color: AppColors.textSecondary),
                       ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          _DetailRow(
-              icon: AppIcons.location,
-              label: 'Location',
-              value: application['location']),
-          _DetailRow(
-              icon: AppIcons.category,
-              label: 'Category',
-              value: application['category']),
-          _DetailRow(
-              icon: AppIcons.building,
-              label: 'City',
-              value: application['city']),
-          _DetailRow(
-              icon: AppIcons.map, label: 'State', value: application['state']),
-          _DetailRow(
-              icon: AppIcons.call,
-              label: 'Contact',
-              value: application['contact_number'] ?? application['contact']),
-          _DetailRow(
-            icon: AppIcons.people,
-            label: 'Followers',
-            value: (application['followers_count'] ?? application['followers']) !=
-                    null
-                ? NumberFormat.decimalPattern().format(
-                    application['followers_count'] ?? application['followers'])
-                : null,
-          ),
-          const SizedBox(height: AppSpacing.sm),
 
-          // Clickable Instagram link
-          if (instagram != null)
-            _LinkTile(
-              icon: AppIcons.instagram,
-              label: 'Instagram',
-              display: (application['instagram_url'] ?? instagram).toString(),
-              url: instagram,
-            ),
-          if (portfolio.isNotEmpty)
-            _LinkTile(
-              icon: AppIcons.link,
-              label: 'Portfolio',
-              display: portfolio,
-              url: portfolio,
-            ),
+          if (factRows.isNotEmpty) ...[
+            AppSpacing.gapLg,
+            GlassGroup(children: factRows),
+          ],
+
+          if (linkRows.isNotEmpty) ...[
+            AppSpacing.gapMd,
+            GlassGroup(children: linkRows),
+          ],
 
           if (pitch.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Text('Pitch', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.xs),
-            Text(pitch, style: AppTextStyles.bodyMedium),
+            AppSpacing.gapLg,
+            Text(
+              'PITCH',
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+            AppSpacing.gapSm,
+            GlassCard(
+              child: Text(
+                pitch,
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ),
           ],
         ],
       ),
     );
   }
-}
 
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final dynamic value;
-
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  /// One fact row, or nothing when the value is empty.
+  List<Widget> _fact(IconData icon, String label, dynamic value) {
     final text = (value ?? '').toString();
-    if (text.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: AppSpacing.md),
-          Text(
-            '$label:',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTextStyles.bodyMedium,
-            ),
-          ),
-        ],
+    if (text.isEmpty) return const [];
+    return [
+      GlassRow(
+        icon: icon,
+        title: label,
+        trailingText: text,
+        showChevron: false,
       ),
-    );
+    ];
   }
 }
 
-class _LinkTile extends StatelessWidget {
+class _LinkRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String display;
   final String url;
 
-  const _LinkTile({
+  const _LinkRow({
     required this.icon,
     required this.label,
     required this.display,
@@ -438,49 +431,26 @@ class _LinkTile extends StatelessWidget {
       }
     }
     if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open link'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Could not open link',
+        tone: GlassToastTone.error,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: InkWell(
-        borderRadius: AppRadius.allSm,
-        onTap: () => _open(context),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: AppColors.primary),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              '$label:',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                display,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.primary,
-                  decoration: TextDecoration.underline,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Icon(AppIcons.export_1, size: 16, color: AppColors.primary),
-          ],
-        ),
+    return GlassRow(
+      icon: icon,
+      title: label,
+      subtitle: display,
+      trailing: const Icon(
+        AppIcons.export_1,
+        size: 16,
+        color: AppColors.primary,
       ),
+      onTap: () => _open(context),
     );
   }
 }
