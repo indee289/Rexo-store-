@@ -7,7 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/campaign_cover_header.dart';
 import '../../../core/widgets/overlay_badge.dart';
-import '../../../core/widgets/premium_card.dart';
+import '../../../core/widgets/glass/glass.dart';
 import 'slots_indicator.dart';
 
 /// Detailed campaign card for the campaigns list screen.
@@ -39,11 +39,10 @@ class CampaignListCard extends StatelessWidget {
     final brandName = brandInfo?['name'] ?? 'Unknown Brand';
     final coverImageUrl = (campaign['cover_image'] ?? '').toString();
 
-    return PremiumCard(
+    return GlassCard.bare(
       onTap: () {
         context.push('/campaigns/${campaign['id']}');
       },
-      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

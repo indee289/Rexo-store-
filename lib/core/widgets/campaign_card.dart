@@ -7,7 +7,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import 'campaign_cover_header.dart';
 import 'overlay_badge.dart';
-import 'premium_card.dart';
+import 'glass/glass.dart';
 
 /// Layout variants for the shared [CampaignCard].
 ///
@@ -75,10 +75,9 @@ class CampaignCard extends StatelessWidget {
     final total =
         _asInt(campaign['total_slots'] ?? campaign['slots'] ?? campaign['totalSlots']);
 
-    final card = PremiumCard(
+    final card = GlassCard.bare(
       onTap: onTap,
-      padding: EdgeInsets.zero,
-      borderRadius: AppRadius.lg,
+      borderRadius: AppRadius.allLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
