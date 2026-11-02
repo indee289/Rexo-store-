@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../widgets/premium_card.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/glass/glass.dart';
+import '../../../core/widgets/premium_avatar.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -14,6 +18,21 @@ final adminProfileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   return await SupabaseService.getUserProfile(user.id);
 });
 
+/// Admin profile — rebuilt layout.
+///
+/// Old layout: a **raw Material `AppBar`** (the last one in the user app) over
+/// a centred column with a `CircleAvatar` initial, hardcoded 32/20/14/12pt
+/// text, a hand-built role pill, a `PremiumCard` wrapping a `ListTile` for the
+/// email, and an `OutlinedButton.icon` for sign out. The loading and error
+/// branches each duplicated the whole header.
+///
+/// New layout: collapsing large title; one identity hero card shared by all
+/// three async states (so loading no longer rebuilds a different header); the
+/// email as a grouped row; and sign out isolated in a danger section behind a
+/// glass confirm, since it was previously a single unguarded tap.
+///
+/// `adminProfileProvider`, `authProvider.signOut` and the `/login` route are
+/// unchanged.
 class AdminProfileScreen extends ConsumerWidget {
   const AdminProfileScreen({super.key});
 
@@ -21,156 +40,118 @@ class AdminProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(adminProfileProvider);
     final currentUser = SupabaseService.currentUser;
-    final theme = Theme.of(context);
+    final email = currentUser?.email ?? '';
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            // Avatar
-            profileAsync.when(
-              data: (profile) {
-                final name = profile?['full_name'] ?? profile?['name'] ?? 'Admin';
-                final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'A';
-                return Column(
+    final name = profileAsync.maybeWhen(
+      data: (p) => (p?['full_name'] ?? p?['name'] ?? 'Admin').toString(),
+      orElse: () => 'Admin',
+    );
+
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          const GlassLargeTitleHeader(title: 'Profile'),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.xl,
+              ),
+              child: GlassCard(
+                borderRadius: AppRadius.allXl,
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: Text(
-                        firstLetter,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    PremiumAvatar(
+                      name: name,
+                      size: PremiumAvatar.sizeLg,
                     ),
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLg,
                     Text(
                       name,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.title1.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      currentUser?.email ?? '',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    if (email.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        style: AppTextStyles.subheadline
+                            .copyWith(color: AppColors.textSecondary),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Role badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Admin',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    ],
+                    AppSpacing.gapSm,
+                    GlassChip.status(
+                      label: 'Admin',
+                      color: AppColors.roleAdmin,
                     ),
                   ],
-                );
-              },
-              loading: () => const CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
-              error: (_, __) => Column(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    child: const Text(
-                      'A',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Admin',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    currentUser?.email ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Contact info card
-            PremiumCard(
-              child: ListTile(
-                leading: const Icon(AppIcons.sms, color: AppColors.primary),
-                title: Text(
-                  'Email',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                subtitle: Text(
-                  currentUser?.email ?? 'No email',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface,
-                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            // Sign out button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await ref.read(authProvider.notifier).signOut();
-                  if (context.mounted) context.go('/login');
-                },
-                icon: const Icon(AppIcons.logout),
-                label: const Text('Sign Out'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Contact',
+              children: [
+                GlassRow(
+                  icon: AppIcons.sms,
+                  title: 'Email',
+                  subtitle: email.isEmpty ? 'No email' : email,
+                  showChevron: false,
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Session',
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+              ),
+              children: [
+                GlassRow(
+                  icon: AppIcons.logout,
+                  title: 'Sign out',
+                  destructive: true,
+                  showChevron: false,
+                  onTap: () => _signOut(context, ref),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final ok = await showGlassConfirm(
+      context: context,
+      title: 'Sign out',
+      message: 'You will need to sign in again to access admin tools.',
+      icon: AppIcons.logout,
+      confirmLabel: 'Sign out',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    );
+    if (!ok) return;
+
+    await ref.read(authProvider.notifier).signOut();
+    if (context.mounted) context.go('/login');
   }
 }

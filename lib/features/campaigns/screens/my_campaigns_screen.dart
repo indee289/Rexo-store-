@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../services/supabase_service.dart';
 import '../providers/campaigns_provider.dart';
 import 'campaign_applicants_screen.dart';
@@ -62,72 +60,104 @@ final userRoleProvider = FutureProvider<String?>((ref) async {
   return (profile?['role'] as String?)?.trim().toLowerCase();
 });
 
+/// My campaigns / My applications — rebuilt layout.
+///
+/// Old layout: three near-identical `Scaffold`s (one per async state) each
+/// rebuilding a `PremiumAppBar`, with lists of hand-built `Container` cards and
+/// a local `_StatusPill`, plus a `FloatingActionButton.extended` for brands.
+///
+/// New layout: one scaffold with a collapsing large title whose text follows
+/// the role, cards that lead with the campaign status, and the brand's create
+/// action as a labelled pill pinned above the safe area rather than a floating
+/// button that covers the last card.
+///
+/// `myCampaignsListProvider` (consumed by the profile screen too),
+/// `userRoleProvider`, `myApplicationsProvider`, the applicants push and the
+/// `/create-campaign` route are unchanged.
 class MyCampaignsScreen extends ConsumerWidget {
   const MyCampaignsScreen({super.key});
 
-  PreferredSizeWidget _appBar(BuildContext context, String title) {
-    return PremiumAppBar(title: title);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final roleAsync = ref.watch(userRoleProvider);
+    final isBrand = roleAsync.maybeWhen(
+      data: (role) => role == 'brand',
+      orElse: () => false,
+    );
 
-    return roleAsync.when(
-      data: (role) {
-        final isBrand = role == 'brand';
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: _appBar(context, isBrand ? 'My Campaigns' : 'My Applications'),
-          body: isBrand
-              ? const _BrandCampaignsList()
-              : const _CreatorApplicationsList(),
-          // Brand-only entry point to create a campaign (there was no way to
-          // reach campaign creation from the main app before).
-          floatingActionButton: isBrand
-              ? FloatingActionButton.extended(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  onPressed: () => context.push('/create-campaign'),
-                  icon: const Icon(AppIcons.add),
-                  label: const Text('New campaign'),
-                )
-              : null,
-        );
-      },
-      loading: () => Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _appBar(context, 'My Campaigns'),
-        body: _buildListSkeleton(),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: ClampingScrollPhysics(),
+            ),
+            slivers: [
+              GlassLargeTitleHeader(
+                title: isBrand ? 'My campaigns' : 'My applications',
+                automaticallyImplyLeading: false,
+              ),
+              roleAsync.when(
+                data: (role) => role == 'brand'
+                    ? const _BrandCampaignsSliver()
+                    : const _CreatorApplicationsSliver(),
+                loading: () => const _ListSkeleton(),
+                error: (e, _) => SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassErrorState(
+                    title: 'Failed to load',
+                    message: 'Please try again in a moment.',
+                    onRetry: () => ref.invalidate(userRoleProvider),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isBrand)
+            Positioned(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+              child: GlassButton(
+                label: 'New campaign',
+                icon: AppIcons.add,
+                onPressed: () => context.push('/create-campaign'),
+              ),
+            ),
+        ],
       ),
-      error: (e, _) => Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _appBar(context, 'My Campaigns'),
-        body: const EmptyState(
-          icon: AppIcons.warning_2,
-          title: 'Failed to load',
-          subtitle: 'Please try again in a moment.',
+    );
+  }
+}
+
+/// Skeletons shared by the role and list loading states.
+class _ListSkeleton extends StatelessWidget {
+  const _ListSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        0,
+      ),
+      sliver: SliverList.separated(
+        itemCount: 4,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        itemBuilder: (_, __) => const GlassSkeleton(
+          height: 104,
+          borderRadius: AppRadius.allLg,
         ),
       ),
     );
   }
 }
 
-/// Shimmer skeleton list shared by the brand/creator list loading states.
-Widget _buildListSkeleton() {
-  return ListView.builder(
-    padding: const EdgeInsets.all(AppSpacing.lg),
-    itemCount: 4,
-    itemBuilder: (_, __) => const Padding(
-      padding: EdgeInsets.only(bottom: AppSpacing.md),
-      child: ShimmerCard(height: 100),
-    ),
-  );
-}
-
-class _BrandCampaignsList extends ConsumerWidget {
-  const _BrandCampaignsList();
+class _BrandCampaignsSliver extends ConsumerWidget {
+  const _BrandCampaignsSliver();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,39 +166,48 @@ class _BrandCampaignsList extends ConsumerWidget {
     return campaignsAsync.when(
       data: (campaigns) {
         if (campaigns.isEmpty) {
-          return const EmptyState(
-            icon: AppIcons.volume_high,
-            title: 'No campaigns yet',
-            subtitle: 'Create your first campaign to find creators',
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: GlassEmptyState(
+              icon: AppIcons.volume_high,
+              title: 'No campaigns yet',
+              message: 'Create your first campaign to find creators.',
+              actionLabel: 'New campaign',
+              onAction: () => context.push('/create-campaign'),
+            ),
           );
         }
-
-        return RefreshIndicator(
-          color: AppColors.primary,
-          onRefresh: () async {
-            ref.invalidate(myCampaignsListProvider);
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            110,
+          ),
+          sliver: SliverList.separated(
             itemCount: campaigns.length,
-            itemBuilder: (context, index) {
-              return _BrandCampaignCard(campaign: campaigns[index]);
-            },
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+            itemBuilder: (context, index) => RepaintBoundary(
+              child: _BrandCampaignCard(campaign: campaigns[index]),
+            ),
           ),
         );
       },
-      loading: _buildListSkeleton,
-      error: (e, _) => const EmptyState(
-        icon: AppIcons.warning_2,
-        title: 'Failed to load campaigns',
-        subtitle: 'Pull to refresh or try again shortly.',
+      loading: () => const _ListSkeleton(),
+      error: (e, _) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: GlassErrorState(
+          title: 'Failed to load campaigns',
+          message: 'Pull to refresh or try again shortly.',
+          onRetry: () => ref.invalidate(myCampaignsListProvider),
+        ),
       ),
     );
   }
 }
 
-class _CreatorApplicationsList extends ConsumerWidget {
-  const _CreatorApplicationsList();
+class _CreatorApplicationsSliver extends ConsumerWidget {
+  const _CreatorApplicationsSliver();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -177,32 +216,40 @@ class _CreatorApplicationsList extends ConsumerWidget {
     return applicationsAsync.when(
       data: (applications) {
         if (applications.isEmpty) {
-          return const EmptyState(
-            icon: AppIcons.document,
-            title: 'No applications yet',
-            subtitle: 'Apply to campaigns to start collaborating with brands',
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: GlassEmptyState(
+              icon: AppIcons.document,
+              title: 'No applications yet',
+              message:
+                  'Apply to campaigns to start collaborating with brands.',
+            ),
           );
         }
-
-        return RefreshIndicator(
-          color: AppColors.primary,
-          onRefresh: () async {
-            ref.invalidate(myApplicationsProvider);
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.xxl,
+          ),
+          sliver: SliverList.separated(
             itemCount: applications.length,
-            itemBuilder: (context, index) {
-              return _ApplicationCard(application: applications[index]);
-            },
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+            itemBuilder: (context, index) => RepaintBoundary(
+              child: _ApplicationCard(application: applications[index]),
+            ),
           ),
         );
       },
-      loading: _buildListSkeleton,
-      error: (e, _) => const EmptyState(
-        icon: AppIcons.warning_2,
-        title: 'Failed to load applications',
-        subtitle: 'Pull to refresh or try again shortly.',
+      loading: () => const _ListSkeleton(),
+      error: (e, _) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: GlassErrorState(
+          title: 'Failed to load applications',
+          message: 'Pull to refresh or try again shortly.',
+          onRetry: () => ref.invalidate(myApplicationsProvider),
+        ),
       ),
     );
   }
@@ -227,14 +274,16 @@ Color _statusColor(String status) {
   }
 }
 
-class _BrandCampaignCard extends StatelessWidget {
-  final Map<String, dynamic> campaign;
+String _capitalize(String v) =>
+    v.isEmpty ? v : v[0].toUpperCase() + v.substring(1).toLowerCase();
 
+class _BrandCampaignCard extends StatelessWidget {
   const _BrandCampaignCard({required this.campaign});
+
+  final Map<String, dynamic> campaign;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final title = (campaign['title'] ?? 'Untitled Campaign').toString();
     final status = (campaign['status'] ?? 'draft').toString();
     final createdAt = DateTime.tryParse(
@@ -244,12 +293,12 @@ class _BrandCampaignCard extends StatelessWidget {
     final applications = campaign['applications'] as List? ?? [];
     final totalSlots = campaign['slots'] ?? 0;
     final filledSlots = applications.length;
-    final statusColor = status == 'draft'
-        ? AppColors.textSecondary
-        : _statusColor(status);
+    final statusColor =
+        status == 'draft' ? AppColors.textSecondary : _statusColor(status);
 
-    return InkWell(
+    return GlassCard(
       borderRadius: AppRadius.allLg,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -260,99 +309,6 @@ class _BrandCampaignCard extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: AppRadius.allLg,
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.labelLarge,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                _StatusPill(label: status, color: statusColor),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Icon(AppIcons.people,
-                    size: 14,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  '$filledSlots applicant${filledSlots == 1 ? '' : 's'} · $totalSlots slots',
-                  style: AppTextStyles.bodySmall,
-                ),
-                const Spacer(),
-                Icon(AppIcons.calendar,
-                    size: 14,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                const SizedBox(width: AppSpacing.xs),
-                Text(dateStr,
-                    style: AppTextStyles.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Text(
-                  'View applicants',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                const Icon(AppIcons.arrow_right_3,
-                    size: 14, color: AppColors.primary),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ApplicationCard extends StatelessWidget {
-  final Map<String, dynamic> application;
-
-  const _ApplicationCard({required this.application});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final campaign = application['campaigns'] as Map<String, dynamic>? ?? {};
-    final campaignTitle = (campaign['title'] ?? 'Unknown Campaign').toString();
-    final status = (application['status'] ?? 'pending').toString();
-    final pitch = (application['pitch'] ?? '').toString();
-    final createdAt = DateTime.tryParse(
-        (application['created_at'] ?? application['createdAt'] ?? '').toString());
-    final dateStr =
-        createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: theme.dividerColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -360,35 +316,64 @@ class _ApplicationCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  campaignTitle,
-                  style: AppTextStyles.labelLarge,
+                  title,
+                  style: AppTextStyles.headline.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              _StatusPill(label: status, color: _statusColor(status)),
+              AppSpacing.gapSm,
+              GlassChip.status(
+                label: _capitalize(status),
+                color: statusColor,
+              ),
             ],
           ),
-          if (pitch.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              pitch,
-              style: AppTextStyles.bodySmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: AppSpacing.sm),
+          AppSpacing.gapMd,
           Row(
             children: [
-              Icon(AppIcons.calendar,
-                  size: 14,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6)),
-              const SizedBox(width: AppSpacing.xs),
-              Text('Applied $dateStr',
-                  style: AppTextStyles.bodySmall,
+              const Icon(
+                AppIcons.people,
+                size: 14,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$filledSlots applicant${filledSlots == 1 ? '' : 's'}'
+                '  ·  $totalSlots slots',
+                style: AppTextStyles.footnote
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+              const Spacer(),
+              if (dateStr.isNotEmpty)
+                Text(
+                  dateStr,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption1
+                      .copyWith(color: AppColors.textHint),
+                ),
+            ],
+          ),
+          AppSpacing.gapSm,
+          Row(
+            children: [
+              Text(
+                'View applicants',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(
+                AppIcons.arrow_right_3,
+                size: 14,
+                color: AppColors.primary,
+              ),
             ],
           ),
         ],
@@ -397,30 +382,80 @@ class _ApplicationCard extends StatelessWidget {
   }
 }
 
-/// Small status pill used on the brand campaign / application cards.
-class _StatusPill extends StatelessWidget {
-  final String label;
-  final Color color;
+class _ApplicationCard extends StatelessWidget {
+  const _ApplicationCard({required this.application});
 
-  const _StatusPill({required this.label, required this.color});
+  final Map<String, dynamic> application;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: AppRadius.allSm,
-      ),
-      child: Text(
-        label[0].toUpperCase() + label.substring(1).toLowerCase(),
-        style: AppTextStyles.labelSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+    final campaign = application['campaigns'] as Map<String, dynamic>? ?? {};
+    final campaignTitle = (campaign['title'] ?? 'Unknown Campaign').toString();
+    final status = (application['status'] ?? 'pending').toString();
+    final pitch = (application['pitch'] ?? '').toString();
+    final createdAt = DateTime.tryParse(
+        (application['created_at'] ?? application['createdAt'] ?? '')
+            .toString());
+    final dateStr =
+        createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
+
+    return GlassCard(
+      borderRadius: AppRadius.allLg,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  campaignTitle,
+                  style: AppTextStyles.headline.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              AppSpacing.gapSm,
+              GlassChip.status(
+                label: _capitalize(status),
+                color: _statusColor(status),
+              ),
+            ],
+          ),
+          if (pitch.isNotEmpty) ...[
+            AppSpacing.gapSm,
+            Text(
+              pitch,
+              style: AppTextStyles.footnote.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.45,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (dateStr.isNotEmpty) ...[
+            AppSpacing.gapSm,
+            Row(
+              children: [
+                const Icon(
+                  AppIcons.calendar,
+                  size: 13,
+                  color: AppColors.textHint,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'Applied $dateStr',
+                  style: AppTextStyles.caption1
+                      .copyWith(color: AppColors.textHint),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

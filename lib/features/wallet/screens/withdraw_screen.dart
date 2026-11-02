@@ -7,12 +7,27 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/premium_text_field.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/wallet_provider.dart';
 
+/// Withdraw — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a form where every field was preceded by a
+/// local `_label` helper printing a bare `Text`, and the method picker was two
+/// hand-built `AnimatedContainer`s with their own selected/unselected border
+/// logic.
+///
+/// New layout: collapsing large title; the available balance as a green-edged
+/// card (it is the constraint the user is working against, so it stays at the
+/// top); the method picker as a segmented control; field labels from the
+/// shared text field; and the submit action pinned so it is reachable while
+/// the bank fields are on screen.
+///
+/// `walletProvider`, `walletActionsProvider.submitWithdrawal`, the exact
+/// method strings ('UPI' / 'Bank Transfer'), the payout-detail keys and every
+/// validation rule are unchanged.
 class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key});
 
@@ -27,9 +42,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   final _accountNumberController = TextEditingController();
   final _ifscController = TextEditingController();
   final _accountHolderController = TextEditingController();
-  String _method = 'UPI';
+
+  /// Index maps into [_methods]; the string sent to the provider is unchanged.
+  static const _methods = ['UPI', 'Bank Transfer'];
+  int _methodIndex = 0;
+
   bool _isSubmitting = false;
   double _availableBalance = 0;
+
+  String get _method => _methods[_methodIndex];
 
   @override
   void dispose() {
@@ -54,49 +75,40 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         payoutDetails = {
           'account_number': _accountNumberController.text.trim(),
           'ifsc_code': _ifscController.text.trim(),
-          'account_holder_name':
-              _accountHolderController.text.trim(),
+          'account_holder_name': _accountHolderController.text.trim(),
         };
       }
 
-      final success = await ref
-          .read(walletActionsProvider.notifier)
-          .submitWithdrawal(
-            amount: amount,
-            method: _method,
-            payoutDetails: payoutDetails,
-          );
+      final success =
+          await ref.read(walletActionsProvider.notifier).submitWithdrawal(
+                amount: amount,
+                method: _method,
+                payoutDetails: payoutDetails,
+              );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Withdrawal request submitted successfully!'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showGlassSnackBar(
+          context,
+          message: 'Withdrawal request submitted successfully!',
+          tone: GlassToastTone.success,
         );
         context.pop();
       } else if (!success && mounted) {
         // submitWithdrawal returns false (instead of throwing) on failure —
         // previously the user saw nothing at all.
         final err = ref.read(walletActionsProvider).error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorUtils.sanitize(err)),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showGlassSnackBar(
+          context,
+          message: ErrorUtils.sanitize(err),
+          tone: GlassToastTone.error,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorUtils.sanitize(e)),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showGlassSnackBar(
+          context,
+          message: ErrorUtils.sanitize(e),
+          tone: GlassToastTone.error,
         );
       }
     } finally {
@@ -109,222 +121,197 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final walletAsync = ref.watch(walletProvider);
     walletAsync.whenData((wallet) {
       if (wallet != null) {
-        _availableBalance =
-            (wallet['available_balance'] ?? 0).toDouble();
+        _availableBalance = (wallet['available_balance'] ?? 0).toDouble();
       }
     });
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
-    final cardBg = isDark ? AppColors.darkCard : Colors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Withdraw',
-        showBack: true,
-        onBack: () => context.pop(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Available balance ─────────────────────────────────────
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.06),
-                  borderRadius: AppRadius.allMd,
-                  border: Border.all(
-                      color: AppColors.success.withOpacity(0.2)),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: CustomScrollView(
+              slivers: [
+                GlassLargeTitleHeader(
+                  title: 'Withdraw',
+                  showBack: true,
+                  onBack: () => context.pop(),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(AppIcons.wallet_2,
-                        color: AppColors.success, size: 24),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'Available Balance',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: cs.onSurfaceVariant,
+                        // The balance is the constraint, so it leads.
+                        GlassCard(
+                          borderRadius: AppRadius.allLg,
+                          rim: AppColors.success.withOpacity(0.28),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Row(
+                            children: [
+                              const GlassIconBubble(
+                                icon: AppIcons.wallet_2,
+                                color: AppColors.success,
+                                size: 40,
+                                iconSize: 20,
+                              ),
+                              AppSpacing.gapMd,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Available balance',
+                                      style: AppTextStyles.footnote.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\u20B9'
+                                      '${_availableBalance.toStringAsFixed(2)}',
+                                      style: AppTextStyles.title1.copyWith(
+                                        color: AppColors.success,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          '₹${_availableBalance.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.success,
+                        AppSpacing.gapXl,
+
+                        GlassTextField(
+                          controller: _amountController,
+                          label: 'Amount',
+                          hint: '0.00',
+                          prefixText: '\u20B9 ',
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}'),
+                            ),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter an amount';
+                            }
+                            final amount = double.tryParse(value.trim());
+                            if (amount == null || amount <= 0) {
+                              return 'Please enter a valid amount';
+                            }
+                            if (amount > _availableBalance) {
+                              return 'Amount exceeds available balance';
+                            }
+                            return null;
+                          },
+                        ),
+                        AppSpacing.gapLg,
+
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 4,
+                            bottom: AppSpacing.sm,
+                          ),
+                          child: Text(
+                            'Withdrawal method',
+                            style: AppTextStyles.labelMedium
+                                .copyWith(color: AppColors.textSecondary),
                           ),
                         ),
+                        GlassTabBar(
+                          labels: _methods,
+                          selectedIndex: _methodIndex,
+                          onSelected: (i) =>
+                              setState(() => _methodIndex = i),
+                          margin: EdgeInsets.zero,
+                        ),
+                        AppSpacing.gapLg,
+
+                        if (_method == 'UPI')
+                          GlassTextField(
+                            controller: _upiIdController,
+                            label: 'UPI ID',
+                            hint: 'yourname@upi',
+                            prefixIcon: AppIcons.user_tag,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'UPI ID is required';
+                              }
+                              return null;
+                            },
+                          )
+                        else ...[
+                          GlassTextField(
+                            controller: _accountNumberController,
+                            label: 'Account number',
+                            hint: 'Enter account number',
+                            prefixIcon: AppIcons.hashtag,
+                            keyboardType: TextInputType.number,
+                            validator: (v) =>
+                                (v == null || v.trim().isEmpty)
+                                    ? 'Account number is required'
+                                    : null,
+                          ),
+                          AppSpacing.gapLg,
+                          GlassTextField(
+                            controller: _ifscController,
+                            label: 'IFSC code',
+                            hint: 'e.g. SBIN0001234',
+                            prefixIcon: AppIcons.building,
+                            validator: (v) =>
+                                (v == null || v.trim().isEmpty)
+                                    ? 'IFSC code is required'
+                                    : null,
+                          ),
+                          AppSpacing.gapLg,
+                          GlassTextField(
+                            controller: _accountHolderController,
+                            label: 'Account holder name',
+                            hint: 'Enter name',
+                            prefixIcon: AppIcons.user,
+                            textCapitalization: TextCapitalization.words,
+                            validator: (v) =>
+                                (v == null || v.trim().isEmpty)
+                                    ? 'Account holder name is required'
+                                    : null,
+                          ),
+                        ],
+                        const SizedBox(height: 110),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Amount ────────────────────────────────────────────────
-              _label(context, 'Amount'),
-              PremiumTextField(
-                controller: _amountController,
-                hint: '0.00',
-                prefixText: '₹ ',
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                      RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter an amount';
-                  }
-                  final amount = double.tryParse(value.trim());
-                  if (amount == null || amount <= 0) {
-                    return 'Please enter a valid amount';
-                  }
-                  if (amount > _availableBalance) {
-                    return 'Amount exceeds available balance';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Method ────────────────────────────────────────────────
-              _label(context, 'Withdrawal Method'),
-              Row(
-                children: ['UPI', 'Bank Transfer'].map((m) {
-                  final selected = _method == m;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          right: m == 'UPI' ? 8 : 0),
-                      child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _method = m),
-                        child: AnimatedContainer(
-                          duration:
-                              const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? AppColors.primary
-                                    .withOpacity(isDark ? 0.16 : 0.10)
-                                : cardBg,
-                            borderRadius: AppRadius.allMd,
-                            border: Border.all(
-                              color: selected
-                                  ? AppColors.primary
-                                  : borderColor,
-                              width: selected ? 1.5 : 1,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            m,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: selected
-                                  ? AppColors.primary
-                                  : cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Bank details ──────────────────────────────────────────
-              if (_method == 'UPI') ...[
-                _label(context, 'UPI ID'),
-                PremiumTextField(
-                  controller: _upiIdController,
-                  hint: 'yourname@upi',
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'UPI ID is required';
-                    }
-                    return null;
-                  },
-                ),
-              ] else ...[
-                _bankField(context, 'Account Number',
-                    _accountNumberController,
-                    'Enter account number', TextInputType.number),
-                const SizedBox(height: AppSpacing.lg),
-                _bankField(context, 'IFSC Code', _ifscController,
-                    'e.g. SBIN0001234', null),
-                const SizedBox(height: AppSpacing.lg),
-                _bankField(context, 'Account Holder Name',
-                    _accountHolderController, 'Enter name', null),
               ],
-
-              const SizedBox(height: 32),
-
-              PremiumButton(
-                label: 'Submit Withdrawal',
-                loading: _isSubmitting,
-                onPressed: _isSubmitting ? null : _submit,
-              ),
-            ],
+            ),
           ),
-        ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: 'Submit withdrawal',
+              loading: _isSubmitting,
+              size: GlassButtonSize.large,
+              onPressed: _isSubmitting ? null : _submit,
+            ),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _label(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      );
-
-  Widget _bankField(
-    BuildContext context,
-    String label,
-    TextEditingController controller,
-    String hint,
-    TextInputType? keyboardType,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(context, label),
-        PremiumTextField(
-          controller: controller,
-          hint: hint,
-          keyboardType: keyboardType,
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) return '$label is required';
-            return null;
-          },
-        ),
-      ],
     );
   }
 }

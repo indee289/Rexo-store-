@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../widgets/premium_card.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/admin_provider.dart';
 
+/// Audit logs — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` with a stock `IconButton` refresh over a
+/// `ListView` of admin-local `PremiumCard`s, each a hand-built row with
+/// hardcoded 13/11/10pt text, plus a bare centred column for the empty state
+/// and a raw `Text` for errors.
+///
+/// New layout: collapsing large title with the entry count and a glass refresh
+/// button, and the log as one grouped section of rows — an audit trail is a
+/// list, and the old per-entry cards made 50 entries read as 50 objects.
+///
+/// `adminAuditLogsProvider` is unchanged.
 class AuditLogsScreen extends ConsumerWidget {
   const AuditLogsScreen({super.key});
 
@@ -16,102 +27,94 @@ class AuditLogsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final logs = ref.watch(adminAuditLogsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Audit Logs',
-        actions: [
-          IconButton(
-            icon: const Icon(AppIcons.refresh, size: 20),
-            onPressed: () => ref.invalidate(adminAuditLogsProvider),
-          ),
-        ],
-      ),
-      body: logs.when(
-        data: (list) {
-          if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(AppIcons.document_text, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-                  const SizedBox(height: 12),
-                  Text('No audit logs',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ],
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        slivers: [
+          GlassLargeTitleHeader(
+            title: 'Audit logs',
+            subtitle: logs.maybeWhen(
+              data: (l) => l.isEmpty ? null : '${l.length} entries',
+              orElse: () => null,
+            ),
+            actions: [
+              GlassIconButton(
+                icon: AppIcons.refresh,
+                tooltip: 'Refresh',
+                size: 36,
+                iconSize: 18,
+                onTap: () => ref.invalidate(adminAuditLogsProvider),
               ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            itemBuilder: (context, index) {
-              final log = list[index];
-              final createdAt = log['created_at'] != null
-                  ? DateFormat('MMM dd, yyyy HH:mm')
-                      .format(DateTime.parse(log['created_at']))
-                  : '';
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: PremiumCard(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(AppIcons.document_text,
-                            size: 14, color: AppColors.primary),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              log['action_type'] ?? 'Unknown action',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (log['reason'] != null)
-                              Text(
-                                log['reason'],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            const SizedBox(height: 4),
-                            Text(
-                              createdAt,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+            ],
+          ),
+          logs.when(
+            data: (list) {
+              if (list.isEmpty) {
+                return const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: GlassEmptyState(
+                    icon: AppIcons.document_text,
+                    title: 'No audit logs',
+                    message: 'Admin actions will be recorded here.',
                   ),
+                );
+              }
+              return SliverToBoxAdapter(
+                child: GlassSection(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+                  ),
+                  children: [
+                    for (final log in list) _LogRow(log: log),
+                  ],
                 ),
               );
             },
-          );
-        },
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text(ErrorUtils.sanitize(error))),
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassLoader(),
+            ),
+            error: (error, _) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassErrorState(
+                title: 'Failed to load audit logs',
+                message: ErrorUtils.sanitize(error),
+                onRetry: () => ref.invalidate(adminAuditLogsProvider),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _LogRow extends StatelessWidget {
+  const _LogRow({required this.log});
+
+  final Map<String, dynamic> log;
+
+  @override
+  Widget build(BuildContext context) {
+    final createdAt = log['created_at'] != null
+        ? DateFormat('MMM dd, yyyy HH:mm')
+            .format(DateTime.parse(log['created_at']))
+        : '';
+    final reason = log['reason']?.toString();
+
+    final subtitle = [
+      if (reason != null && reason.isNotEmpty) reason,
+      if (createdAt.isNotEmpty) createdAt,
+    ].join('  ·  ');
+
+    return GlassRow(
+      icon: AppIcons.document_text,
+      title: (log['action_type'] ?? 'Unknown action').toString(),
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      showChevron: false,
     );
   }
 }

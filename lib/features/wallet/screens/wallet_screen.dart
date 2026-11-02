@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/entrance_animation.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../../../core/widgets/premium_button.dart';
-import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/wallet_provider.dart';
 
+/// Wallet — rebuilt layout.
+///
+/// Old layout: `PremiumAppBar` over a `SingleChildScrollView` containing a
+/// gradient `Container` hero with two translucent `_GlassStat` boxes and the
+/// Withdraw button inside it, then a bare `Text` heading above a column of
+/// hand-built `_TransactionTile` containers.
+///
+/// New layout: collapsing large title; the balance hero keeps the brand fill
+/// but the two sub-balances move **out** of it onto their own stat pills, so
+/// the card states one number and the withdraw action is unobstructed;
+/// activity becomes a titled section of rows with the amount and status as
+/// trailing detail.
+///
+/// `walletProvider`, `transactionsProvider`, the `take(20)` cap, the status
+/// colour mapping and the `/wallet/withdraw` route are unchanged.
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
 
@@ -23,96 +35,111 @@ class WalletScreen extends ConsumerWidget {
     final walletAsync = ref.watch(walletProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const PremiumAppBar(title: 'Wallet'),
+    return GlassScaffold(
+      padBodyForAppBar: false,
       body: RefreshIndicator(
         color: AppColors.primary,
+        backgroundColor: Colors.white,
+        edgeOffset: MediaQuery.of(context).padding.top + kToolbarHeight,
         onRefresh: () async {
           ref.invalidate(walletProvider);
           ref.invalidate(transactionsProvider);
         },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              walletAsync.when(
-                data: (wallet) => _BalanceHeroCard(wallet: wallet),
-                loading: () => const ShimmerCard(height: 210),
-                error: (e, _) => const _BalanceHeroCard(wallet: null),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
+          slivers: [
+            const GlassLargeTitleHeader(
+              title: 'Wallet',
+              automaticallyImplyLeading: false,
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                ),
+                child: walletAsync.when(
+                  data: (wallet) => _BalanceBlock(wallet: wallet),
+                  loading: () => const _BalanceSkeleton(),
+                  error: (e, _) => const _BalanceBlock(wallet: null),
+                ),
               ),
+            ),
 
-              const SizedBox(height: AppSpacing.xl),
-
-              Row(
-                children: [
-                  Text(
-                    'Recent activity',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              transactionsAsync.when(
-                data: (transactions) {
-                  if (transactions.isEmpty) {
-                    return const EmptyState(
+            transactionsAsync.when(
+              data: (transactions) {
+                if (transactions.isEmpty) {
+                  return const SliverToBoxAdapter(
+                    child: GlassEmptyState(
                       icon: AppIcons.receipt,
                       title: 'No activity yet',
-                      subtitle:
+                      message:
                           'Your earnings and withdrawals will appear here.',
-                    );
-                  }
-                  final visible = transactions.take(20).toList();
-                  return Column(
-                    children: [
-                      for (var i = 0; i < visible.length; i++)
-                        _TransactionTile(transaction: visible[i])
-                            .staggeredEntrance(i),
-                    ],
-                  );
-                },
-                loading: () => Column(
-                  children: List.generate(
-                    4,
-                    (_) => const Padding(
-                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: ShimmerCard(height: 72),
+                      compact: true,
                     ),
+                  );
+                }
+                final visible = transactions.take(20).toList();
+                return SliverToBoxAdapter(
+                  child: GlassSection(
+                    title: 'Recent activity',
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+                    ),
+                    children: [
+                      for (final t in visible) _TransactionRow(transaction: t),
+                    ],
                   ),
-                ),
-                error: (e, _) => EmptyState(
-                  icon: AppIcons.warning_2,
-                  title: "Couldn't load your activity",
-                  subtitle: ErrorUtils.sanitize(e),
-                  ctaLabel: 'Retry',
-                  ctaIcon: AppIcons.refresh,
-                  onCta: () => ref.invalidate(transactionsProvider),
+                );
+              },
+              loading: () => const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.xxl),
+                  child: GlassLoader(),
                 ),
               ),
-
-              const SizedBox(height: 90),
-            ],
-          ),
+              error: (e, _) => SliverToBoxAdapter(
+                child: GlassErrorState(
+                  compact: true,
+                  title: "Couldn't load your activity",
+                  message: ErrorUtils.sanitize(e),
+                  onRetry: () => ref.invalidate(transactionsProvider),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Premium gradient "hero" balance card: big available balance, two stat
-/// chips (Escrow / Earnings) and a full-width Withdraw action.
-class _BalanceHeroCard extends StatelessWidget {
+/// Brand balance card plus the two sub-balance pills beneath it.
+class _BalanceBlock extends StatelessWidget {
+  const _BalanceBlock({required this.wallet});
+
   final Map<String, dynamic>? wallet;
 
-  const _BalanceHeroCard({required this.wallet});
+  static double _toDouble(dynamic v) {
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '') ?? 0;
+  }
+
+  static String _format(double amount) {
+    try {
+      return NumberFormat('#,##0.##', 'en_IN').format(amount);
+    } catch (_) {
+      return amount.toStringAsFixed(2);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,271 +147,118 @@ class _BalanceHeroCard extends StatelessWidget {
     final escrow = _toDouble(wallet?['escrow_balance']);
     final earnings = _toDouble(wallet?['total_earnings']);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.allXl,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GlassSurface(
+          level: GlassLevel.card,
+          borderRadius: AppRadius.allXl,
+          gradient: AppColors.primaryGradient,
+          bordered: false,
+          shadow: AppElevation.brand(false),
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(AppIcons.wallet_3,
-                  size: 16, color: Colors.white.withOpacity(0.85)),
-              const SizedBox(width: 6),
-              Text(
-                'Available balance',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.85),
-                ),
+              Row(
+                children: [
+                  Icon(
+                    AppIcons.wallet_3,
+                    size: 15,
+                    color: Colors.white.withOpacity(0.82),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'AVAILABLE BALANCE',
+                    style: AppTextStyles.caption1.copyWith(
+                      color: Colors.white.withOpacity(0.82),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.9,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '₹${_formatAmount(available)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              height: 1.05,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _GlassStat(
-                  icon: AppIcons.lock_1,
-                  label: 'In escrow',
-                  value: '₹${_formatAmount(escrow)}',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _GlassStat(
-                  icon: AppIcons.money_recive,
-                  label: 'Total earned',
-                  value: '₹${_formatAmount(earnings)}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          PremiumButton(
-            label: 'Withdraw',
-            icon: AppIcons.money_send,
-            variant: PremiumButtonVariant.glass,
-            expand: true,
-            onPressed: () => context.push('/wallet/withdraw'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static double _toDouble(dynamic v) {
-    if (v is num) return v.toDouble();
-    return double.tryParse(v?.toString() ?? '') ?? 0;
-  }
-
-  static String _formatAmount(double amount) {
-    try {
-      return NumberFormat('#,##0.##', 'en_IN').format(amount);
-    } catch (_) {
-      return amount.toStringAsFixed(2);
-    }
-  }
-}
-
-/// Translucent stat chip used inside the gradient hero card.
-class _GlassStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _GlassStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: AppRadius.allMd,
-        border: Border.all(color: Colors.white.withOpacity(0.18)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 13, color: Colors.white.withOpacity(0.85)),
-              const SizedBox(width: 5),
-              Flexible(
+              AppSpacing.gapSm,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  label,
+                  '\u20B9${_format(available)}',
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.85),
+                  style: AppTextStyles.largeTitle.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 42,
+                    letterSpacing: -1,
+                    height: 1.05,
                   ),
                 ),
               ),
+              AppSpacing.gapLg,
+              GlassButton.glass(
+                label: 'Withdraw',
+                icon: AppIcons.money_send,
+                onPressed: () => context.push('/wallet/withdraw'),
+              ),
             ],
           ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+        ),
+        AppSpacing.gapMd,
+        // Sub-balances live outside the hero so the card states one number.
+        Row(
+          children: [
+            Expanded(
+              child: GlassStatPill(
+                icon: AppIcons.lock_1,
+                value: '\u20B9${_format(escrow)}',
+                label: 'In escrow',
+              ),
             ),
-          ),
-        ],
-      ),
+            AppSpacing.gapMd,
+            Expanded(
+              child: GlassStatPill(
+                icon: AppIcons.money_recive,
+                value: '\u20B9${_format(earnings)}',
+                label: 'Total earned',
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-/// A single wallet activity row (withdrawal). Status colours now match the
-/// real `withdrawals.status` values: pending / processing / completed /
-/// rejected.
-class _TransactionTile extends StatelessWidget {
+class _BalanceSkeleton extends StatelessWidget {
+  const _BalanceSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: const [
+        GlassSkeleton(height: 182, borderRadius: AppRadius.allXl),
+        SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(child: GlassSkeleton(height: 72)),
+            SizedBox(width: AppSpacing.md),
+            Expanded(child: GlassSkeleton(height: 72)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// A single wallet activity row (withdrawal). Status colours match the real
+/// `withdrawals.status` values: pending / processing / completed / rejected.
+class _TransactionRow extends StatelessWidget {
+  const _TransactionRow({required this.transaction});
+
   final Map<String, dynamic> transaction;
 
-  const _TransactionTile({required this.transaction});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final amount = _toDouble(transaction['amount']);
-    final status = (transaction['status'] ?? 'pending').toString().toLowerCase();
-    final method =
-        (transaction['payment_method'] ?? transaction['method'] ?? '')
-            .toString();
-    final createdAt = DateTime.tryParse(
-        (transaction['created_at'] ?? transaction['createdAt'] ?? '')
-            .toString());
-    final dateStr =
-        createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
-    final statusColor = _statusColor(status);
-    final subtitle =
-        [if (method.isNotEmpty) method, if (dateStr.isNotEmpty) dateStr]
-            .join(' • ');
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppRadius.allLg,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.10),
-              borderRadius: AppRadius.allMd,
-            ),
-            child: const Icon(AppIcons.money_send,
-                color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Withdrawal',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
-                  ),
-                ),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '-₹${_formatAmount(amount)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.12),
-                  borderRadius: AppRadius.pillAll,
-                ),
-                child: Text(
-                  _capitalize(status),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _statusColor(String status) {
+  static Color _statusColor(String status) {
     switch (status) {
       case 'completed':
         return AppColors.success;
@@ -404,7 +278,7 @@ class _TransactionTile extends StatelessWidget {
     return double.tryParse(v?.toString() ?? '') ?? 0;
   }
 
-  static String _formatAmount(double amount) {
+  static String _format(double amount) {
     try {
       return NumberFormat('#,##0.##', 'en_IN').format(amount);
     } catch (_) {
@@ -415,5 +289,53 @@ class _TransactionTile extends StatelessWidget {
   static String _capitalize(String value) {
     if (value.isEmpty) return value;
     return value[0].toUpperCase() + value.substring(1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = _toDouble(transaction['amount']);
+    final status =
+        (transaction['status'] ?? 'pending').toString().toLowerCase();
+    final method =
+        (transaction['payment_method'] ?? transaction['method'] ?? '')
+            .toString();
+    final createdAt = DateTime.tryParse(
+        (transaction['created_at'] ?? transaction['createdAt'] ?? '')
+            .toString());
+    final dateStr =
+        createdAt != null ? DateFormat('dd MMM yyyy').format(createdAt) : '';
+    final statusColor = _statusColor(status);
+
+    final subtitle = [
+      if (method.isNotEmpty) method,
+      if (dateStr.isNotEmpty) dateStr,
+    ].join('  ·  ');
+
+    return GlassRow(
+      icon: AppIcons.money_send,
+      title: 'Withdrawal',
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      showChevron: false,
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '-\u20B9${_format(amount)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.headline.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          GlassChip.status(
+            label: _capitalize(status),
+            color: statusColor,
+          ),
+        ],
+      ),
+    );
   }
 }
