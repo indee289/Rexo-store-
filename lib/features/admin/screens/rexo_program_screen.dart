@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../widgets/premium_card.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../services/supabase_service.dart';
 
 final _rexoProgramProvider =
@@ -17,6 +18,21 @@ final _rexoProgramProvider =
   return List<Map<String, dynamic>>.from(response);
 });
 
+/// Admin Campster Program review — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over admin-local `PremiumCard`s, each with a
+/// hand-built tinted icon square, the status rendered as plain grey body text,
+/// and an `ElevatedButton`/`OutlinedButton` pair carrying inline `styleFrom`
+/// colours. Empty and error states were stacked `Text`s.
+///
+/// New layout: a collapsing large title, cards on the shared surface with the
+/// status as a colour-coded chip, a `GlassButton` pair for the decision, and
+/// the shared glass states with pull-to-refresh and a retry.
+///
+/// The table, the ordering, the `status` writes and the `_rexoProgramProvider`
+/// invalidation are unchanged. The two failure toasts now run through
+/// `ErrorUtils.sanitize` like the rest of the app, instead of interpolating a
+/// raw `e.toString()` into the message.
 class RexoProgramScreen extends ConsumerWidget {
   const RexoProgramScreen({super.key});
 
@@ -24,156 +40,182 @@ class RexoProgramScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final applications = ref.watch(_rexoProgramProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Campster Program Review',
-      ),
-      body: applications.when(
-        data: (list) {
-          if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(AppIcons.award, size: 48, color: AppColors.warning),
-                  const SizedBox(height: 12),
-                  Text('No applications to review',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            itemBuilder: (context, index) {
-              final app = list[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: PremiumCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentAmber.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(AppIcons.award,
-                                color: AppColors.accentAmber, size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  app['applicant_name'] ?? 'Applicant',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  app['status'] ?? 'pending',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (app['reason'] != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          app['reason'],
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  await SupabaseService.client
-                                      .from('rexo_program_applications')
-                                      .update({'status': 'approved'}).eq(
-                                          'id', app['id']);
-                                  ref.invalidate(_rexoProgramProvider);
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Failed to approve: ${e.toString()}'),
-                                        backgroundColor: AppColors.error,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.success,
-                                minimumSize: const Size(0, 36),
-                              ),
-                              child: const Text('Approve'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () async {
-                                try {
-                                  await SupabaseService.client
-                                      .from('rexo_program_applications')
-                                      .update({'status': 'rejected'}).eq(
-                                          'id', app['id']);
-                                  ref.invalidate(_rexoProgramProvider);
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Failed to reject: ${e.toString()}'),
-                                        backgroundColor: AppColors.error,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.error,
-                                side: const BorderSide(color: AppColors.error),
-                                minimumSize: const Size(0, 36),
-                              ),
-                              child: const Text('Reject'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(_rexoProgramProvider),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            const GlassLargeTitleHeader(
+              title: 'Program review',
+              subtitle: 'Campster Program applications',
+              showBack: true,
+            ),
+            applications.when(
+              data: (list) {
+                if (list.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GlassEmptyState(
+                      icon: AppIcons.award,
+                      title: 'No applications to review',
+                      message: 'New applications will appear here.',
+                    ),
+                  );
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xxl,
                   ),
+                  sliver: SliverList.separated(
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => AppSpacing.gapMd,
+                    itemBuilder: (context, index) => RepaintBoundary(
+                      child: _ApplicationCard(
+                        app: list[index],
+                        onDecision: (status) => _decide(
+                          context,
+                          ref,
+                          list[index]['id'],
+                          status,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              loading: () => const SliverFillRemaining(
+                child: GlassListSkeleton(itemCount: 5),
+              ),
+              error: (error, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: GlassErrorState(
+                  message: ErrorUtils.sanitize(error),
+                  onRetry: () => ref.invalidate(_rexoProgramProvider),
                 ),
-              );
-            },
-          );
-        },
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text(ErrorUtils.sanitize(error))),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  /// Writes the decision. Same table, same column, same invalidation as before.
+  Future<void> _decide(
+    BuildContext context,
+    WidgetRef ref,
+    Object? id,
+    String status,
+  ) async {
+    try {
+      await SupabaseService.client
+          .from('rexo_program_applications')
+          .update({'status': status}).eq('id', id);
+      ref.invalidate(_rexoProgramProvider);
+    } catch (e) {
+      if (context.mounted) {
+        showGlassSnackBar(
+          context,
+          message: ErrorUtils.sanitize(e),
+          tone: GlassToastTone.error,
+        );
+      }
+    }
+  }
+}
+
+class _ApplicationCard extends StatelessWidget {
+  final Map<String, dynamic> app;
+  final ValueChanged<String> onDecision;
+
+  const _ApplicationCard({required this.app, required this.onDecision});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = (app['status'] ?? 'pending').toString();
+    final reason = app['reason'];
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const GlassIconBubble(
+                icon: AppIcons.award,
+                color: AppColors.accentAmber,
+                size: 36,
+                iconSize: 18,
+              ),
+              AppSpacing.gapMd,
+              Expanded(
+                child: Text(
+                  (app['applicant_name'] ?? 'Applicant').toString(),
+                  style: AppTextStyles.callout.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              AppSpacing.gapSm,
+              GlassChip.status(label: status, color: _statusColor(status)),
+            ],
+          ),
+          if (reason != null) ...[
+            AppSpacing.gapSm,
+            Text(
+              reason.toString(),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.footnote.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.45,
+              ),
+            ),
+          ],
+          AppSpacing.gapMd,
+          Row(
+            children: [
+              Expanded(
+                child: GlassButton(
+                  label: 'Approve',
+                  icon: AppIcons.tick_circle,
+                  size: GlassButtonSize.small,
+                  onPressed: () => onDecision('approved'),
+                ),
+              ),
+              AppSpacing.gapSm,
+              Expanded(
+                child: GlassButton.outline(
+                  label: 'Reject',
+                  icon: AppIcons.close_circle,
+                  size: GlassButtonSize.small,
+                  onPressed: () => onDecision('rejected'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _statusColor(String status) {
+  switch (status.toLowerCase()) {
+    case 'approved':
+      return AppColors.success;
+    case 'rejected':
+      return AppColors.error;
+    default:
+      return AppColors.warning;
   }
 }

@@ -3,11 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/premium_app_bar.dart';
-import '../widgets/premium_card.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/admin_provider.dart';
 
+/// Admin withdrawal queue — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over admin-local `PremiumCard`s, with the
+/// approve/reject pair built from an `ElevatedButton.icon` and an
+/// `OutlinedButton.icon` carrying inline `styleFrom` colours, and bare
+/// icon-plus-`Text` blocks for the empty and error states.
+///
+/// New layout: a collapsing large title, cards on the shared surface with the
+/// amount as the leading figure, the actions as a destructive/confirm
+/// `GlassButton` pair, and the shared glass states with pull-to-refresh and a
+/// retry.
+///
+/// `adminWithdrawalsProvider`, `approveWithdrawal`, `rejectWithdrawal` and the
+/// `_payoutSummary` reading of `payout_details` (including the account-number
+/// masking) are unchanged.
 class WithdrawalQueueScreen extends ConsumerWidget {
   const WithdrawalQueueScreen({super.key});
 
@@ -53,124 +69,160 @@ class WithdrawalQueueScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final withdrawals = ref.watch(adminWithdrawalsProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Withdrawal Queue',
-      ),
-      body: withdrawals.when(
-        data: (list) {
-          if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(AppIcons.tick_circle, size: 48, color: AppColors.success),
-                  const SizedBox(height: 12),
-                  Text('No pending withdrawals',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            itemBuilder: (context, index) {
-              final withdrawal = list[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: PremiumCard(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Withdrawal #${withdrawal['id']?.toString().substring(0, 8) ?? ''}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '\u20B9${withdrawal['amount'] ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'User: ${withdrawal['user_id']?.toString().substring(0, 8) ?? 'Unknown'}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                      if (_payoutSummary(withdrawal) != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _payoutSummary(withdrawal)!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => ref
-                                  .read(adminActionsProvider.notifier)
-                                  .approveWithdrawal(withdrawal['id']),
-                              icon: const Icon(AppIcons.tick_circle, size: 16),
-                              label: const Text('Approve'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.success,
-                                minimumSize: const Size(0, 36),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => ref
-                                  .read(adminActionsProvider.notifier)
-                                  .rejectWithdrawal(withdrawal['id']),
-                              icon: const Icon(AppIcons.close_circle, size: 16),
-                              label: const Text('Reject'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.error,
-                                side: const BorderSide(color: AppColors.error),
-                                minimumSize: const Size(0, 36),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(adminWithdrawalsProvider),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            const GlassLargeTitleHeader(
+              title: 'Withdrawal queue',
+              subtitle: 'Approve or reject payout requests',
+              showBack: true,
+            ),
+            withdrawals.when(
+              data: (list) {
+                if (list.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GlassEmptyState(
+                      icon: AppIcons.tick_circle,
+                      title: 'No pending withdrawals',
+                      message: 'The queue is clear.',
+                    ),
+                  );
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xxl,
                   ),
+                  sliver: SliverList.separated(
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => AppSpacing.gapMd,
+                    itemBuilder: (context, index) => RepaintBoundary(
+                      child: _WithdrawalCard(
+                        withdrawal: list[index],
+                        payoutSummary: _payoutSummary(list[index]),
+                        onApprove: () => ref
+                            .read(adminActionsProvider.notifier)
+                            .approveWithdrawal(list[index]['id']),
+                        onReject: () => ref
+                            .read(adminActionsProvider.notifier)
+                            .rejectWithdrawal(list[index]['id']),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              loading: () => const SliverFillRemaining(
+                child: GlassListSkeleton(itemCount: 5),
+              ),
+              error: (error, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: GlassErrorState(
+                  message: ErrorUtils.sanitize(error),
+                  onRetry: () => ref.invalidate(adminWithdrawalsProvider),
                 ),
-              );
-            },
-          );
-        },
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text(ErrorUtils.sanitize(error))),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _WithdrawalCard extends StatelessWidget {
+  final Map<String, dynamic> withdrawal;
+  final String? payoutSummary;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _WithdrawalCard({
+    required this.withdrawal,
+    required this.payoutSummary,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The amount leads — it is what the reviewer is deciding on.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  '\u20B9${withdrawal['amount'] ?? 0}',
+                  style: AppTextStyles.title2.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              GlassChip(
+                label: '#${_shortId(withdrawal['id'])}',
+                dense: true,
+              ),
+            ],
+          ),
+          AppSpacing.gapSm,
+          Text(
+            'User: ${_shortId(withdrawal['user_id'], fallback: 'Unknown')}',
+            style: AppTextStyles.footnote
+                .copyWith(color: AppColors.textSecondary),
+          ),
+          if (payoutSummary != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              payoutSummary!,
+              style: AppTextStyles.footnote
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+          AppSpacing.gapMd,
+          Row(
+            children: [
+              Expanded(
+                child: GlassButton(
+                  label: 'Approve',
+                  icon: AppIcons.tick_circle,
+                  size: GlassButtonSize.small,
+                  onPressed: onApprove,
+                ),
+              ),
+              AppSpacing.gapSm,
+              Expanded(
+                child: GlassButton.outline(
+                  label: 'Reject',
+                  icon: AppIcons.close_circle,
+                  size: GlassButtonSize.small,
+                  onPressed: onReject,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// First 8 characters of an id, or the whole thing when it is shorter.
+///
+/// The old code called `.substring(0, 8)` directly, which throws on any id
+/// shorter than 8 characters; this keeps the same display and cannot throw.
+String _shortId(Object? id, {String fallback = ''}) {
+  final s = id?.toString() ?? '';
+  if (s.isEmpty) return fallback;
+  return s.length >= 8 ? s.substring(0, 8) : s;
 }

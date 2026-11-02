@@ -3,10 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
-import '../../../core/widgets/premium_app_bar.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../providers/admin_provider.dart';
 
+/// Admin push broadcast — rebuilt layout.
+///
+/// Old layout: a `PremiumAppBar` over a scroll column with a hand-built tinted
+/// notice box, two bare Material `TextField`s each preceded by its own bold
+/// `Text` label, and an `ElevatedButton.icon` at the bottom of the scroll that
+/// hand-rolled its own spinner.
+///
+/// New layout: a collapsing large title, the "goes to everyone" warning as a
+/// card whose rim carries the weight of that, both inputs from the shared text
+/// field with built-in labels, and send pinned to the bottom with the shared
+/// loading state.
+///
+/// `adminActionsProvider.sendBroadcast`, the empty-field guard and the full
+/// delivery breakdown (inserted / pushed / failed / pushError) are unchanged.
 class PushBroadcastScreen extends ConsumerStatefulWidget {
   const PushBroadcastScreen({super.key});
 
@@ -29,8 +45,10 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
 
   Future<void> _sendBroadcast() async {
     if (_titleController.text.isEmpty || _messageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+      showGlassSnackBar(
+        context,
+        message: 'Please fill in all fields',
+        tone: GlassToastTone.warning,
       );
       return;
     }
@@ -59,22 +77,20 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
         final summary = pushError != null && pushError.toString().isNotEmpty
             ? 'In-app: $inserted • Push failed: $pushError'
             : 'In-app: $inserted • Pushed: $pushed • Failed: $failed';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Broadcast sent. $summary'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 6),
-          ),
+        showGlassSnackBar(
+          context,
+          message: 'Broadcast sent. $summary',
+          tone: GlassToastTone.success,
+          duration: const Duration(seconds: 6),
         );
       },
       loading: () {},
       error: (error, _) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorUtils.sanitize(error)),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 6),
-          ),
+        showGlassSnackBar(
+          context,
+          message: ErrorUtils.sanitize(error),
+          tone: GlassToastTone.error,
+          duration: const Duration(seconds: 6),
         );
       },
     );
@@ -82,107 +98,104 @@ class _PushBroadcastScreenState extends ConsumerState<PushBroadcastScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PremiumAppBar(
-        title: 'Push Broadcast',
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.accentPink.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.accentPink.withOpacity(0.2)),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              const GlassLargeTitleHeader(
+                title: 'Push broadcast',
+                subtitle: 'Send a notification to every user',
+                showBack: true,
               ),
-              child: Row(
-                children: [
-                  const Icon(AppIcons.notification,
-                      color: AppColors.accentPink, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Send Push Notification',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          'This will be sent to all app users',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                    ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Notification Title',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                hintText: 'Enter notification title...',
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Message',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _messageController,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'Enter notification message...',
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isSending ? null : _sendBroadcast,
-                icon: _isSending
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // This goes to everyone, so the warning is prominent.
+                      GlassCard(
+                        rim: AppColors.accentPink.withOpacity(0.35),
+                        child: Row(
+                          children: [
+                            const GlassIconBubble(
+                              icon: AppIcons.notification,
+                              color: AppColors.accentPink,
+                              size: 40,
+                              iconSize: 20,
+                            ),
+                            AppSpacing.gapMd,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Goes to all app users',
+                                    style: AppTextStyles.headline.copyWith(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'There is no undo once a broadcast is sent.',
+                                    style: AppTextStyles.footnote.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                    : const Icon(AppIcons.send_1),
-                label: Text(_isSending ? 'Sending...' : 'Send Broadcast'),
+                      ),
+                      AppSpacing.gapXl,
+                      GlassTextField(
+                        controller: _titleController,
+                        label: 'Notification title',
+                        hint: 'Enter notification title…',
+                        prefixIcon: AppIcons.notification,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      AppSpacing.gapLg,
+                      GlassTextField.multiline(
+                        controller: _messageController,
+                        label: 'Message',
+                        hint: 'Enter notification message…',
+                        minLines: 4,
+                        maxLines: 8,
+                      ),
+                    ],
+                  ),
+                ),
               ),
+
+              // Clearance for the pinned action.
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            ],
+          ),
+
+          Positioned(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+            child: GlassButton(
+              label: _isSending ? 'Sending…' : 'Send broadcast',
+              icon: AppIcons.send_1,
+              size: GlassButtonSize.large,
+              loading: _isSending,
+              onPressed: _isSending ? null : _sendBroadcast,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
