@@ -16,7 +16,11 @@
 /// | Leading icon bubble   | `GlassIconBubble`                        |
 /// | Buttons               | `GlassButton` (+ named variants)         |
 /// | Icon buttons          | `GlassIconButton`                        |
-/// | Navigation bar        | `GlassAppBar`, `GlassSliverAppBar`       |
+/// | Navigation bar        | `GlassLargeTitleHeader` (preferred)      |
+/// |                       | `GlassAppBar` (fixed bars only)          |
+/// | Grouped list section  | `GlassSection`, `GlassGroup`, `GlassRow` |
+/// | Stat pill             | `GlassStatPill`                          |
+/// | Tile grid             | `GlassTileGrid` + `GlassTile`            |
 /// | Bottom nav            | `GlassNavBar` + `GlassNavItem`           |
 /// | Inputs                | `GlassTextField`                         |
 /// | Bottom sheets         | `showGlassSheet`, `GlassSheet`           |
@@ -34,6 +38,8 @@ export 'glass_button.dart';
 export 'glass_card.dart';
 export 'glass_chip.dart';
 export 'glass_dialog.dart';
+export 'glass_group.dart';
+export 'glass_header.dart';
 export 'glass_icon_button.dart';
 export 'glass_nav_bar.dart';
 export 'glass_scaffold.dart';

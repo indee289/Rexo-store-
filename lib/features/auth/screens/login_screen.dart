@@ -226,9 +226,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     AppSpacing.gapMd,
 
-                    const _OrDivider(),
-                    AppSpacing.gapMd,
-
                     GlassButton.glass(
                       label: 'Create an account',
                       icon: Iconsax.user_add,
@@ -245,28 +242,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-/// Hairline rule with a centred "OR".
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: AppColors.border, height: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text(
-            'OR',
-            style: AppTextStyles.caption1.copyWith(
-              color: AppColors.textHint,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider(color: AppColors.border, height: 1)),
-      ],
-    );
-  }
-}

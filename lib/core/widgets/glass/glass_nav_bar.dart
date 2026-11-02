@@ -21,13 +21,29 @@ class GlassNavItem {
   final int? badgeCount;
 }
 
-/// Floating pill-shaped glass dock.
+/// Floating pill-shaped glass dock with a sliding indicator.
 ///
-/// Sits above the bottom safe area with horizontal margin so the page scrolls
-/// visibly behind and underneath it. The active destination is marked by a
-/// brand-red glass capsule that slides between slots, and only the active
-/// label is shown — which keeps the dock compact while still naming the
-/// current section for screen readers and new users.
+/// ### Overflow safety
+/// The previous version laid each destination out as a horizontal
+/// `Row(mainAxisSize: min)` of icon + label inside an `Expanded`. That row
+/// sizes to its content but is handed a *tight* slot width, so any label wider
+/// than the remaining space overflowed: on a 360dp screen each slot is ~78px
+/// while "Campaigns" plus its icon and padding needed ~109px, which clipped the
+/// label and bled into the neighbouring slot.
+///
+/// This version makes overflow structurally impossible:
+///   * every slot is an explicit `SizedBox(width: slotWidth)` rather than an
+///     `Expanded` wrapping an intrinsically-sized row, so a slot can never be
+///     asked to paint wider than its share of the bar;
+///   * icon and label stack **vertically**, so the label gets the slot's full
+///     width instead of competing with the icon for it;
+///   * the label is wrapped in a `FittedBox(scaleDown)` with `maxLines: 1` and
+///     ellipsis, so a long label shrinks (and finally truncates) inside the
+///     slot instead of pushing past it.
+///
+/// The sliding indicator is a single capsule positioned over the active slot
+/// and animated with `AnimatedPositioned`, so it is always exactly one slot
+/// wide by construction.
 class GlassNavBar extends StatelessWidget {
   const GlassNavBar({
     super.key,
@@ -40,32 +56,89 @@ class GlassNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
   final List<GlassNavItem> items;
 
-  static const double _height = 66;
+  static const double _height = 68;
+  static const double _inset = 6;
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    final count = items.length;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 12),
+      padding: EdgeInsets.fromLTRB(14, 0, 14, bottomInset + 10),
       child: GlassSurface(
         level: GlassLevel.modal,
         borderRadius: AppRadius.pillAll,
         height: _height,
         tint: AppGlass.dock(false),
         shadow: AppElevation.raised(false),
-        child: Row(
-          children: [
-            for (int i = 0; i < items.length; i++)
-              Expanded(
-                child: _NavSlot(
-                  item: items[i],
-                  active: i == currentIndex,
-                  onTap: () => onTap(i),
+        padding: const EdgeInsets.all(_inset),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The padding above is already removed from maxWidth, so this is
+            // the exact width available to the slots.
+            final slot = constraints.maxWidth / count;
+            final index = currentIndex.clamp(0, count - 1);
+
+            return Stack(
+              children: [
+                // Sliding indicator — one slot wide, by construction.
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  left: slot * index,
+                  top: 0,
+                  bottom: 0,
+                  width: slot,
+                  child: const _SlidingIndicator(),
                 ),
-              ),
-          ],
+                Row(
+                  children: [
+                    for (int i = 0; i < count; i++)
+                      SizedBox(
+                        width: slot,
+                        child: _NavSlot(
+                          item: items[i],
+                          active: i == index,
+                          onTap: () => onTap(i),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+}
+
+/// The brand-tinted capsule that slides between destinations.
+///
+/// No `BackdropFilter` here: [GlassNavBar]'s surface already established a
+/// blur scope, and a second blur would cost another save-layer every frame
+/// while the indicator animates.
+class _SlidingIndicator extends StatelessWidget {
+  const _SlidingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 3),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0x2E8B1A1A), Color(0x1FA52020)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: AppRadius.pillAll,
+          border: Border.fromBorderSide(
+            BorderSide(color: Color(0x4D8B1A1A), width: 1),
+          ),
+        ),
+        child: GlassSheen(radius: AppRadius.pillAll),
       ),
     );
   }
@@ -95,7 +168,7 @@ class _NavSlotState extends State<_NavSlot>
   );
 
   late final Animation<double> _scale = _press.drive(
-    Tween<double>(begin: 1.0, end: 0.88)
+    Tween<double>(begin: 1.0, end: 0.90)
         .chain(CurveTween(curve: Curves.easeOutCubic)),
   );
 
@@ -122,55 +195,37 @@ class _NavSlotState extends State<_NavSlot>
         onTap: widget.onTap,
         child: ScaleTransition(
           scale: _scale,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                // Brand capsule behind the active destination.
-                color: active
-                    ? AppColors.primary.withOpacity(0.14)
-                    : Colors.transparent,
-                borderRadius: AppRadius.pillAll,
-                border: Border.all(
-                  color: active
-                      ? AppColors.primary.withOpacity(0.28)
-                      : Colors.transparent,
-                  width: AppGlass.borderWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _IconWithBadge(
+                icon: active ? widget.item.activeIcon : widget.item.icon,
+                color: color,
+                badgeCount: widget.item.badgeCount,
+              ),
+              const SizedBox(height: 3),
+              // Horizontal padding keeps the label clear of the capsule's
+              // rounded ends; FittedBox guarantees it fits whatever is left.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.caption2.copyWith(
+                      color: color,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                      height: 1.1,
+                    ),
+                  ),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _IconWithBadge(
-                    icon: active ? widget.item.activeIcon : widget.item.icon,
-                    color: color,
-                    badgeCount: widget.item.badgeCount,
-                  ),
-                  // Label animates in only for the active destination.
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeOutCubic,
-                    child: active
-                        ? Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: Text(
-                              widget.item.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.clip,
-                              softWrap: false,
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -191,7 +246,7 @@ class _IconWithBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconWidget = Icon(icon, size: 23, color: color);
+    final iconWidget = Icon(icon, size: 22, color: color);
     if (badgeCount == null || badgeCount! <= 0) return iconWidget;
 
     return Stack(
@@ -200,22 +255,23 @@ class _IconWithBadge extends StatelessWidget {
         iconWidget,
         Positioned(
           top: -3,
-          right: -4,
+          right: -5,
           child: Container(
-            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 3),
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
-              border:
-                  Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+              border: const Border.fromBorderSide(
+                BorderSide(color: Colors.white, width: 1.5),
+              ),
             ),
             child: Center(
               child: Text(
-                badgeCount! > 99 ? '99+' : '${badgeCount!}',
+                badgeCount! > 9 ? '9+' : '${badgeCount!}',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 9,
+                  fontSize: 8.5,
                   fontWeight: FontWeight.w700,
                   height: 1.1,
                 ),

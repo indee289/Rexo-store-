@@ -3,28 +3,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rexo_marketplace/core/icons/app_icons.dart';
 
+import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_toggle.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../../core/widgets/premium_avatar.dart';
-import '../../../core/providers/locale_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../../profile/screens/edit_profile_screen.dart';
 import '../providers/settings_provider.dart';
 
-/// Settings screen — rewritten from scratch.
+/// Settings screen — liquid glass, rebuilt layout.
 ///
-/// Layout matches the reference UI:
-/// - App bar with centered "Profile" title
-/// - Dark header card with user info + "Upgrade to Pro" banner
-/// - Grouped sections with white/glass card backgrounds
-/// - Each item has icon + title + chevron
-/// - Switches for toggles
-/// - Red logout/delete section at bottom
+/// The previous screen hand-rolled the whole pattern: a fake app bar built from
+/// an `IconButton` plus a centred `Text`, a `_GroupCard` that was an opaque
+/// white `Container` with inset `Divider`s between rows, `_SettingsItem` /
+/// `_ToggleItem` rows with hardcoded `TextStyle`s, and `_DangerButton` tiles.
+/// All six of those private widgets are deleted; the screen is now assembled
+/// entirely from `GlassSection` / `GlassGroup` / `GlassRow` / `GlassSwitchRow`,
+/// so it shares one grouped-list implementation with every other settings-like
+/// screen in the app.
+///
+/// Also replaced: the `showModalBottomSheet` + `ListTile` language picker is a
+/// `showGlassSheet`, the logout `AlertDialog` is a `showGlassConfirm`, and the
+/// four bare `SnackBar`s are glass toasts.
+///
+/// Every provider, route, toggle setter and the delete-account flow are
+/// unchanged. The large title reads "Settings" rather than the previous
+/// "Profile", which collided with the Profile tab.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -37,212 +46,226 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
+    final notifier = ref.read(settingsProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          physics: const ClampingScrollPhysics(),
-          children: [
-            // ── App bar ──
-            _AppBar(onBack: () => context.pop()),
+    return GlassScaffold(
+      padBodyForAppBar: false,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          GlassLargeTitleHeader(
+            title: 'Settings',
+            showBack: true,
+            onBack: () => context.pop(),
+          ),
 
-            // ── Dark user header card ──
-            profileAsync.whenOrNull(
-                  data: (ps) => _UserHeaderCard(
+          // ── Identity row, tappable straight into Edit profile ──────────
+          SliverToBoxAdapter(
+            child: profileAsync.whenOrNull(
+                  data: (ps) => _IdentityRow(
                     profile: ps.profile,
-                    onEdit: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen()),
-                    ),
+                    onEdit: _openEditProfile,
                   ),
                 ) ??
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
+          ),
 
-            const SizedBox(height: 20),
-
-            // ── ACCOUNT section ──
-            _SectionTitle('ACCOUNT'),
-            _GroupCard(children: [
-              _SettingsItem(
-                icon: Iconsax.edit,
-                title: 'Edit Profile',
-                subtitle: 'Update name, photo, bio',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const EditProfileScreen()),
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Account',
+              children: [
+                GlassRow(
+                  icon: Iconsax.edit,
+                  title: 'Edit profile',
+                  subtitle: 'Update name, photo, bio',
+                  onTap: _openEditProfile,
                 ),
-              ),
-              _SettingsItem(
-                icon: Iconsax.link_2,
-                title: 'Linked Accounts',
-                subtitle: 'Instagram, YouTube, TikTok',
-                onTap: () => context.push('/linked-accounts'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.gift,
-                title: 'Refer & Earn',
-                subtitle: 'Invite friends, earn rewards',
-                onTap: () => context.push('/referrals'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.global,
-                title: 'Language',
-                subtitle: 'English / हिन्दी',
-                onTap: () => _showLanguagePicker(context, ref),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // ── SECURITY section ──
-            _SectionTitle('SECURITY'),
-            _GroupCard(children: [
-              _SettingsItem(
-                icon: Iconsax.shield_tick,
-                title: 'Two-Factor Auth',
-                subtitle: 'Secure your account with TOTP',
-                trailing: _RecommendedBadge(),
-                onTap: () => context.push('/two-factor-auth'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.monitor,
-                title: 'Active Sessions',
-                subtitle: 'Manage active sessions',
-                onTap: () => context.push('/sessions'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.eye,
-                title: 'Security Logs',
-                subtitle: 'View account activity',
-                onTap: () => context.push('/security-logs'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.lock,
-                title: 'Change Password',
-                subtitle: 'Send password reset email',
-                onTap: () => _handleChangePassword(context),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // ── NOTIFICATIONS section ──
-            _SectionTitle('NOTIFICATIONS'),
-            _GroupCard(children: [
-              _ToggleItem(
-                icon: Iconsax.notification,
-                title: 'Push Notifications',
-                value: settings.notificationsEnabled,
-                onChanged: (v) => ref
-                    .read(settingsProvider.notifier)
-                    .setNotificationsEnabled(v),
-              ),
-              _ToggleItem(
-                icon: Iconsax.sms,
-                title: 'Email Notifications',
-                value: settings.emailNotificationsEnabled,
-                onChanged: (v) => ref
-                    .read(settingsProvider.notifier)
-                    .setEmailNotificationsEnabled(v),
-              ),
-              _ToggleItem(
-                icon: Iconsax.volume_high,
-                title: 'Campaign Updates',
-                value: settings.campaignUpdatesEnabled,
-                onChanged: (v) => ref
-                    .read(settingsProvider.notifier)
-                    .setCampaignUpdatesEnabled(v),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // ── PRIVACY section ──
-            _SectionTitle('PRIVACY'),
-            _GroupCard(children: [
-              _ToggleItem(
-                icon: Iconsax.user,
-                title: 'Public Profile',
-                value: settings.publicProfileEnabled,
-                onChanged: (v) => ref
-                    .read(settingsProvider.notifier)
-                    .setPublicProfileEnabled(v),
-              ),
-              _SettingsItem(
-                icon: Iconsax.user_remove,
-                title: 'Blocked Accounts',
-                subtitle: 'Manage users you have blocked',
-                onTap: () => context.push('/settings/blocked-accounts'),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // ── SUPPORT section ──
-            _SectionTitle('SUPPORT'),
-            _GroupCard(children: [
-              _SettingsItem(
-                icon: Iconsax.message_question,
-                title: 'Help & Support',
-                subtitle: 'FAQs and contact',
-                onTap: () => context.push('/help-support'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.warning_2,
-                title: 'My Disputes',
-                subtitle: 'View raised disputes',
-                onTap: () => context.push('/disputes'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.location,
-                title: 'My Addresses',
-                subtitle: 'Manage saved addresses',
-                onTap: () => context.push('/addresses'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.shield_tick,
-                title: 'Privacy Policy',
-                onTap: () => context.push('/privacy-policy'),
-              ),
-              _SettingsItem(
-                icon: Iconsax.document_text,
-                title: 'Terms of Service',
-                onTap: () => context.push('/terms-of-service'),
-              ),
-            ]),
-
-            const SizedBox(height: 24),
-
-            // ── Logout + Delete ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _DangerButton(
-                    icon: Iconsax.logout,
-                    label: 'Log Out',
-                    onTap: () => _handleLogout(context, ref),
-                  ),
-                  const SizedBox(height: 10),
-                  _DangerButton(
-                    icon: Iconsax.trash,
-                    label: 'Delete Account',
-                    onTap: () => _handleDeleteAccount(context),
-                  ),
-                ],
-              ),
+                GlassRow(
+                  icon: Iconsax.link_2,
+                  title: 'Linked accounts',
+                  subtitle: 'Instagram, YouTube, TikTok',
+                  onTap: () => context.push('/linked-accounts'),
+                ),
+                GlassRow(
+                  icon: Iconsax.gift,
+                  title: 'Refer & earn',
+                  subtitle: 'Invite friends, earn rewards',
+                  onTap: () => context.push('/referrals'),
+                ),
+                GlassRow(
+                  icon: Iconsax.global,
+                  title: 'Language',
+                  trailingText: _languageLabel(ref.watch(localeProvider)),
+                  onTap: () => _showLanguagePicker(context, ref),
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: 80),
-          ],
-        ),
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Security',
+              children: [
+                GlassRow(
+                  icon: Iconsax.shield_tick,
+                  title: 'Two-factor auth',
+                  subtitle: 'Secure your account with TOTP',
+                  trailing: const _RecommendedBadge(),
+                  onTap: () => context.push('/two-factor-auth'),
+                ),
+                GlassRow(
+                  icon: Iconsax.monitor,
+                  title: 'Active sessions',
+                  subtitle: 'Manage signed-in devices',
+                  onTap: () => context.push('/sessions'),
+                ),
+                GlassRow(
+                  icon: Iconsax.eye,
+                  title: 'Security logs',
+                  subtitle: 'View account activity',
+                  onTap: () => context.push('/security-logs'),
+                ),
+                GlassRow(
+                  icon: Iconsax.lock,
+                  title: 'Change password',
+                  subtitle: 'Send a password reset email',
+                  onTap: () => _handleChangePassword(context),
+                ),
+              ],
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Notifications',
+              children: [
+                GlassSwitchRow(
+                  icon: Iconsax.notification,
+                  title: 'Push notifications',
+                  value: settings.notificationsEnabled,
+                  onChanged: notifier.setNotificationsEnabled,
+                ),
+                GlassSwitchRow(
+                  icon: Iconsax.sms,
+                  title: 'Email notifications',
+                  value: settings.emailNotificationsEnabled,
+                  onChanged: notifier.setEmailNotificationsEnabled,
+                ),
+                GlassSwitchRow(
+                  icon: Iconsax.volume_high,
+                  title: 'Campaign updates',
+                  value: settings.campaignUpdatesEnabled,
+                  onChanged: notifier.setCampaignUpdatesEnabled,
+                ),
+              ],
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Privacy',
+              children: [
+                GlassSwitchRow(
+                  icon: Iconsax.user,
+                  title: 'Public profile',
+                  subtitle: 'Let brands discover you',
+                  value: settings.publicProfileEnabled,
+                  onChanged: notifier.setPublicProfileEnabled,
+                ),
+                GlassRow(
+                  icon: Iconsax.user_remove,
+                  title: 'Blocked accounts',
+                  subtitle: 'Manage users you have blocked',
+                  onTap: () => context.push('/settings/blocked-accounts'),
+                ),
+              ],
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Support',
+              children: [
+                GlassRow(
+                  icon: Iconsax.message_question,
+                  title: 'Help & support',
+                  subtitle: 'FAQs and contact',
+                  onTap: () => context.push('/help-support'),
+                ),
+                GlassRow(
+                  icon: Iconsax.warning_2,
+                  title: 'My disputes',
+                  subtitle: 'View raised disputes',
+                  onTap: () => context.push('/disputes'),
+                ),
+                GlassRow(
+                  icon: Iconsax.location,
+                  title: 'My addresses',
+                  subtitle: 'Manage saved addresses',
+                  onTap: () => context.push('/addresses'),
+                ),
+                GlassRow(
+                  icon: Iconsax.shield_tick,
+                  title: 'Privacy policy',
+                  onTap: () => context.push('/privacy-policy'),
+                ),
+                GlassRow(
+                  icon: Iconsax.document_text,
+                  title: 'Terms of service',
+                  onTap: () => context.push('/terms-of-service'),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Destructive actions, in their own group ────────────────────
+          SliverToBoxAdapter(
+            child: GlassSection(
+              title: 'Danger zone',
+              children: [
+                GlassRow(
+                  icon: Iconsax.logout,
+                  title: 'Log out',
+                  destructive: true,
+                  showChevron: false,
+                  onTap: () => _handleLogout(context, ref),
+                ),
+                GlassRow(
+                  icon: Iconsax.trash,
+                  title: 'Delete account',
+                  subtitle: 'Permanently remove your account and data',
+                  destructive: true,
+                  onTap: _handleDeleteAccount,
+                ),
+              ],
+            ),
+          ),
+
+          // Clear the floating nav dock.
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+        ],
       ),
     );
   }
 
-  // ── Actions ──
+  void _openEditProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
+  }
+
+  String _languageLabel(Locale? locale) {
+    switch (locale?.languageCode) {
+      case 'en':
+        return 'English';
+      case 'hi':
+        return 'हिन्दी';
+      default:
+        return 'System';
+    }
+  }
+
+  // ── Actions (unchanged behaviour) ───────────────────────────────────────
 
   Future<void> _handleChangePassword(BuildContext context) async {
     final user = SupabaseService.currentUser;
@@ -250,101 +273,88 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       await SupabaseService.resetPassword(user!.email!);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Password reset email sent to ${user.email}'),
-            backgroundColor: AppColors.success,
-          ),
+        showGlassSnackBar(
+          context,
+          message: 'Password reset email sent to ${user.email}',
+          tone: GlassToastTone.success,
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send reset email.'),
-            backgroundColor: AppColors.error,
-          ),
+        showGlassSnackBar(
+          context,
+          message: 'Failed to send reset email.',
+          tone: GlassToastTone.error,
         );
       }
     }
   }
 
-  Future<void> _showLanguagePicker(BuildContext context, WidgetRef ref) async {
+  Future<void> _showLanguagePicker(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final current = ref.read(localeProvider)?.languageCode;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        Widget tile(String label, String? code) {
-          final selected = current == code;
-          return ListTile(
-            title: Text(label),
-            trailing: selected
-                ? const Icon(Iconsax.tick_circle, color: AppColors.primary)
-                : null,
-            onTap: () {
-              ref.read(localeProvider.notifier).setLocale(
-                    code == null ? null : Locale(code),
-                  );
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Language updated')),
-              );
-            },
-          );
-        }
 
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Language',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                ),
-              ),
-              tile('System default', null),
-              tile('English', 'en'),
-              tile('हिन्दी (Hindi)', 'hi'),
-              const SizedBox(height: 8),
-            ],
-          ),
+    await showGlassSheet<void>(
+      context: context,
+      title: 'Language',
+      subtitle: 'Applies across the whole app',
+      child: GlassGroup(
+        children: [
+          _languageRow(context, ref, 'System default', null, current),
+          _languageRow(context, ref, 'English', 'en', current),
+          _languageRow(context, ref, 'हिन्दी (Hindi)', 'hi', current),
+        ],
+      ),
+    );
+  }
+
+  /// One row of the language picker. [code] is `null` for "follow the device".
+  Widget _languageRow(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    String? code,
+    String? current,
+  ) {
+    return GlassRow(
+      icon: Iconsax.global,
+      title: label,
+      showChevron: false,
+      trailing: current == code
+          ? const Icon(Iconsax.tick_circle, color: AppColors.primary, size: 20)
+          : null,
+      onTap: () {
+        ref
+            .read(localeProvider.notifier)
+            .setLocale(code == null ? null : Locale(code));
+        Navigator.pop(context);
+        showGlassSnackBar(
+          context,
+          message: 'Language updated',
+          tone: GlassToastTone.success,
         );
       },
     );
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Logout',
-                style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+      title: 'Log out',
+      message: 'Are you sure you want to log out of Campster?',
+      icon: Iconsax.logout,
+      confirmLabel: 'Log out',
+      cancelLabel: 'Cancel',
+      destructive: true,
     );
-    if (confirmed == true) {
+    if (confirmed) {
       ref.read(authProvider.notifier).signOut();
     }
   }
 
-  void _handleDeleteAccount(BuildContext context) {
+  void _handleDeleteAccount() {
     // Full-screen, routed deletion flow (not a dialog). The screen explains
     // what happens, requires explicit confirmation, and performs the real
     // server-side deletion.
@@ -352,352 +362,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// APP BAR
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────
+// Identity row
+// ─────────────────────────────────────────────────────────────────────────
 
-class _AppBar extends StatelessWidget {
-  final VoidCallback onBack;
-  const _AppBar({required this.onBack});
+/// Avatar, name and email as a single glass row that opens Edit profile.
+///
+/// Replaces the previous opaque white "header card".
+class _IdentityRow extends StatelessWidget {
+  const _IdentityRow({required this.profile, required this.onEdit});
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 16, 4),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Iconsax.arrow_left, size: 24),
-          ),
-          const Expanded(
-            child: Text(
-              'Profile',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// DARK USER HEADER CARD (like reference)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _UserHeaderCard extends StatelessWidget {
   final Map<String, dynamic>? profile;
   final VoidCallback onEdit;
 
-  const _UserHeaderCard({required this.profile, required this.onEdit});
-
   @override
   Widget build(BuildContext context) {
-    if (profile == null) return const SizedBox(height: 16);
+    if (profile == null) return const SizedBox(height: AppSpacing.md);
 
     final name = (profile!['name'] ?? 'User').toString();
     final email = (profile!['email'] ?? '').toString();
     final avatarUrl = profile!['profileImage'] as String?;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: GestureDetector(
-        onTap: onEdit,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 0.8),
+    return GlassSection(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      children: [
+        GlassRow(
+          title: name,
+          subtitle: email.isEmpty ? null : email,
+          leading: PremiumAvatar(
+            imageUrl: avatarUrl,
+            name: name,
+            size: PremiumAvatar.sizeSm + 10,
           ),
-          child: Row(
-            children: [
-              PremiumAvatar(imageUrl: avatarUrl, name: name, size: 48),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (email.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        email,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const Icon(Iconsax.arrow_right_3,
-                  size: 18, color: AppColors.textHint),
-            ],
-          ),
+          onTap: onEdit,
         ),
-      ),
+      ],
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SECTION TITLE
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle(this.title);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: Text(
-        title,
-        style: AppTextStyles.footnote.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// GROUP CARD (frosted glass container for a section)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _GroupCard extends StatelessWidget {
-  final List<Widget> children;
-  const _GroupCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border, width: 0.8),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Column(
-            children: [
-              for (int i = 0; i < children.length; i++) ...[
-                if (i > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 52),
-                    child: Divider(
-                      height: 0.5,
-                      thickness: 0.5,
-                      color: AppColors.border,
-                    ),
-                  ),
-                children[i],
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SETTINGS ITEM (icon + title + subtitle + chevron)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _SettingsItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _SettingsItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: AppColors.textPrimary),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            trailing ??
-                const Icon(Iconsax.arrow_right_3,
-                    size: 16, color: AppColors.textHint),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// TOGGLE ITEM (icon + title + switch)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _ToggleItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _ToggleItem({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 22, color: AppColors.textPrimary),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          AppToggle(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// RECOMMENDED BADGE
-// ═══════════════════════════════════════════════════════════════════════════════
-
+/// Small green pill marking the recommended security action.
 class _RecommendedBadge extends StatelessWidget {
+  const _RecommendedBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.accentGreen.withOpacity(0.1),
+        color: AppColors.success.withOpacity(0.12),
         borderRadius: AppRadius.pillAll,
+        border: Border.all(
+          color: AppColors.success.withOpacity(0.28),
+          width: 1,
+        ),
       ),
-      child: const Text(
+      child: Text(
         'Recommended',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: AppColors.accentGreen,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// DANGER BUTTON (logout / delete)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _DangerButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _DangerButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.error.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.error.withOpacity(0.15)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: AppColors.error),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.error,
-              ),
-            ),
-          ],
+        style: AppTextStyles.caption2.copyWith(
+          color: AppColors.success,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

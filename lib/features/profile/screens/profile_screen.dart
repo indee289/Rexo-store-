@@ -5,25 +5,40 @@ import 'package:rexo_marketplace/core/icons/app_icons.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/cached_image.dart';
-import '../../../core/widgets/shimmer_loading.dart';
-import '../../../core/widgets/verified_badge.dart';
+import '../../../core/widgets/glass/glass.dart';
 import '../../admin/providers/is_admin_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../campaigns/screens/my_campaigns_screen.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/profile_completeness.dart';
-import '../../campaigns/providers/campaigns_provider.dart';
-import '../../campaigns/screens/my_campaigns_screen.dart';
 import 'edit_profile_screen.dart';
 
-/// Instagram-style Profile screen.
+/// Profile screen — liquid glass, rebuilt layout.
 ///
-/// White background. Top: back arrow + username center + settings/menu right.
-/// Below: horizontal row of [avatar | Campaigns | Followers | Following] with
-/// stats. Then: name (bold), role/handle line, bio. Then: full-width
-/// [Edit Profile | Share Profile] bordered buttons. Then: story highlights.
-/// Then: tab bar (Grid / Applications / Saved) and content below.
+/// The previous screen was an Instagram clone: a centred-handle top bar with a
+/// hairline divider, a horizontal avatar-beside-stats row, bordered white
+/// action buttons, a row of outlined circular "highlights", and an
+/// underline icon tab bar over a 3-up zero-gutter photo grid.
+///
+/// None of that structure remains. The layout is now:
+///
+///   1. collapsing large-title header (no divider, frosts on scroll),
+///   2. a glass hero card — large avatar, name + verified badge, role chip,
+///      bio — which gives the identity block its own surface instead of
+///      competing with the stats,
+///   3. followers / following as glass stat pills,
+///   4. Edit profile / Share profile as glass buttons,
+///   5. Wallet / Campaigns / Admin as a labelled glass tile grid, replacing the
+///      outlined circles that had no affordance and clipped their labels,
+///   6. a glass segmented control over the campaign grid, replacing the
+///      icon-only underline tabs.
+///
+/// Providers, routes, the share text, the logout flow and the completeness
+/// nudge are unchanged.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -31,32 +46,56 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentUserProfileProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return GlassScaffold(
+      padBodyForAppBar: false,
       body: profileAsync.when(
         data: (profileState) => _Body(profileState: profileState),
-        loading: () => const ShimmerProfile(),
-        error: (error, _) => _ErrorState(
-          onRetry: () => ref.invalidate(currentUserProfileProvider),
+        loading: () => const _ProfileSkeleton(),
+        error: (error, _) => CustomScrollView(
+          slivers: [
+            const GlassLargeTitleHeader(
+              title: 'Profile',
+              automaticallyImplyLeading: false,
+            ),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: GlassErrorState(
+                title: 'Failed to load profile',
+                onRetry: () => ref.invalidate(currentUserProfileProvider),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Body
-// ─────────────────────────────────────────────────────────────────────────
-
 class _Body extends ConsumerWidget {
-  final ProfileState profileState;
   const _Body({required this.profileState});
+
+  final ProfileState profileState;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = profileState.profile;
     if (profile == null) {
-      return const Center(child: Text('No profile data'));
+      return const CustomScrollView(
+        slivers: [
+          GlassLargeTitleHeader(
+            title: 'Profile',
+            automaticallyImplyLeading: false,
+          ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: GlassEmptyState(
+              icon: Iconsax.user,
+              title: 'No profile data',
+              message: 'We could not read your profile. Try again shortly.',
+            ),
+          ),
+        ],
+      );
     }
 
     final isAdmin = ref.watch(isAdminProvider);
@@ -67,154 +106,177 @@ class _Body extends ConsumerWidget {
     final bio = (profile['bio'] ?? '').toString();
     final isVerified = profile['isVerified'] == true;
 
-    return SafeArea(
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Instagram top bar with username centered
-          SliverToBoxAdapter(
-            child: _TopBar(handle: handle.isEmpty ? name : handle),
-          ),
-          const SliverToBoxAdapter(
-            child: Divider(
-              height: 0.5,
-              thickness: 0.5,
-              color: AppColors.border,
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        GlassLargeTitleHeader(
+          title: name,
+          subtitle: handle.isEmpty ? null : '@$handle',
+          automaticallyImplyLeading: false,
+          actions: [
+            GlassIconButton(
+              icon: Iconsax.setting_2,
+              tooltip: 'Settings',
+              size: 36,
+              iconSize: 19,
+              onTap: () => context.push('/settings'),
+            ),
+            GlassIconButton(
+              icon: Iconsax.logout,
+              tooltip: 'Log out',
+              size: 36,
+              iconSize: 19,
+              onTap: () => _confirmLogout(context, ref),
+            ),
+          ],
+        ),
+
+        // 2 — identity hero card
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: _HeroCard(
+              name: name,
+              handle: handle,
+              role: role,
+              bio: bio,
+              avatarUrl: avatarUrl,
+              isVerified: isVerified,
             ),
           ),
+        ),
 
-          // Avatar + stats row
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-              child: Row(
-                children: [
-                  _Avatar(imageUrl: avatarUrl, name: name),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: _StatsRow(),
-                  ),
-                ],
-              ),
+        // 3 — stat pills
+        const SliverToBoxAdapter(child: _StatPills()),
+
+        // 4 — primary actions
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.sm,
             ),
-          ),
-
-          // Name + role/handle + bio
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.headline.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      if (isVerified) ...[
-                        const SizedBox(width: 4),
-                        const VerifiedBadge(size: 14),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatRole(role),
-                    style: AppTextStyles.subheadline.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (bio.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      bio,
-                      style: AppTextStyles.body.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-
-          // Action buttons row
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _IgButton(
-                      label: 'Edit profile',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const EditProfileScreen()),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GlassButton(
+                    label: 'Edit profile',
+                    icon: Iconsax.edit,
+                    size: GlassButtonSize.small,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _IgButton(
-                      label: 'Share profile',
-                      onTap: () => _shareProfile(context, handle),
+                ),
+                AppSpacing.gapSm,
+                Expanded(
+                  child: GlassButton.glass(
+                    label: 'Share',
+                    icon: Iconsax.share,
+                    size: GlassButtonSize.small,
+                    onPressed: () => _shareProfile(context, handle),
+                  ),
+                ),
+                AppSpacing.gapSm,
+                GlassIconButton(
+                  icon: Iconsax.user_add,
+                  tooltip: 'Linked accounts',
+                  size: 38,
+                  iconSize: 19,
+                  onTap: () => context.push('/linked-accounts'),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 5 — completeness nudge (hides itself at 100%)
+        SliverToBoxAdapter(
+          child: ProfileCompletenessCard(
+            profile: profile,
+            onComplete: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            ),
+          ),
+        ),
+
+        // 6 — shortcut tiles
+        SliverToBoxAdapter(
+          child: GlassSection(
+            title: 'Shortcuts',
+            separated: false,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            children: [
+              GlassTileGrid(
+                columns: isAdmin ? 3 : 2,
+                tiles: [
+                  GlassTile(
+                    icon: Iconsax.wallet_1,
+                    label: 'Wallet',
+                    onTap: () => context.push('/wallet'),
+                  ),
+                  GlassTile(
+                    icon: Iconsax.volume_high,
+                    label: 'Campaigns',
+                    onTap: () => context.push('/my-campaigns'),
+                  ),
+                  if (isAdmin)
+                    GlassTile(
+                      icon: Iconsax.shield_tick,
+                      label: 'Admin',
+                      color: AppColors.accentIndigo,
+                      onTap: () => context.push('/admin'),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  _IgIconButton(
-                    icon: Iconsax.user_add,
-                    onTap: () => context.push('/linked-accounts'),
-                  ),
                 ],
               ),
-            ),
+            ],
           ),
+        ),
 
-          // Profile completeness nudge (hidden when 100% complete)
-          SliverToBoxAdapter(
-            child: ProfileCompletenessCard(
-              profile: profile,
-              onComplete: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-              ),
-            ),
-          ),
+        // 7 — segmented control + campaign grid
+        const SliverToBoxAdapter(child: _CampaignTabs()),
 
-          // Story highlights row
-          SliverToBoxAdapter(
-            child: _HighlightsRow(isAdmin: isAdmin),
-          ),
-
-          const SliverToBoxAdapter(
-            child: Divider(
-              height: 0.5,
-              thickness: 0.5,
-              color: AppColors.border,
-            ),
-          ),
-
-          // Tabs (Grid = my campaigns, Saved = bookmarked) + content
-          const SliverToBoxAdapter(child: _ProfileTabsSection()),
-        ],
-      ),
+        // Clear the floating nav dock.
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+      ],
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final ok = await showGlassConfirm(
+      context: context,
+      title: 'Log out',
+      message: 'Are you sure you want to log out of Campster?',
+      icon: Iconsax.logout,
+      confirmLabel: 'Log out',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    );
+    if (ok) {
+      await ref.read(authProvider.notifier).signOut();
+    }
   }
 
   void _shareProfile(BuildContext context, String handle) {
     if (handle.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Set a username first to share your profile'),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showGlassSnackBar(
+        context,
+        message: 'Set a username first to share your profile',
+        tone: GlassToastTone.warning,
       );
       return;
     }
@@ -223,6 +285,89 @@ class _Body extends ConsumerWidget {
     Share.share('Check out @$handle on Campster — influencer marketing, '
         'made simple.');
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2 — identity hero card
+// ─────────────────────────────────────────────────────────────────────────
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.name,
+    required this.handle,
+    required this.role,
+    required this.bio,
+    required this.avatarUrl,
+    required this.isVerified,
+  });
+
+  final String name;
+  final String handle;
+  final String role;
+  final String bio;
+  final String? avatarUrl;
+  final bool isVerified;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      borderRadius: AppRadius.allXl,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        children: [
+          _Avatar(imageUrl: avatarUrl, name: name),
+          AppSpacing.gapLg,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.title1.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (isVerified) ...[
+                const SizedBox(width: 6),
+                const Icon(
+                  Iconsax.verify,
+                  size: 20,
+                  color: AppColors.verified,
+                ),
+              ],
+            ],
+          ),
+          if (handle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              '@$handle',
+              style: AppTextStyles.subheadline
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+          AppSpacing.gapSm,
+          GlassChip.status(label: _formatRole(role), color: AppColors.primary),
+          if (bio.isNotEmpty) ...[
+            AppSpacing.gapLg,
+            Text(
+              bio,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.45,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   String _formatRole(String r) {
     if (r.isEmpty) return 'Creator';
@@ -230,157 +375,69 @@ class _Body extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Top bar (Instagram: back arrow / handle centered / menu right)
-// ─────────────────────────────────────────────────────────────────────────
-
-class _TopBar extends ConsumerWidget {
-  final String handle;
-  const _TopBar({required this.handle});
-
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log out'),
-        content: const Text('Are you sure you want to log out of Campster?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Log out',
-                style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await ref.read(authProvider.notifier).signOut();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
-      child: Row(
-        children: [
-          const SizedBox(width: 96), // symmetric spacer (2 right icons)
-          Expanded(
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Iconsax.lock,
-                      size: 14, color: AppColors.textPrimary),
-                  const SizedBox(width: 4),
-                  Text(
-                    handle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.title3.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          _TopBarIcon(
-            icon: Iconsax.setting_2,
-            onTap: () => context.push('/settings'),
-          ),
-          _TopBarIcon(
-            icon: Iconsax.logout,
-            onTap: () => _confirmLogout(context, ref),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TopBarIcon extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _TopBarIcon({required this.icon, required this.onTap});
-
-  @override
-  State<_TopBarIcon> createState() => _TopBarIconState();
-}
-
-class _TopBarIconState extends State<_TopBarIcon> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.4 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Icon(widget.icon, size: 24, color: AppColors.textPrimary),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Avatar (no story ring in profile header — matches IG's own profile)
-// ─────────────────────────────────────────────────────────────────────────
-
+/// Avatar with a brand-gradient ring. No story ring semantics — the ring is
+/// purely to lift the avatar off the glass pane behind it.
 class _Avatar extends StatelessWidget {
-  final String? imageUrl;
-  final String name;
   const _Avatar({required this.imageUrl, required this.name});
 
+  final String? imageUrl;
+  final String name;
+
+  static const double _size = 92;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 86,
-      height: 86,
+      padding: const EdgeInsets.all(3),
       decoration: const BoxDecoration(
-        color: AppColors.surfaceAlt,
         shape: BoxShape.circle,
+        gradient: AppColors.primaryGradient,
       ),
-      child: ClipOval(
-        child: (imageUrl != null && imageUrl!.isNotEmpty)
-            ? CachedImage(
-                imageUrl: imageUrl,
-                width: 86,
-                height: 86,
-                fit: BoxFit.cover,
-                errorBuilder: (_) => _initialFallback(),
-                placeholderBuilder: (_) => _initialFallback(),
-              )
-            : _initialFallback(),
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+        ),
+        child: SizedBox(
+          width: _size,
+          height: _size,
+          child: ClipOval(
+            child: (imageUrl != null && imageUrl!.isNotEmpty)
+                ? CachedImage(
+                    imageUrl: imageUrl,
+                    width: _size,
+                    height: _size,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_) => _InitialFallback(name: name),
+                    placeholderBuilder: (_) => _InitialFallback(name: name),
+                  )
+                : _InitialFallback(name: name),
+          ),
+        ),
       ),
     );
   }
+}
 
-  Widget _initialFallback() {
+class _InitialFallback extends StatelessWidget {
+  const _InitialFallback({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
     final letter = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
-    return Container(
-      color: AppColors.surfaceAlt,
-      alignment: Alignment.center,
-      child: Text(
-        letter,
-        style: AppTextStyles.largeTitle.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 36,
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+      child: Center(
+        child: Text(
+          letter,
+          style: AppTextStyles.largeTitle.copyWith(
+            color: AppColors.textOnPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 38,
+          ),
         ),
       ),
     );
@@ -388,20 +445,38 @@ class _Avatar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Stats row (Campaigns / Followers / Following)
+// 3 — stat pills
 // ─────────────────────────────────────────────────────────────────────────
 
-class _StatsRow extends ConsumerWidget {
+class _StatPills extends ConsumerWidget {
+  const _StatPills();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followers = ref.watch(currentUserFollowersCountProvider);
     final following = ref.watch(currentUserFollowingCountProvider);
 
-    return Row(
-      children: [
-        Expanded(child: _Stat(value: _fmt(followers), label: 'Followers')),
-        Expanded(child: _Stat(value: _fmt(following), label: 'Following')),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: [
+          Expanded(
+            child: GlassStatPill(
+              icon: Iconsax.people,
+              value: _fmt(followers),
+              label: 'Followers',
+            ),
+          ),
+          AppSpacing.gapMd,
+          Expanded(
+            child: GlassStatPill(
+              icon: Iconsax.user_add,
+              value: _fmt(following),
+              label: 'Following',
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -416,383 +491,98 @@ class _StatsRow extends ConsumerWidget {
       );
 }
 
-class _Stat extends StatelessWidget {
-  final String value;
-  final String label;
-  const _Stat({required this.value, required this.label});
+// ─────────────────────────────────────────────────────────────────────────
+// 7 — segmented control + campaign grid
+// ─────────────────────────────────────────────────────────────────────────
+
+class _CampaignTabs extends ConsumerStatefulWidget {
+  const _CampaignTabs();
+
+  @override
+  ConsumerState<_CampaignTabs> createState() => _CampaignTabsState();
+}
+
+class _CampaignTabsState extends ConsumerState<_CampaignTabs> {
+  int _tab = 0; // 0 = my campaigns, 1 = saved
 
   @override
   Widget build(BuildContext context) {
+    final async = _tab == 0
+        ? ref.watch(myCampaignsListProvider)
+        : ref.watch(savedCampaignsListProvider);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          value,
-          style: AppTextStyles.title2.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
-          ),
+        // Labelled segmented control, replacing the two icon-only underline
+        // tabs that gave no indication of what they switched between.
+        GlassTabBar(
+          labels: const ['My campaigns', 'Saved'],
+          selectedIndex: _tab,
+          onSelected: (i) => setState(() => _tab = i),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         ),
-        const SizedBox(height: 3),
-        Text(
-          label,
-          style: AppTextStyles.footnote.copyWith(
-            color: AppColors.textSecondary,
-            fontSize: 12,
+        AppSpacing.gapSm,
+        async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+            child: GlassLoader(),
           ),
-          textAlign: TextAlign.center,
+          error: (_, __) => GlassErrorState(
+            compact: true,
+            title: _tab == 1
+                ? 'Could not load saved campaigns'
+                : 'Could not load campaigns',
+            onRetry: () => ref.invalidate(
+              _tab == 0 ? myCampaignsListProvider : savedCampaignsListProvider,
+            ),
+          ),
+          data: (items) {
+            if (items.isEmpty) {
+              return GlassEmptyState(
+                compact: true,
+                icon: _tab == 1 ? Iconsax.bookmark : Iconsax.volume_high,
+                title: _tab == 1
+                    ? 'No saved campaigns yet'
+                    : 'No campaigns yet',
+                message: _tab == 1
+                    ? 'Campaigns you bookmark will appear here.'
+                    : 'Campaigns you post will appear here.',
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  // Real gutters: the old grid used 2px seams, which only
+                  // works for edge-to-edge photos, not glass tiles.
+                  mainAxisSpacing: AppSpacing.md,
+                  crossAxisSpacing: AppSpacing.md,
+                  childAspectRatio: 0.84,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, i) => RepaintBoundary(
+                  child: _CampaignTile(campaign: items[i]),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Instagram bordered action buttons
-// ─────────────────────────────────────────────────────────────────────────
+/// Campaign thumbnail as a glass tile with its title on a readable scrim.
+class _CampaignTile extends StatelessWidget {
+  const _CampaignTile({required this.campaign});
 
-class _IgButton extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _IgButton({required this.label, required this.onTap});
-
-  @override
-  State<_IgButton> createState() => _IgButtonState();
-}
-
-class _IgButtonState extends State<_IgButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.5 : 1.0,
-        child: Container(
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border, width: 0.5),
-          ),
-          child: Text(
-            widget.label,
-            style: AppTextStyles.footnote.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IgIconButton extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IgIconButton({required this.icon, required this.onTap});
-
-  @override
-  State<_IgIconButton> createState() => _IgIconButtonState();
-}
-
-class _IgIconButtonState extends State<_IgIconButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.5 : 1.0,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border, width: 0.5),
-          ),
-          alignment: Alignment.center,
-          child: Icon(widget.icon, size: 18, color: AppColors.textPrimary),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Highlights row (Wallet / Subs / Admin as IG-style circular highlights)
-// ─────────────────────────────────────────────────────────────────────────
-
-class _HighlightsRow extends StatelessWidget {
-  final bool isAdmin;
-  const _HighlightsRow({required this.isAdmin});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = <_HighlightData>[
-      _HighlightData(
-        icon: Iconsax.wallet_1,
-        label: 'Wallet',
-        onTap: () => context.push('/wallet'),
-      ),
-      _HighlightData(
-        icon: Iconsax.volume_high,
-        label: 'Campaigns',
-        onTap: () => context.push('/my-campaigns'),
-      ),
-      if (isAdmin)
-        _HighlightData(
-          icon: Iconsax.shield_tick,
-          label: 'Admin',
-          onTap: () => context.push('/admin'),
-        ),
-    ];
-
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        itemCount: items.length,
-        itemBuilder: (context, index) =>
-            _HighlightCircle(data: items[index]),
-      ),
-    );
-  }
-}
-
-class _HighlightData {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  _HighlightData({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-}
-
-class _HighlightCircle extends StatefulWidget {
-  final _HighlightData data;
-  const _HighlightCircle({required this.data});
-
-  @override
-  State<_HighlightCircle> createState() => _HighlightCircleState();
-}
-
-class _HighlightCircleState extends State<_HighlightCircle> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.data.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 100),
-        opacity: _pressed ? 0.5 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Column(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border, width: 1),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  widget.data.icon,
-                  size: 26,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: 72,
-                child: Text(
-                  widget.data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Profile tabs: Grid (my campaigns) + Saved (bookmarked campaigns)
-// ─────────────────────────────────────────────────────────────────────────
-
-class _ProfileTabsSection extends ConsumerStatefulWidget {
-  const _ProfileTabsSection();
-
-  @override
-  ConsumerState<_ProfileTabsSection> createState() =>
-      _ProfileTabsSectionState();
-}
-
-class _ProfileTabsSectionState extends ConsumerState<_ProfileTabsSection> {
-  int _tab = 0; // 0 = grid (my campaigns), 1 = saved
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Divider(height: 0.5, thickness: 0.5, color: AppColors.border),
-        // Tab bar — Grid + Saved only (Tag removed)
-        SizedBox(
-          height: 44,
-          child: Row(
-            children: [
-              _tabIcon(Iconsax.category, 0),
-              _tabIcon(Iconsax.bookmark, 1),
-            ],
-          ),
-        ),
-        const Divider(height: 0.5, thickness: 0.5, color: AppColors.border),
-        // Content
-        if (_tab == 0) _buildGrid(ref.watch(myCampaignsListProvider), isSaved: false)
-        else _buildGrid(ref.watch(savedCampaignsListProvider), isSaved: true),
-      ],
-    );
-  }
-
-  Widget _tabIcon(IconData icon, int index) {
-    final active = _tab == index;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _tab = index),
-        child: Container(
-          height: 44,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: active ? AppColors.textPrimary : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon,
-              size: 22,
-              color: active ? AppColors.textPrimary : AppColors.textSecondary),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGrid(AsyncValue<List<Map<String, dynamic>>> async,
-      {required bool isSaved}) {
-    return async.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 60),
-        child: Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
-      ),
-      error: (_, __) => _emptyState(
-        isSaved ? 'Could not load saved campaigns' : 'Could not load campaigns',
-        'Pull down to refresh and try again.',
-      ),
-      data: (items) {
-        if (items.isEmpty) {
-          return _emptyState(
-            isSaved ? 'No saved campaigns yet' : 'Share your first campaign',
-            isSaved
-                ? 'Campaigns you bookmark will appear here.'
-                : 'Your posted campaigns will appear on your profile.',
-          );
-        }
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(2),
-          gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 2,
-            crossAxisSpacing: 2,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, i) => _GridTile(campaign: items[i]),
-        );
-      },
-    );
-  }
-
-  Widget _emptyState(String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.textPrimary, width: 1.5),
-            ),
-            alignment: Alignment.center,
-            child: const Icon(Iconsax.camera,
-                size: 30, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.title2.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.subheadline
-                .copyWith(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A single campaign thumbnail in the profile grid.
-class _GridTile extends StatelessWidget {
   final Map<String, dynamic> campaign;
-  const _GridTile({required this.campaign});
 
   @override
   Widget build(BuildContext context) {
@@ -804,93 +594,122 @@ class _GridTile extends StatelessWidget {
         .toString();
     final title = (campaign['title'] ?? 'Campaign').toString();
 
-    return GestureDetector(
-      onTap: () {
-        if (id.isNotEmpty) context.push('/campaigns/$id');
-      },
-      child: Container(
-        color: AppColors.surfaceAlt,
-        child: cover.isNotEmpty
-            ? LayoutBuilder(
-                builder: (context, c) => CachedImage(
-                  imageUrl: cover,
-                  width: c.maxWidth,
-                  height: c.maxHeight,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_) => _placeholder(title),
+    return GlassCard.bare(
+      borderRadius: AppRadius.allSm,
+      onTap: id.isEmpty ? null : () => context.push('/campaigns/$id'),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (cover.isNotEmpty)
+            CachedImage(
+              imageUrl: cover,
+              fit: BoxFit.cover,
+              errorBuilder: (_) => const ColoredBox(
+                color: AppColors.surfaceAlt,
+              ),
+              placeholderBuilder: (_) => const ColoredBox(
+                color: AppColors.surfaceAlt,
+              ),
+            )
+          else
+            const ColoredBox(color: AppColors.surfaceAlt),
+          // Title always legible, regardless of the artwork behind it.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 22, 10, 10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.78),
+                    Colors.transparent,
+                  ],
                 ),
-              )
-            : _placeholder(title),
-      ),
-    );
-  }
-
-  Widget _placeholder(String title) {
-    return Container(
-      color: AppColors.surfaceAlt,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(8),
-      child: Text(
-        title,
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.caption1.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
-        ),
+              ),
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Error state
+// Loading skeleton
 // ─────────────────────────────────────────────────────────────────────────
 
-class _ErrorState extends StatelessWidget {
-  final VoidCallback onRetry;
-  const _ErrorState({required this.onRetry});
+class _ProfileSkeleton extends StatelessWidget {
+  const _ProfileSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.textPrimary, width: 1.5),
+    return CustomScrollView(
+      slivers: [
+        const GlassLargeTitleHeader(
+          title: 'Profile',
+          automaticallyImplyLeading: false,
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                GlassCard(
+                  borderRadius: AppRadius.allXl,
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    children: const [
+                      GlassSkeleton(
+                        width: 98,
+                        height: 98,
+                        borderRadius: AppRadius.pillAll,
+                      ),
+                      SizedBox(height: AppSpacing.lg),
+                      GlassSkeleton(width: 160, height: 20),
+                      SizedBox(height: AppSpacing.sm),
+                      GlassSkeleton(width: 110, height: 13),
+                      SizedBox(height: AppSpacing.lg),
+                      GlassSkeleton(height: 12),
+                      SizedBox(height: 6),
+                      GlassSkeleton(width: 220, height: 12),
+                    ],
+                  ),
+                ),
+                AppSpacing.gapLg,
+                Row(
+                  children: const [
+                    Expanded(child: GlassSkeleton(height: 72)),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(child: GlassSkeleton(height: 72)),
+                  ],
+                ),
+                AppSpacing.gapLg,
+                Row(
+                  children: const [
+                    Expanded(child: GlassSkeleton(height: 38)),
+                    SizedBox(width: AppSpacing.sm),
+                    Expanded(child: GlassSkeleton(height: 38)),
+                  ],
+                ),
+              ],
             ),
-            alignment: Alignment.center,
-            child: const Icon(Iconsax.warning_2,
-                size: 36, color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load profile',
-            style: AppTextStyles.title2.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text(
-              'Retry',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
